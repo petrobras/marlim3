@@ -148,7 +148,7 @@ package_dir = {'': '.'}
 
 setuptools.setup(
     name='marlim3',
-    version='0.3.1',
+    version='3.3.0',
     author="Equipe Marlim 3",
     author_email="cc-simuladormarlim3@petrobras.com.br",
     description='Simulação de escoamento multifásico permanente e transiente.',
