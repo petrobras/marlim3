@@ -21,8 +21,11 @@ import platform
 from pathlib import Path
 
 # Import version from root _version.py
-exec(open('_version.py').read())
-MARLIM3_VERSION = __version__
+_version_file = Path(__file__).parent / '_version.py'
+_version_dict = {}
+with open(_version_file) as f:
+    exec(f.read(), _version_dict)
+MARLIM3_VERSION = _version_dict['__version__']
 
 def build_executable():
     """Build the C++/Fortran executable from source."""
