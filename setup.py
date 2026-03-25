@@ -1,13 +1,12 @@
 """
 Setup configuration for Marlim3 Python package
 
-This setup.py automatically compiles the C++/Fortran executable during
-package installation and includes it in the Python package.
+The pre-compiled executable is automatically downloaded from GitHub releases
+on the first import of the marlim3 package (see marlim3/_download.py).
 
-Build workflow:
-1. Detect if executable needs to be built
-2. Compile C++/Fortran executable (using Makefile)
-3. Install Python package with executable included
+This setup.py retains build-from-source capability for development.
+To compile from source instead of downloading, set:
+    MARLIM3_COMPILE_FROM_SOURCE=1
 """
 
 import setuptools
@@ -18,12 +17,17 @@ import subprocess
 import os
 import sys
 import shutil
+import platform
 from pathlib import Path
 
+# Import version from root _version.py
+exec(open('_version.py').read())
+MARLIM3_VERSION = __version__
+
 def build_executable():
-    """Build the C++/Fortran executable automatically."""
+    """Build the C++/Fortran executable from source."""
     print("\n" + "=" * 80)
-    print("Building Marlim3 executable (C++/Fortran)...")
+    print("Building Marlim3 executable from source (C++/Fortran)...")
     print("=" * 80 + "\n")
     sys.stdout.flush()
     
@@ -38,7 +42,7 @@ def build_executable():
     
     # Check if we should skip build
     if os.environ.get('MARLIM3_SKIP_BUILD'):
-        print("⚠️  MARLIM3_SKIP_BUILD set, skipping executable build")
+        print("[WARNING] MARLIM3_SKIP_BUILD set, skipping executable build")
         return
     
     # Build with Makefile
@@ -60,7 +64,7 @@ def build_executable():
         if result.returncode != 0:
             raise RuntimeError("Make failed (see output above)")
         
-        print("  ✓ Makefile build successful")
+        print("  [OK] Makefile build successful")
         
         # Copy executable
         exe_name = "Marlim3"
@@ -75,24 +79,24 @@ def build_executable():
         if exe_path.exists():
             shutil.copy2(exe_path, bin_dir / "Marlim3")
             exe_size = exe_path.stat().st_size / (1024 * 1024)
-            print(f"  ✓ Executable copied: {exe_size:.1f} MB")
-            print(f"  ✓ Installed to {bin_dir.relative_to(root_dir)}/")
-            print("\n✅ Build completed successfully!\n")
+            print(f"  [OK] Executable copied: {exe_size:.1f} MB")
+            print(f"  [OK] Installed to {bin_dir.relative_to(root_dir)}/")
+            print("\n[SUCCESS] Build completed successfully!\n")
             return
         else:
             raise RuntimeError("Executable not found after make")
             
     except Exception as e:
-        print(f"  ✗ Makefile build failed: {e}")
+        print(f"  [ERROR] Makefile build failed: {e}")
         
         # Check if executable already exists
         if (bin_dir / "Marlim3").exists():
-            print("\n⚠️  Build failed, but executable already exists. Using existing executable.")
+            print("\n[WARNING] Build failed, but executable already exists. Using existing executable.")
             return
         
         # Final failure
         print("\n" + "=" * 80)
-        print("❌ EXECUTABLE BUILD FAILED")
+        print("[ERROR] EXECUTABLE BUILD FAILED")
         print("=" * 80)
         print("\nMakefile build failed.")
         print("\nTo skip the build and install Python-only:")
@@ -107,25 +111,37 @@ def build_executable():
             sys.exit(1)
 
 
-# Custom build commands to compile executable before installing
-class CustomBuildPy(build_py):
-    """Custom build command that compiles the executable."""
-    def run(self):
+def get_or_build_executable():
+    """Compile executable from source if MARLIM3_COMPILE_FROM_SOURCE is set."""
+    # Check if we should skip entirely
+    if os.environ.get('MARLIM3_SKIP_BUILD'):
+        return
+    
+    # Check if user wants to compile from source
+    if os.environ.get('MARLIM3_COMPILE_FROM_SOURCE'):
+        print("[INFO] MARLIM3_COMPILE_FROM_SOURCE set, compiling from source...")
         build_executable()
+
+
+# Custom build commands that can compile from source if requested
+class CustomBuildPy(build_py):
+    """Custom build command that can compile the executable from source."""
+    def run(self):
+        get_or_build_executable()
         build_py.run(self)
 
 
 class CustomDevelop(develop):
-    """Custom develop command that compiles the executable."""
+    """Custom develop command that gets the executable."""
     def run(self):
-        build_executable()
+        get_or_build_executable()
         develop.run(self)
 
 
 class CustomInstall(install):
-    """Custom install command that compiles the executable."""
+    """Custom install command that gets the executable."""
     def run(self):
-        build_executable()
+        get_or_build_executable()
         install.run(self)
 
 
@@ -148,7 +164,7 @@ package_dir = {'': '.'}
 
 setuptools.setup(
     name='marlim3',
-    version='3.3.0',
+    version=MARLIM3_VERSION,
     author="Equipe Marlim 3",
     author_email="cc-simuladormarlim3@petrobras.com.br",
     description='Simulação de escoamento multifásico permanente e transiente.',
