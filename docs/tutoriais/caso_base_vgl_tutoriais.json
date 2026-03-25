@@ -1,0 +1,478 @@
+{
+  "sistema": "MULTIFASICO",
+  "versao": "1.0",
+  "versaoJson": "1.3.9",
+  "configuracaoInicial": {
+    "Formacao": {
+      "Propriedades": [
+        {
+          "id": 0,
+          "condutividade": 2.5,
+          "calorEspecifico": 1000.0,
+          "massaEspecifica": 2500.0
+        }
+      ],
+      "TempoProducao": 365
+    },
+    "linhaGas": true
+  },
+  "fluidosProducao": [
+    {
+      "id": 0,
+      "api": 20,
+      "rgo": 50,
+      "densidadeGas": 0.7,
+      "bsw": 0.0
+    }
+  ],
+  "fluidoGas": {
+    "densidadeGas": 0.7
+  },
+  "material": [
+    {
+      "id": 0,
+      "rotulo": "A\u00e7o",
+      "tipo": 0,
+      "condutividade": 58,
+      "calorEspecifico": 480,
+      "rho": 7850
+    },
+    {
+      "id": 1,
+      "rotulo": "Fluido de completa\u00e7\u00e3o",
+      "tipo": 2
+    },
+    {
+      "id": 2,
+      "rotulo": "Cimento",
+      "tipo": 0,
+      "condutividade": 0.6,
+      "calorEspecifico": 1000.0,
+      "rho": 500.0
+    },
+    {
+      "id": 3,
+      "rotulo": "Isolante",
+      "tipo": 0,
+      "condutividade": 0.12,
+      "calorEspecifico": 1214,
+      "rho": 510
+    }
+  ],
+  "secaoTransversal": [
+    {
+      "id": 0,
+      "rotulo": "Corte do po\u00e7o",
+      "diametroInterno": 0.2032,
+      "rugosidade": 0.000183,
+      "camadas": [
+        {
+          "rotulo": "Camada de a\u00e7o interna",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00635
+        },
+        {
+          "rotulo": "Camada de fluido de completa\u00e7\u00e3o",
+          "idMaterial": 1,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.07619999999999999
+        },
+        {
+          "rotulo": "Camada de a\u00e7o do revestimento",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.0127
+        },
+        {
+          "rotulo": "Camada de cimento",
+          "idMaterial": 2,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.07619999999999999
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "rotulo": "Corte da flowline+riser",
+      "diametroInterno": 0.2032,
+      "rugosidade": 0.000183,
+      "camadas": [
+        {
+          "rotulo": "Camada de a\u00e7o interna",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00635
+        },
+        {
+          "rotulo": "Camada de isolante",
+          "idMaterial": 3,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.0508
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "rotulo": "Corte do po\u00e7o - trecho sem acoplamento",
+      "diametroInterno": 0.2032,
+      "rugosidade": 0.000183,
+      "camadas": [
+        {
+          "rotulo": "Camada de a\u00e7o interna",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00635
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "rotulo": "Corte da flowline+riser [SERVI\u00c7O]",
+      "diametroInterno": 0.127,
+      "rugosidade": 0.000183,
+      "camadas": [
+        {
+          "rotulo": "Camada de a\u00e7o interna",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00635
+        },
+        {
+          "rotulo": "Camada de isolante",
+          "idMaterial": 3,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.0508
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "rotulo": "Corte do po\u00e7o [SERVI\u00c7O]",
+      "anular": true,
+      "diametroInterno": 0.21589999999999998,
+      "diametroExterno": 0.36829999999999996,
+      "rugosidade": 0.000183,
+      "camadas": [
+        {
+          "rotulo": "Camada de a\u00e7o do revestimento",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.0127
+        },
+        {
+          "rotulo": "Camada de cimento",
+          "idMaterial": 2,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.07619999999999999
+        }
+      ]
+    }
+  ],
+  "dutosProducao": [
+    {
+      "id": 3,
+      "rotulo": "Po\u00e7o - Trecho sem acoplamento",
+      "idCorte": 2,
+      "idFormacao": 0,
+      "angulo": 1.5707963267948966,
+      "discretizacao": [
+        {
+          "nCelulas": 2,
+          "comprimento": 100
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          90.0,
+          80.0
+        ]
+      }
+    },
+    {
+      "id": 0,
+      "rotulo": "Po\u00e7o",
+      "idCorte": 0,
+      "angulo": 1.5707963267948966,
+      "discretizacao": [
+        {
+          "nCelulas": 8,
+          "comprimento": 100
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          0.8,
+          1
+        ],
+        "tempExterna": [
+          90,
+          50,
+          4
+        ]
+      },
+      "acoplamentoTermico": 1
+    },
+    {
+      "id": 1,
+      "rotulo": "Flowline",
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "angulo": 0,
+      "discretizacao": [
+        {
+          "nCelulas": 10,
+          "comprimento": 100.0
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          0.1,
+          0.1
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "rotulo": "Riser",
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "angulo": 1.5707963267948966,
+      "discretizacao": [
+        {
+          "nCelulas": 10,
+          "comprimento": 100.0
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          20
+        ],
+        "velExterna": [
+          0.1,
+          1
+        ]
+      }
+    }
+  ],
+  "dutosServico": [
+    {
+      "id": 0,
+      "rotulo": "Riser [SERVI\u00c7O]",
+      "idCorte": 2,
+      "ambienteExterno": 1,
+      "angulo": -1.5707963267948966,
+      "discretizacao": [
+        {
+          "nCelulas": 10,
+          "comprimento": 100.0
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          20,
+          4
+        ],
+        "velExterna": [
+          1,
+          0.1
+        ]
+      },
+      "acoplamentoTermico": 0
+    },
+    {
+      "id": 1,
+      "rotulo": "Flowline [SERVI\u00c7O]",
+      "idCorte": 2,
+      "ambienteExterno": 1,
+      "angulo": 0,
+      "discretizacao": [
+        {
+          "nCelulas": 10,
+          "comprimento": 100.0
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          0.1,
+          0.1
+        ]
+      },
+      "acoplamentoTermico": 0
+    },
+    {
+      "id": 2,
+      "rotulo": "Anular do Po\u00e7o [SERVI\u00c7O]",
+      "idCorte": 3,
+      "idFormacao": 0,
+      "angulo": -1.5707963267948966,
+      "discretizacao": [
+        {
+          "nCelulas": 10,
+          "comprimento": 80.0
+        }
+      ],
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          0.25,
+          1
+        ],
+        "tempExterna": [
+          4,
+          50,
+          80.0
+        ]
+      },
+      "acoplamentoTermico": 1
+    }
+  ],
+  "separador": {
+    "tempo": [
+      0
+    ],
+    "pressao": [
+      10
+    ]
+  },
+  "gasInj": {
+    "tipoCC": 1,
+    "tempo": [
+      0
+    ],
+    "temperatura": [
+      40
+    ],
+    "vazaoGas": [
+      150000.0
+    ]
+  },
+  "ipr": [
+    {
+      "id": 0,
+      "tipoIPR": 0,
+      "indFluidoPro": 0,
+      "comprimentoMedido": 0.1,
+      "tempoPressaoEstatica": [
+        0
+      ],
+      "pressaoEstatica": [
+        150
+      ],
+      "tempoTemperaturas": [
+        0
+      ],
+      "temperaturas": [
+        90
+      ],
+      "tempoip": [
+        0
+      ],
+      "ip": [
+        200
+      ],
+      "tempoii": [
+        0
+      ],
+      "ii": [
+        200
+      ],
+      "ativo": true
+    }
+  ],
+  "fonteGas": [
+    {
+      "id": 0,
+      "comprimentoMedido": 200,
+      "tempo": [
+        0
+      ],
+      "temperatura": [
+        87
+      ],
+      "vazaoGas": [
+        150000.0
+      ],
+      "ativo": false
+    }
+  ],
+  "fonteLiquido": [
+    {
+      "id": 0,
+      "indiFluidoPro": 0,
+      "comprimentoMedido": 0.1,
+      "tempo": [
+        0
+      ],
+      "temperatura": [
+        90
+      ],
+      "ativo": false
+    }
+  ],
+  "fonteGasLift": [
+    {
+      "id": 0,
+      "comprimentoMedidoProducao": 200,
+      "comprimentoMedidoServico": 2800,
+      "tipoValvula": 0,
+      "diametroOrificio": 0.005,
+      "frecupera": 0.0,
+      "razaoArea": 0.1
+    }
+  ],
+  "master1": {
+    "comprimentoMedido": 1000
+  },
+  "perfilProducao": {
+    "tempo": [
+      0
+    ],
+    "pressao": true,
+    "temperatura": true,
+    "holdup": true,
+    "arra": true,
+    "fric": true,
+    "hidro": true,
+    "QLstd": true
+  },
+  "perfilServico": {
+    "tempo": [
+      0
+    ],
+    "pressao": true,
+    "temperatura": true,
+    "hidro": true,
+    "fric": true
+  }
+}

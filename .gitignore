@@ -1,0 +1,150 @@
+# Build e binarios
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+obj/
+modules/
+target/
+
+# Executaveis/artefatos compilados
+src/Marlim3
+marlim3/Marlim3*
+*.o
+*.obj
+*.so
+*.mod
+*.smod
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+
+# Empacotamento e instalacao Python
+*.egg
+*.egg-info/
+.installed.cfg
+MANIFEST
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+*.manifest
+*.spec
+
+# Python cache, testes e tipagem
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+htmlcov/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+
+# Ambientes virtuais e configs locais
+.env
+.env.local
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+config.local.*
+.python-version
+
+# Ferramentas Python
+profile_default/
+ipython_config.py
+celerybeat-schedule
+*.sage.py
+.spyderproject
+.spyproject
+.ropeproject
+
+# Logs, temporarios e backup
+*.log
+log/
+logs/
+temp/
+tmp/
+*.tmp
+*.bak
+*.backup
+
+# Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Documentacao gerada
+docs/_build/
+docs/build/
+site/
+
+# IDEs e editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Sistema operacional
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+.directory
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Arquivos compactados
+*.tar
+*.tar.gz
+*.zip
+*.7z
+
+# Dados e resultados de simulacao
+*.dat
+*.p
+saida_testes/
+*marlim3_resultados*
+*resultados*
+*RedeInterna*
+*marlim3_model.json*
+*marlim3_rede.json*
+
+# Versionamento interno
+versao.h
+versao.h.bak

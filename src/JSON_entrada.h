@@ -1,0 +1,2196 @@
+#include "JSONDataModel.h"
+
+#define JSON_entrada_sistema JSONString
+#define JSON_entrada_versaoJson JSONString
+#define JSON_entrada_configuracaoInicial_origemGeometria JSONString
+#define JSON_entrada_configuracaoInicial_saidaClassica JSONBoolean
+#define JSON_entrada_configuracaoInicial_sentidoGeometriaSegueEscoamento JSONBoolean
+#define JSON_entrada_configuracaoInicial_linhaGas JSONBoolean
+#define JSON_entrada_configuracaoInicial_saidaTela JSONBoolean
+#define JSON_entrada_configuracaoInicial_equilibrioTermico JSONBoolean
+#define JSON_entrada_configuracaoInicial_latente JSONBoolean
+#define JSON_entrada_configuracaoInicial_condlatente JSONBoolean
+#define JSON_entrada_configuracaoInicial_pvtsimArq JSONString
+#define JSON_entrada_configuracaoInicial_modeloFluidoTabelaFlash JSONBoolean
+#define JSON_entrada_configuracaoInicial_modeloFluidoComposicional JSONBoolean
+#define JSON_entrada_configuracaoInicial_modeloTabelaDinamica JSONBoolean
+#define JSON_entrada_configuracaoInicial_modeloCp JSONInteger
+#define JSON_entrada_configuracaoInicial_modeloJTL JSONInteger
+#define JSON_entrada_configuracaoInicial_tabP JSONBoolean
+#define JSON_entrada_configuracaoInicial_AS JSONBoolean
+#define JSON_entrada_configuracaoInicial_paralelizaAS JSONBoolean
+#define JSON_entrada_configuracaoInicial_trackRgo JSONBoolean
+#define JSON_entrada_configuracaoInicial_trackDensidadeGas JSONBoolean
+#define JSON_entrada_configuracaoInicial_correcaoDenGasLivreBlackOil JSONBoolean
+#define JSON_entrada_configuracaoInicial_tabelaRSPB JSONBoolean
+#define JSON_entrada_configuracaoInicial_propFluido JSONInteger
+#define JSON_entrada_configuracaoInicial_iniFluidoP JSONInteger
+#define JSON_entrada_configuracaoInicial_tabG JSONBoolean
+#define JSON_entrada_configuracaoInicial_escorregamentoPermanente JSONBoolean
+#define JSON_entrada_configuracaoInicial_escorregamentoTransiente JSONBoolean
+#define JSON_entrada_configuracaoInicial_mapaArranjo JSONInteger
+#define JSON_entrada_configuracaoInicial_condicaoInicial JSONInteger
+#define JSON_entrada_configuracaoInicial_ordemperm JSONInteger
+#define JSON_entrada_configuracaoInicial_SnapShotArq JSONString
+#define JSON_entrada_configuracaoInicial_HISEP JSONInteger  //chris
+#define JSON_entrada_configuracaoInicial_SalinidadeFluido JSONNumber
+#define JSON_entrada_configuracaoInicial_comprimentoMedidoInterfaceLinhaGas JSONNumber
+#define JSON_entrada_configuracaoInicial_comprimentoMedidoInterfaceLinhaProd JSONNumber
+#define JSON_entrada_configuracaoInicial_controleDescarga JSONBoolean
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_vazaoLimiteDescarga JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoLimiteDescarga JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoMinimaDescarga JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoTrabalhoDescargaGas JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoLimiteDescargaGas JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoMinimaDescargaGas JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoInicialDescargaGas JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_temperaturaDescarga JSONNumber
+#define JSON_entrada_configuracaoInicial_parametrosDescarga_tempoLatencia JSONNumber
+#define JSON_entrada_configuracaoInicial_tipoFluido JSONInteger
+#define JSON_entrada_configuracaoInicial_tempReves JSONNumber
+#define JSON_entrada_configuracaoInicial_razCompGasReves JSONNumber
+#define JSON_entrada_configuracaoInicial_chutePerm JSONNumber
+
+#define JSON_entrada_configuracaoInicial_modoXY JSONBoolean
+#define JSON_entrada_configuracaoInicial_xProdInicio JSONNumber
+#define JSON_entrada_configuracaoInicial_yProdInicio JSONNumber
+#define JSON_entrada_configuracaoInicial_xServInicio JSONNumber
+#define JSON_entrada_configuracaoInicial_yServInicio JSONNumber
+
+#define JSON_entrada_configuracaoInicial_modoDifus3D JSONBoolean
+#define JSON_entrada_configuracaoInicial_threadP3D JSONInteger
+#define JSON_entrada_configuracaoInicial_modoDifus3DJson JSONString
+
+#define JSON_entrada_configuracaoInicial_modoParafina JSONBoolean
+
+#define JSON_entrada_configuracaoInicial_tipoModeloDrift JSONBoolean
+//#define JSON_entrada_configuracaoInicial_redutorAtritoCalc JSONNumber
+
+class JSON_entrada_configuracaoInicial_parametrosDescarga: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_parametrosDescarga();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_vazaoLimiteDescarga& vazaoLimiteDescarga();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoLimiteDescarga& pressaoLimiteDescarga();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoMinimaDescarga& pressaoMinimaDescarga();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoTrabalhoDescargaGas& pressaoTrabalhoDescargaGas();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoLimiteDescargaGas& pressaoLimiteDescargaGas();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoMinimaDescargaGas& pressaoMinimaDescargaGas();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_pressaoInicialDescargaGas& pressaoInicialDescargaGas();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_temperaturaDescarga& temperaturaDescarga();
+	JSON_entrada_configuracaoInicial_parametrosDescarga_tempoLatencia& tempoLatencia();
+
+};
+
+#define JSON_entrada_configuracaoInicial_transiente JSONBoolean
+#define JSON_entrada_configuracaoInicial_transferenciaMassa JSONInteger
+#define JSON_entrada_configuracaoInicial_CheckValve JSONInteger
+#define JSON_entrada_configuracaoInicial_Avancado_CriterioMonofasico JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_CriterioCondensacao JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_CriterioDTMin JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_CriterioBuscaFalsaCorda JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_taxaDespre JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_MedSimpPresFront JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_JTLiquidoSimple JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_limTransMass JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_RelaxaDTChoke JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_desligaPenalizaDT JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_controleDTvalv JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_CriterioConvergPerm JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_AceleraConvergPerm JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_escorregamentoCelulaContorno JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_correcaoContracorPerm JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_estabCol JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_TcorrecaoModComp_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_TcorrecaoModComp JSONArray<JSON_entrada_configuracaoInicial_Avancado_TcorrecaoModComp_Item>
+#define JSON_entrada_configuracaoInicial_Avancado_correcaoModComp_Item JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_correcaoModComp JSONArray<JSON_entrada_configuracaoInicial_Avancado_correcaoModComp_Item>
+#define JSON_entrada_configuracaoInicial_Avancado_desligaDeriTransMassDTemp JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_corrigeContSep JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_acopColAnulPermForte JSONInteger
+#define JSON_entrada_configuracaoInicial_Avancado_mudaArea JSONInteger
+#define JSON_entrada_configuracaoInicial_Avancado_nthrd JSONInteger
+#define JSON_entrada_configuracaoInicial_Avancado_nthrdMatriz JSONInteger
+#define JSON_entrada_configuracaoInicial_Avancado_miniTabDinAtraso JSONInteger
+#define JSON_entrada_configuracaoInicial_Avancado_miniTabDinDp JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_miniTabDinDt JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_Tsonico_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_Avancado_Tsonico JSONArray<JSON_entrada_configuracaoInicial_Avancado_Tsonico_Item>
+#define JSON_entrada_configuracaoInicial_Avancado_sonico_Item JSONBoolean
+#define JSON_entrada_configuracaoInicial_Avancado_sonico JSONArray<JSON_entrada_configuracaoInicial_Avancado_sonico_Item>
+
+//#define JSON_entrada_configuracaoInicial_Avancado_tempoEstabCol_Item JSONNumber
+//#define JSON_entrada_configuracaoInicial_Avancado_tempoEstabCol JSONArray<JSON_entrada_configuracaoInicial_Avancado_tempoEstabCol_Item>
+//#define JSON_entrada_configuracaoInicial_Avancado_estabCol_Item JSONBoolean
+//#define JSON_entrada_configuracaoInicial_Avancado_estabCol JSONArray<JSON_entrada_configuracaoInicial_Avancado_estabCol_Item>
+
+class JSON_entrada_configuracaoInicial_Avancado: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_Avancado();
+	JSON_entrada_configuracaoInicial_Avancado_CriterioMonofasico& CriterioMonofasico();
+	JSON_entrada_configuracaoInicial_Avancado_CriterioCondensacao& CriterioCondensacao();
+	JSON_entrada_configuracaoInicial_Avancado_CriterioDTMin& CriterioDTMin();
+	JSON_entrada_configuracaoInicial_Avancado_CriterioBuscaFalsaCorda& CriterioBuscaFalsaCorda();
+	JSON_entrada_configuracaoInicial_Avancado_taxaDespre& taxaDespre();
+	JSON_entrada_configuracaoInicial_Avancado_MedSimpPresFront& MedSimpPresFront();
+	JSON_entrada_configuracaoInicial_Avancado_JTLiquidoSimple& JTLiquidoSimple();
+	JSON_entrada_configuracaoInicial_Avancado_limTransMass& limTransMass();
+	JSON_entrada_configuracaoInicial_Avancado_RelaxaDTChoke& RelaxaDTChoke();
+	JSON_entrada_configuracaoInicial_Avancado_controleDTvalv& controleDTvalv();
+	JSON_entrada_configuracaoInicial_Avancado_desligaPenalizaDT& desligaPenalizaDT();
+	JSON_entrada_configuracaoInicial_Avancado_CriterioConvergPerm& CriterioConvergPerm();
+	JSON_entrada_configuracaoInicial_Avancado_AceleraConvergPerm& AceleraConvergPerm();
+	JSON_entrada_configuracaoInicial_Avancado_escorregamentoCelulaContorno& escorregamentoCelulaContorno();
+	JSON_entrada_configuracaoInicial_Avancado_correcaoContracorPerm& correcaoContracorPerm();
+	//JSON_entrada_configuracaoInicial_Avancado_tempoEstabCol& tempoEstabCol();
+	JSON_entrada_configuracaoInicial_Avancado_estabCol& estabCol();
+	JSON_entrada_configuracaoInicial_Avancado_TcorrecaoModComp& TcorrecaoModComp();
+	JSON_entrada_configuracaoInicial_Avancado_correcaoModComp& correcaoModComp();
+	JSON_entrada_configuracaoInicial_Avancado_desligaDeriTransMassDTemp& desligaDeriTransMassDTemp();
+	JSON_entrada_configuracaoInicial_Avancado_corrigeContSep& corrigeContSep();
+	JSON_entrada_configuracaoInicial_Avancado_acopColAnulPermForte& acopColAnulPermForte();
+	JSON_entrada_configuracaoInicial_Avancado_mudaArea& mudaArea();
+	JSON_entrada_configuracaoInicial_Avancado_nthrd& nthrd();
+	JSON_entrada_configuracaoInicial_Avancado_nthrdMatriz& nthrdMatriz();
+	JSON_entrada_configuracaoInicial_Avancado_miniTabDinAtraso& miniTabDinAtraso();
+	JSON_entrada_configuracaoInicial_Avancado_miniTabDinDp& miniTabDinDp();
+	JSON_entrada_configuracaoInicial_Avancado_miniTabDinDt& miniTabDinDt();
+	JSON_entrada_configuracaoInicial_Avancado_Tsonico& Tsonico();
+	JSON_entrada_configuracaoInicial_Avancado_sonico& sonico();
+};
+
+#define JSON_entrada_configuracaoInicial_condicaoPressao_ativo JSONBoolean
+#define JSON_entrada_configuracaoInicial_condicaoPressao_indFluido JSONInteger
+#define JSON_entrada_configuracaoInicial_condicaoPressao_pressao_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoPressao_pressao JSONArray<JSON_entrada_configuracaoInicial_condicaoPressao_pressao_Item>
+#define JSON_entrada_configuracaoInicial_condicaoPressao_temperatura_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoPressao_temperatura JSONArray<JSON_entrada_configuracaoInicial_condicaoPressao_temperatura_Item>
+#define JSON_entrada_configuracaoInicial_condicaoPressao_titulo_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoPressao_titulo JSONArray<JSON_entrada_configuracaoInicial_condicaoPressao_titulo_Item>
+#define JSON_entrada_configuracaoInicial_condicaoPressao_razaoBeta_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoPressao_razaoBeta JSONArray<JSON_entrada_configuracaoInicial_condicaoPressao_razaoBeta_Item>
+#define JSON_entrada_configuracaoInicial_condicaoPressao_tempo_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoPressao_tempo JSONArray<JSON_entrada_configuracaoInicial_condicaoPressao_tempo_Item>
+
+class JSON_entrada_configuracaoInicial_condicaoPressao: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_condicaoPressao();
+	JSON_entrada_configuracaoInicial_condicaoPressao_ativo& ativo();
+	JSON_entrada_configuracaoInicial_condicaoPressao_indFluido& indFluido();
+	JSON_entrada_configuracaoInicial_condicaoPressao_pressao& pressao();
+	JSON_entrada_configuracaoInicial_condicaoPressao_temperatura& temperatura();
+	JSON_entrada_configuracaoInicial_condicaoPressao_titulo& titulo();
+	JSON_entrada_configuracaoInicial_condicaoPressao_razaoBeta& razaoBeta();
+	JSON_entrada_configuracaoInicial_condicaoPressao_tempo& tempo();
+
+};
+
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_ativo JSONBoolean
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_pressao_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_pressao JSONArray<JSON_entrada_configuracaoInicial_condicaoVazPres_pressao_Item>
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura JSONArray<JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura_Item>
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass JSONArray<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass_Item>
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta JSONArray<JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta_Item>
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_tempo_Item JSONNumber
+#define JSON_entrada_configuracaoInicial_condicaoVazPres_tempo JSONArray<JSON_entrada_configuracaoInicial_condicaoVazPres_tempo_Item>
+
+class JSON_entrada_configuracaoInicial_condicaoVazPres: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_condicaoVazPres();
+	JSON_entrada_configuracaoInicial_condicaoVazPres_ativo& ativo();
+	JSON_entrada_configuracaoInicial_condicaoVazPres_pressao& pressao();
+	JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura& temperatura();
+	JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass& VazMass();
+	JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta& razaoBeta();
+	JSON_entrada_configuracaoInicial_condicaoVazPres_tempo& tempo();
+
+};
+
+#define JSON_entrada_configuracaoInicial_correlacoesEscorregamento JSONBoolean
+#define JSON_entrada_configuracaoInicial_correlacoesPorArranjo_estratificado JSONInteger
+#define JSON_entrada_configuracaoInicial_correlacoesPorArranjo_bolhaGolfada JSONInteger
+#define JSON_entrada_configuracaoInicial_correlacoesPorArranjo_anularChurn JSONInteger
+
+class JSON_entrada_configuracaoInicial_correlacoesPorArranjo: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_correlacoesPorArranjo();
+	JSON_entrada_configuracaoInicial_correlacoesPorArranjo_estratificado& estratificado();
+	JSON_entrada_configuracaoInicial_correlacoesPorArranjo_bolhaGolfada& bolhaGolfada();
+	JSON_entrada_configuracaoInicial_correlacoesPorArranjo_anularChurn& anularChurn();
+
+};
+
+#define JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_id JSONInteger
+#define JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_condutividade JSONNumber
+#define JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_calorEspecifico JSONNumber
+#define JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_massaEspecifica JSONNumber
+
+class JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item();
+	JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_id& id();
+	JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_condutividade& condutividade();
+	JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_calorEspecifico& calorEspecifico();
+	JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item_massaEspecifica& massaEspecifica();
+
+};
+
+#define JSON_entrada_configuracaoInicial_Formacao_Propriedades JSONArray<JSON_entrada_configuracaoInicial_Formacao_Propriedades_Item>
+#define JSON_entrada_configuracaoInicial_Formacao_TempoProducao JSONNumber
+
+class JSON_entrada_configuracaoInicial_Formacao: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial_Formacao();
+	JSON_entrada_configuracaoInicial_Formacao_Propriedades& Propriedades();
+	JSON_entrada_configuracaoInicial_Formacao_TempoProducao& TempoProducao();
+
+};
+
+
+class JSON_entrada_configuracaoInicial: public JSONObject {
+public:
+	JSON_entrada_configuracaoInicial();
+	JSON_entrada_configuracaoInicial_origemGeometria& origemGeometria();
+	JSON_entrada_configuracaoInicial_sentidoGeometriaSegueEscoamento& sentidoGeometriaSegueEscoamento();
+	JSON_entrada_configuracaoInicial_saidaClassica& saidaClassica();
+	JSON_entrada_configuracaoInicial_linhaGas& linhaGas();
+	JSON_entrada_configuracaoInicial_saidaTela& saidaTela();
+	JSON_entrada_configuracaoInicial_equilibrioTermico& equilibrioTermico();
+	JSON_entrada_configuracaoInicial_latente& latente();
+	JSON_entrada_configuracaoInicial_condlatente& condlatente();
+	JSON_entrada_configuracaoInicial_pvtsimArq& pvtsimArq();
+	JSON_entrada_configuracaoInicial_modeloFluidoTabelaFlash& modeloFluidoTabelaFlash();
+	JSON_entrada_configuracaoInicial_modeloFluidoComposicional& modeloFluidoComposicional();
+	JSON_entrada_configuracaoInicial_modeloTabelaDinamica& modeloTabelaDinamica();
+	JSON_entrada_configuracaoInicial_modeloCp& modeloCp();
+	JSON_entrada_configuracaoInicial_modeloJTL& modeloJTL();
+	JSON_entrada_configuracaoInicial_tabP& tabP();
+	JSON_entrada_configuracaoInicial_AS& AS();
+	JSON_entrada_configuracaoInicial_paralelizaAS& paralelizaAS();
+	JSON_entrada_configuracaoInicial_trackRgo& trackRgo();
+	JSON_entrada_configuracaoInicial_trackDensidadeGas& trackDensidadeGas();
+	JSON_entrada_configuracaoInicial_correcaoDenGasLivreBlackOil& correcaoDenGasLivreBlackOil();
+	JSON_entrada_configuracaoInicial_tabelaRSPB& tabelaRSPB();
+	JSON_entrada_configuracaoInicial_propFluido& propFluido();
+	JSON_entrada_configuracaoInicial_iniFluidoP& iniFluidoP();
+	JSON_entrada_configuracaoInicial_tabG& tabG();
+	JSON_entrada_configuracaoInicial_escorregamentoPermanente& escorregamentoPermanente();
+	JSON_entrada_configuracaoInicial_escorregamentoTransiente& escorregamentoTransiente();
+	JSON_entrada_configuracaoInicial_mapaArranjo& mapaArranjo();
+	JSON_entrada_configuracaoInicial_condicaoInicial& condicaoInicial();
+	JSON_entrada_configuracaoInicial_ordemperm& ordemperm();
+	JSON_entrada_configuracaoInicial_SnapShotArq& SnapShotArq();
+	JSON_entrada_configuracaoInicial_HISEP& HISEP();
+	JSON_entrada_configuracaoInicial_SalinidadeFluido& SalinidadeFluido();
+	JSON_entrada_configuracaoInicial_comprimentoMedidoInterfaceLinhaGas& comprimentoMedidoInterfaceLinhaGas();
+	JSON_entrada_configuracaoInicial_comprimentoMedidoInterfaceLinhaProd& comprimentoMedidoInterfaceLinhaProd();
+	JSON_entrada_configuracaoInicial_controleDescarga& controleDescarga();
+	JSON_entrada_configuracaoInicial_parametrosDescarga& parametrosDescarga();
+	JSON_entrada_configuracaoInicial_transiente& transiente();
+	JSON_entrada_configuracaoInicial_transferenciaMassa& transferenciaMassa();
+	JSON_entrada_configuracaoInicial_CheckValve& CheckValve();
+	JSON_entrada_configuracaoInicial_Avancado& Avancado();
+	JSON_entrada_configuracaoInicial_condicaoPressao& condicaoPressao();
+	JSON_entrada_configuracaoInicial_condicaoVazPres& condicaoVazPres();
+	JSON_entrada_configuracaoInicial_correlacoesEscorregamento& correlacoesEscorregamento();
+	JSON_entrada_configuracaoInicial_correlacoesPorArranjo& correlacoesPorArranjo();
+	JSON_entrada_configuracaoInicial_Formacao& Formacao();
+	JSON_entrada_configuracaoInicial_tipoFluido& tipoFluido();
+	JSON_entrada_configuracaoInicial_tempReves& tempReves();
+	JSON_entrada_configuracaoInicial_razCompGasReves& razCompGasReves();
+	JSON_entrada_configuracaoInicial_chutePerm& chutePerm();
+	JSON_entrada_configuracaoInicial_modoXY& modoXY();
+	JSON_entrada_configuracaoInicial_xProdInicio& xProdInicio();
+	JSON_entrada_configuracaoInicial_yProdInicio& yProdInicio();
+	JSON_entrada_configuracaoInicial_xServInicio& xServInicio();
+	JSON_entrada_configuracaoInicial_yServInicio& yServInicio();
+	JSON_entrada_configuracaoInicial_modoParafina& modoParafina();
+	JSON_entrada_configuracaoInicial_tipoModeloDrift& tipoModeloDrift();
+	JSON_entrada_configuracaoInicial_modoDifus3D& modoDifus3D();
+	JSON_entrada_configuracaoInicial_threadP3D& threadP3D();
+	JSON_entrada_configuracaoInicial_modoDifus3DJson& modoDifus3DJson();
+	//JSON_entrada_configuracaoInicial_redutorAtritoCalc& redutorAtritoCalc();
+
+};
+
+#define JSON_entrada_tabela_ativo JSONBoolean
+#define JSON_entrada_tabela_nPontos JSONInteger
+#define JSON_entrada_tabela_pressaoMaxima JSONNumber
+#define JSON_entrada_tabela_pressaoMinima JSONNumber
+#define JSON_entrada_tabela_temperaturaMaxima JSONNumber
+#define JSON_entrada_tabela_temperaturaMinima JSONNumber
+
+class JSON_entrada_tabela: public JSONObject {
+public:
+	JSON_entrada_tabela();
+	JSON_entrada_tabela_ativo& ativo();
+	JSON_entrada_tabela_nPontos& nPontos();
+	JSON_entrada_tabela_pressaoMaxima& pressaoMaxima();
+	JSON_entrada_tabela_pressaoMinima& pressaoMinima();
+	JSON_entrada_tabela_temperaturaMaxima& temperaturaMaxima();
+	JSON_entrada_tabela_temperaturaMinima& temperaturaMinima();
+
+};
+
+
+#define JSON_entrada_parafina_arquivoWax JSONString
+#define JSON_entrada_parafina_usuarioPorosidade JSONBoolean
+#define JSON_entrada_parafina_porosidade JSONNumber
+#define JSON_entrada_parafina_usuarioC2C3 JSONBoolean
+#define JSON_entrada_parafina_c2 JSONNumber
+#define JSON_entrada_parafina_c3 JSONNumber
+#define JSON_entrada_parafina_usuarioDifus JSONBoolean
+#define JSON_entrada_parafina_alteraViscFlu JSONBoolean
+#define JSON_entrada_parafina_difus JSONNumber
+#define JSON_entrada_parafina_rugosidade JSONNumber
+#define JSON_entrada_parafina_multVis JSONNumber
+#define JSON_entrada_parafina_DmultipWax JSONNumber
+#define JSON_entrada_parafina_EmultipWax JSONNumber
+#define JSON_entrada_parafina_FmultipWax JSONNumber
+
+class JSON_entrada_parafina: public JSONObject {
+public:
+	JSON_entrada_parafina();
+	JSON_entrada_parafina_arquivoWax& arquivoWax();
+	JSON_entrada_parafina_usuarioPorosidade& usuarioPorosidade();
+	JSON_entrada_parafina_porosidade& porosidade();
+	JSON_entrada_parafina_usuarioC2C3& usuarioC2C3();
+	JSON_entrada_parafina_c2& c2();
+	JSON_entrada_parafina_c3& c3();
+	JSON_entrada_parafina_usuarioDifus& usuarioDifus();
+	JSON_entrada_parafina_alteraViscFlu& alteraViscFlu();
+	JSON_entrada_parafina_difus& difus();
+	JSON_entrada_parafina_rugosidade& rugosidade();
+	JSON_entrada_parafina_multVis& multVis();
+	JSON_entrada_parafina_DmultipWax& DmultipWax();
+	JSON_entrada_parafina_EmultipWax& EmultipWax();
+	JSON_entrada_parafina_FmultipWax& FmultipWax();
+};
+
+
+#define JSON_entrada_fluidoGas_ativo JSONBoolean
+#define JSON_entrada_fluidoGas_densidadeGas JSONNumber
+#define JSON_entrada_fluidoGas_fracCO2 JSONNumber
+#define JSON_entrada_fluidoGas_correlacaoCritica JSONInteger
+#define JSON_entrada_fluidoGas_fracMolarUsuario JSONBoolean
+#define JSON_entrada_fluidoGas_fracMolar_Item JSONNumber
+#define JSON_entrada_fluidoGas_fracMolar JSONArray<JSON_entrada_fluidoGas_fracMolar_Item>
+
+class JSON_entrada_fluidoGas: public JSONObject {
+public:
+	JSON_entrada_fluidoGas();
+	JSON_entrada_fluidoGas_ativo& ativo();
+	JSON_entrada_fluidoGas_densidadeGas& densidadeGas();
+	JSON_entrada_fluidoGas_fracCO2& fracCO2();
+	JSON_entrada_fluidoGas_correlacaoCritica& correlacaoCritica();
+	JSON_entrada_fluidoGas_fracMolarUsuario& fracMolarUsuario();
+	JSON_entrada_fluidoGas_fracMolar& fracMolar();
+
+};
+
+#define JSON_entrada_fluidosProducao_Item_ativo JSONBoolean
+#define JSON_entrada_fluidosProducao_Item_id JSONInteger
+#define JSON_entrada_fluidosProducao_Item_api JSONNumber
+#define JSON_entrada_fluidosProducao_Item_rgo JSONNumber
+#define JSON_entrada_fluidosProducao_Item_densidadeGas JSONNumber
+#define JSON_entrada_fluidosProducao_Item_bsw JSONNumber
+#define JSON_entrada_fluidosProducao_Item_densidadeAgua JSONNumber
+#define JSON_entrada_fluidosProducao_Item_tipoEmul JSONInteger
+#define JSON_entrada_fluidosProducao_Item_coefAModeloExp JSONNumber
+#define JSON_entrada_fluidosProducao_Item_coefBModeloExp JSONNumber
+#define JSON_entrada_fluidosProducao_Item_PHI100 JSONNumber
+#define JSON_entrada_fluidosProducao_Item_bswCorte JSONNumber
+#define JSON_entrada_fluidosProducao_Item_BSWVec_Item JSONNumber
+#define JSON_entrada_fluidosProducao_Item_BSWVec JSONArray<JSON_entrada_fluidosProducao_Item_BSWVec_Item>
+#define JSON_entrada_fluidosProducao_Item_emulVec_Item JSONNumber
+#define JSON_entrada_fluidosProducao_Item_emulVec JSONArray<JSON_entrada_fluidosProducao_Item_emulVec_Item>
+#define JSON_entrada_fluidosProducao_Item_fracCO2 JSONNumber
+#define JSON_entrada_fluidosProducao_Item_correlacaoCritica JSONInteger
+#define JSON_entrada_fluidosProducao_Item_modeloRsPb JSONInteger
+#define JSON_entrada_fluidosProducao_Item_modeloOleoMorto JSONInteger
+#define JSON_entrada_fluidosProducao_Item_temp1 JSONNumber
+#define JSON_entrada_fluidosProducao_Item_visc1 JSONNumber
+#define JSON_entrada_fluidosProducao_Item_temp2 JSONNumber
+#define JSON_entrada_fluidosProducao_Item_visc2 JSONNumber
+#define JSON_entrada_fluidosProducao_Item_tempOleoMorto_Item JSONNumber
+#define JSON_entrada_fluidosProducao_Item_tempOleoMorto JSONArray<JSON_entrada_fluidosProducao_Item_tempOleoMorto_Item>
+#define JSON_entrada_fluidosProducao_Item_viscOleoMorto_Item JSONNumber
+#define JSON_entrada_fluidosProducao_Item_viscOleoMorto JSONArray<JSON_entrada_fluidosProducao_Item_viscOleoMorto_Item>
+#define JSON_entrada_fluidosProducao_Item_modeloOleoVivo JSONInteger
+#define JSON_entrada_fluidosProducao_Item_modeloOleoSubSaturado JSONInteger
+#define JSON_entrada_fluidosProducao_Item_modeloViscBlackOil JSONInteger
+#define JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil JSONInteger
+#define JSON_entrada_fluidosProducao_Item_fracMolarUsuario JSONBoolean
+#define JSON_entrada_fluidosProducao_Item_fracMolar_Item JSONNumber
+#define JSON_entrada_fluidosProducao_Item_fracMolar JSONArray<JSON_entrada_fluidosProducao_Item_fracMolar_Item>
+#define JSON_entrada_fluidosProducao_Item_RGOCompUsuario JSONBoolean
+
+class JSON_entrada_fluidosProducao_Item: public JSONObject {
+public:
+	JSON_entrada_fluidosProducao_Item();
+	JSON_entrada_fluidosProducao_Item_ativo& ativo();
+	JSON_entrada_fluidosProducao_Item_id& id();
+	JSON_entrada_fluidosProducao_Item_api& api();
+	JSON_entrada_fluidosProducao_Item_rgo& rgo();
+	JSON_entrada_fluidosProducao_Item_densidadeGas& densidadeGas();
+	JSON_entrada_fluidosProducao_Item_bsw& bsw();
+	JSON_entrada_fluidosProducao_Item_densidadeAgua& densidadeAgua();
+	JSON_entrada_fluidosProducao_Item_tipoEmul& tipoEmul();
+	JSON_entrada_fluidosProducao_Item_coefAModeloExp& coefAModeloExp();
+	JSON_entrada_fluidosProducao_Item_coefBModeloExp& coefBModeloExp();
+	JSON_entrada_fluidosProducao_Item_PHI100& PHI100();
+	JSON_entrada_fluidosProducao_Item_bswCorte& bswCorte();
+	JSON_entrada_fluidosProducao_Item_BSWVec& BSWVec();
+	JSON_entrada_fluidosProducao_Item_emulVec& emulVec();
+	JSON_entrada_fluidosProducao_Item_fracCO2& fracCO2();
+	JSON_entrada_fluidosProducao_Item_correlacaoCritica& correlacaoCritica();
+	JSON_entrada_fluidosProducao_Item_modeloRsPb& modeloRsPb();
+	JSON_entrada_fluidosProducao_Item_modeloOleoMorto& modeloOleoMorto();
+	JSON_entrada_fluidosProducao_Item_temp1& temp1();
+	JSON_entrada_fluidosProducao_Item_visc1& visc1();
+	JSON_entrada_fluidosProducao_Item_temp2& temp2();
+	JSON_entrada_fluidosProducao_Item_visc2& visc2();
+	JSON_entrada_fluidosProducao_Item_tempOleoMorto& tempOleoMorto();
+	JSON_entrada_fluidosProducao_Item_viscOleoMorto& viscOleoMorto();
+	JSON_entrada_fluidosProducao_Item_modeloOleoVivo& modeloOleoVivo();
+	JSON_entrada_fluidosProducao_Item_modeloOleoSubSaturado& modeloOleoSubSaturado();
+	JSON_entrada_fluidosProducao_Item_modeloViscBlackOil& modeloViscBlackOil();
+	JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil& modeloAguaBlackOil();
+	JSON_entrada_fluidosProducao_Item_fracMolarUsuario& fracMolarUsuario();
+	JSON_entrada_fluidosProducao_Item_fracMolar& fracMolar();
+	JSON_entrada_fluidosProducao_Item_RGOCompUsuario& RGOCompUsuario();
+
+};
+
+#define JSON_entrada_fluidosProducao JSONArray<JSON_entrada_fluidosProducao_Item>
+#define JSON_entrada_fluidoComplementar_ativo JSONBoolean
+#define JSON_entrada_fluidoComplementar_massaEspecifica JSONNumber
+#define JSON_entrada_fluidoComplementar_compP JSONNumber
+#define JSON_entrada_fluidoComplementar_compT JSONNumber
+#define JSON_entrada_fluidoComplementar_tensup JSONNumber
+#define JSON_entrada_fluidoComplementar_calorEspecifico JSONNumber
+#define JSON_entrada_fluidoComplementar_condutividade JSONNumber
+#define JSON_entrada_fluidoComplementar_temp1 JSONNumber
+#define JSON_entrada_fluidoComplementar_visc1 JSONNumber
+#define JSON_entrada_fluidoComplementar_temp2 JSONNumber
+#define JSON_entrada_fluidoComplementar_visc2 JSONNumber
+#define JSON_entrada_fluidoComplementar_salinidade JSONNumber
+#define JSON_entrada_fluidoComplementar_tipoF JSONInteger
+
+class JSON_entrada_fluidoComplementar: public JSONObject {
+public:
+	JSON_entrada_fluidoComplementar();
+	JSON_entrada_fluidoComplementar_ativo& ativo();
+	JSON_entrada_fluidoComplementar_massaEspecifica& massaEspecifica();
+	JSON_entrada_fluidoComplementar_compP& compP();
+	JSON_entrada_fluidoComplementar_compT& compT();
+	JSON_entrada_fluidoComplementar_tensup& tensup();
+	JSON_entrada_fluidoComplementar_calorEspecifico& calorEspecifico();
+	JSON_entrada_fluidoComplementar_condutividade& condutividade();
+	JSON_entrada_fluidoComplementar_temp1& temp1();
+	JSON_entrada_fluidoComplementar_visc1& visc1();
+	JSON_entrada_fluidoComplementar_temp2& temp2();
+	JSON_entrada_fluidoComplementar_visc2& visc2();
+	JSON_entrada_fluidoComplementar_salinidade& salinidade();
+	JSON_entrada_fluidoComplementar_tipoF& tipoF();
+
+
+};
+
+#define JSON_entrada_valvula_Item_ativo JSONBoolean
+#define JSON_entrada_valvula_Item_id JSONInteger
+#define JSON_entrada_valvula_Item_curvaCV JSONInteger
+#define JSON_entrada_valvula_Item_curvaDinamic JSONInteger
+#define JSON_entrada_valvula_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_valvula_Item_tempo_Item JSONNumber
+#define JSON_entrada_valvula_Item_tempo JSONArray<JSON_entrada_valvula_Item_tempo_Item>
+#define JSON_entrada_valvula_Item_abertura_Item JSONNumber
+#define JSON_entrada_valvula_Item_abertura JSONArray<JSON_entrada_valvula_Item_abertura_Item>
+#define JSON_entrada_valvula_Item_cd JSONNumber
+#define JSON_entrada_valvula_Item_x1_Item JSONNumber
+#define JSON_entrada_valvula_Item_x1 JSONArray<JSON_entrada_valvula_Item_x1_Item>
+#define JSON_entrada_valvula_Item_cv1_Item JSONNumber
+#define JSON_entrada_valvula_Item_cv1 JSONArray<JSON_entrada_valvula_Item_cv1_Item>
+
+class JSON_entrada_valvula_Item: public JSONObject {
+public:
+	JSON_entrada_valvula_Item();
+	JSON_entrada_valvula_Item_ativo& ativo();
+	JSON_entrada_valvula_Item_id& id();
+	JSON_entrada_valvula_Item_curvaCV& curvaCV();
+	JSON_entrada_valvula_Item_curvaDinamic& curvaDinamic();
+	JSON_entrada_valvula_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_valvula_Item_tempo& tempo();
+	JSON_entrada_valvula_Item_abertura& abertura();
+	JSON_entrada_valvula_Item_cd& cd();
+	JSON_entrada_valvula_Item_x1& x1();
+	JSON_entrada_valvula_Item_cv1& cv1();
+};
+
+#define JSON_entrada_valvula JSONArray<JSON_entrada_valvula_Item>
+
+#define JSON_entrada_fonteLiquido_Item_ativo JSONBoolean
+#define JSON_entrada_fonteLiquido_Item_id JSONInteger
+#define JSON_entrada_fonteLiquido_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fonteLiquido_Item_tempo_Item JSONNumber
+#define JSON_entrada_fonteLiquido_Item_tempo JSONArray<JSON_entrada_fonteLiquido_Item_tempo_Item>
+#define JSON_entrada_fonteLiquido_Item_temperatura_Item JSONNumber
+#define JSON_entrada_fonteLiquido_Item_temperatura JSONArray<JSON_entrada_fonteLiquido_Item_temperatura_Item>
+#define JSON_entrada_fonteLiquido_Item_beta_Item JSONNumber
+#define JSON_entrada_fonteLiquido_Item_beta JSONArray<JSON_entrada_fonteLiquido_Item_beta_Item>
+#define JSON_entrada_fonteLiquido_Item_vazaoLiquido_Item JSONNumber
+#define JSON_entrada_fonteLiquido_Item_vazaoLiquido JSONArray<JSON_entrada_fonteLiquido_Item_vazaoLiquido_Item>
+#define JSON_entrada_fonteLiquido_Item_indiFluidoPro JSONInteger
+
+class JSON_entrada_fonteLiquido_Item: public JSONObject {
+public:
+	JSON_entrada_fonteLiquido_Item();
+	JSON_entrada_fonteLiquido_Item_ativo& ativo();
+	JSON_entrada_fonteLiquido_Item_id& id();
+	JSON_entrada_fonteLiquido_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_fonteLiquido_Item_tempo& tempo();
+	JSON_entrada_fonteLiquido_Item_temperatura& temperatura();
+	JSON_entrada_fonteLiquido_Item_beta& beta();
+	JSON_entrada_fonteLiquido_Item_vazaoLiquido& vazaoLiquido();
+	JSON_entrada_fonteLiquido_Item_indiFluidoPro& indiFluidoPro();
+
+};
+
+#define JSON_entrada_fonteLiquido JSONArray<JSON_entrada_fonteLiquido_Item>
+#define JSON_entrada_fonteMassa_Item_ativo JSONBoolean
+#define JSON_entrada_fonteMassa_Item_id JSONInteger
+#define JSON_entrada_fonteMassa_Item_tipoTermo JSONInteger
+#define JSON_entrada_fonteMassa_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fonteMassa_Item_tempo_Item JSONNumber
+#define JSON_entrada_fonteMassa_Item_tempo JSONArray<JSON_entrada_fonteMassa_Item_tempo_Item>
+#define JSON_entrada_fonteMassa_Item_temperatura_Item JSONNumber
+#define JSON_entrada_fonteMassa_Item_temperatura JSONArray<JSON_entrada_fonteMassa_Item_temperatura_Item>
+#define JSON_entrada_fonteMassa_Item_vazaoMassT_Item JSONNumber
+#define JSON_entrada_fonteMassa_Item_vazaoMassT JSONArray<JSON_entrada_fonteMassa_Item_vazaoMassT_Item>
+#define JSON_entrada_fonteMassa_Item_vazaoMassC_Item JSONNumber
+#define JSON_entrada_fonteMassa_Item_vazaoMassC JSONArray<JSON_entrada_fonteMassa_Item_vazaoMassC_Item>
+#define JSON_entrada_fonteMassa_Item_vazaoMassG_Item JSONNumber
+#define JSON_entrada_fonteMassa_Item_vazaoMassG JSONArray<JSON_entrada_fonteMassa_Item_vazaoMassG_Item>
+#define JSON_entrada_fonteMassa_Item_indiFluidoPro JSONInteger
+
+class JSON_entrada_fonteMassa_Item: public JSONObject {
+public:
+	JSON_entrada_fonteMassa_Item();
+	JSON_entrada_fonteMassa_Item_ativo& ativo();
+	JSON_entrada_fonteMassa_Item_id& id();
+	JSON_entrada_fonteMassa_Item_tipoTermo& tipoTermo();
+	JSON_entrada_fonteMassa_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_fonteMassa_Item_tempo& tempo();
+	JSON_entrada_fonteMassa_Item_temperatura& temperatura();
+	JSON_entrada_fonteMassa_Item_vazaoMassT& vazaoMassT();
+	JSON_entrada_fonteMassa_Item_vazaoMassC& vazaoMassC();
+	JSON_entrada_fonteMassa_Item_vazaoMassG& vazaoMassG();
+	JSON_entrada_fonteMassa_Item_indiFluidoPro& indiFluidoPro();
+
+};
+
+#define JSON_entrada_fonteMassa JSONArray<JSON_entrada_fonteMassa_Item>
+#define JSON_entrada_fonteGas_Item_ativo JSONBoolean
+#define JSON_entrada_fonteGas_Item_id JSONInteger
+#define JSON_entrada_fonteGas_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fonteGas_Item_tempo_Item JSONNumber
+#define JSON_entrada_fonteGas_Item_tempo JSONArray<JSON_entrada_fonteGas_Item_tempo_Item>
+#define JSON_entrada_fonteGas_Item_temperatura_Item JSONNumber
+#define JSON_entrada_fonteGas_Item_temperatura JSONArray<JSON_entrada_fonteGas_Item_temperatura_Item>
+#define JSON_entrada_fonteGas_Item_vazaoGas_Item JSONNumber
+#define JSON_entrada_fonteGas_Item_vazaoGas JSONArray<JSON_entrada_fonteGas_Item_vazaoGas_Item>
+#define JSON_entrada_fonteGas_Item_vazaoFluidoComplementar_Item JSONNumber
+#define JSON_entrada_fonteGas_Item_vazaoFluidoComplementar JSONArray<JSON_entrada_fonteGas_Item_vazaoFluidoComplementar_Item>
+#define JSON_entrada_fonteGas_Item_seco JSONBoolean
+#define JSON_entrada_fonteGas_Item_indiFluidoPro JSONInteger
+
+class JSON_entrada_fonteGas_Item: public JSONObject {
+public:
+	JSON_entrada_fonteGas_Item();
+	JSON_entrada_fonteGas_Item_ativo& ativo();
+	JSON_entrada_fonteGas_Item_id& id();
+	JSON_entrada_fonteGas_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_fonteGas_Item_tempo& tempo();
+	JSON_entrada_fonteGas_Item_temperatura& temperatura();
+	JSON_entrada_fonteGas_Item_vazaoGas& vazaoGas();
+	JSON_entrada_fonteGas_Item_vazaoFluidoComplementar& vazaoFluidoComplementar();
+	JSON_entrada_fonteGas_Item_seco& seco();
+	JSON_entrada_fonteGas_Item_indiFluidoPro& indiFluidoPro();
+};
+
+#define JSON_entrada_fonteGas JSONArray<JSON_entrada_fonteGas_Item>
+
+#define JSON_entrada_fontePoroRadial_Item_ativo JSONBoolean
+#define JSON_entrada_fontePoroRadial_Item_id JSONInteger
+#define JSON_entrada_fontePoroRadial_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fontePoroRadial_Item_arquivo JSONString
+
+
+class JSON_entrada_fontePoroRadial_Item: public JSONObject {
+public:
+	JSON_entrada_fontePoroRadial_Item();
+	JSON_entrada_fontePoroRadial_Item_ativo& ativo();
+	JSON_entrada_fontePoroRadial_Item_id& id();
+	JSON_entrada_fontePoroRadial_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_fontePoroRadial_Item_arquivo& arquivo();
+};
+
+#define JSON_entrada_fontePoroRadial JSONArray<JSON_entrada_fontePoroRadial_Item>
+
+#define JSON_entrada_fontePoro2D_Item_ativo JSONBoolean
+#define JSON_entrada_fontePoro2D_Item_id JSONInteger
+#define JSON_entrada_fontePoro2D_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fontePoro2D_Item_arquivo JSONString
+
+
+class JSON_entrada_fontePoro2D_Item: public JSONObject {
+public:
+	JSON_entrada_fontePoro2D_Item();
+	JSON_entrada_fontePoro2D_Item_ativo& ativo();
+	JSON_entrada_fontePoro2D_Item_id& id();
+	JSON_entrada_fontePoro2D_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_fontePoro2D_Item_arquivo& arquivo();
+};
+
+#define JSON_entrada_fontePoro2D JSONArray<JSON_entrada_fontePoro2D_Item>
+
+#define JSON_entrada_fonteGasLift_Item_ativo JSONBoolean
+#define JSON_entrada_fonteGasLift_Item_colunaEanular JSONBoolean
+#define JSON_entrada_fonteGasLift_Item_id JSONInteger
+#define JSON_entrada_fonteGasLift_Item_comprimentoMedidoProducao JSONNumber
+#define JSON_entrada_fonteGasLift_Item_comprimentoMedidoServico JSONNumber
+#define JSON_entrada_fonteGasLift_Item_tipoValvula JSONInteger
+#define JSON_entrada_fonteGasLift_Item_diametroOrificio JSONNumber
+#define JSON_entrada_fonteGasLift_Item_cdvgl JSONNumber
+#define JSON_entrada_fonteGasLift_Item_frecupera JSONNumber
+#define JSON_entrada_fonteGasLift_Item_cdvLiq JSONNumber
+#define JSON_entrada_fonteGasLift_Item_frecuperaLiq JSONNumber
+#define JSON_entrada_fonteGasLift_Item_razaoArea JSONNumber
+#define JSON_entrada_fonteGasLift_Item_pressaoCalibracao JSONNumber
+#define JSON_entrada_fonteGasLift_Item_temperaturaCalibracao JSONNumber
+#define JSON_entrada_fonteGasLift_Item_diametroExterno JSONNumber
+
+class JSON_entrada_fonteGasLift_Item: public JSONObject {
+public:
+	JSON_entrada_fonteGasLift_Item();
+	JSON_entrada_fonteGasLift_Item_ativo& ativo();
+	JSON_entrada_fonteGasLift_Item_colunaEanular& colunaEanular();
+	JSON_entrada_fonteGasLift_Item_id& id();
+	JSON_entrada_fonteGasLift_Item_comprimentoMedidoProducao& comprimentoMedidoProducao();
+	JSON_entrada_fonteGasLift_Item_comprimentoMedidoServico& comprimentoMedidoServico();
+	JSON_entrada_fonteGasLift_Item_tipoValvula& tipoValvula();
+	JSON_entrada_fonteGasLift_Item_diametroOrificio& diametroOrificio();
+	JSON_entrada_fonteGasLift_Item_cdvgl& cdvgl();
+	JSON_entrada_fonteGasLift_Item_frecupera& frecupera();
+	JSON_entrada_fonteGasLift_Item_cdvLiq& cdvLiq();
+	JSON_entrada_fonteGasLift_Item_frecuperaLiq& frecuperaLiq();
+	JSON_entrada_fonteGasLift_Item_razaoArea& razaoArea();
+	JSON_entrada_fonteGasLift_Item_pressaoCalibracao& pressaoCalibracao();
+	JSON_entrada_fonteGasLift_Item_temperaturaCalibracao& temperaturaCalibracao();
+	JSON_entrada_fonteGasLift_Item_diametroExterno& diametroExterno();
+
+};
+
+#define JSON_entrada_fonteGasLift JSONArray<JSON_entrada_fonteGasLift_Item>
+#define JSON_entrada_material_Item_ativo JSONBoolean
+#define JSON_entrada_material_Item_id JSONInteger
+#define JSON_entrada_material_Item_tipo JSONInteger
+#define JSON_entrada_material_Item_condutividade JSONNumber
+#define JSON_entrada_material_Item_calorEspecifico JSONNumber
+#define JSON_entrada_material_Item_rho JSONNumber
+#define JSON_entrada_material_Item_visc JSONNumber
+#define JSON_entrada_material_Item_beta JSONNumber
+
+class JSON_entrada_material_Item: public JSONObject {
+public:
+	JSON_entrada_material_Item();
+	JSON_entrada_material_Item_ativo& ativo();
+	JSON_entrada_material_Item_id& id();
+	JSON_entrada_material_Item_tipo& tipo();
+	JSON_entrada_material_Item_condutividade& condutividade();
+	JSON_entrada_material_Item_calorEspecifico& calorEspecifico();
+	JSON_entrada_material_Item_rho& rho();
+	JSON_entrada_material_Item_visc& visc();
+	JSON_entrada_material_Item_beta& beta();
+
+};
+
+#define JSON_entrada_material JSONArray<JSON_entrada_material_Item>
+#define JSON_entrada_secaoTransversal_Item_ativo JSONBoolean
+#define JSON_entrada_secaoTransversal_Item_id JSONInteger
+#define JSON_entrada_secaoTransversal_Item_anular JSONBoolean
+#define JSON_entrada_secaoTransversal_Item_diametroExterno JSONNumber
+#define JSON_entrada_secaoTransversal_Item_diametroInterno JSONNumber
+#define JSON_entrada_secaoTransversal_Item_rugosidade JSONNumber
+#define JSON_entrada_secaoTransversal_Item_camadas_Item_tipoMedicaoCamada JSONString
+#define JSON_entrada_secaoTransversal_Item_camadas_Item_diametro JSONNumber
+#define JSON_entrada_secaoTransversal_Item_camadas_Item_espessura JSONNumber
+#define JSON_entrada_secaoTransversal_Item_camadas_Item_discretizacao JSONInteger
+#define JSON_entrada_secaoTransversal_Item_camadas_Item_idMaterial JSONInteger
+
+class JSON_entrada_secaoTransversal_Item_camadas_Item: public JSONObject {
+public:
+	JSON_entrada_secaoTransversal_Item_camadas_Item();
+	JSON_entrada_secaoTransversal_Item_camadas_Item_tipoMedicaoCamada& tipoMedicaoCamada();
+	JSON_entrada_secaoTransversal_Item_camadas_Item_diametro& diametro();
+	JSON_entrada_secaoTransversal_Item_camadas_Item_espessura& espessura();
+	JSON_entrada_secaoTransversal_Item_camadas_Item_discretizacao& discretizacao();
+	JSON_entrada_secaoTransversal_Item_camadas_Item_idMaterial& idMaterial();
+
+};
+
+#define JSON_entrada_secaoTransversal_Item_camadas JSONArray<JSON_entrada_secaoTransversal_Item_camadas_Item>
+
+class JSON_entrada_secaoTransversal_Item: public JSONObject {
+public:
+	JSON_entrada_secaoTransversal_Item();
+	JSON_entrada_secaoTransversal_Item_ativo& ativo();
+	JSON_entrada_secaoTransversal_Item_id& id();
+	JSON_entrada_secaoTransversal_Item_anular& anular();
+	JSON_entrada_secaoTransversal_Item_diametroExterno& diametroExterno();
+	JSON_entrada_secaoTransversal_Item_diametroInterno& diametroInterno();
+	JSON_entrada_secaoTransversal_Item_rugosidade& rugosidade();
+	JSON_entrada_secaoTransversal_Item_camadas& camadas();
+
+};
+
+#define JSON_entrada_secaoTransversal JSONArray<JSON_entrada_secaoTransversal_Item>
+#define JSON_entrada_tempo_tempoFinal JSONNumber
+
+#define JSON_entrada_tempo_tempos_Item JSONNumber
+#define JSON_entrada_tempo_tempos JSONArray<JSON_entrada_tempo_tempos_Item>
+#define JSON_entrada_tempo_dtmax_Item JSONNumber
+#define JSON_entrada_tempo_dtmax JSONArray<JSON_entrada_tempo_dtmax_Item>
+
+#define JSON_entrada_tempo_tempoSegrega_Item JSONNumber
+#define JSON_entrada_tempo_tempoSegrega JSONArray<JSON_entrada_tempo_tempoSegrega_Item>
+#define JSON_entrada_tempo_segrega_Item JSONInteger
+#define JSON_entrada_tempo_segrega JSONArray<JSON_entrada_tempo_segrega_Item>
+
+#define JSON_entrada_tempo_gravaMomento_Item JSONNumber
+#define JSON_entrada_tempo_gravaMomento JSONArray<JSON_entrada_tempo_gravaMomento_Item>
+
+class JSON_entrada_tempo: public JSONObject {
+public:
+	JSON_entrada_tempo();
+	JSON_entrada_tempo_tempoFinal& tempoFinal();
+	JSON_entrada_tempo_tempos& tempos();
+	JSON_entrada_tempo_dtmax& dtmax();
+	JSON_entrada_tempo_tempoSegrega& tempoSegrega();
+	JSON_entrada_tempo_segrega& segrega();
+	JSON_entrada_tempo_gravaMomento& gravaMomento();
+};
+
+
+//#define JSON_entrada_gravaMomento_ativo JSONBoolean
+//#define JSON_entrada_gravaMomento_tempos_Item JSONNumber
+//#define JSON_entrada_gravaMomento_tempos JSONArray<JSON_entrada_gravaMomento_tempos_Item>
+
+//class JSON_entrada_gravaMomento: public JSONObject {
+//public:
+//	JSON_entrada_gravaMomento();
+	//JSON_entrada_gravaMomento_ativo& ativo();
+//	JSON_entrada_gravaMomento_tempos& tempos();
+//};
+
+#define JSON_entrada_dutosProducao_Item_ativo JSONBoolean
+#define JSON_entrada_dutosProducao_Item_id JSONInteger
+#define JSON_entrada_dutosProducao_Item_correlacaoMR2 JSONInteger
+#define JSON_entrada_dutosProducao_Item_angulo JSONNumber
+#define JSON_entrada_dutosProducao_Item_idCorte JSONInteger
+#define JSON_entrada_dutosProducao_Item_idFormacao JSONInteger
+#define JSON_entrada_dutosProducao_Item_ambienteExterno JSONInteger
+#define JSON_entrada_dutosProducao_Item_direcaoConveccao JSONInteger
+#define JSON_entrada_dutosProducao_Item_acoplamentoTermico JSONInteger
+#define JSON_entrada_dutosProducao_Item_acoplamentoTermicoRedeParalela JSONInteger
+#define JSON_entrada_dutosProducao_Item_agrupamento JSONBoolean
+#define JSON_entrada_dutosProducao_Item_discretizacao_Item_nCelulas JSONInteger
+#define JSON_entrada_dutosProducao_Item_discretizacao_Item_comprimento JSONNumber
+#define JSON_entrada_dutosProducao_Item_dxCelula_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_dxCelula JSONArray<JSON_entrada_dutosProducao_Item_dxCelula_Item>
+#define JSON_entrada_dutosProducao_Item_dPdLHidro JSONInteger
+#define JSON_entrada_dutosProducao_Item_dPdLFric JSONInteger
+#define JSON_entrada_dutosProducao_Item_dTdL JSONInteger
+#define JSON_entrada_dutosProducao_Item_difusTerm2D JSONInteger
+#define JSON_entrada_dutosProducao_Item_difusTerm2DJSON JSONString
+#define JSON_entrada_dutosProducao_Item_difusTerm3D_Item JSONInteger
+#define JSON_entrada_dutosProducao_Item_difusTerm3D JSONArray<JSON_entrada_dutosProducao_Item_difusTerm3D_Item>
+#define JSON_entrada_dutosProducao_Item_difusTerm3DFE_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_difusTerm3DFE JSONArray<JSON_entrada_dutosProducao_Item_difusTerm3DFE_Item>
+#define JSON_entrada_dutosProducao_Item_difusTerm3DAcop_Item JSONString
+#define JSON_entrada_dutosProducao_Item_difusTerm3DAcop JSONArray<JSON_entrada_dutosProducao_Item_difusTerm3DAcop_Item>
+#define JSON_entrada_dutosProducao_Item_xCoor JSONNumber
+#define JSON_entrada_dutosProducao_Item_yCoor JSONNumber
+#define JSON_entrada_dutosProducao_Item_nCelulas_XY JSONInteger
+
+class JSON_entrada_dutosProducao_Item_discretizacao_Item: public JSONObject {
+public:
+	JSON_entrada_dutosProducao_Item_discretizacao_Item();
+	JSON_entrada_dutosProducao_Item_discretizacao_Item_nCelulas& nCelulas();
+	JSON_entrada_dutosProducao_Item_discretizacao_Item_comprimento& comprimento();
+
+};
+
+#define JSON_entrada_dutosProducao_Item_discretizacao JSONArray<JSON_entrada_dutosProducao_Item_discretizacao_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_compInter_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_compInter JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_compInter_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_temp_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_temp JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_temp_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_pressao_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_pressao JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_pressao_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_holdup_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_holdup JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_holdup_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_bet_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_bet JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_bet_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_uls_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_uls JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_uls_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_ugs_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_ugs JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_ugs_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_tempExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_tempExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_tempExterna_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_velExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_velExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_velExterna_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_kExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_kExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_kExterna_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_calorEspecificoExterno_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_calorEspecificoExterno JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_calorEspecificoExterno_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_rhoExterno_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_rhoExterno JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_rhoExterno_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_viscExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciais_viscExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_viscExterna_Item>
+
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_compInter_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_compInter JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_compInter_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_temp_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_temp JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_temp_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_pressao_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_pressao JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_pressao_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_holdup_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_holdup JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_holdup_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_bet_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_bet JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_bet_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_uls_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_uls JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_uls_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_ugs_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_ugs JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_ugs_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_tempExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_tempExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_tempExterna_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_velExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_velExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_velExterna_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_kExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_kExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_kExterna_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_calorEspecificoExterno_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_rhoExterno_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_rhoExterno JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_rhoExterno_Item>
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_viscExterna_Item JSONNumber
+#define JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_viscExterna JSONArray<JSON_entrada_dutosProducao_Item_condicoesIniciais_viscExterna_Item>
+
+
+class JSON_entrada_dutosProducao_Item_condicoesIniciais: public JSONObject {
+public:
+	JSON_entrada_dutosProducao_Item_condicoesIniciais();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_compInter& compInter();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_temp& temp();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_pressao& pressao();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_holdup& holdup();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_bet& bet();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_uls& uls();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_ugs& ugs();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_tempExterna& tempExterna();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_velExterna& velExterna();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_kExterna& kExterna();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_calorEspecificoExterno& calorEspecificoExterno();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_rhoExterno& rhoExterno();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais_viscExterna& viscExterna();
+
+};
+
+class JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente: public JSONObject {
+public:
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_compInter& compInter();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_temp& temp();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_pressao& pressao();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_holdup& holdup();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_bet& bet();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_uls& uls();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_ugs& ugs();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_tempExterna& tempExterna();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_velExterna& velExterna();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_kExterna& kExterna();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno& calorEspecificoExterno();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_rhoExterno& rhoExterno();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente_viscExterna& viscExterna();
+
+};
+
+
+
+class JSON_entrada_dutosProducao_Item: public JSONObject {
+public:
+	JSON_entrada_dutosProducao_Item();
+	JSON_entrada_dutosProducao_Item_ativo& ativo();
+	JSON_entrada_dutosProducao_Item_id& id();
+	JSON_entrada_dutosProducao_Item_correlacaoMR2& correlacaoMR2();
+	JSON_entrada_dutosProducao_Item_angulo& angulo();
+	JSON_entrada_dutosProducao_Item_idCorte& idCorte();
+	JSON_entrada_dutosProducao_Item_idFormacao& idFormacao();
+	JSON_entrada_dutosProducao_Item_ambienteExterno& ambienteExterno();
+	JSON_entrada_dutosProducao_Item_direcaoConveccao& direcaoConveccao();
+	JSON_entrada_dutosProducao_Item_acoplamentoTermico& acoplamentoTermico();
+	JSON_entrada_dutosProducao_Item_acoplamentoTermicoRedeParalela& acoplamentoTermicoRedeParalela();
+	JSON_entrada_dutosProducao_Item_agrupamento& agrupamento();
+	JSON_entrada_dutosProducao_Item_dxCelula& dxCelula();
+	JSON_entrada_dutosProducao_Item_discretizacao& discretizacao();
+	JSON_entrada_dutosProducao_Item_condicoesIniciais& condicoesIniciais();
+	JSON_entrada_dutosProducao_Item_condicoesIniciaisEAmbiente& condicoesIniciaisEAmbiente();
+	JSON_entrada_dutosProducao_Item_dPdLHidro& dPdLHidro();
+	JSON_entrada_dutosProducao_Item_dPdLFric& dPdLFric();
+	JSON_entrada_dutosProducao_Item_dTdL& dTdL();
+	JSON_entrada_dutosProducao_Item_difusTerm2D& difusTerm2D();
+	JSON_entrada_dutosProducao_Item_difusTerm2DJSON& difusTerm2DJSON();
+	JSON_entrada_dutosProducao_Item_difusTerm3D& difusTerm3D();
+	JSON_entrada_dutosProducao_Item_difusTerm3DFE& difusTerm3DFE();
+	JSON_entrada_dutosProducao_Item_difusTerm3DAcop& difusTerm3DAcop();
+	JSON_entrada_dutosProducao_Item_xCoor& xCoor();
+	JSON_entrada_dutosProducao_Item_yCoor& yCoor();
+	JSON_entrada_dutosProducao_Item_nCelulas_XY& nCelulas_XY();
+};
+
+#define JSON_entrada_dutosProducao JSONArray<JSON_entrada_dutosProducao_Item>
+#define JSON_entrada_dutosServico_Item_ativo JSONBoolean
+#define JSON_entrada_dutosServico_Item_id JSONInteger
+#define JSON_entrada_dutosServico_Item_angulo JSONNumber
+#define JSON_entrada_dutosServico_Item_idCorte JSONInteger
+#define JSON_entrada_dutosServico_Item_idFormacao JSONInteger
+#define JSON_entrada_dutosServico_Item_ambienteExterno JSONInteger
+#define JSON_entrada_dutosServico_Item_direcaoConveccao JSONInteger
+#define JSON_entrada_dutosServico_Item_acoplamentoTermico JSONInteger
+#define JSON_entrada_dutosServico_Item_agrupamento JSONBoolean
+#define JSON_entrada_dutosServico_Item_dxCelula_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_dxCelula JSONArray<JSON_entrada_dutosServico_Item_dxCelula_Item>
+#define JSON_entrada_dutosServico_Item_discretizacao_Item_nCelulas JSONInteger
+#define JSON_entrada_dutosServico_Item_discretizacao_Item_comprimento JSONNumber
+#define JSON_entrada_dutosServico_Item_dPdLHidro JSONInteger
+#define JSON_entrada_dutosServico_Item_dPdLFric JSONInteger
+#define JSON_entrada_dutosServico_Item_dTdL JSONInteger
+#define JSON_entrada_dutosServico_Item_xCoor JSONNumber
+#define JSON_entrada_dutosServico_Item_yCoor JSONNumber
+#define JSON_entrada_dutosServico_Item_nCelulas_XY JSONNumber
+
+class JSON_entrada_dutosServico_Item_discretizacao_Item: public JSONObject {
+public:
+	JSON_entrada_dutosServico_Item_discretizacao_Item();
+	JSON_entrada_dutosServico_Item_discretizacao_Item_nCelulas& nCelulas();
+	JSON_entrada_dutosServico_Item_discretizacao_Item_comprimento& comprimento();
+
+};
+
+#define JSON_entrada_dutosServico_Item_discretizacao JSONArray<JSON_entrada_dutosServico_Item_discretizacao_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_compInter_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_compInter JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_compInter_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_temp_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_temp JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_temp_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_pressao_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_pressao JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_pressao_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_vazaoMassicaGas_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_vazaoMassicaGas JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_vazaoMassicaGas_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_tempExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_tempExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_tempExterna_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_velExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_velExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_velExterna_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_kExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_kExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_kExterna_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_calorEspecificoExterno_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_calorEspecificoExterno JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_calorEspecificoExterno_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_rhoExterno_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_rhoExterno JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_rhoExterno_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_viscExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciais_viscExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciais_viscExterna_Item>
+
+class JSON_entrada_dutosServico_Item_condicoesIniciais: public JSONObject {
+public:
+	JSON_entrada_dutosServico_Item_condicoesIniciais();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_compInter& compInter();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_temp& temp();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_pressao& pressao();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_vazaoMassicaGas& vazaoMassicaGas();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_tempExterna& tempExterna();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_velExterna& velExterna();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_kExterna& kExterna();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_calorEspecificoExterno& calorEspecificoExterno();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_rhoExterno& rhoExterno();
+	JSON_entrada_dutosServico_Item_condicoesIniciais_viscExterna& viscExterna();
+
+};
+
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_compInter_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_compInter JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_compInter_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_temp_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_temp JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_temp_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_pressao_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_pressao JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_pressao_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_vazaoMassicaGas_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_vazaoMassicaGas JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_vazaoMassicaGas_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_tempExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_tempExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_tempExterna_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_velExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_velExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_velExterna_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_kExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_kExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_kExterna_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_rhoExterno_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_rhoExterno JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_rhoExterno_Item>
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_viscExterna_Item JSONNumber
+#define JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_viscExterna JSONArray<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_viscExterna_Item>
+
+class JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente: public JSONObject {
+public:
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_compInter& compInter();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_temp& temp();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_pressao& pressao();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_vazaoMassicaGas& vazaoMassicaGas();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_tempExterna& tempExterna();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_velExterna& velExterna();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_kExterna& kExterna();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_calorEspecificoExterno& calorEspecificoExterno();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_rhoExterno& rhoExterno();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente_viscExterna& viscExterna();
+
+};
+
+
+class JSON_entrada_dutosServico_Item: public JSONObject {
+public:
+	JSON_entrada_dutosServico_Item();
+	JSON_entrada_dutosServico_Item_ativo& ativo();
+	JSON_entrada_dutosServico_Item_id& id();
+	JSON_entrada_dutosServico_Item_angulo& angulo();
+	JSON_entrada_dutosServico_Item_idCorte& idCorte();
+	JSON_entrada_dutosServico_Item_idFormacao& idFormacao();
+	JSON_entrada_dutosServico_Item_ambienteExterno& ambienteExterno();
+	JSON_entrada_dutosServico_Item_direcaoConveccao& direcaoConveccao();
+	JSON_entrada_dutosServico_Item_acoplamentoTermico& acoplamentoTermico();
+	JSON_entrada_dutosServico_Item_agrupamento& agrupamento();
+	JSON_entrada_dutosServico_Item_dxCelula& dxCelula();
+	JSON_entrada_dutosServico_Item_discretizacao& discretizacao();
+	JSON_entrada_dutosServico_Item_condicoesIniciais& condicoesIniciais();
+	JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente& condicoesIniciaisEAmbiente();
+	JSON_entrada_dutosServico_Item_dPdLHidro& dPdLHidro();
+	JSON_entrada_dutosServico_Item_dPdLFric& dPdLFric();
+	JSON_entrada_dutosServico_Item_dTdL& dTdL();
+	JSON_entrada_dutosServico_Item_xCoor& xCoor();
+	JSON_entrada_dutosServico_Item_yCoor& yCoor();
+	JSON_entrada_dutosServico_Item_nCelulas_XY & nCelulas_XY ();
+
+};
+
+#define JSON_entrada_dutosServico JSONArray<JSON_entrada_dutosServico_Item>
+
+//#define JSON_entrada_hidrato_Hammerschmidt_Khamm JSONNumber //chris - Hidratos
+#define JSON_entrada_hidrato_Hammerschmidt_MMH JSONNumber
+#define JSON_entrada_hidrato_Hammerschmidt_MMG JSONNumber
+#define JSON_entrada_hidrato_Hammerschmidt_MMW JSONNumber
+#define JSON_entrada_hidrato_Hammerschmidt_Whamm JSONNumber
+JSONString inibidor(); //chris - Hidratos
+//#define JSON_entrada_hidrato_Hammerschmidt_Methanol JSONNumber //chris - Hidratos
+//#define JSON_entrada_hidrato_Hammerschmidt_MMEG JSONNumber
+#define JSON_entrada_hidrato_Hammerschmidt_fracFWcarregada JSONNumber //chris - Hidratos
+
+class JSON_entrada_hidrato_Hammerschmidt: public JSONObject { //hydvalor
+public:
+	JSON_entrada_hidrato_Hammerschmidt();
+	//JSON_entrada_hidrato_Hammerschmidt_Khamm& Khamm(); //chris - Hidratos
+	JSON_entrada_hidrato_Hammerschmidt_MMH& MMH();
+	JSON_entrada_hidrato_Hammerschmidt_MMG& MMG();
+	JSON_entrada_hidrato_Hammerschmidt_MMW& MMW();
+	JSON_entrada_hidrato_Hammerschmidt_Whamm& Whamm();
+	JSONString& inibidor(); //chris - Hidratos
+	//JSON_entrada_hidrato_Hammerschmidt_Methanol& Methanol(); //chris - Hidratos
+	//JSON_entrada_hidrato_Hammerschmidt_MMEG& MMEG();
+	JSON_entrada_hidrato_Hammerschmidt_fracFWcarregada& fracFWcarregada(); //chris - Hidratos
+
+};
+
+//#define JSON_entrada_hidrato_PropFluHidrato_rhoH JSONNumber //chris - Hidratos
+#define JSON_entrada_hidrato_PropFluHidrato_coefEsteq JSONNumber
+
+class JSON_entrada_hidrato_PropFluHidrato: public JSONObject { //hydvalor
+public:
+	JSON_entrada_hidrato_PropFluHidrato();
+	//JSON_entrada_hidrato_PropFluHidrato_rhoH& rhoH(); //chris - Hidratos
+	JSON_entrada_hidrato_PropFluHidrato_coefEsteq& coefEsteq();
+
+};
+
+/*#define JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIk1 JSONNumber
+#define JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIk2 JSONNumber
+#define JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIIk1 JSONNumber
+#define JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIIk2 JSONNumber*/
+
+//#define JSON_entrada_hidrato_ModeloTurner_estruturaHidratos JSONString; //chris - Hidratos
+JSONString estruturaHidratos();
+#define JSON_entrada_hidrato_ModeloTurner_rd JSONNumber
+#define JSON_entrada_hidrato_ModeloTurner_rp JSONNumber
+
+class JSON_entrada_hidrato_ModeloTurner: public JSONObject { //hydvalor
+public:
+	JSON_entrada_hidrato_ModeloTurner();
+	/*JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIk1& estruturaHidratosIk1();
+	JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIk2& estruturaHidratosIk2();
+	JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIIk1& estruturaHidratosIIk1();
+	JSON_entrada_hidrato_ModeloTurner_estruturaHidratosIIk2& estruturaHidratosIIk2();*/
+
+	//JSON_entrada_hidrato_ModeloTurner_estruturaHidratos& estruturaHidratos();
+	//JSONString& estruturaHidratos() { return estruturaHidratos; }
+	JSONString& estruturaHidratos(); //chris - Hidratos
+	JSON_entrada_hidrato_ModeloTurner_rd& rd();
+	JSON_entrada_hidrato_ModeloTurner_rp& rp();
+
+};
+
+#define JSON_entrada_hidrato_calculoInterno JSONBoolean
+#define JSON_entrada_hidrato_pressao_Item JSONNumber
+#define JSON_entrada_hidrato_pressao JSONArray<JSON_entrada_hidrato_pressao_Item>
+#define JSON_entrada_hidrato_temperatura_Item JSONNumber
+#define JSON_entrada_hidrato_temperatura JSONArray<JSON_entrada_hidrato_temperatura_Item>
+
+class JSON_entrada_hidrato: public JSONObject {
+public:
+	JSON_entrada_hidrato();
+	JSON_entrada_hidrato_calculoInterno& calculoInterno();
+	JSON_entrada_hidrato_pressao& pressao();
+	JSON_entrada_hidrato_temperatura& temperatura();
+	JSON_entrada_hidrato_Hammerschmidt& Hammerschmidt();
+	JSON_entrada_hidrato_PropFluHidrato& PropFluHidrato();
+	JSON_entrada_hidrato_ModeloTurner& ModeloTurner();
+};
+
+#define JSON_entrada_ipr_Item_ativo JSONBoolean
+#define JSON_entrada_ipr_Item_id JSONInteger
+#define JSON_entrada_ipr_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_ipr_Item_tipoIPR JSONInteger
+#define JSON_entrada_ipr_Item_pressaoEstatica_Item JSONNumber
+#define JSON_entrada_ipr_Item_qMax_Item JSONNumber
+#define JSON_entrada_ipr_Item_pressaoEstatica JSONArray<JSON_entrada_ipr_Item_pressaoEstatica_Item>
+#define JSON_entrada_ipr_Item_qMax JSONArray<JSON_entrada_ipr_Item_qMax_Item>
+#define JSON_entrada_ipr_Item_tempoPressaoEstatica_Item JSONNumber
+#define JSON_entrada_ipr_Item_tempoPressaoEstatica JSONArray<JSON_entrada_ipr_Item_tempoPressaoEstatica_Item>
+#define JSON_entrada_ipr_Item_tempoqMax_Item JSONNumber
+#define JSON_entrada_ipr_Item_tempoqMax JSONArray<JSON_entrada_ipr_Item_tempoqMax_Item>
+#define JSON_entrada_ipr_Item_temperaturas_Item JSONNumber
+#define JSON_entrada_ipr_Item_temperaturas JSONArray<JSON_entrada_ipr_Item_temperaturas_Item>
+#define JSON_entrada_ipr_Item_tempoTemperaturas_Item JSONNumber
+#define JSON_entrada_ipr_Item_tempoTemperaturas JSONArray<JSON_entrada_ipr_Item_tempoTemperaturas_Item>
+#define JSON_entrada_ipr_Item_ip_Item JSONNumber
+#define JSON_entrada_ipr_Item_ip JSONArray<JSON_entrada_ipr_Item_ip_Item>
+#define JSON_entrada_ipr_Item_tempoip_Item JSONNumber
+#define JSON_entrada_ipr_Item_tempoip JSONArray<JSON_entrada_ipr_Item_tempoip_Item>
+#define JSON_entrada_ipr_Item_ii_Item JSONNumber
+#define JSON_entrada_ipr_Item_ii JSONArray<JSON_entrada_ipr_Item_ii_Item>
+#define JSON_entrada_ipr_Item_tempoii_Item JSONNumber
+#define JSON_entrada_ipr_Item_tempoii JSONArray<JSON_entrada_ipr_Item_tempoii_Item>
+#define JSON_entrada_ipr_Item_indFluidoPro JSONInteger
+#define JSON_entrada_ipr_Item_indiFluidoPro JSONInteger
+
+class JSON_entrada_ipr_Item: public JSONObject {
+public:
+	JSON_entrada_ipr_Item();
+	JSON_entrada_ipr_Item_ativo& ativo();
+	JSON_entrada_ipr_Item_id& id();
+	JSON_entrada_ipr_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_ipr_Item_tipoIPR& tipoIPR();
+	JSON_entrada_ipr_Item_pressaoEstatica& pressaoEstatica();
+	JSON_entrada_ipr_Item_qMax& qMax();
+	JSON_entrada_ipr_Item_tempoPressaoEstatica& tempoPressaoEstatica();
+	JSON_entrada_ipr_Item_tempoqMax& tempoqMax();
+	JSON_entrada_ipr_Item_temperaturas& temperaturas();
+	JSON_entrada_ipr_Item_tempoTemperaturas& tempoTemperaturas();
+	JSON_entrada_ipr_Item_ip& ip();
+	JSON_entrada_ipr_Item_tempoip& tempoip();
+	JSON_entrada_ipr_Item_ii& ii();
+	JSON_entrada_ipr_Item_tempoii& tempoii();
+	JSON_entrada_ipr_Item_indFluidoPro& indFluidoPro();
+	JSON_entrada_ipr_Item_indiFluidoPro& indiFluidoPro();
+
+};
+
+#define JSON_entrada_ipr JSONArray<JSON_entrada_ipr_Item>
+#define JSON_entrada_fonteChoke_ativo JSONBoolean
+#define JSON_entrada_fonteChoke_tempo_Item JSONNumber
+#define JSON_entrada_fonteChoke_tempo JSONArray<JSON_entrada_fonteChoke_tempo_Item>
+#define JSON_entrada_fonteChoke_abertura_Item JSONNumber
+#define JSON_entrada_fonteChoke_abertura JSONArray<JSON_entrada_fonteChoke_abertura_Item>
+#define JSON_entrada_fonteChoke_coeficienteDescarga JSONNumber
+#define JSON_entrada_fonteChoke_modelo JSONInteger
+
+class JSON_entrada_fonteChoke: public JSONObject {
+public:
+	JSON_entrada_fonteChoke();
+	JSON_entrada_fonteChoke_ativo& ativo();
+	JSON_entrada_fonteChoke_tempo& tempo();
+	JSON_entrada_fonteChoke_abertura& abertura();
+	JSON_entrada_fonteChoke_coeficienteDescarga& coeficienteDescarga();
+	JSON_entrada_fonteChoke_modelo& modelo();
+
+};
+
+#define JSON_entrada_bcs_Item_ativo JSONBoolean
+#define JSON_entrada_bcs_Item_correcHI JSONBoolean
+#define JSON_entrada_bcs_Item_id JSONInteger
+#define JSON_entrada_bcs_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_bcs_Item_tempo_Item JSONNumber
+#define JSON_entrada_bcs_Item_tempo JSONArray<JSON_entrada_bcs_Item_tempo_Item>
+#define JSON_entrada_bcs_Item_frequencia_Item JSONNumber
+#define JSON_entrada_bcs_Item_frequencia JSONArray<JSON_entrada_bcs_Item_frequencia_Item>
+#define JSON_entrada_bcs_Item_vazao_Item JSONNumber
+#define JSON_entrada_bcs_Item_vazao JSONArray<JSON_entrada_bcs_Item_vazao_Item>
+#define JSON_entrada_bcs_Item_potencia_Item JSONNumber
+#define JSON_entrada_bcs_Item_potencia JSONArray<JSON_entrada_bcs_Item_potencia_Item>
+#define JSON_entrada_bcs_Item_eficiencia_Item JSONNumber
+#define JSON_entrada_bcs_Item_eficiencia JSONArray<JSON_entrada_bcs_Item_eficiencia_Item>
+#define JSON_entrada_bcs_Item_head_Item JSONNumber
+#define JSON_entrada_bcs_Item_head JSONArray<JSON_entrada_bcs_Item_head_Item>
+#define JSON_entrada_bcs_Item_freqref JSONNumber
+#define JSON_entrada_bcs_Item_nestag JSONInteger
+#define JSON_entrada_bcs_Item_nestagFab JSONInteger
+#define JSON_entrada_bcs_Item_EficienciaMotor JSONNumber
+#define JSON_entrada_bcs_Item_FrequenciaMinima JSONNumber
+
+class JSON_entrada_bcs_Item: public JSONObject {
+public:
+	JSON_entrada_bcs_Item();
+	JSON_entrada_bcs_Item_ativo& ativo();
+	JSON_entrada_bcs_Item_correcHI& correcHI();
+	JSON_entrada_bcs_Item_id& id();
+	JSON_entrada_bcs_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_bcs_Item_tempo& tempo();
+	JSON_entrada_bcs_Item_frequencia& frequencia();
+	JSON_entrada_bcs_Item_vazao& vazao();
+	JSON_entrada_bcs_Item_potencia& potencia();
+	JSON_entrada_bcs_Item_eficiencia& eficiencia();
+	JSON_entrada_bcs_Item_head& head();
+	JSON_entrada_bcs_Item_freqref& freqref();
+	JSON_entrada_bcs_Item_nestag& nestag();
+	JSON_entrada_bcs_Item_nestag& nestagFab();
+	JSON_entrada_bcs_Item_EficienciaMotor& EficienciaMotor();
+	JSON_entrada_bcs_Item_FrequenciaMinima& FrequenciaMinima();
+
+};
+
+#define JSON_entrada_bcs JSONArray<JSON_entrada_bcs_Item>
+#define JSON_entrada_bombaVolumetrica_Item_ativo JSONBoolean
+#define JSON_entrada_bombaVolumetrica_Item_id JSONInteger
+#define JSON_entrada_bombaVolumetrica_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_bombaVolumetrica_Item_tempo_Item JSONNumber
+#define JSON_entrada_bombaVolumetrica_Item_tempo JSONArray<JSON_entrada_bombaVolumetrica_Item_tempo_Item>
+#define JSON_entrada_bombaVolumetrica_Item_frequencia_Item JSONNumber
+#define JSON_entrada_bombaVolumetrica_Item_frequencia JSONArray<JSON_entrada_bombaVolumetrica_Item_frequencia_Item>
+#define JSON_entrada_bombaVolumetrica_Item_capacidade JSONNumber
+#define JSON_entrada_bombaVolumetrica_Item_fatorpoli JSONNumber
+
+class JSON_entrada_bombaVolumetrica_Item: public JSONObject {
+public:
+	JSON_entrada_bombaVolumetrica_Item();
+	JSON_entrada_bombaVolumetrica_Item_ativo& ativo();
+	JSON_entrada_bombaVolumetrica_Item_id& id();
+	JSON_entrada_bombaVolumetrica_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_bombaVolumetrica_Item_tempo& tempo();
+	JSON_entrada_bombaVolumetrica_Item_frequencia& frequencia();
+	JSON_entrada_bombaVolumetrica_Item_capacidade& capacidade();
+	JSON_entrada_bombaVolumetrica_Item_fatorpoli& fatorpoli();
+
+};
+
+#define JSON_entrada_bombaVolumetrica JSONArray<JSON_entrada_bombaVolumetrica_Item>
+#define JSON_entrada_deltaPressao_Item_ativo JSONBoolean
+#define JSON_entrada_deltaPressao_Item_id JSONInteger
+#define JSON_entrada_deltaPressao_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_deltaPressao_Item_tempo_Item JSONNumber
+#define JSON_entrada_deltaPressao_Item_tempo JSONArray<JSON_entrada_deltaPressao_Item_tempo_Item>
+#define JSON_entrada_deltaPressao_Item_deltaPressao_Item JSONNumber
+#define JSON_entrada_deltaPressao_Item_deltaPressao JSONArray<JSON_entrada_deltaPressao_Item_deltaPressao_Item>
+//alteracao 5/02/2021
+#define JSON_entrada_deltaPressao_Item_tipoCompGas JSONInteger
+#define JSON_entrada_deltaPressao_Item_fatPoli JSONNumber
+#define JSON_entrada_deltaPressao_Item_eficLiq JSONNumber
+#define JSON_entrada_deltaPressao_Item_eficGas JSONNumber
+
+
+class JSON_entrada_deltaPressao_Item: public JSONObject {
+public:
+	JSON_entrada_deltaPressao_Item();
+	JSON_entrada_deltaPressao_Item_ativo& ativo();
+	JSON_entrada_deltaPressao_Item_id& id();
+	JSON_entrada_deltaPressao_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_deltaPressao_Item_tempo& tempo();
+	JSON_entrada_deltaPressao_Item_deltaPressao& deltaPressao();
+	JSON_entrada_deltaPressao_Item_tipoCompGas& tipoCompGas();
+	JSON_entrada_deltaPressao_Item_fatPoli& fatPoli();
+	JSON_entrada_deltaPressao_Item_eficLiq& eficLiq();
+	JSON_entrada_deltaPressao_Item_eficGas& eficGas();
+};
+
+#define JSON_entrada_deltaPressao JSONArray<JSON_entrada_deltaPressao_Item>
+#define JSON_entrada_master1_ativo JSONBoolean
+#define JSON_entrada_master1_curvaCV JSONInteger
+#define JSON_entrada_master1_razaoAreaAtiva JSONNumber
+#define JSON_entrada_master1_comprimentoMedido JSONNumber
+#define JSON_entrada_master1_tempo_Item JSONNumber
+#define JSON_entrada_master1_tempo JSONArray<JSON_entrada_master1_tempo_Item>
+#define JSON_entrada_master1_abertura_Item JSONNumber
+#define JSON_entrada_master1_abertura JSONArray<JSON_entrada_master1_abertura_Item>
+#define JSON_entrada_master1_x1_Item JSONNumber
+#define JSON_entrada_master1_x1 JSONArray<JSON_entrada_master1_x1_Item>
+#define JSON_entrada_master1_cv1_Item JSONNumber
+#define JSON_entrada_master1_cv1 JSONArray<JSON_entrada_master1_cv1_Item>
+
+class JSON_entrada_master1: public JSONObject {
+public:
+	JSON_entrada_master1();
+	JSON_entrada_master1_ativo& ativo();
+	JSON_entrada_master1_curvaCV& curvaCV();
+	JSON_entrada_master1_razaoAreaAtiva& razaoAreaAtiva();
+	JSON_entrada_master1_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_master1_tempo& tempo();
+	JSON_entrada_master1_abertura& abertura();
+	JSON_entrada_master1_x1& x1();
+	JSON_entrada_master1_cv1& cv1();
+
+};
+
+#define JSON_entrada_master2_ativo JSONBoolean
+#define JSON_entrada_master2_comprimentoMedido JSONNumber
+#define JSON_entrada_master2_tempo_Item JSONNumber
+#define JSON_entrada_master2_tempo JSONArray<JSON_entrada_master2_tempo_Item>
+#define JSON_entrada_master2_abertura_Item JSONNumber
+#define JSON_entrada_master2_abertura JSONArray<JSON_entrada_master2_abertura_Item>
+
+class JSON_entrada_master2: public JSONObject {
+public:
+	JSON_entrada_master2();
+	JSON_entrada_master2_ativo& ativo();
+	JSON_entrada_master2_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_master2_tempo& tempo();
+	JSON_entrada_master2_abertura& abertura();
+
+};
+
+#define JSON_entrada_pig_Item_ativo JSONBoolean
+#define JSON_entrada_pig_Item_id JSONInteger
+#define JSON_entrada_pig_Item_lancador JSONNumber
+#define JSON_entrada_pig_Item_recebedor JSONNumber
+#define JSON_entrada_pig_Item_tempo JSONNumber
+#define JSON_entrada_pig_Item_folgaArea JSONNumber
+#define JSON_entrada_pig_Item_deltaPressao JSONNumber
+#define JSON_entrada_pig_Item_cdPig JSONNumber
+
+class JSON_entrada_pig_Item: public JSONObject {
+public:
+	JSON_entrada_pig_Item();
+	JSON_entrada_pig_Item_ativo& ativo();
+	JSON_entrada_pig_Item_id& id();
+	JSON_entrada_pig_Item_lancador& lancador();
+	JSON_entrada_pig_Item_recebedor& recebedor();
+	JSON_entrada_pig_Item_tempo& tempo();
+	JSON_entrada_pig_Item_folgaArea& folgaArea();
+	JSON_entrada_pig_Item_deltaPressao& deltaPressao();
+	JSON_entrada_pig_Item_cdPig& cdPig();
+
+};
+
+#define JSON_entrada_pig JSONArray<JSON_entrada_pig_Item>
+#define JSON_entrada_fontePressao_Item_ativo JSONBoolean
+#define JSON_entrada_fontePressao_Item_id JSONInteger
+#define JSON_entrada_fontePressao_Item_TipoAbertura JSONInteger
+#define JSON_entrada_fontePressao_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fontePressao_Item_beta JSONNumber
+#define JSON_entrada_fontePressao_Item_titAmb JSONNumber
+#define JSON_entrada_fontePressao_Item_cd JSONNumber
+#define JSON_entrada_fontePressao_Item_temperatura JSONNumber
+//#define JSON_entrada_fontePressao_Item_temperatura JSONArray<JSON_entrada_fontePressao_Item_temperatura_Item>
+#define JSON_entrada_fontePressao_Item_pressao JSONNumber
+//#define JSON_entrada_fontePressao_Item_pressao JSONArray<JSON_entrada_fontePressao_Item_pressao_Item>
+#define JSON_entrada_fontePressao_Item_abertura_Item JSONNumber
+#define JSON_entrada_fontePressao_Item_abertura JSONArray<JSON_entrada_fontePressao_Item_abertura_Item>
+#define JSON_entrada_fontePressao_Item_tempo_Item JSONNumber
+#define JSON_entrada_fontePressao_Item_tempo JSONArray<JSON_entrada_fontePressao_Item_tempo_Item>
+#define JSON_entrada_fontePressao_Item_tipoFluido JSONInteger
+#define JSON_entrada_fontePressao_Item_indiFluidoPro JSONInteger
+#define JSON_entrada_fontePressao_Item_ambGas JSONBoolean
+#define JSON_entrada_fontePressao_Item_check_Item JSONInteger
+#define JSON_entrada_fontePressao_Item_check JSONArray<JSON_entrada_fontePressao_Item_check_Item>
+#define JSON_entrada_fontePressao_Item_tempoChk_Item JSONNumber
+#define JSON_entrada_fontePressao_Item_tempoChk JSONArray<JSON_entrada_fontePressao_Item_tempoChk_Item>
+
+class JSON_entrada_fontePressao_Item: public JSONObject {
+public:
+	JSON_entrada_fontePressao_Item();
+	JSON_entrada_fontePressao_Item_ativo& ativo();
+	JSON_entrada_fontePressao_Item_id& id();
+	JSON_entrada_fontePressao_Item_TipoAbertura& TipoAbertura();
+	JSON_entrada_fontePressao_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_fontePressao_Item_beta& beta();
+	JSON_entrada_fontePressao_Item_titAmb& titAmb();
+	JSON_entrada_fontePressao_Item_cd& cd();
+	JSON_entrada_fontePressao_Item_temperatura& temperatura();
+	JSON_entrada_fontePressao_Item_pressao& pressao();
+	JSON_entrada_fontePressao_Item_abertura& abertura();
+	JSON_entrada_fontePressao_Item_tempo& tempo();
+	JSON_entrada_fontePressao_Item_tipoFluido& tipoFluido();
+	JSON_entrada_fontePressao_Item_indiFluidoPro& indiFluidoPro();
+	JSON_entrada_fontePressao_Item_ambGas& ambGas();
+	JSON_entrada_fontePressao_Item_check& check();
+	JSON_entrada_fontePressao_Item_tempoChk& tempoChk();
+
+};
+
+#define JSON_entrada_fontePressao JSONArray<JSON_entrada_fontePressao_Item>
+#define JSON_entrada_tendP_Item_ativo JSONBoolean
+#define JSON_entrada_tendP_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_tendP_Item_dt JSONNumber
+#define JSON_entrada_tendP_Item_rotulo JSONString
+#define JSON_entrada_tendP_Item_pressao JSONBoolean
+#define JSON_entrada_tendP_Item_temperatura JSONBoolean
+#define JSON_entrada_tendP_Item_holdup JSONBoolean
+#define JSON_entrada_tendP_Item_FVH JSONBoolean //chris - hidratos
+#define JSON_entrada_tendP_Item_bet JSONBoolean
+#define JSON_entrada_tendP_Item_ugs JSONBoolean
+#define JSON_entrada_tendP_Item_uls JSONBoolean
+#define JSON_entrada_tendP_Item_ug JSONBoolean
+#define JSON_entrada_tendP_Item_ul JSONBoolean
+#define JSON_entrada_tendP_Item_arra JSONBoolean
+#define JSON_entrada_tendP_Item_viscosidadeLiquido JSONBoolean
+#define JSON_entrada_tendP_Item_viscosidadeGas JSONBoolean
+#define JSON_entrada_tendP_Item_rhog JSONBoolean
+#define JSON_entrada_tendP_Item_rhol JSONBoolean
+#define JSON_entrada_tendP_Item_rhoMix JSONBoolean
+#define JSON_entrada_tendP_Item_vazaoMassicaGas JSONBoolean
+#define JSON_entrada_tendP_Item_vazaoMassicaLiquido JSONBoolean
+#define JSON_entrada_tendP_Item_c0 JSONBoolean
+#define JSON_entrada_tendP_Item_ud JSONBoolean
+#define JSON_entrada_tendP_Item_RGO JSONBoolean
+#define JSON_entrada_tendP_Item_deng JSONBoolean
+#define JSON_entrada_tendP_Item_yco2 JSONBoolean
+#define JSON_entrada_tendP_Item_calor JSONBoolean
+#define JSON_entrada_tendP_Item_masstrans JSONBoolean
+#define JSON_entrada_tendP_Item_QLstd JSONBoolean
+#define JSON_entrada_tendP_Item_QLWstd JSONBoolean
+#define JSON_entrada_tendP_Item_QOstd JSONBoolean
+#define JSON_entrada_tendP_Item_QOWstd JSONBoolean
+#define JSON_entrada_tendP_Item_QLstdTotal JSONBoolean
+#define JSON_entrada_tendP_Item_QGstd JSONBoolean
+#define JSON_entrada_tendP_Item_api JSONBoolean
+#define JSON_entrada_tendP_Item_bsw JSONBoolean
+#define JSON_entrada_tendP_Item_hidro JSONBoolean
+#define JSON_entrada_tendP_Item_fric JSONBoolean
+#define JSON_entrada_tendP_Item_dengD JSONBoolean
+#define JSON_entrada_tendP_Item_dengL JSONBoolean
+#define JSON_entrada_tendP_Item_ReyInterno JSONBoolean
+#define JSON_entrada_tendP_Item_ReyExterno JSONBoolean
+#define JSON_entrada_tendP_Item_GrashInterno JSONBoolean
+#define JSON_entrada_tendP_Item_GrashExterno JSONBoolean
+#define JSON_entrada_tendP_Item_NusselInterno JSONBoolean
+#define JSON_entrada_tendP_Item_NusselExterno JSONBoolean
+#define JSON_entrada_tendP_Item_PrandtlInterno JSONBoolean
+#define JSON_entrada_tendP_Item_PrandtlExterno JSONBoolean
+#define JSON_entrada_tendP_Item_Froud JSONBoolean
+#define JSON_entrada_tendP_Item_Rs JSONBoolean
+#define JSON_entrada_tendP_Item_Bo JSONBoolean
+#define JSON_entrada_tendP_Item_Hint JSONBoolean
+#define JSON_entrada_tendP_Item_Hext JSONBoolean
+#define JSON_entrada_tendP_Item_mlFonte JSONBoolean
+#define JSON_entrada_tendP_Item_mgFonte JSONBoolean
+#define JSON_entrada_tendP_Item_mcFonte JSONBoolean
+#define JSON_entrada_tendP_Item_tempChokeJus JSONBoolean
+#define JSON_entrada_tendP_Item_deltaPBomba JSONBoolean
+#define JSON_entrada_tendP_Item_potenciaBomba JSONBoolean
+#define JSON_entrada_tendP_Item_volMonM1PT JSONBoolean
+#define JSON_entrada_tendP_Item_volJusM1PT JSONBoolean
+#define JSON_entrada_tendP_Item_volMonM1ST JSONBoolean
+#define JSON_entrada_tendP_Item_volJusM1ST JSONBoolean
+#define JSON_entrada_tendP_Item_autoVal JSONBoolean
+#define JSON_entrada_tendP_Item_autoVel JSONBoolean
+#define JSON_entrada_tendP_Item_flutuacao JSONBoolean
+#define JSON_entrada_tendP_Item_diametroInterno JSONBoolean
+#define JSON_entrada_tendP_Item_tempParede JSONBoolean
+#define JSON_entrada_tendP_Item_dadosParafina JSONBoolean
+#define JSON_entrada_tendP_Item_inventarioGas JSONBoolean
+#define JSON_entrada_tendP_Item_inventarioLiq JSONBoolean
+#define JSON_entrada_tendP_Item_subResfria JSONBoolean
+
+class JSON_entrada_tendP_Item: public JSONObject {
+public:
+	JSON_entrada_tendP_Item();
+	JSON_entrada_tendP_Item_ativo& ativo();
+	JSON_entrada_tendP_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_tendP_Item_dt& dt();
+	JSON_entrada_tendP_Item_rotulo& rotulo();
+	JSON_entrada_tendP_Item_pressao& pressao();
+	JSON_entrada_tendP_Item_temperatura& temperatura();
+	JSON_entrada_tendP_Item_holdup& holdup();
+	JSON_entrada_tendP_Item_FVH& FVH(); //chris - Hidratos
+	JSON_entrada_tendP_Item_bet& bet();
+	JSON_entrada_tendP_Item_ugs& ugs();
+	JSON_entrada_tendP_Item_uls& uls();
+	JSON_entrada_tendP_Item_ug& ug();
+	JSON_entrada_tendP_Item_ul& ul();
+	JSON_entrada_tendP_Item_arra& arra();
+	JSON_entrada_tendP_Item_viscosidadeLiquido& viscosidadeLiquido();
+	JSON_entrada_tendP_Item_viscosidadeGas& viscosidadeGas();
+	JSON_entrada_tendP_Item_rhog& rhog();
+	JSON_entrada_tendP_Item_rhol& rhol();
+	JSON_entrada_tendP_Item_rhoMix& rhoMix();
+	JSON_entrada_tendP_Item_vazaoMassicaGas& vazaoMassicaGas();
+	JSON_entrada_tendP_Item_vazaoMassicaLiquido& vazaoMassicaLiquido();
+	JSON_entrada_tendP_Item_c0& c0();
+	JSON_entrada_tendP_Item_ud& ud();
+	JSON_entrada_tendP_Item_RGO& RGO();
+	JSON_entrada_tendP_Item_deng& deng();
+	JSON_entrada_tendP_Item_yco2& yco2();
+	JSON_entrada_tendP_Item_calor& calor();
+	JSON_entrada_tendP_Item_masstrans& masstrans();
+	JSON_entrada_tendP_Item_QLstd& QLstd();
+	JSON_entrada_tendP_Item_QLWstd& QLWstd();
+	JSON_entrada_tendP_Item_QLstd& QOstd();
+	JSON_entrada_tendP_Item_QLWstd& QOWstd();
+	JSON_entrada_tendP_Item_QLstdTotal& QLstdTotal();
+	JSON_entrada_tendP_Item_QGstd& QGstd();
+	JSON_entrada_tendP_Item_api& api();
+	JSON_entrada_tendP_Item_bsw& bsw();
+	JSON_entrada_tendP_Item_hidro& hidro();
+	JSON_entrada_tendP_Item_fric& fric();
+	JSON_entrada_tendP_Item_dengD& dengD();
+	JSON_entrada_tendP_Item_dengL& dengL();
+	JSON_entrada_tendP_Item_ReyInterno& ReyInterno();
+	JSON_entrada_tendP_Item_ReyExterno& ReyExterno();
+	JSON_entrada_tendP_Item_GrashInterno& GrashInterno();
+	JSON_entrada_tendP_Item_GrashExterno& GrashExterno();
+	JSON_entrada_tendP_Item_NusselInterno& NusselInterno();
+	JSON_entrada_tendP_Item_NusselExterno& NusselExterno();
+	JSON_entrada_tendP_Item_PrandtlInterno& PrandtlInterno();
+	JSON_entrada_tendP_Item_PrandtlExterno& PrandtlExterno();
+	JSON_entrada_tendP_Item_Froud& Froud();
+	JSON_entrada_tendP_Item_Rs& Rs();
+	JSON_entrada_tendP_Item_Bo& Bo();
+	JSON_entrada_tendP_Item_Hint& Hint();
+	JSON_entrada_tendP_Item_Hext& Hext();
+	JSON_entrada_tendP_Item_mlFonte& mlFonte();
+	JSON_entrada_tendP_Item_mgFonte& mgFonte();
+	JSON_entrada_tendP_Item_mcFonte& mcFonte();
+	JSON_entrada_tendP_Item_tempChokeJus& tempChokeJus();
+	JSON_entrada_tendP_Item_deltaPBomba& deltaPBomba();
+	JSON_entrada_tendP_Item_potenciaBomba& potenciaBomba();
+	JSON_entrada_tendP_Item_volMonM1PT& volMonM1PT();
+	JSON_entrada_tendP_Item_volJusM1PT& volJusM1PT();
+	JSON_entrada_tendP_Item_volMonM1ST& volMonM1ST();
+	JSON_entrada_tendP_Item_volJusM1ST& volJusM1ST();
+	JSON_entrada_tendP_Item_autoVal& autoVal();
+	JSON_entrada_tendP_Item_autoVel& autoVel();
+	JSON_entrada_tendP_Item_flutuacao& flutuacao();
+	JSON_entrada_tendP_Item_diametroInterno& diametroInterno();
+	JSON_entrada_tendP_Item_tempParede& tempParede();
+	JSON_entrada_tendP_Item_dadosParafina& dadosParafina();
+	JSON_entrada_tendP_Item_inventarioGas& inventarioGas();
+	JSON_entrada_tendP_Item_inventarioLiq& inventarioLiq();
+	JSON_entrada_tendP_Item_subResfria& subResfria();
+};
+
+#define JSON_entrada_tendP JSONArray<JSON_entrada_tendP_Item>
+#define JSON_entrada_tendTransP_Item_ativo JSONBoolean
+#define JSON_entrada_tendTransP_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_tendTransP_Item_camada JSONInteger
+#define JSON_entrada_tendTransP_Item_discretizacao JSONInteger
+#define JSON_entrada_tendTransP_Item_dt JSONNumber
+#define JSON_entrada_tendTransP_Item_rotulo JSONString
+
+class JSON_entrada_tendTransP_Item: public JSONObject {
+public:
+	JSON_entrada_tendTransP_Item();
+	JSON_entrada_tendTransP_Item_ativo& ativo();
+	JSON_entrada_tendTransP_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_tendTransP_Item_camada& camada();
+	JSON_entrada_tendTransP_Item_discretizacao& discretizacao();
+	JSON_entrada_tendTransP_Item_dt& dt();
+	JSON_entrada_tendTransP_Item_rotulo& rotulo();
+
+};
+
+#define JSON_entrada_tendTransP JSONArray<JSON_entrada_tendTransP_Item>
+#define JSON_entrada_tendS_Item_ativo JSONBoolean
+#define JSON_entrada_tendS_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_tendS_Item_dt JSONNumber
+#define JSON_entrada_tendS_Item_rotulo JSONString
+#define JSON_entrada_tendS_Item_pressao JSONBoolean
+#define JSON_entrada_tendS_Item_temperatura JSONBoolean
+#define JSON_entrada_tendS_Item_ugs JSONBoolean
+#define JSON_entrada_tendS_Item_ug JSONBoolean
+#define JSON_entrada_tendS_Item_tensaoCisalhamento JSONBoolean
+#define JSON_entrada_tendS_Item_viscosidadeGas JSONBoolean
+#define JSON_entrada_tendS_Item_rhog JSONBoolean
+#define JSON_entrada_tendS_Item_vazaoMassicaGas JSONBoolean
+#define JSON_entrada_tendS_Item_hidro JSONBoolean
+#define JSON_entrada_tendS_Item_fric JSONBoolean
+#define JSON_entrada_tendS_Item_FVHG JSONBoolean //chris - Hidratos
+#define JSON_entrada_tendS_Item_calor JSONBoolean
+#define JSON_entrada_tendS_Item_QGstd JSONBoolean
+#define JSON_entrada_tendS_Item_presEstagVGL JSONBoolean
+#define JSON_entrada_tendS_Item_tempEstagVGL JSONBoolean
+#define JSON_entrada_tendS_Item_presGargVGL JSONBoolean
+#define JSON_entrada_tendS_Item_tempGargVGL JSONBoolean
+#define JSON_entrada_tendS_Item_vazaoVGL JSONBoolean
+#define JSON_entrada_tendS_Item_VelocidadeMaximaGarganta JSONBoolean
+#define JSON_entrada_tendS_Item_ReyInterno JSONBoolean
+#define JSON_entrada_tendS_Item_ReyExterno JSONBoolean
+#define JSON_entrada_tendS_Item_GrashInterno JSONBoolean
+#define JSON_entrada_tendS_Item_GrashExterno JSONBoolean
+#define JSON_entrada_tendS_Item_NusselInterno JSONBoolean
+#define JSON_entrada_tendS_Item_NusselExterno JSONBoolean
+#define JSON_entrada_tendS_Item_PrandtlInterno JSONBoolean
+#define JSON_entrada_tendS_Item_PrandtlExterno JSONBoolean
+#define JSON_entrada_tendS_Item_Froud JSONBoolean
+#define JSON_entrada_tendS_Item_Hint JSONBoolean
+#define JSON_entrada_tendS_Item_Hext JSONBoolean
+#define JSON_entrada_tendS_Item_diametroInterno JSONBoolean
+#define JSON_entrada_tendS_Item_tempParede JSONBoolean
+#define JSON_entrada_tendS_Item_subResfria JSONBoolean
+
+class JSON_entrada_tendS_Item: public JSONObject {
+public:
+	JSON_entrada_tendS_Item();
+	JSON_entrada_tendS_Item_ativo& ativo();
+	JSON_entrada_tendS_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_tendS_Item_dt& dt();
+	JSON_entrada_tendS_Item_rotulo& rotulo();
+	JSON_entrada_tendS_Item_pressao& pressao();
+	JSON_entrada_tendS_Item_temperatura& temperatura();
+	JSON_entrada_tendS_Item_ugs& ugs();
+	JSON_entrada_tendS_Item_ug& ug();
+	JSON_entrada_tendS_Item_tensaoCisalhamento& tensaoCisalhamento();
+	JSON_entrada_tendS_Item_viscosidadeGas& viscosidadeGas();
+	JSON_entrada_tendS_Item_rhog& rhog();
+	JSON_entrada_tendS_Item_vazaoMassicaGas& vazaoMassicaGas();
+	JSON_entrada_tendS_Item_hidro& hidro();
+	JSON_entrada_tendS_Item_fric& fric();
+	JSON_entrada_tendS_Item_FVHG& FVHG(); //chris - Hidratos
+	JSON_entrada_tendS_Item_calor& calor();
+	JSON_entrada_tendS_Item_QGstd& QGstd();
+	JSON_entrada_tendS_Item_presEstagVGL& presEstagVGL();
+	JSON_entrada_tendS_Item_tempEstagVGL& tempEstagVGL();
+	JSON_entrada_tendS_Item_presGargVGL& presGargVGL();
+	JSON_entrada_tendS_Item_tempGargVGL& tempGargVGL();
+	JSON_entrada_tendS_Item_vazaoVGL& vazaoVGL();
+	JSON_entrada_tendS_Item_VelocidadeMaximaGarganta& VelocidadeMaximaGarganta();
+	JSON_entrada_tendS_Item_ReyInterno& ReyInterno();
+	JSON_entrada_tendS_Item_ReyExterno& ReyExterno();
+	JSON_entrada_tendS_Item_GrashInterno& GrashInterno();
+	JSON_entrada_tendS_Item_GrashExterno& GrashExterno();
+	JSON_entrada_tendS_Item_NusselInterno& NusselInterno();
+	JSON_entrada_tendS_Item_NusselExterno& NusselExterno();
+	JSON_entrada_tendS_Item_PrandtlInterno& PrandtlInterno();
+	JSON_entrada_tendS_Item_PrandtlExterno& PrandtlExterno();
+	JSON_entrada_tendS_Item_Froud& Froud();
+	JSON_entrada_tendS_Item_Hint& Hint();
+	JSON_entrada_tendS_Item_Hext& Hext();
+	JSON_entrada_tendS_Item_diametroInterno& diametroInterno();
+	JSON_entrada_tendS_Item_tempParede& tempParede();
+	JSON_entrada_tendS_Item_subResfria& subResfria();
+
+};
+
+#define JSON_entrada_tendS JSONArray<JSON_entrada_tendS_Item>
+#define JSON_entrada_tendTransS_Item_ativo JSONBoolean
+#define JSON_entrada_tendTransS_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_tendTransS_Item_camada JSONInteger
+#define JSON_entrada_tendTransS_Item_discretizacao JSONInteger
+#define JSON_entrada_tendTransS_Item_dt JSONNumber
+#define JSON_entrada_tendTransS_Item_rotulo JSONString
+
+class JSON_entrada_tendTransS_Item: public JSONObject {
+public:
+	JSON_entrada_tendTransS_Item();
+	JSON_entrada_tendTransS_Item_ativo& ativo();
+	JSON_entrada_tendTransS_Item_comprimentoMedido& comprimentoMedido();
+	JSON_entrada_tendTransS_Item_camada& camada();
+	JSON_entrada_tendTransS_Item_discretizacao& discretizacao();
+	JSON_entrada_tendTransS_Item_dt& dt();
+	JSON_entrada_tendTransS_Item_rotulo& rotulo();
+
+};
+
+#define JSON_entrada_tendTransS JSONArray<JSON_entrada_tendTransS_Item>
+#define JSON_entrada_tela_Item_ativo JSONBoolean
+#define JSON_entrada_tela_Item_coluna JSONBoolean
+#define JSON_entrada_tela_Item_celula JSONInteger
+#define JSON_entrada_tela_Item_variavel JSONInteger
+
+class JSON_entrada_tela_Item: public JSONObject {
+public:
+	JSON_entrada_tela_Item();
+	JSON_entrada_tela_Item_ativo& ativo();
+	JSON_entrada_tela_Item_coluna& coluna();
+	JSON_entrada_tela_Item_celula& celula();
+	JSON_entrada_tela_Item_variavel& variavel();
+
+};
+
+#define JSON_entrada_tela JSONArray<JSON_entrada_tela_Item>
+#define JSON_entrada_gasInj_ativo JSONBoolean
+#define JSON_entrada_gasInj_tipoCC JSONInteger
+#define JSON_entrada_gasInj_temperatura_Item JSONNumber
+#define JSON_entrada_gasInj_temperatura JSONArray<JSON_entrada_gasInj_temperatura_Item>
+#define JSON_entrada_gasInj_tempo_Item JSONNumber
+#define JSON_entrada_gasInj_tempo JSONArray<JSON_entrada_gasInj_tempo_Item>
+#define JSON_entrada_gasInj_vazaoGas_Item JSONNumber
+#define JSON_entrada_gasInj_vazaoGas JSONArray<JSON_entrada_gasInj_vazaoGas_Item>
+#define JSON_entrada_gasInj_pressaoInjecao_Item JSONNumber
+#define JSON_entrada_gasInj_pressaoInjecao JSONArray<JSON_entrada_gasInj_pressaoInjecao_Item>
+#define JSON_entrada_gasInj_chuteVazaoInjecao JSONBoolean
+
+class JSON_entrada_gasInj: public JSONObject {
+public:
+	JSON_entrada_gasInj();
+	JSON_entrada_gasInj_ativo& ativo();
+	JSON_entrada_gasInj_tipoCC& tipoCC();
+	JSON_entrada_gasInj_temperatura& temperatura();
+	JSON_entrada_gasInj_tempo& tempo();
+	JSON_entrada_gasInj_vazaoGas& vazaoGas();
+	JSON_entrada_gasInj_pressaoInjecao& pressaoInjecao();
+	JSON_entrada_gasInj_chuteVazaoInjecao& chuteVazaoInjecao();
+
+};
+
+#define JSON_entrada_perfilProducao_ativo JSONBoolean
+#define JSON_entrada_perfilProducao_tempo_Item JSONNumber
+#define JSON_entrada_perfilProducao_tempo JSONArray<JSON_entrada_perfilProducao_tempo_Item>
+#define JSON_entrada_perfilProducao_pressao JSONBoolean
+#define JSON_entrada_perfilProducao_temperatura JSONBoolean
+#define JSON_entrada_perfilProducao_holdup JSONBoolean
+#define JSON_entrada_perfilProducao_FVH JSONBoolean //chris - hidratos
+#define JSON_entrada_perfilProducao_bet JSONBoolean
+#define JSON_entrada_perfilProducao_ugs JSONBoolean
+#define JSON_entrada_perfilProducao_uls JSONBoolean
+#define JSON_entrada_perfilProducao_ug JSONBoolean
+#define JSON_entrada_perfilProducao_ul JSONBoolean
+#define JSON_entrada_perfilProducao_arra JSONBoolean
+#define JSON_entrada_perfilProducao_viscosidadeLiquido JSONBoolean
+#define JSON_entrada_perfilProducao_viscosidadeGas JSONBoolean
+#define JSON_entrada_perfilProducao_rhog JSONBoolean
+#define JSON_entrada_perfilProducao_rhol JSONBoolean
+#define JSON_entrada_perfilProducao_rhoo JSONBoolean
+#define JSON_entrada_perfilProducao_rhoa JSONBoolean
+#define JSON_entrada_perfilProducao_rhoMix JSONBoolean
+#define JSON_entrada_perfilProducao_RS JSONBoolean
+#define JSON_entrada_perfilProducao_vazaoMassicaGas JSONBoolean
+#define JSON_entrada_perfilProducao_vazaoMassicaLiquido JSONBoolean
+#define JSON_entrada_perfilProducao_c0 JSONBoolean
+#define JSON_entrada_perfilProducao_ud JSONBoolean
+#define JSON_entrada_perfilProducao_RGO JSONBoolean
+#define JSON_entrada_perfilProducao_deng JSONBoolean
+#define JSON_entrada_perfilProducao_yco2 JSONBoolean
+#define JSON_entrada_perfilProducao_calor JSONBoolean
+#define JSON_entrada_perfilProducao_masstrans JSONBoolean
+#define JSON_entrada_perfilProducao_cpgas JSONBoolean
+#define JSON_entrada_perfilProducao_cpliq JSONBoolean
+#define JSON_entrada_perfilProducao_QLstd JSONBoolean
+#define JSON_entrada_perfilProducao_QLWstd JSONBoolean
+#define JSON_entrada_perfilProducao_QLstdTotal JSONBoolean
+#define JSON_entrada_perfilProducao_QGstd JSONBoolean
+#define JSON_entrada_perfilProducao_api JSONBoolean
+#define JSON_entrada_perfilProducao_bsw JSONBoolean
+#define JSON_entrada_perfilProducao_hidro JSONBoolean
+#define JSON_entrada_perfilProducao_fric JSONBoolean
+#define JSON_entrada_perfilProducao_Term1 JSONBoolean
+#define JSON_entrada_perfilProducao_Term2 JSONBoolean
+#define JSON_entrada_perfilProducao_dengD JSONBoolean
+#define JSON_entrada_perfilProducao_dengL JSONBoolean
+#define JSON_entrada_perfilProducao_ReyInterno JSONBoolean
+#define JSON_entrada_perfilProducao_ReyExterno JSONBoolean
+#define JSON_entrada_perfilProducao_GrashInterno JSONBoolean
+#define JSON_entrada_perfilProducao_GrashExterno JSONBoolean
+#define JSON_entrada_perfilProducao_NusselInterno JSONBoolean
+#define JSON_entrada_perfilProducao_NusselExterno JSONBoolean
+#define JSON_entrada_perfilProducao_PrandtlInterno JSONBoolean
+#define JSON_entrada_perfilProducao_PrandtlExterno JSONBoolean
+#define JSON_entrada_perfilProducao_Froud JSONBoolean
+#define JSON_entrada_perfilProducao_Rs JSONBoolean
+#define JSON_entrada_perfilProducao_Bo JSONBoolean
+#define JSON_entrada_perfilProducao_Hint JSONBoolean
+#define JSON_entrada_perfilProducao_Hext JSONBoolean
+#define JSON_entrada_perfilProducao_temperaturaAmbiente JSONBoolean
+#define JSON_entrada_perfilProducao_PrandtlGas JSONBoolean
+#define JSON_entrada_perfilProducao_PrandtlLiquido JSONBoolean
+#define JSON_entrada_perfilProducao_pseudoLiquido JSONBoolean
+#define JSON_entrada_perfilProducao_pseudoGas JSONBoolean
+#define JSON_entrada_perfilProducao_pseudoMist JSONBoolean
+#define JSON_entrada_perfilProducao_TResi JSONBoolean
+#define JSON_entrada_perfilProducao_RedutorAtrito JSONBoolean
+#define JSON_entrada_perfilProducao_angulo JSONBoolean
+#define JSON_entrada_perfilProducao_diametroInterno JSONBoolean
+#define JSON_entrada_perfilProducao_tempParede JSONBoolean
+#define JSON_entrada_perfilProducao_subResfria JSONBoolean
+#define JSON_entrada_perfilProducao_dadosParafina JSONBoolean
+
+class JSON_entrada_perfilProducao: public JSONObject {
+public:
+	JSON_entrada_perfilProducao();
+	JSON_entrada_perfilProducao_ativo& ativo();
+	JSON_entrada_perfilProducao_tempo& tempo();
+	JSON_entrada_perfilProducao_pressao& pressao();
+	JSON_entrada_perfilProducao_temperatura& temperatura();
+	JSON_entrada_perfilProducao_holdup& holdup();
+	JSON_entrada_perfilProducao_FVH& FVH(); //chris - hidratos
+	JSON_entrada_perfilProducao_bet& bet();
+	JSON_entrada_perfilProducao_ugs& ugs();
+	JSON_entrada_perfilProducao_uls& uls();
+	JSON_entrada_perfilProducao_ug& ug();
+	JSON_entrada_perfilProducao_ul& ul();
+	JSON_entrada_perfilProducao_arra& arra();
+	JSON_entrada_perfilProducao_viscosidadeLiquido& viscosidadeLiquido();
+	JSON_entrada_perfilProducao_viscosidadeGas& viscosidadeGas();
+	JSON_entrada_perfilProducao_rhog& rhog();
+	JSON_entrada_perfilProducao_rhol& rhol();
+	JSON_entrada_perfilProducao_rhoo& rhoo();
+	JSON_entrada_perfilProducao_rhoa& rhoa();
+	JSON_entrada_perfilProducao_rhoMix& rhoMix();
+	JSON_entrada_perfilProducao_RS& RS();
+	JSON_entrada_perfilProducao_vazaoMassicaGas& vazaoMassicaGas();
+	JSON_entrada_perfilProducao_vazaoMassicaLiquido& vazaoMassicaLiquido();
+	JSON_entrada_perfilProducao_c0& c0();
+	JSON_entrada_perfilProducao_ud& ud();
+	JSON_entrada_perfilProducao_RGO& RGO();
+	JSON_entrada_perfilProducao_deng& deng();
+	JSON_entrada_perfilProducao_yco2& yco2();
+	JSON_entrada_perfilProducao_calor& calor();
+	JSON_entrada_perfilProducao_masstrans& masstrans();
+	JSON_entrada_perfilProducao_cpgas& cpgas();
+	JSON_entrada_perfilProducao_cpliq& cpliq();
+	JSON_entrada_perfilProducao_QLstd& QLstd();
+	JSON_entrada_perfilProducao_QLWstd& QLWstd();
+	JSON_entrada_perfilProducao_QLstdTotal& QLstdTotal();
+	JSON_entrada_perfilProducao_QGstd& QGstd();
+	JSON_entrada_perfilProducao_api& api();
+	JSON_entrada_perfilProducao_bsw& bsw();
+	JSON_entrada_perfilProducao_hidro& hidro();
+	JSON_entrada_perfilProducao_fric& fric();
+	JSON_entrada_perfilProducao_Term1& Term1();
+	JSON_entrada_perfilProducao_Term2& Term2();
+	JSON_entrada_perfilProducao_dengD& dengD();
+	JSON_entrada_perfilProducao_dengL& dengL();
+	JSON_entrada_perfilProducao_ReyInterno& ReyInterno();
+	JSON_entrada_perfilProducao_ReyExterno& ReyExterno();
+	JSON_entrada_perfilProducao_GrashInterno& GrashInterno();
+	JSON_entrada_perfilProducao_GrashExterno& GrashExterno();
+	JSON_entrada_perfilProducao_NusselInterno& NusselInterno();
+	JSON_entrada_perfilProducao_NusselExterno& NusselExterno();
+	JSON_entrada_perfilProducao_PrandtlInterno& PrandtlInterno();
+	JSON_entrada_perfilProducao_PrandtlExterno& PrandtlExterno();
+	JSON_entrada_perfilProducao_Froud& Froud();
+	JSON_entrada_perfilProducao_Rs& Rs();
+	JSON_entrada_perfilProducao_Bo& Bo();
+	JSON_entrada_perfilProducao_Hint& Hint();
+	JSON_entrada_perfilProducao_Hext& Hext();
+	JSON_entrada_perfilProducao_temperaturaAmbiente& temperaturaAmbiente();
+	JSON_entrada_perfilProducao_PrandtlGas& PrandtlGas();
+	JSON_entrada_perfilProducao_PrandtlLiquido& PrandtlLiquido();
+	JSON_entrada_perfilProducao_pseudoLiquido& pseudoLiquido();
+	JSON_entrada_perfilProducao_pseudoGas& pseudoGas();
+	JSON_entrada_perfilProducao_pseudoMist& pseudoMist();
+	JSON_entrada_perfilProducao_TResi& TResi();
+	JSON_entrada_perfilProducao_RedutorAtrito& RedutorAtrito();
+	JSON_entrada_perfilProducao_angulo& angulo();
+	JSON_entrada_perfilProducao_diametroInterno& diametroInterno();
+	JSON_entrada_perfilProducao_tempParede& tempParede();
+	JSON_entrada_perfilProducao_subResfria& subResfria();
+	JSON_entrada_perfilProducao_dadosParafina& dadosParafina();
+
+};
+
+#define JSON_entrada_perfilServico_ativo JSONBoolean
+#define JSON_entrada_perfilServico_tempo_Item JSONNumber
+#define JSON_entrada_perfilServico_tempo JSONArray<JSON_entrada_perfilServico_tempo_Item>
+#define JSON_entrada_perfilServico_pressao JSONBoolean
+#define JSON_entrada_perfilServico_temperatura JSONBoolean
+#define JSON_entrada_perfilServico_ugs JSONBoolean
+#define JSON_entrada_perfilServico_ug JSONBoolean
+#define JSON_entrada_perfilServico_tensaoCisalhamento JSONBoolean
+#define JSON_entrada_perfilServico_viscosidadeGas JSONBoolean
+#define JSON_entrada_perfilServico_rhog JSONBoolean
+#define JSON_entrada_perfilServico_vazaoMassicaGas JSONBoolean
+#define JSON_entrada_perfilServico_QGstd JSONBoolean
+#define JSON_entrada_perfilServico_fric JSONBoolean
+#define JSON_entrada_perfilServico_calor JSONBoolean
+#define JSON_entrada_perfilServico_hidro JSONBoolean
+#define JSON_entrada_perfilServico_FVHG JSONBoolean //chris - Hidratos
+#define JSON_entrada_perfilServico_ReyInterno JSONBoolean
+#define JSON_entrada_perfilServico_ReyExterno JSONBoolean
+#define JSON_entrada_perfilServico_GrashInterno JSONBoolean
+#define JSON_entrada_perfilServico_GrashExterno JSONBoolean
+#define JSON_entrada_perfilServico_NusselInterno JSONBoolean
+#define JSON_entrada_perfilServico_NusselExterno JSONBoolean
+#define JSON_entrada_perfilServico_PrandtlInterno JSONBoolean
+#define JSON_entrada_perfilServico_PrandtlExterno JSONBoolean
+#define JSON_entrada_perfilServico_Hint JSONBoolean
+#define JSON_entrada_perfilServico_Hext JSONBoolean
+#define JSON_entrada_perfilServico_temperaturaAmbiente JSONBoolean
+#define JSON_entrada_perfilServico_angulo JSONBoolean
+#define JSON_entrada_perfilServico_diametroInterno JSONBoolean
+#define JSON_entrada_perfilServico_tempParede JSONBoolean
+#define JSON_entrada_perfilServico_subResfria JSONBoolean
+
+class JSON_entrada_perfilServico: public JSONObject {
+public:
+	JSON_entrada_perfilServico();
+	JSON_entrada_perfilServico_ativo& ativo();
+	JSON_entrada_perfilServico_tempo& tempo();
+	JSON_entrada_perfilServico_pressao& pressao();
+	JSON_entrada_perfilServico_temperatura& temperatura();
+	JSON_entrada_perfilServico_ugs& ugs();
+	JSON_entrada_perfilServico_ug& ug();
+	JSON_entrada_perfilServico_tensaoCisalhamento& tensaoCisalhamento();
+	JSON_entrada_perfilServico_viscosidadeGas& viscosidadeGas();
+	JSON_entrada_perfilServico_rhog& rhog();
+	JSON_entrada_perfilServico_vazaoMassicaGas& vazaoMassicaGas();
+	JSON_entrada_perfilServico_QGstd& QGstd();
+	JSON_entrada_perfilServico_fric& fric();
+	JSON_entrada_perfilServico_calor& calor();
+	JSON_entrada_perfilServico_hidro& hidro();
+	JSON_entrada_perfilServico_FVHG& FVHG(); //chris - Hidratos
+	JSON_entrada_perfilServico_ReyInterno& ReyInterno();
+	JSON_entrada_perfilServico_ReyExterno& ReyExterno();
+	JSON_entrada_perfilServico_GrashInterno& GrashInterno();
+	JSON_entrada_perfilServico_GrashExterno& GrashExterno();
+	JSON_entrada_perfilServico_NusselInterno& NusselInterno();
+	JSON_entrada_perfilServico_NusselExterno& NusselExterno();
+	JSON_entrada_perfilServico_PrandtlInterno& PrandtlInterno();
+	JSON_entrada_perfilServico_PrandtlExterno& PrandtlExterno();
+	JSON_entrada_perfilServico_Hint& Hint();
+	JSON_entrada_perfilServico_Hext& Hext();
+	JSON_entrada_perfilServico_temperaturaAmbiente& temperaturaAmbiente();
+	JSON_entrada_perfilServico_angulo& angulo();
+	JSON_entrada_perfilServico_diametroInterno& diametroInterno();
+	JSON_entrada_perfilServico_tempParede& tempParede();
+	JSON_entrada_perfilServico_subResfria& subResfria();
+
+};
+
+#define JSON_entrada_perfisTransP_ativo JSONBoolean
+#define JSON_entrada_perfisTransP_tempo_Item JSONNumber
+#define JSON_entrada_perfisTransP_tempo JSONArray<JSON_entrada_perfisTransP_tempo_Item>
+#define JSON_entrada_perfisTransP_comprimentoMedido_Item JSONNumber
+#define JSON_entrada_perfisTransP_comprimentoMedido JSONArray<JSON_entrada_perfisTransP_comprimentoMedido_Item>
+
+class JSON_entrada_perfisTransP: public JSONObject {
+public:
+	JSON_entrada_perfisTransP();
+	JSON_entrada_perfisTransP_ativo& ativo();
+	JSON_entrada_perfisTransP_tempo& tempo();
+	JSON_entrada_perfisTransP_comprimentoMedido& comprimentoMedido();
+
+};
+
+#define JSON_entrada_perfisTransS_ativo JSONBoolean
+#define JSON_entrada_perfisTransS_tempo_Item JSONNumber
+#define JSON_entrada_perfisTransS_tempo JSONArray<JSON_entrada_perfisTransS_tempo_Item>
+#define JSON_entrada_perfisTransS_comprimentoMedido_Item JSONNumber
+#define JSON_entrada_perfisTransS_comprimentoMedido JSONArray<JSON_entrada_perfisTransS_comprimentoMedido_Item>
+
+class JSON_entrada_perfisTransS: public JSONObject {
+public:
+	JSON_entrada_perfisTransS();
+	JSON_entrada_perfisTransS_ativo& ativo();
+	JSON_entrada_perfisTransS_tempo& tempo();
+	JSON_entrada_perfisTransS_comprimentoMedido& comprimentoMedido();
+
+};
+
+#define JSON_entrada_separador_ativo JSONBoolean
+#define JSON_entrada_separador_tempo_Item JSONNumber
+#define JSON_entrada_separador_tempo JSONArray<JSON_entrada_separador_tempo_Item>
+#define JSON_entrada_separador_pressao_Item JSONNumber
+#define JSON_entrada_separador_pressao JSONArray<JSON_entrada_separador_pressao_Item>
+
+class JSON_entrada_separador: public JSONObject {
+public:
+	JSON_entrada_separador();
+	JSON_entrada_separador_ativo& ativo();
+	JSON_entrada_separador_tempo& tempo();
+	JSON_entrada_separador_pressao& pressao();
+
+};
+
+#define JSON_entrada_correcao_ativo JSONBoolean
+#define JSON_entrada_correcao_dPdLHidro_Item JSONNumber
+#define JSON_entrada_correcao_dPdLHidro JSONArray<JSON_entrada_correcao_dPdLHidro_Item>
+#define JSON_entrada_correcao_dPdLFric_Item JSONNumber
+#define JSON_entrada_correcao_dPdLFric JSONArray<JSON_entrada_correcao_dPdLFric_Item>
+#define JSON_entrada_correcao_dTdL_Item JSONNumber
+#define JSON_entrada_correcao_dTdL JSONArray<JSON_entrada_correcao_dTdL_Item>
+
+class JSON_entrada_correcao: public JSONObject {
+public:
+	JSON_entrada_correcao();
+	JSON_entrada_correcao_ativo& ativo();
+	JSON_entrada_correcao_dPdLHidro& dPdLHidro();
+	JSON_entrada_correcao_dPdLFric& dPdLFric();
+	JSON_entrada_correcao_dTdL& dTdL();
+
+};
+
+#define JSON_entrada_chokeSup_ativo JSONBoolean
+#define JSON_entrada_chokeSup_curvaCV JSONInteger
+#define JSON_entrada_chokeSup_curvaDinamic JSONInteger
+#define JSON_entrada_chokeSup_tempo_Item JSONNumber
+#define JSON_entrada_chokeSup_tempo JSONArray<JSON_entrada_chokeSup_tempo_Item>
+#define JSON_entrada_chokeSup_abertura_Item JSONNumber
+#define JSON_entrada_chokeSup_abertura JSONArray<JSON_entrada_chokeSup_abertura_Item>
+#define JSON_entrada_chokeSup_coeficienteDescarga JSONNumber
+#define JSON_entrada_chokeSup_modelo JSONInteger
+#define JSON_entrada_chokeSup_x1_Item JSONNumber
+#define JSON_entrada_chokeSup_x1 JSONArray<JSON_entrada_chokeSup_x1_Item>
+#define JSON_entrada_chokeSup_cv1_Item JSONNumber
+#define JSON_entrada_chokeSup_cv1 JSONArray<JSON_entrada_chokeSup_cv1_Item>
+
+class JSON_entrada_chokeSup: public JSONObject {
+public:
+	JSON_entrada_chokeSup();
+	JSON_entrada_chokeSup_ativo& ativo();
+	JSON_entrada_chokeSup_curvaCV& curvaCV();
+	JSON_entrada_chokeSup_curvaDinamic& curvaDinamic();
+	JSON_entrada_chokeSup_tempo& tempo();
+	JSON_entrada_chokeSup_abertura& abertura();
+	JSON_entrada_chokeSup_coeficienteDescarga& coeficienteDescarga();
+	JSON_entrada_chokeSup_modelo& modelo();
+	JSON_entrada_chokeSup_x1& x1();
+	JSON_entrada_chokeSup_cv1& cv1();
+
+};
+
+#define JSON_entrada_chokeInj_ativo JSONBoolean
+#define JSON_entrada_chokeInj_tempo_Item JSONNumber
+#define JSON_entrada_chokeInj_tempo JSONArray<JSON_entrada_chokeInj_tempo_Item>
+#define JSON_entrada_chokeInj_abertura_Item JSONNumber
+#define JSON_entrada_chokeInj_abertura JSONArray<JSON_entrada_chokeInj_abertura_Item>
+#define JSON_entrada_chokeInj_coeficienteDescarga JSONNumber
+
+class JSON_entrada_chokeInj: public JSONObject {
+public:
+	JSON_entrada_chokeInj();
+	JSON_entrada_chokeInj_ativo& ativo();
+	JSON_entrada_chokeInj_tempo& tempo();
+	JSON_entrada_chokeInj_abertura& abertura();
+	JSON_entrada_chokeInj_coeficienteDescarga& coeficienteDescarga();
+
+};
+
+#define JSON_entrada_CondicaoContPocInjec_ativo JSONBoolean
+#define JSON_entrada_CondicaoContPocInjec_usuario JSONString
+#define JSON_entrada_CondicaoContPocInjec_tipoFluido JSONInteger
+#define JSON_entrada_CondicaoContPocInjec_salinidade JSONNumber
+#define JSON_entrada_CondicaoContPocInjec_arquivoPvtsim JSONString
+#define JSON_entrada_CondicaoContPocInjec_condContorno JSONInteger
+#define JSON_entrada_CondicaoContPocInjec_tempInj JSONNumber
+#define JSON_entrada_CondicaoContPocInjec_vazLiq JSONNumber
+#define JSON_entrada_CondicaoContPocInjec_presInjec JSONNumber
+#define JSON_entrada_CondicaoContPocInjec_presFundo JSONNumber
+
+class JSON_entrada_CondicaoContPocInjec: public JSONObject {
+public:
+	JSON_entrada_CondicaoContPocInjec();
+	JSON_entrada_CondicaoContPocInjec_ativo& ativo();
+	JSON_entrada_CondicaoContPocInjec_usuario& usuario();
+	JSON_entrada_CondicaoContPocInjec_tipoFluido& tipoFluido();
+	JSON_entrada_CondicaoContPocInjec_salinidade& salinidade();
+	JSON_entrada_CondicaoContPocInjec_arquivoPvtsim& arquivoPvtsim();
+	JSON_entrada_CondicaoContPocInjec_condContorno& condContorno();
+	JSON_entrada_CondicaoContPocInjec_tempInj& tempInj();
+	JSON_entrada_CondicaoContPocInjec_vazLiq& vazLiq();
+	JSON_entrada_CondicaoContPocInjec_presInjec& presInjec();
+	JSON_entrada_CondicaoContPocInjec_presFundo& presFundo();
+
+};
+
+
+#define JSON_entrada_intermitenciaSevera_Item_ativo JSONBoolean
+#define JSON_entrada_intermitenciaSevera_Item_id JSONInteger
+#define JSON_entrada_intermitenciaSevera_Item_inicioTrechoAcumula JSONNumber
+#define JSON_entrada_intermitenciaSevera_Item_fimTrechoAcumula JSONNumber
+#define JSON_entrada_intermitenciaSevera_Item_fimTrechoColuna JSONNumber
+#define JSON_entrada_intermitenciaSevera_Item_fracaoVazioPenetracao JSONNumber
+#define JSON_entrada_intermitenciaSevera_Item_criterio JSONInteger
+
+
+class JSON_entrada_intermitenciaSevera_Item: public JSONObject {
+public:
+	JSON_entrada_intermitenciaSevera_Item();
+	JSON_entrada_intermitenciaSevera_Item_ativo& ativo();
+	JSON_entrada_intermitenciaSevera_Item_id& id();
+	JSON_entrada_intermitenciaSevera_Item_inicioTrechoAcumula& inicioTrechoAcumula();
+	JSON_entrada_intermitenciaSevera_Item_fimTrechoAcumula& fimTrechoAcumula();
+	JSON_entrada_intermitenciaSevera_Item_fimTrechoColuna& fimTrechoColuna();
+	JSON_entrada_intermitenciaSevera_Item_fracaoVazioPenetracao& fracaoVazioPenetracao();
+	JSON_entrada_intermitenciaSevera_Item_criterio& criterio();
+
+
+};
+
+#define JSON_entrada_intermitenciaSevera JSONArray<JSON_entrada_intermitenciaSevera_Item>
+
+
+class JSON_entrada: public JSONRootObject {
+public:
+	JSON_entrada();
+	JSON_entrada_sistema& sistema();
+	JSON_entrada_versaoJson& versaoJson();
+	JSON_entrada_configuracaoInicial& configuracaoInicial();
+	JSON_entrada_tabela& tabela();
+	JSON_entrada_parafina& parafina();
+	JSON_entrada_fluidoGas& fluidoGas();
+	JSON_entrada_fluidosProducao& fluidosProducao();
+	JSON_entrada_fluidoComplementar& fluidoComplementar();
+	JSON_entrada_valvula& valvula();
+	JSON_entrada_fonteLiquido& fonteLiquido();
+	JSON_entrada_fonteMassa& fonteMassa();
+	JSON_entrada_fonteGas& fonteGas();
+	JSON_entrada_fontePoroRadial& fontePoroRadial();
+	JSON_entrada_fontePoro2D& fontePoro2D();
+	JSON_entrada_fonteGasLift& fonteGasLift();
+	JSON_entrada_material& material();
+	JSON_entrada_secaoTransversal& secaoTransversal();
+	JSON_entrada_tempo& tempo();
+	JSON_entrada_dutosProducao& dutosProducao();
+	JSON_entrada_dutosServico& dutosServico();
+	JSON_entrada_hidrato& hidrato();
+	JSON_entrada_ipr& ipr();
+	JSON_entrada_fonteChoke& fonteChoke();
+	JSON_entrada_bcs& bcs();
+	JSON_entrada_bombaVolumetrica& bombaVolumetrica();
+	JSON_entrada_deltaPressao& deltaPressao();
+	JSON_entrada_master1& master1();
+	JSON_entrada_master2& master2();
+	JSON_entrada_pig& pig();
+	JSON_entrada_fontePressao& fontePressao();
+	JSON_entrada_tendP& tendP();
+	JSON_entrada_tendTransP& tendTransP();
+	JSON_entrada_tendS& tendS();
+	JSON_entrada_tendTransS& tendTransS();
+	JSON_entrada_tela& tela();
+	JSON_entrada_gasInj& gasInj();
+	JSON_entrada_perfilProducao& perfilProducao();
+	JSON_entrada_perfilServico& perfilServico();
+	JSON_entrada_perfisTransP& perfisTransP();
+	JSON_entrada_perfisTransS& perfisTransS();
+	JSON_entrada_separador& separador();
+	JSON_entrada_correcao& correcao();
+	JSON_entrada_chokeSup& chokeSup();
+	JSON_entrada_chokeInj& chokeInj();
+	JSON_entrada_CondicaoContPocInjec& CondicaoContPocInjec();
+	JSON_entrada_intermitenciaSevera& intermitenciaSevera();
+
+};
+

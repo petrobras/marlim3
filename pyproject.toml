@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# All configuration is in setup.py to avoid conflicts
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short --durations=0 -s"
+markers = [
+    "simulacao: testes que executam o simulador Marlim3 (requerem executável compilado)",
+]
+
+[tool.coverage.run]
+source = ["marlim3"]
+omit = [
+    "marlim3/__pycache__/*",
+    "marlim3/_plots/*",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

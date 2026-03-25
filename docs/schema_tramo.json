@@ -1,0 +1,3829 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JSON de entrada do Marlim 3",
+  "type": "object",
+  "properties": {
+    "sistema": {
+      "type": "string",
+      "enum": ["MULTIFASICO","INJETOR"],
+      "description": "Define o sistema a ser modelado: poço produtor (MULTIFASICO) ou injetor (INJETOR)."
+    },
+    "versaoJSON": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["3.0.0", "3.1.6"],
+      "description": "Versão do software referenciada por este JSON."
+    },
+    "configuracaoInicial": {
+      "type": "object",
+      "description": "Parâmetros gerais da simulação.",
+      "properties": {
+        "saidaClassica": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicativo de como será o texto de saída exibido ao fim da simulação (atributo meramente de perfumaria)."
+        },
+        "sentidoGeometriaSegueEscoamento": {
+          "type": "boolean",
+          "default": true,
+          "description": "Indica se o sentido de preenchimento da geometria segue o mesmo sentido do escoamento. Se true, o zero é o início da tubulação. Se false, a zero é o final da tubulação. É importante ressaltar que, no caso false, os ângulos ainda são definidos com relação ao sentido do escoamento, para manter a consistência com o Marlim 2."
+        },
+        "linhaGas": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indica se o sistema de produção contará com uma linha de serviço ou injeção de gás."
+        },
+        "saidaTela": {
+          "type": "boolean",
+          "default": false,
+          "description": "Define como será a saída na tela do computador durante a simulação. A saída pode indicar apenas a porcentagem simulada ou fornecer informações mais detalhadas, como tempo, passo de tempo e variáveis. O valor 0 indica a saída com porcentagem, que é o caso padrão."
+        },
+        "equilibrioTermico": {
+          "type": "boolean",
+          "default": false,
+          "description": "Define estratégia para cálculo da distribuição de temperatura da seção transversal da parede da tubulação. Se true, interpola-se linearmente entre a temperatura ambiente e a temperatura do fluido. Se false, usa-se a temperatura ambiente por toda a seção transversal da parede. Usada para o caso configuracaoInicial: {condicaoInicial: 0}."
+        },
+        "latente": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opção para cálculo de entalpia de fluido black oil. Se true, usa interpolação em tabela PVT. Se false, usa o próprio modelo black oil. Para tanto, deve-se também informar o arquivo PVTSim onde serão obtidas as entalpias de líquido e gás."
+        },
+        "condlatente": {
+          "type": "boolean",
+          "default": true,
+          "description": "Se false, desliga o calor latente em processos de transferência de massa de condensação na equação de energia na mistura, o que é útil em casos extremos e pouco comuns de condensação retrógrada (óleos de comportamento exótico, principalmente em modelos composicionais)."
+        },
+        "pvtsimArq": {
+          "type": "string",
+          "description": "Nome do arquivo .tab ou .ctm da tabela PVT, caso seja utilizada. Válido para poços produtores (no caso de poços injetores, o arquivo é definido em 'CondicaoContPocInjec')."
+        },
+        "modeloFluidoTabelaFlash": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, usa tabela PVT de flash para modelagem de fluido. Se false, a modelagem vai ser por meio de black oil ou modelo composicional, a depender da flag {configuracaoInicial: {modeloFluidoComposicional}}."
+        },
+        "modeloFluidoComposicional": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, usa modelos composicionais para modelagem de fluido. Este parâmetro só é considerado se {configuracaoInicial: {modeloFluidoTabelaFlash}} for false."
+        },
+        "modeloTabelaDinamica": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, calcula uma tabela montada a posteriori da simulação black oil usando o modelo composicional, para os vários trechos de composição distintas, aproveitando o mapeamento de P e T oferecido pelo resultado inicial da simulação BO. Válido apenas quando se usa modelos composicionais em regime permanente. Pode acelerar significativamente o tempo computacional, em particular no caso de redes, por evitar o cálculo repetitivo de flashs a cada iteração."
+        },
+        "modeloCp": {
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 0,
+          "description": "Opção para cálculo de Cp de fluido black oil. Se 1, usa interpolação em tabela PVT. Se 0, usa o próprio modelo black oil."
+        },
+        "modeloJTL": {
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 0,
+          "description": "Se 1, indica que, mesmo usando um modelo black oil, serão utilizados os valores de d(rho_l)/dT de uma tabela PVTSim."
+        },
+        "tabP": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, antes do início da simulação, gera uma tabela com as compressibilidades e suas derivadas dos fluidos black oil da linha de produção declarados utilizando P e T reduzidas. O fator de compressibilidade é estimado por meio de interpolações dessa tabela a cada iteração, o que pode reduzir significativamente o tempo de simulação, especialmente a transiente."
+        },
+        "AS": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, efetua análise de sensibilidade para o regime permanente a partir do arquivo 'leituraAS.json'."
+        },
+        "trackRgo": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, realiza uma atualização do RGO (além de outras variáveis como API e BSW) ao longo da tubulação utilizando regras de mistura quando correntes se encontram."
+        },
+        "trackDensidadeGas": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, realiza uma atualização da densidade do gás (além de outras variáveis como a fração de CO2) ao longo da tubulação utilizando regras de mistura quando correntes se encontram."
+        },
+        "correcaoDenGasLivreBlackOil": {
+          "type": "boolean",
+          "default": false,
+          "description": "Caso seja false, a densidade in situ é calculada com base em condições padrão. Caso seja true, considera-se o desvio presente in situ devido à pressão mais alta, o que resulta na liberação de hidrocarbonetos mais leves."
+        },
+        "tabelaRSPB": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indica a montagem de uma tabela de Razão de Solubilidade (RS) usando um modelo black oil antes de iniciar a simulação. Isso pode melhorar o desempenho, sendo especialmente útil no modelo RS de Livia Fulchignoni, que demanda elevado tempo computacional."
+        },
+        "propFluido": {
+          "type": "integer",
+          "default": 0,
+          "enum": [0,1],
+          "description": "Funcionalidade legada para cálculo de propriedade de fluido usando modelo híbrido (que é um modelo dominado por BO, mas com algumas propriedades obtidas por arquivos PVTSim: entalpias, eventualmente CPs das fases e Joule-Thompson do líquido). 0 - black oil; 1 - híbrido. Válido para modelagem black oil."
+        },
+        "iniFluidoP": {
+          "type": "integer",
+          "default": 0,
+          "description": "ID do fluido que inicialmente preencherá o sistema de produção (válido para configuracaoInicial: {condicaoInicial: 0})."
+        },
+        "tabG": {
+          "type": "boolean",
+          "default": false,
+          "description": "Similar ao atributo tabP, mas para o gás da linha de serviço."
+        },
+        "escorregamentoPermanente": {
+          "type": "boolean",
+          "default": true,
+          "description": "Se true, indica que o modelo considerará escorregamento no solver permanente."
+        },
+        "escorregamentoTransiente": {
+          "type": "boolean",
+          "default": true,
+          "description": "Se true, indica que o modelo considerará escorregamento no solver transiente."
+        },
+        "mapaArranjo": {
+          "type": "integer",
+          "default": 0,
+          "description": "Tipo de mapa de arranjo. 0: Barnea simplificado; 1: Barnea completo."
+
+        },
+        "condicaoInicial": {
+          "type": "integer",
+          "enum": [0, 1, 2, 3],
+          "default": 1,
+          "description": "Estabelece como a simulação será iniciada, sendo aplicável principalmente para o regime transiente. No entanto, também pode ser utilizada no regime permanente, caso o usuário queira verificar uma condição inicial específica. Nesse cenário, a execução não realizará uma simulação, mas gerará gráficos das variáveis correspondentes à condição inicial definida. 0: a partir de condições definidas pelo usuário; 1: a partir da solução permanente; 2: a partir de um arquivo snapshot (.snp); 3: descarga de gás lift."
+        },
+        "ordemperm": {
+          "type": "integer",
+          "enum": [1, 2],
+          "default": 1,
+          "description": "Ordem do método numérico de resolução de equação diferencial no regime permanente. 1: primeira ordem; 2: Runge-Kutta de segunda ordem. Obs: no caso de simulação transiente, o método sempre será de primeira ordem."
+        },
+        "SnapShotArq": {
+          "type": "string",
+          "description": "Nome do arquivo .snp de entrada de dados de condição inicial para o caso configuracaoInicial: {condicaoInicial: 2}."
+        },
+        "HISEP": {
+          "type": "integer",
+          "default": 0,
+          "description": "Específico para funcionalidade HISEP (ainda em fase de desenvolvimento)."
+        },
+        "SalinidadeFluido": {
+          "type": "number",
+          "default": 0,
+          "unit": "g/(kg água)",
+          "description": "Salinidade do fluido de completação usado em uma simulação de descarga de gas-lift."
+        },
+        "comprimentoMedidoInterfaceLinhaGas": {
+          "type": "number",
+          "description": "Posição inicial, tomando como referência a plataforma, onde se encontra a interface gás/fluido de completação na linha de serviço, em uma simulação de descarga de gas-lift.",
+          "unit": "m"
+        },
+        "comprimentoMedidoInterfaceLinhaProd": {
+          "type": "number",
+          "description": "Posição inicial, tomando como referência a plataforma, onde se encontra a interface gás/fluido de completação na linha de produção, em uma simulação de descarga de gas-lift.",
+          "unit": "m"
+        },
+        "controleDescarga": {
+          "type": "boolean",
+          "default": false,
+          "description": "Para o modo de descarga de gas lift, quando true, indica que se deseja realizar um controle automatizado da descarga, definindo a injeção de gás de forma a evitar velocidades erosionais nas VGLs durante a descarga."
+        },
+        "parametrosDescarga": {
+          "type": "object",
+          "description": "Parâmetros do controle de descarga (válido quando controleDescarga == True).",
+          "properties": {
+            "vazaoLimiteDescarga": {
+              "type": "number",
+              "unit": "sm3/d",
+              "description": "Limite máximo de vazão de líquido na válvula, determinado pela velocidade erosional na válvula."
+            },
+            "pressaoLimiteDescarga": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Pressão máxima a jusante do choke de produção durante o controle da descarga."
+            },
+            "pressaoMinimaDescarga": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Pressão mínima a jusante do choke de produção durante o controle da descarga."
+            },
+            "pressaoTrabalhoDescargaGas": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Pressão a jusante do choke de producao em que se inicia a descarga."
+            },
+            "pressaoLimiteDescargaGas": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Pressão máxima de injeção durante o controle da descarga."
+            },
+            "pressaoMinimaDescargaGas": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Pressão mínima de injeção durante o controle da descarga."
+            },
+            "pressaoInicialDescargaGas": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Pressão inicial na linha de gás quando se inicia a descarga."
+            },
+            "temperaturaDescarga": {
+              "type": "number",
+              "unit": "degC",
+              "description": "Temperatura em que é feita a descarga."
+            },
+            "tempoLatencia": {
+              "type": "number",
+              "unit": "s",
+              "description": "Tempo entre a estabilização da simulação e o início do processo de descarga."
+            }
+          }
+        },
+        "tipoFluido": {
+          "type": "integer",
+          "default": 0,
+          "enum": [0, 1],
+          "description": "0: fluido dominado por líquido (modelos de transferência de massa condicionados à lógica black oil); 1: fluido dominado por gás (modelos de transferência de massa oriundos de relação de título)."
+        },
+        "tempReves": {
+          "type": "number",
+          "unit": "degC",
+          "description": "Temperatura de retorno do gás para o caso em que há escoamento reverso na última fronteira do sistema em simulações transientes. Se não for informada, admite-se a temperatura ambiente."
+        },
+        "chutePerm": {
+          "type": "number",
+          "default": -1,
+          "description": "Estimativa inicial para resolução da simulação permanente. Pode ser vazão ou pressão, a depender da condição de contorno. Se não for informada ou for informado um valor negativo, essa estimativa se torna uma ação interna do código por meio de cálculo de hidrostática (ou também fricção, se houver fonte de massa que não seja IPR)."
+        },
+        "transiente": {
+          "type": "boolean",
+          "default": false,
+          "description": "true: simulação transiente; false: simulação permanente."
+        },
+        "transferenciaMassa": {
+          "type": "integer",
+          "enum": [0, 1, 2, 3],
+          "default": 0,
+          "description": "Modelo de transferência de massa a ser usado. 0: modelo completo, método numérico implícito (mais estável); 1: modelo completo, método numérico explícito (mesmo que o 0, mas mais instável); 2: modelo simplificado isotérmico, sem termos transientes de transferência de massa; 3: sem transferência de massa."
+        },
+        "CheckValve": {
+          "type": "integer",
+          "enum": [0, 1],
+          "default": 0,
+          "description": "Se o valor for 1, haverá uma válvula de retenção no final do sistema de produção, impedindo o fluxo reverso na última fronteira do sistema quando indicado pelo diferencial de pressão. Se o valor for 0, será possível a entrada de gás como fluxo reverso na fronteira do sistema."
+        },
+        "modoXY": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, as inclinações são inferidas com base nas coordenadas XY do final de cada duto. Nesse caso, é necessário preencher as posições iniciais nas variáveis xProdInicio e yProdInicio (e se configuracaoInicial: {linhaGas: true}, também é necessário preencher xServInicio e yServInicio). Caso contrário, as inclinações são informadas diretamente por meio de ângulos no campo dutosProducao e dutosServico."
+        },
+        "xProdInicio": {
+          "type": "number",
+          "description": "Coordenada x do início da linha de produção, usada para inferência da inclinação no caso configuracaoInicial: {modoXY: true}.",
+          "unit": "m",
+          "default": 0
+        },
+        "yProdInicio": {
+          "type": "number",
+          "description": "Coordenada y do início da linha de produção, usada para inferência da inclinação no caso modoXY = true.",
+          "unit": "m",
+          "default": 0
+        },
+        "xServInicio": {
+          "type": "number",
+          "description": "Coordenada x do início da linha de serviço, usada para inferência da inclinação no caso modoXY = true. Válido para linhaGas = true.",
+          "unit": "m",
+          "default": 0
+        },
+        "yServInicio": {
+          "type": "number",
+          "description": "Coordenada y do início da linha de serviço, usada para inferência da inclinação no caso modoXY = true. Válido para linhaGas = true.",
+          "unit": "m",
+          "default": 0
+        },
+        "paralelizaAS": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, paraleliza a análise de sensibilidade (AS)."
+        },
+        "modoDifus3D": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, ativa o modelo de difusão térmica 3D."
+        },
+        "threadP3D": {
+          "type": "integer",
+          "default": 1,
+          "description": "Número de threads para cálculos de difusão 3D."
+        },
+        "modoDifus3DJson": {
+          "type": "string",
+          "description": "Nome do arquivo JSON que detalha o modelo de difusão térmica 3D."
+        },
+        "modoParafina": {
+          "type": "boolean",
+          "default": false,
+          "description": "Se true, ativa o modelo de deposição de parafina."
+        },
+        "tipoModeloDrift": {
+          "type": "boolean",
+          "default": true,
+          "description": "Se true, usa o modelo do tipo drift. Se false, usa alguma das correlações caixa-preta. Válido para simulações permanentes (em simulações transientes, o modelo é sempre do tipo drift)."
+        },
+        "Avancado": {
+          "type": "object",
+          "properties": {
+            "CriterioMonofasico": {
+              "type": "number",
+              "default": 1e-5,
+              "description": "Menor valor de fração de vazio em que se considera um sistema monofásico. Frações de vazio muito pequenas podem dar origem a problemas numéricos, por isso é útil estabelecer um valor partir do qual o sistema é considerado monofásico. Atentar para não usar valores de truncamentos muito altos, pois pode-se retirar massa artificialmente do sistema. Válido para simulações transientes."
+            },
+            "CriterioCondensacao": {
+              "type": "number",
+              "default": 1e-3,
+              "description": "Menor valor de fração de vazio em que se considera um modelo de transferência de massa entre fases. Frações de vazio muito pequenas podem levar a processos de condensação que desrespeitem os limites físicos de holdup, exigindo correções de incremento de tempo muito restritivas, aumentando o tempo computacional. Atentar para não usar valores de truncamentos muito altos, resultando em instabilidade numérica ou representação de baixa qualidade do fenômeno físico. Válido para simulações transientes."
+            },
+            "CriterioBuscaFalsaCorda": {
+              "type": "number",
+              "default": 0.1,
+              "description": "Fração de incremento ou decréscimo na entrada da função objetivo durante a busca do segundo ponto para o cálculo do permanente utilizando o método falsa corda. Para cenários com IPR muito altas, por exemplo, como é típico no pré-sal, pode ser útil reduzir este valor para evitar problemas numéricos decorrentes de vazões muito altas. Válido para simulações permanentes."
+            },
+            "taxaDespre": {
+              "type": "number",
+              "default": 0.01,
+              "unit": "kgf/(cm2.s)",
+              "description": "Critério para utilização ou não dos dois passos de evolução no modelo completo (considerando derivadas de massa específica de líquido no tempo). Caso a taxa média de despressurização ao longo do sistema de produção seja menor do que o valor estipulado neste parâmetro, apenas um passo de evolução será utilizado, simplificando o modelo e reduzindo tempo computacional. Válido para simulações transientes em que pelo menos um elemento do array configuracaoInicial: {avancado: {correcaoModComp} seja true."
+            },
+            "MedSimpPresFront": {
+              "type": "boolean",
+              "default": true,
+              "description": "Indicador de cálculo da pressão na fronteira da célula: true para valores médios entre as pressões nos centros das células adjacentes; false para método completo, considerando hidrostática e fricção para marchar do centro da célula para a fronteira. Válido para simulações transientes (em simulações permanentes, sempre ocorre a marcha). Atentar para instabilidades numéricas que surgem quando se escolhe false."
+            },
+            "limTransMass": {
+              "type": "number",
+              "default": 10,
+              "unit": "kg/(s.m)",
+              "description": "Desliga  o calor latente em processos de transferência de massa (condensação ou evaporação) na equação de energia na mistura para pontos em que a transferência de massa entre fases é maior que o valor definido neste parâmetro. Assim como a variável configuracaoInicial: {condLatente}, é útil em casos extremos e pouco comuns de condensação retrógrada (óleos de comportamento exótico, principalmente em modelos composicionais)."
+            },
+            "RelaxaDTChoke": {
+              "type": "boolean",
+              "default": false,
+              "description": "Indicador de penalização do incremento de tempo quando há oscilações na vazão de líquido entrando e saindo da choke de superfície."
+            },
+            "CriterioConvergPerm": {
+              "type": "number",
+              "default": 0.001,
+              "description": "Critério de convergência permanente ao usar um modelo mais rigoroso, atualmente pouco utilizado devido ao critério configuracaoInicial: {Avancado: {AceleraConvergPerm}}."
+            },
+            "AceleraConvergPerm": {
+              "type": "boolean",
+              "default": true,
+              "description": "Indicador de uso de uma simplificação no solver permanente que acelera a convergência e proporciona mais estabilidade. Atualmente, é a opção padrão do simulador. Quando true, usa-se o acelerador. Com o tempo, notou-se que quase nunca há necessidade de desligar este acelerador."
+            },
+            "escorregamentoCelulaContorno": {
+              "type": "boolean",
+              "default": true,
+              "description": "Indicador para definir o uso de um modelo de escorregamento no último volume do sistema de produção. Oscilações podem ocorrer nesse volume devido a mudanças de alta frequência no arranjo de escoamento, comuns em situações de baixa pressão. Para atenuar esse problema, o escorregamento entre as fases é desligado. Atentar para variações não físicas do holdup na última célula nesses casos."
+            },
+            "correcaoContracorPerm": {
+              "type": "boolean",
+              "default": false,
+              "description": "Utilizado no solver permanente. Quando true, faz uma correção no cálculo da temperatura do gás que entra no anular, usando um modelo aproximado de troca térmica em contracorrente com o fluido escoando na coluna. Observação: no modelo transiente, essa troca térmica em contracorrente é feita com precisão."
+            },
+            "estabCol": {
+              "type": "boolean",
+              "default": false,
+              "description": "Usa o modelo simplificado (descartando derivadas de massa específica de líquido no tempo) apenas na coluna de produção para mantê-la numericamente estável em situações com válvulas de completação inteligente. Válido para o transiente."
+            },
+            "TcorrecaoModComp": {
+              "type": "array",
+              "description": "Instantes de tempo que, em combinação com o array de booleanos configuracaoInicial: {Avancado: {correcaoModComp}}, são utilizados para determinar o uso do modelo completo (que inclui derivadas da massa específica do líquido ao longo do tempo).",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "correcaoModComp": {
+              "type": "array",
+              "description": "Booleanos que indicam, nos instantes de tempo especificados pelo array 'TcorrecaoModComp', se o modelo completo (que inclui derivadas da massa específica do líquido ao longo do tempo) deve ser utilizado.",
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "corrigeContSep": {
+              "type": "boolean",
+              "default": true,
+              "description": "Corrige o erro introduzido pela comparação, na função objetivo da marcha, da pressão calculada no centro da última célula com a pressão do separador ao final da célula."
+            },
+            "acopColAnulPermForte": {
+              "type": "integer",
+              "default": 0,
+              "description": "Número de passos do pseudo-transiente aplicados para obter uma solução com maior resolução numérica no perfil de temperatura na região logo abaixo da ANM, tanto no anular quanto na coluna de produção. O modelo permanente em geral não consegue capturar com boa resolução a troca térmica que ocorre nessa área, onde a maior parte da troca térmica entre o anular e a coluna de produção acontece. Válido para o modelo permanente."
+            },
+            "mudaArea": {
+              "type": "integer",
+              "default": 0,
+              "enum": [0,1],
+              "description": "Se 1, o simulador introduz perdas localizadas para cada eventual mudança de área de uma célula para outra."
+            },
+            "nthrd": {
+              "type": "integer",
+              "default": 1,
+              "description": "Número de threads usadas para execução da simulação."
+            },
+            "miniTabDinAtraso": {
+              "type": "integer",
+              "default": 0,
+              "description": "A cada número de passos de tempo definido por este parâmetro, uma mini-tabela local é gerada para cada célula do sistema. Esta minitabela armazena dados de flashes de pressão (P) e temperatura (T), utilizando incrementos e decrementos de valor definidos pelos parâmetros miniTabDinDp e miniTabDinDt, respectivamente. Aplicável em simulações transientes com modelos de fluido composicionais."
+            },
+            "miniTabDinDp": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "default": 0,
+              "description": "Define incremento e decremento de pressão usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais."
+            },
+            "miniTabDinDt": {
+              "type": "number",
+              "unit": "degC",
+              "default": 0,
+              "description": "Define incremento e decremento de temperatura usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais."
+            },
+            "Tsonico": {
+              "type": "array",
+              "description": "Instantes de tempo que, em combinação com o array 'sonico', serão utilizados para determinar quando o simulador utilizará passos de tempo pequenos o suficiente (de acordo com a condição CFL sônica) para capturar fenômenos sônicos, relacionados a ondas de pressão. Atentar para o fato de que o Marlim 3, por trabalhar com modelos de primeira ordem, não tem uma boa resolução para esse tipo de fenômeno este parâmetro proporciona meramente um mecanismo de mitigação para minimizar os potenciais erros na representação desses eventos.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "sonico": {
+              "type": "array",
+              "description": "Indicam, nos instantes de tempo especificados pelo array 'Tsonico', se o simulador utilizará passos de tempo pequenos o suficiente (de acordo com a condição CFL sônica) para capturar fenômenos sônicos, relacionados a ondas de pressão. Atentar para o fato de que o Marlim 3, por trabalhar com modelos de primeira ordem, não tem uma boa resolução para esse tipo de fenômeno este parâmetro proporciona meramente um mecanismo de mitigação para minimizar os potenciais erros na representação desses eventos.",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "CriterioDTMin": {
+              "type": "number",
+              "description": ""
+            },
+            "JTLiquidoSimple": {
+              "type": "number",
+              "description": ""
+            },
+            "desligaPenalizaDT": {
+              "type": "boolean",
+              "default": false,
+              "description": ""
+            },
+            "controleDTvalv": {
+              "type": "boolean",
+              "default": false,
+              "description": ""
+            },
+            "desligaDeriTransMassDTemp": {
+              "type": "boolean",
+              "default": false,
+              "description": ""
+            },
+            "nthrdMatriz": {
+              "type": "integer",
+              "default": 1,
+              "description": ""
+            }
+          }
+        },
+        "condicaoPressao": {
+          "type": "object",
+          "description": "Objeto com as informações de condição de contorno de pressão na entrada da tubulação. Caso não seja informado este ou outro objeto de condição de contorno da entrada, será considerada a tubulação fechada, e os fluidos a entrarem no sistema devem ser definidos a partir de fontes (fonteMassa, IPR, etc).",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a condição de contorno está ou não ativa."
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de condição de contorno nos demais vetores deste objeto.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "pressao": {
+              "type": "array",
+              "description": "Pressão do fluido na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "kgf/cm2"
+              }
+            },
+            "temperatura": {
+              "type": "array",
+              "description": "Temperatura do fluido na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "degC"
+              }
+            },
+            "titulo": {
+              "type": "array",
+              "description": "Título do fluido (razão entre a massa de gás livre e a massa total de gás, óleo e água associada) na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number"
+              }
+            },
+            "razaoBeta": {
+              "type": "array",
+              "description": "Razão volumétrica entre fluido complementar e a soma fluido complementar + óleo + água na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "default": 0
+              }
+            }
+          }
+        },
+        "condicaoVazPres": {
+          "type": "object",
+          "description": "Objeto com as informações de condição de contorno de pressão e vazão na entrada da tubulação. Caso não seja informado este ou outro objeto de condição de contorno da entrada, será considerada a tubulação fechada, e os fluidos a entrarem no sistema devem ser definidos a partir de fontes (fonteMassa, IPR, etc). Esta condição de contorno determina o sistema totalmente a partir da entrada, ignorando uma eventual condição de contorno informada ao final da tubulação. Serve apenas para o regime permanente, pois neste caso não há preocupação com o fenômeno de propagação de ondas (isso ocorre no transiente, tornando necessárias informações também na saída).",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a condição de contorno está ou não ativa."
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de condição de contorno nos demais vetores deste objeto.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "pressao": {
+              "type": "array",
+              "description": "Pressão do fluido na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "kgf/cm2"
+              }
+            },
+            "temperatura": {
+              "type": "array",
+              "description": "Temperatura do fluido na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "degC"
+              }
+            },
+            "VazMass": {
+              "type": "array",
+              "description": "Vazão mássica do fluido na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "kg/s"
+              }
+            },
+            "razaoBeta": {
+              "type": "array",
+              "description": "Razão volumétrica entre fluido complementar e a soma fluido complementar + óleo + água na entrada da tubulação ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "default": 0
+              }
+            }
+          }
+        },
+        "correlacoesPorArranjo": {
+          "type": "object",
+          "description": "Correlações de escorregamento a serem usadas para cada padrão de escoamento.",
+          "properties": {
+            "estratificado": {
+              "type": "integer",
+              "enum": [0, 1, 2, 4],
+              "default": 1,
+              "description": "Lista de correlações para padrão de escoamento estratificado. 0: Choi et al; 1: Bhagwat & Ghajar; 2: França & Lahey; 4: Bhagwat & Ghajar modificado."
+            },
+            "bolhaGolfada": {
+              "type": "integer",
+              "enum": [0, 1, 4],
+              "default": 1,
+              "description": "Lista de correlações para padrões de escoamento bolha e golfada. 0: Choi et al; 1: Bhagwat & Ghajar; 4: Bhagwat & Ghajar modificado."
+            },
+            "anularChurn": {
+              "type": "integer",
+              "enum": [0, 1, 3, 4],
+              "default": 1,
+              "description": "Lista de correlações para padrões de escoamento anular e churn. 0: Choi et al; 1: Bhagwat & Ghajar; 3: Hibiki & Ishii (anular); 4: Bhagwat & Ghajar modificado."
+            }
+          }
+        },
+        "Formacao": {
+          "type": "object",
+          "description": "Objeto com informações térmicas de litologia de possíveis rochas a serem utilizadas em trocas térmicas do poço com a formação.",
+          "properties": {
+            "Propriedades": {
+              "type": "array",
+              "description": "Propriedades térmicas da rocha.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "description": "Inteiro identificador da rocha."
+                  },
+                  "condutividade": {
+                    "type": "number",
+                    "description": "Condutividade térmica da rocha.",
+                    "unit": "W/(m.degC)"
+                  },
+                  "calorEspecifico": {
+                    "type": "number",
+                    "description": "Calor específico da rocha.",
+                    "unit": "J/(kg.degC)"
+                  },
+                  "massaEspecifica": {
+                    "type": "number",
+                    "description": "Massa específica da rocha.",
+                    "unit": "kg/m3"
+                  }
+                }
+              }
+            },
+            "TempoProducao": {
+              "type": "number",
+              "description": "Tempo de produção do poço, importante para determinar o raio de aquecimento da formação.",
+              "unit": "dias"
+            }
+          }
+        }
+      }
+    },
+    "tabela": {
+      "type": "object",
+      "description": "Parâmetros das tabelas tabP e tabG, caso sejam solicitadas no objeto configuracaoInicial.",
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+          "description": "Indica se a tabela está ou não ativa."
+        },
+        "nPontos": {
+          "type": "integer",
+          "description": "Número de pontos, tanto de P quanto de T, discriminados na tabela."
+        },
+        "pressaoMaxima": {
+          "type": "number",
+          "description": "Pressão máxima contida na tabela.",
+          "unit": "kgf/cm2"
+        },
+        "pressaoMinima": {
+          "type": "number",
+          "description": "Pressão mínima contida na tabela.",
+          "unit": "kgf/cm2"
+        },
+        "temperaturaMaxima": {
+          "type": "number",
+          "description": "Temperatura máxima contida na tabela.",
+          "unit": "degC"
+        },
+        "temperaturaMinima": {
+          "type": "number",
+          "description": "Temperatura mínima contida na tabela.",
+          "unit": "degC"        
+        }
+      }
+    },
+    "fluidoGas": {
+      "type": "object",
+      "description": "Objeto com informações do fluido gás na linha de serviço ou na fonte de gás, caso indicado que o gás seja seco.",
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+          "description": "Indica se o gás está ou não ativo."
+        },
+        "densidadeGas": {
+          "type": "number",
+          "description": "Densidade do gás (razão entre a massa específica do gás e massa específica do ar, ambos nas condições ambiente)."
+        },
+        "fracCO2": {
+          "type": "number",
+          "description": "Fração de CO2.",
+          "default": 0
+        },
+        "correlacaoCritica": {
+          "type": "integer",
+          "enum": [1,2],
+          "description": "Correlação para calcular temperatura e pressão pseudocríticas do gás. 1 --> Brown et al; 2 --> Piper et al."
+        },
+        "fracMolarUsuario": {
+          "type": "boolean",
+          "description": "Indica se o usuário informa a composição do presente gás na variável fracMolar. Se for false, procura-se a informação na tabela .ctm fornecida em configuracaoInicial: {pvtsimArq}. Válido apenas para simulações composicionais."
+        },
+        "fracMolar": {
+          "type": "array",
+          "description": "Frações molares dos pseudocomponentes (mesma sequência informado no arquivo .ctm fornecido na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais.",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "fluidosProducao": {
+      "type": "array",
+      "description": "Cada objeto dentro dessa array corresponde a um possível fluido a ser usado no sistema de produção. São três tipos possíveis: black oil, tabela e composicional.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se o fluido está ou não ativo."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Inteiro de identificação do fluido."
+          },
+          "api": {
+            "type": "number",
+            "description": "Grau API do óleo. Válido apenas para black oil."
+          },
+          "rgo": {
+            "type": "number",
+            "description": "Razão gás-óleo. Válido para os três tipos de fluido. No caso composicional, se a opção RGOCompUsuario for true, haverá uma correção das frações molares originais para se adequar ao presente valor. No caso tabela, caso o presente valor seja menor do que o RGO da tabela, será considerado o valor lá indicado. Se for maior, esse adicional será considerado uma massa de gás livre adicional (acrescentada na variável RS da tabela).",
+            "unit": "Sm3/Sm3"
+          },
+          "densidadeGas": {
+            "type": "number",
+            "description": "Densidade relativa do gás em relação ao ar nas condições standard.  Válido para black oil (e consequentemente, também para o composicional, pois ele usa black oil para calcular a viscosidade de gás)."
+          },
+          "bsw": {
+            "type": "number",
+            "description": "Basic Sediment and Water. Válido para os três tipos de fluido.",
+            "unit": "m^3/m^3",
+            "default": 0
+          },
+          "densidadeAgua": {
+            "type": "number",
+            "description": "Densidade relativa da água em relação à água pura com rho = 1000 kg/cm^3. Válido para os três tipos de fluido.",
+            "default": 1
+          },
+          "tipoEmul": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0,1,2,3,4,5,6,7],
+          "description": "Indicador de correlação de emulsão para modificação da viscosidade do óleo. 0 -> viscosidade de mistura óleo-água, ponderada pelo título de água; 1 -> Woeflin fraco; 2 -> Woeflin médio; 3 -> Woeflin forte; 4 -> exponencial; 5 -> Pal Rhodes; 6 -> par BSW X multiplicador informado pelo usuário; 7 -> viscosidade de óleo abaixo do BSW de saturação. Válido para os três tipos de fluido."
+          },
+          "coefAModeloExp": {
+            "type": "number",
+            "description": "Parâmetro 'a' do modelo de emulsão 4 (exponencial)."
+          },
+          "coefBModeloExp": {
+            "type": "number",
+            "description": "Parâmetro 'b' do modelo de emulsão 4 (exponencial)."
+          },
+          "PHI100": {
+            "type": "number",
+            "description": "Multiplicador de emulsão do modelo de emulsão 5 (Pal Rhodes)."
+          },
+          "bswCorte": {
+            "type": "number",
+            "default": 1,
+            "description": "BSW de inversão da emulsão."
+          },
+          "BSWVec": {
+            "type": "array",
+            "description": "Vetor com os BSW informados pelo usuário no modelo de emulsão 6.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "emulVec": {
+            "type": "array",
+            "description": "Vetor com os multiplicadores de emulsão informados pelo usuário no modelo de emulsão 6.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "fracCO2": {
+            "type": "number",
+            "default": 0,
+            "description": "Fração molar de CO2 no fluido. Válido para black oil (e consequentemente, também para o composicional, pois ele usa black oil para calcular a viscosidade de gás)."
+          },
+          "correlacaoCritica": {
+            "type": "integer",
+            "enum": [0,1,2],
+            "default": 1,
+            "description": "Indicador da correlação para o cálculo da pressão e temperatura críticas do gás. São três correlações retiradas diretamente do Marlim 2. As correlações 1 e 2 são mais adequadas para casos com CO2. Válido para black oil (e consequentemente, também para o composicional, pois ele usa black oil para calcular a viscosidade de gás)."
+          },
+          "modeloRsPb": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0,1,2,3,4],
+            "description": "Correlação de Razão e Solubilidade (RS); 0 -> Vázquez e Beggs, 1 -> Lasater, 2 -> Standing, 3 -> Glaso, 4 -> Lívia Fulchignoni. Válido apenas para black oil."
+          },
+          "modeloOleoMorto": {
+            "type": "integer",
+            "default": 3,
+            "enum": [0,1,2,3,4,5,6,7],
+            "description": "Modelo de óleo morto para cálculo de viscosidade. 0 -> ASTM; 1 -> Beggs&Robinson; 2 -> Beggs & Robinson Modificado; 3 -> Glaso; 4 -> Kartoatmodjo_Schmidt; 5 -> Petrosky_Farshad; 6 -> Beal; 7 -> tabela com pares de viscosidade x temperatura. Válido para black oil, composicional e tabela (neste último caso, quando fluidosProducao: {items: {modeloViscBlackOil}} for true)."
+          },
+          "temp1": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido utilizando o método ASTM, a temperatura do ponto 1 do ASTM.",
+            "unit": "degC"
+          },
+          "visc1": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido utilizando o método ASTM, a viscosidade em cP do ponto 1 do ASTM.",
+            "unit": "cP"
+          },
+          "temp2": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido utilizando o método ASTM, a temperatura do ponto 2 do ASTM.",
+            "unit": "degC"
+          },
+          "visc2": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido utilizando o método ASTM, a viscosidade do ponto 2 do ASTM.",
+            "unit": "cP"
+          },
+          "tempOleoMorto": {
+            "type": "array",
+            "description": "Pontos de temperatura do par temperatura X viscosidade, quando o modelo de óleo morto é 7.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "viscOleoMorto": {
+            "type": "array",
+            "description": "Pontos de viscosidade do par temperatura X viscosidade, quando o modelo de óleo morto é 7.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "modeloOleoVivo": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0,1,2],
+            "description": "Modelo de óleo vivo para cálculo de viscosidade. 0->Beggs_Robinson; 1->Kartoatmodjo_Schmidt; 2->Petrosky_Farshad. Válido para black oil, composicional e tabela (neste último caso, quando fluidosProducao: {items: {modeloViscBlackOil}} for true)."
+          },
+          "modeloOleoSubSaturado": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0,1,2,3,4],
+            "description": "Modelo de óleo subsaturado para cálculo de viscosidade. 0-> Vasquez and Beggs; 1-> Kartoatmodjo_Schmidt; 2-> Petrosky_Farshad; 3-> Beal; 4-> Khan. Válido para black oil, composicional e tabela flash (neste último caso, quando fluidosProducao: {items: {modeloViscBlackOil}} for true)."
+          },
+          "modeloViscBlackOil": {
+            "type": "integer",
+            "enum": [0,1],
+            "default": 0,
+            "description": "Para o caso tabela flash, caso esta opção seja 1, usa as correlações de viscosidade de óleo morto, sub-saturado e saturado provenientes do modelo black oil. Caso seja 0, usa-se as viscosidades informadas na tabela. Válido para o caso tabela flash (no composicional, todas as propriedades relativas à viscosidade são calculadas pelo modelo black oil)."
+          },
+          "modeloAguaBlackOil": {
+            "type": "integer",
+            "enum": [0,1],
+            "default": 1,
+            "description": "Para o caso tabela flash, caso esta opção seja 1, usa as correlações de água do black oil para calcular o coeficiente Joule-Thompson. Caso seja 0, usa-se o coeficiente Joule-Thompson informado na tabela. Válido para o caso tabela flash (no composicional, todas as propriedades relativas à água são calculadas pelo modelo black oil)."
+          },
+          "fracMolarUsuario": {
+            "type": "boolean",
+            "default": false,
+            "description": "Indica se o usuário informa a composição do presente fluido na variável fluidosProducao: {items: {fracMolar}}. Se for false, procura-se a informação na tabela .ctm fornecida na variável pvtsimArq do objeto configuracaoInicial. Válido apenas para simulações composicionais."
+          },
+          "fracMolar": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Frações molares dos pseudocomponentes (mesma sequência informado no arquivo .ctm fornecido na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais."
+            }
+          },
+          "RGOCompUsuario": {
+            "type": "boolean",
+            "default": false,
+            "description": "Se true, no caso composicional, haverá uma correção das frações molares originais para se adequar ao valor da variável 'rgo'."
+
+          }
+        }
+      }
+    },
+    "fluidoComplementar": {
+      "type": "object",
+      "description": "Objeto contendo informações sobre o fluido complementar, que é o terceiro fluido em fase líquida além dos hidrocarbonetos e da água. Este fluido é inerte, não possui capacidade de se dissolver no gás e não escorrega em relação à mistura de hidrocarbonetos. Exemplos incluem colchão de glicol ou etanol (utilizado para prevenir a formação de hidratos antes da abertura da master 1), inibidor químico e fluido de completação (como água salgada).",
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+          "description": "Indica se o fluido está ou não ativo."
+        },
+        "massaEspecifica": {
+          "type": "number",
+          "description": "Massa específica do líquido nas condições standard.",
+          "unit": "kg/m3"
+        },
+        "compP": {
+          "type": "number",
+          "description": "Compressibilidade do líquido.",
+          "unit": "1/Pa"
+        },
+        "compT": {
+          "type": "number",
+          "description": "Expansividade termica do líquido.",
+          "unit": "1/K"
+        },
+        "tensup": {
+          "type": "number",
+          "description": "Tensão superficial do líquido.",
+          "unit": "N/m"
+        },
+        "calorEspecifico": {
+          "type": "number",
+          "description": "Calor específico do liquido.",
+          "unit": "J/kg.K"
+        },
+        "condutividade": {
+          "type": "number",
+          "description": "Condutividade do líquido.",
+          "unit": " W/m.K"
+        },
+        "temp1": {
+          "type": "number",
+          "description": "Temperatura do ponto 1 do ASTM.",
+          "unit": "degC"
+        },
+        "visc1": {
+          "type": "number",
+          "description": "Viscosidade do ponto 1 do ASTM.",
+          "unit": "cP"
+        },
+        "temp2": {
+          "type": "number",
+          "description": "Temperatura do ponto 2 do ASTM.",
+          "unit": "degC"
+        },
+        "visc2": {
+          "type": "number",
+          "description": "Viscosidade do ponto 2 do ASTM.",
+          "unit": "cP"
+        },
+        "salinidade": {
+          "type": "number",
+          "description": "Salinidade da água quando o fluido complementar é água ou fluido de completação.",
+          "unit": "g/(kg água)"
+        },
+        "tipoF": {
+          "type": "integer",
+          "enum": [0,1,2],
+          "default": 0,
+          "description": "Tipo de fluido. 0 -> fluido complementar padrão (que requer todas as informações exceto a salinidade); 1 -> água (neste caso, só é preciso informar a salinidade); 2 -> análogo ao tipo 0, mas internamente calcula-se o redutor de atrito."
+        }
+      }
+    },
+    "valvula": {
+      "type": "array",
+      "description": "Válvula bifásica opcional (ex: DHSV) utilizando o modelo de Sachdeva (https://doi.org/10.2118/15657-MS). Assim como nas válvulas monofásicas, se baseia no coeficiente de descarga e na razão entre as áreas da tubulação e da garganta. Além disso, para o caso bifásico, o modelo oferece regras de estrangulamento baseadas na razão de pressões críticas entre montante e jusante. Atentar que este objeto não engloba as válvulas obrigatória choke e master, definidas em outros objetos.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se a válvula está ou não ativa."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Inteiro de identificação da válvula."
+          },
+          "curvaCV": {
+            "type": "integer",
+            "enum": [0,1],
+            "default": 0,
+            "description": "Indicativo do significado da curva na variável 'abertura'. Se 0, corresponde às razões entre a área livre da válvula e a área da tubulação ao longo do tempo. Se 1, corresponde ao deslocamento da haste da válvula ao longo do tempo."
+          },
+          "comprimentoMedido": {
+            "type": "number",
+            "description": "Comprimento onde a válvula se encontra no sistema de produção.",
+            "unit": "m"
+          },
+          "tempo": {
+            "type": "array",
+            "description": "Instantes de tempo em que são informados os eventos de válvula nos demais vetores deste objeto.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "abertura": {
+            "type": "array",
+            "description": "Abertura da válvula ao longo do tempo (razão entre áreas ou deslocamento da haste, a depender da variável 'curvaCV').",
+            "items": {
+              "type": "number"
+            }
+          },
+          "cd": {
+            "type": "number",
+            "default": 0.84,
+            "description": "Coeficiente de descarga, de acordo com o Modelo Sachdeva (https://doi.org/10.2118/15657-MS)."
+          },
+          "x1": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+            }
+          },
+          "cv1": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
+              "unit": "(gal/min)/(psi)"
+            }
+          }
+        }
+      }
+    },
+    "fonteLiquido": {
+      "type": "array",
+      "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de líquido a ser usada no sistema.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se a fonte está ou não ativa."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Inteiro de identificação da fonte de líquido."
+          },
+          "indiFluidoPro": {
+            "type": "integer",
+            "description": "ID do fluido de produção a ser produzido pela presente fonte."
+          },
+          "comprimentoMedido": {
+            "type": "number",
+            "description": "Comprimento onde a fonte de líquido se encontra no sistema de produção",
+            "unit": "m"
+          },
+          "tempo": {
+            "type": "array",
+            "description": "Instantes de tempo em que são informados os eventos de fonte de líquido nos demais vetores deste objeto.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "temperatura": {
+            "type": "array",
+            "description": "Temperatura da fonte ao longo do tempo.",
+            "items": {
+              "type": "number",
+              "unit": "degC"
+            }
+          },
+          "beta": {
+            "type": "array",
+            "description": "Razão de fluido complementar da fonte ao longo do tempo.",
+            "items": {
+              "type": "number",
+              "default": 0
+            }
+          },
+          "vazaoLiquido": {
+            "type": "array",
+            "description": "Vazão volumétrica de líquido da fonte nas condições padrão (óleo morto) ao longo do tempo. Atentar que essa vazão de líquido implica em uma vazão in situ de gás livre associada obtida com base nas propriedades do fluido definido em indiFluidoPro e nas P e T in situ.",
+            "items": {
+              "type": "number",
+              "unit": "sm3/d"
+            }
+          }
+        }
+      }
+    },
+    "fonteMassa": {
+      "type": "array",
+      "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de massa a ser usada no sistema.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se a fonte está ou não ativa."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Inteiro de identificação da fonte de massa."
+          },
+          "indiFluidoPro": {
+            "type": "integer",
+            "description": "ID do fluido de produção a ser produzido pela presente fonte."
+          },
+          "comprimentoMedido": {
+            "type": "number",
+            "description": "Comprimento onde a fonte de massa se encontra no sistema de produção.",
+            "unit": "m"
+          },
+          "tipoTermo": {
+            "type": "integer",
+            "default": 0,
+            "description": "Se 0, a vazão de gás é calculada a partir de equilíbrio termodinâmico nas condições in situ baseado na vazão de hidrocarbonetos (diferença entre vazaoMassT e vazaoMassC); ou seja, à maneira como é calculada no objeto 'fonteLiquido'. Se 1, deve-se definir a vazão de gás livre entrando no sistema por meio da variável 'vazaoMassG'."
+          },
+          "tempo": {
+            "type": "array",
+            "description": "Instantes de tempo em que são informados os eventos de fonte de massa nos demais vetores deste objeto.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "temperatura": {
+            "type": "array",
+            "description": "Temperatura da fonte longo do tempo.",
+            "items": {
+              "type": "number",
+              "unit": "degC"
+            }
+          },
+          "vazaoMassT": {
+            "type": "array",
+            "description": "Vazão mássica total da fonte ao longo do tempo.",
+            "items": {
+              "type": "number",
+              "unit": "kg/s"
+            }
+          },
+          "vazaoMassC": {
+            "type": "array",
+            "description": "Vazão mássica de líquido complementar da fonte ao longo do tempo.",
+            "items": {
+              "type": "number",
+              "default": 0,
+              "unit": "kg/s"
+            }
+          },
+          "vazaoMassG": {
+            "type": "array",
+            "description": "Vazão mássica de gás da fonte ao longo do tempo. Válido apenas para tipoTermo=1.",
+            "items": {
+              "type": "number",
+              "unit": "kg/s"
+            }
+          }
+        }
+      }
+    },
+    "fonteGas": {
+          "type": "array",
+          "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de gás a ser usada no sistema.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "ativo": {
+                "type": "boolean",
+                "description": "Indica se a fonte está ou não ativa."
+              },
+              "id": {
+                "type": "integer",
+                "description": "Inteiro de identificação da fonte de gás."
+              },
+              "seco": {
+                "type": "boolean",
+                "default": true,
+               "description": "Se true, a fonte produz gás seco (utiliza o objeto fluidoGas). Se false, o gás é rico (situação típica de gasodutos); nesse caso, é necessário definir o fluido em fonteGas: {indiFluidoPro}, que poderá carregar líquido associado (cuja massa é calculada por meio de equilíbrio termodinâmico) e impurezas (definidas como o fluido complementar)."
+              },
+              "indiFluidoPro": {
+                "type": "integer",
+                "description": "ID do fluido de produção a ser produzido pela presente fonte. Válido para o caso fonteGas: {seco: false}."
+              },
+              "comprimentoMedido": {
+                "type": "number",
+                "description": "Comprimento onde a fonte de gás se encontra no sistema de produção.",
+                "unit": "m"
+              },
+              "tempo": {
+                "type": "array",
+                "description": "Instantes de tempo em que são informados os eventos de fonte de gás nos demais vetores deste objeto.",
+                "items": {
+                  "type": "number",
+                  "unit": "s"
+                }
+              },
+              "temperatura": {
+                "type": "array",
+                "description": "Temperatura da fonte longo do tempo.",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "vazaoGas": {
+                "type": "array",
+                "description": "Vazão da fonte de gás ao longo do tempo.",
+                "items": {
+                  "type": "number",
+                  "unit": "sm3/d"
+                }
+              },
+              "vazaoFluidoComplementar": {
+                "type": "array",
+                "description": "Fração de impurezas da vazão da fonte de gás ao longo do tempo (tratada como fluido complementar).",
+                "items": {
+                  "type": "number",
+                  "default": 0,
+                  "unit": "ppm"
+                }
+              }
+            }
+          }
+        },
+    "fontePoroRadial": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de poro radial a ser usada no sistema.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a fonte está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro de identificação da fonte."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento onde a fonte se encontra no sistema de produção.",
+              "unit": "m"
+            },
+            "arquivo": {
+              "type": "string",
+              "description": "Nome do arquivo JSON que detalha a presente fonte."
+            }
+          }
+        }
+      },
+    "fontePoro2D": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de poro 2D a ser usada no sistema.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a fonte está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro de identificação da fonte."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento onde a fonte se encontra no sistema de produção.",
+              "unit": "m"
+            },
+            "arquivo": {
+              "type": "string",
+              "description": "Nome do arquivo JSON que detalha a presente fonte."
+            }
+          }
+        }
+      },
+    "fonteGasLift": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de gas-lift (válvula de gas-lift, VGL) a ser usada no sistema.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a válvula está ou não ativa."
+            },
+            "colunaEanular": {
+              "type": "boolean",
+              "default": true,
+              "description": "Se false, o usuário deve informar a posição de tomada de pressão na linha de serviço na variável 'comprimentoMedidoServico'. Se true, essa posição é calculada internamente para estar na mesma cota que a tomada de pressão na linha de produção (variável 'comprimentoMedidoProducao')."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro de identificação da fonte (VGL)."
+            },
+            "comprimentoMedidoProducao": {
+              "type": "number",
+              "description": "Comprimento onde a fonte (VGL) se encontra na linha de produção.",
+              "unit": "m"
+            },
+            "comprimentoMedidoServico": {
+              "type": "number",
+              "description": "Comprimento onde a fonte (VGL) se encontra na linha de serviço. Válido se 'colunaEanular' for false.",
+              "unit": "m"
+            },
+            "tipoValvula": {
+              "type": "integer",
+              "enum": [0,1,2],
+              "default": 0,
+              "description": "Tipo de VGL; 0: orifício; 1: pressão; 2: Venturi."
+            },
+            "diametroOrificio": {
+              "type": "number",
+              "description": "Diâmetro do orifício.",
+              "unit": "m"
+            },
+            "cdvgl": {
+              "type": "number",
+              "description": "Coeficiente de descarga da válvula (modelo monofásico).",
+              "default": 0.84
+            },
+            "cdvLiq": {
+              "type": "number",
+              "description": "Coeficiente de descarga da válvula (modelo monofásico) para o caso em que esteja escoando liquido (descarga de gás-lift).",
+              "default": 0.9
+            },
+            "razaoArea": {
+              "type": "number",
+              "description": "Razão entre a área da porta e a área do diafragma (para válvula de pressão (calibradas), tipoValvula 1), com base no modelo de VGL do Marlim 2."
+            },
+            "pressaoCalibracao": {
+              "type": "number",
+              "description": "Pressão de calibração do interior do fole da válvula (para válvula de pressão (calibradas), tipoValvula 1).",
+              "unit": "psi"
+            },
+            "temperaturaCalibracao": {
+              "type": "number",
+              "description": "Temperatura de calibração do fole da válvula (para válvula de pressão (calibradas), tipoValvula 1).",
+              "unit": "degF"
+            },
+            "diametroExterno": {
+              "type": "number",
+              "description": "Diâmetro da porta (para válvula de pressão (calibradas), tipoValvula 1).",
+              "unit": "m"
+            }
+          }
+        }
+      },
+    "material": {
+        "type": "array",
+        "description": "Cada objeto dessa array corresponde a um possível material a ser usado no sistema de produção.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se o material está ou não ativo."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro de identificação do material."
+            },
+            "tipo": {
+              "type": "integer",
+              "enum": [0,1,2,3],
+              "default": 0,
+              "description": "Tipo de material. 0-> solido, 1-> fluido (definido pelo usuário), 2-> água, 3-> ar."
+            },
+            "condutividade": {
+              "type": "number",
+              "description": "Condutividade do material. Necessário em 0 ou 1.",
+              "unit": "W/m.K"
+            },
+            "calorEspecifico": {
+              "type": "number",
+              "description": "Calor específico do material. Necessário em 0 ou 1.",
+              "unit": "J/kg.K"
+            },
+            "rho": {
+              "type": "number",
+              "description": "Massa específica do material.  Necessário em 0 ou 1.",
+              "unit": "kg/m3"
+            },
+            "visc": {
+              "type": "number",
+              "description": "Viscosidade (necessário apenas para tipo 1).",
+              "unit": "cP"
+            },
+            "beta": {
+              "type": "number",
+              "description": "Expansividade térmica (necessário apenas para tipo 1).",
+              "unit": "1/K"
+            }
+          }
+        }
+      },
+    "secaoTransversal": {
+        "type": "array",
+        "description": "Cada objeto dessa array corresponde a uma possível seção transversal a compor a tubulação.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a seção transversal está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro de identificação da seção transversal."
+            },
+            "anular": {
+              "type": "boolean",
+              "default": false,
+              "description": "Se true, a região de escoamento é anular."
+            },
+            "diametroExterno": {
+              "type": "number",
+              "description": "Para o caso anular, maior diâmetro da área de escoamento do anular (válido para 'anular' = true)."
+            },
+            "diametroInterno": {
+              "type": "number",
+              "description": "Para o caso anular, menor diâmetro da área de escoamento do anular. Se anular=false, trata-se do diâmetro interno da seção."
+            },
+            "rugosidade": {
+              "type": "number",
+              "description": "Rugosidade absoluta.",
+              "unit": "m"
+            },
+            "camadas": {
+              "type": "array",
+              "description": "Cada objeto dessa array corresponde a uma camada na seção transversal. As camadas são montadas na seção da mais interna para a mais externa de acordo com a ordem de preenchimento no JSON.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "tipoMedicaoCamada": {
+                    "type": "string",
+                    "enum": ["ESPESSURA", "DIAMETRO"],
+                    "default": "DIAMETRO",
+                    "description": "Tipo de medição do comprimento adicional da camada (por espessura radial ou diâmetro do centro da tubulação até a circunferência externa da camada)."
+                  },
+                  "diametro": {
+                    "type": "number",
+                    "description": "Diâmetro do centro da tubulação até a circunferência externa da camada. Válido para tipoMedicaoCamada = DIAMETRO.",
+                    "unit": "m"
+                  },
+                  "espessura": {
+                    "type": "number",
+                    "description": "Espessura radial da camada. Válido para tipoMedicaoCamada = ESPESSURA.",
+                    "unit": "m"
+                  },
+                  "discretizacao": {
+                    "type": "integer",
+                    "default": 1,
+                    "description": "Número de discretizações consideradas na camada para a realização dos cálculos de troca de calor."
+                  },
+                  "idMaterial": {
+                    "type": "integer",
+                    "description": "Identificador do material que compõe a camada."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+    "tempo": {
+        "type": "object",
+        "description": "Configurações de tempo para a simulação.",
+        "properties": {
+          "tempoFinal": {
+            "type": "number",
+            "description": "Tempo total de simulação.",
+            "unit": "s"
+          },
+          "tempos": {
+            "type": "array",
+            "description": "Instantes de tempo associados aos 'dtmax' definidos neste objeto.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            },
+            "default": [0]
+          },
+          "dtmax": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Máximos incrementos de tempo associados aos instantes definidos no objeto 'tempos'.",
+              "unit": "s"
+            },
+            "default": [5]
+          },
+          "tempoSegrega": {
+            "type": "array",
+            "unit": "s",
+            "items": {
+              "type": "number",
+              "description": "Instantes de tempo associados aos 'segrega' definidos neste objeto. Opcional."
+            }
+          },
+          "segrega": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "enum": [0,1],
+              "description": "Se 1, o simulador utiliza um modo especial de controle de tempo associado à parada de produção (útil quando se observa dificuldades na simulação de processos de segregação). Opcional."
+            }
+          },
+          "gravaMomento": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Instantes de tempo para gravação dos arquivos snapshot (.snt).",
+              "unit": "s"
+            }
+          }
+        }
+      },
+    "dutosProducao": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a um duto de produção. Mudanças de duto geralmente são motivadas por mudanças de diâmetro, propriedade da tubulação, seção transversal ou inclinação.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se o duto está ou não ativo."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador do duto."
+            },
+            "angulo": {
+              "type": "number",
+              "description": "Inclinação do duto de produção em relação ao eixo horizontal. Válido para {configuracaoInicial: {modoXY = false}}, que é o default.",
+              "unit": "rad"
+            },
+            "xCoor": {
+              "type": "number",
+              "description": "Coordenada X da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+              "unit": "m"
+            },
+            "yCoor": {
+              "type": "number",
+              "description": "Coordenada Y da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+              "unit": "m"
+            },
+            "idCorte": {
+              "type": "integer",
+              "description": "ID da seção transversal da qual o duto é composta."
+            },
+            "idFormacao": {
+              "type": "integer",
+              "description": "ID da formação com o qual o duto troca calor. Se não estiver informado, não há formação; ou seja, o duto troca calor com fluido termicamente acoplado a ele ou com o ambiente marítimo ou aéreo."
+            },
+            "ambienteExterno": {
+              "type": "integer",
+              "enum": [0,1,2],
+              "default": 0,
+              "description": "Fluido infinito com o qual o duto troca calor. 0: definido pelo usuário; 1: água do mar; 2: atmosfera. Necessário sempre, exceto quando há formação (ou seja, se 'idFormacao' for informado) ou o duto está termicamente acoplado com o anular (ou seja, se 'acoplamentoTermico = 1')."
+            },
+            "direcaoConveccao": {
+              "type": "integer",
+              "enum": [0,1],
+              "default": 0,
+              "description": "Indica a direção com que o fluido que troca calor por convecção atinge a tubulação. 0: ataque transversal; 1: ataque longitudinal. Só é válido se não for informado o atributo idFormacao do duto. Em geral, 0 é usado para duto imerso em meio infinito e 1 é usado para acoplamento com anular."
+            },
+            "acoplamentoTermico": {
+              "type": "integer",
+              "default": 0,
+              "enum": [0, 1],
+              "description": "Se 1, indica que o duto está acoplado termicamente com um duto de serviço. O duto de serviço acoplado deve estar coincidente em posição, comprimento e discretização."
+            },
+            "agrupamento": {
+              "type": "boolean",
+              "default": true,
+              "description": "Se true, indica que a leitura da discretização será feita por agrupamentos de discretização. Se false, cada tamanho de célula será definido individualmente no sistema."
+            },
+            "discretizacao": {
+              "type": "array",
+              "description": "Os objetos dessa array especificam a lógica de discretização aplicada no duto (quantidade e comprimento das células). Válido para agrupamento = true e configuracaoInicial.modoXY = false.",
+            "items": {
+          "type": "object",
+              "properties": {
+                "nCelulas": {
+                  "type": "integer",
+                  "description": "Quantidade de células."
+                },
+                "comprimento": {
+                  "type": "number",
+                  "description": "Comprimento das células.",
+                  "unit": "m"
+                }
+              }
+            }
+            },
+            "dxCelula": {
+              "type": "array",
+              "description": "Array com os comprimentos de cada discretização. Válido para agrupamento = false e configuracaoInicial.modoXY = false.",
+              "items": {
+                "type": "number",
+                "unit": "m"
+              }
+            },
+            "nCelulas_XY": {
+              "type": "integer",
+              "description": "Número de células do duto para o caso configuracaoInicial: {modoXY: true}" 
+            },
+            "condicoesIniciais": {
+              "type": "object",
+              "description": "Objeto que especifica condições iniciais e variáveis de troca de calor com o ambiente externo.",
+              "properties": {
+                "compInter": {
+                  "type": "array",
+                  "description": "Array com as posições do comprimento relativo do duto em que são definidas as demais propriedades deste objeto. Deve necessariamente iniciar com 0 e terminar com 1, com qualquer quantidade de pontos entre eles. As propriedades nas outras posições do duto são obtidas por meio de interpolação linear.",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "pressao": {
+                  "type": "array",
+                  "description": "Pressões da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "kgf/cm2"
+                  }
+                },
+                "temp": {
+                  "type": "array",
+                  "description": "Temperaturas da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "degC"
+                  }
+                },
+                "holdup": {
+                  "type": "array",
+                  "description": "Holdup da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes,somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "bet": {
+                  "type": "array",
+                  "description": "Frações volumétricas de fluido complementar da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}, e se o fluido complementar existir e estiver ativo.",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "uls": {
+                  "type": "array",
+                  "description": "Velocidades superficiais de líquido da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "m/s"
+                  }
+                },
+                "ugs": {
+                  "type": "array",
+                  "description": "Velocidades superficiais de gás da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "m/s"
+                  }
+                },
+                "tempExterna": {
+                  "type": "array",
+                  "description": "Temperaturas ambiente nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1').",
+                  "items": {
+                    "type": "number",
+                    "unit": "degC"
+                  }
+                },
+                "velExterna": {
+                  "type": "array",
+                  "description": "Velocidades do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1') ou quando houver formação (ou seja, se 'idFormacao' for informado).",
+                  "items": {
+                    "type": "number",
+                    "unit": "m/s"
+                  }
+                },
+                "kExterna": {
+                  "type": "array",
+                  "description": "Condutividades térmicas do meio externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1'), quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "W/(m.K)"
+                  }
+                },
+                "calorEspecificoExterno": {
+                  "type": "array",
+                  "unit": "J/(kg.K)",
+                  "description": "Calores específicos do meio externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1'), quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "J/(kg.K)"
+                  }
+                },
+                "rhoExterno": {
+                  "type": "array",
+                  "description": "Massas específicas do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1'), quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "kg/m3"
+                  }
+                },
+                "viscExterna": {
+                  "type": "array",
+                  "description": "Viscosidades do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1'), quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2)."
+                },
+                "items": {
+                  "type": "number",
+                  "unit": "cP"
+                }
+            }
+          },
+            "dPdLHidro": {
+              "type": "integer",
+              "description": "Índice do elemento do vetor dPdLHidro do objeto 'correcao' usado como fator de ajuste para corrigir a perda de carga devido a hidrostática no presente duto."
+            },
+            "dPdLFric": {
+              "type": "integer",
+              "description": "Índice do elemento do vetor dPdLFric do objeto 'correcao' usado como fator de ajuste para corrigir a perda de carga devido à fricção no presente duto."
+            },
+            "dTdL": {
+              "type": "integer",
+              "description": "Índice do elemento do vetor dTdL do objeto 'correcao' usado como fator de ajuste para corrigir o gradiente de temperatura no presente duto."
+            },
+            "difusTerm2D": {
+              "type": "integer",
+              "enum": [0,1],
+              "default": 0,
+              "description": "Se 1, o trecho de tubulação está enterrado e usa-se um modelo de troca térmica 2D definido com base no arquivo JSON em 'difusTerm2DJSON'."
+            },
+            "difusTerm2DJSON": {
+              "type": "string",
+              "description": "Nome do arquivo JSON que detalha o modelo de troca térmica 2D, caso 'difusTerm2D' seja 1."
+            },
+            "correlacaoMR2": {
+              "type": "integer",
+              "description": ""
+            },
+            "acoplamentoTermicoRedeParalela": {
+              "type": "integer",
+              "default": 0,
+              "description": ""
+            },
+            "difusTerm3D": {
+              "type": "array",
+              "description": "",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "difusTerm3DFE": {
+              "type": "array",
+              "description": "",
+              "items": {
+                "type": "number"
+              }
+            },
+            "difusTerm3DAcop": {
+              "type": "array",
+              "description": "",
+              "items": {
+                "type": "string"
+              }
+            },
+            "condicoesIniciaisEAmbiente": {
+              "type": "object",
+              "description": "",
+              "properties": {
+                "compInter": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number" }
+                },
+                "temp": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "degC" }
+                },
+                "pressao": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "kgf/cm2" }
+                },
+                "holdup": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number" }
+                },
+                "bet": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number" }
+                },
+                "uls": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "m/s" }
+                },
+                "ugs": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "m/s" }
+                },
+                "tempExterna": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "degC" }
+                },
+                "velExterna": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "m/s" }
+                },
+                "kExterna": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "W/(m.K)" }
+                },
+                "calorEspecificoExterno": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "J/(kg.K)" }
+                },
+                "rhoExterno": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "kg/m3" }
+                },
+                "viscExterna": {
+                  "type": "array",
+                  "description": "",
+                  "items": { "type": "number", "unit": "cP" }
+                }
+              }
+            }
+          }
+        }
+      },
+    "dutosServico": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a um duto de serviço. Mudanças de duto geralmente são motivadas por mudanças de diâmetro, propriedade da tubulação, seção transversal ou inclinação.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se o duto está ou não ativo."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador do duto."
+            },
+            "angulo": {
+              "type": "number",
+              "description": "Inclinação do duto de serviço em relação ao eixo horizontal. Válido para {configuracaoInicial: {modoXY = false}}, que é o default.",
+              "unit": "rad"
+            },
+          "xCoor": {
+            "type": "number",
+            "description": "Coordenada X da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+            "unit": "m"
+          },
+          "yCoor": {
+            "type": "number",
+            "description": "Coordenada Y da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+            "unit": "m"
+          },
+            "idCorte": {
+              "type": "integer",
+              "description": "ID da seção transversal da qual o duto é composta."
+            },
+            "idFormacao": {
+              "type": "integer",
+              "description": "ID da formação com o qual o duto troca calor. Se não estiver informado, não há formação; ou seja, o duto troca calor apenas com fluido termicamente acoplado a ele ou com o ambiente marítimo ou aéreo."
+            },
+            "ambienteExterno": {
+              "type": "integer",
+              "enum": [0,1,2],
+              "default": 0,
+              "description": "Fluido infinito com o qual o duto troca calor. 0: definido pelo usuário; 1: água do mar; 2: atmosfera. Necessário sempre, exceto quando há formação (ou seja, se 'idFormacao' for informado)."
+            },
+            "direcaoConveccao": {
+              "type": "integer",
+              "enum": [0,1],
+              "default": 0,
+              "description": "Indica a direção com que o fluido que troca calor por convecção atinge a tubulação. 0: ataque transversal; 1: ataque longitudinal. Só é válido se não for informado o atributo idFormacao do duto. Em geral, 0 é usado para duto imerso em meio infinito e 1 não tem aplicação óbvia para duto de serviço."
+            },
+            "acoplamentoTermico": {
+              "type": "integer",
+              "enum": [0, 1],
+              "description": "Se 1, indica que o duto está acoplado termicamente com um duto de produção."
+            },
+            "agrupamento": {
+              "type": "boolean",
+              "default": true,
+              "description": "Se true, indica que a leitura da discretização será feita por agrupamentos de discretização. Se false, cada tamanho de célula será definido individualmente no sistema."
+            },
+            "discretizacao": {
+              "type": "array",
+              "description": "Os objetos dessa array especificam a lógica de discretização aplicada no duto (quantidade e comprimento das células). Válido para agrupamento = true e configuracaoInicial.modoXY = false.",
+            "items": {
+          "type": "object",
+              "properties": {
+                "nCelulas": {
+                  "type": "integer",
+                  "description": "Quantidade de células."
+                },
+                "comprimento": {
+                  "type": "number",
+                  "description": "Comprimento das células.",
+                  "unit": "m"
+                }
+              }
+            }
+            },
+            "dxCelula": {
+              "type": "array",
+              "description": "Array com os comprimentos de cada discretização. Válido para agrupamento = false e configuracaoInicial.modoXY = false.",
+              "items": {
+                "type": "number",
+                "unit": "m"
+              }
+            },
+            "nCelulas_XY": {
+              "type": "integer",
+              "description": "Número de células do duto para o caso configuracaoInicial: {modoXY: true}" 
+            },
+            "condicoesIniciais": {
+              "type": "object",
+              "description": "Objeto que especifica condições iniciais e variáveis de troca de calor com o ambiente externo.",
+              "properties": {
+                "compInter": {
+                  "type": "array",
+                  "description": "Array que define as posições do comprimento relativo do duto em que são definidas as demais propriedades deste objeto. Deve necessariamente iniciar com 0 e terminar com 1. As propriedades nas outras posições do duto são definidas por meio de interpolação linear.",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "pressao": {
+                  "type": "array",
+                  "description": "Pressões da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "kgf/cm2"
+                  }
+                },
+                "temp": {
+                  "type": "array",
+                  "description": "Temperaturas da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "degC"
+                  }
+                },
+                "vazaoMassicaGas": {
+                  "type": "array",
+                  "description": "Vazão mássica de gás da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                  "items": {
+                    "type": "number",
+                    "unit": "kg/s"
+                  }
+                },
+                "tempExterna": {
+                  "type": "array",
+                  "description": "Temperaturas ambiente nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre.",
+                  "items": {
+                    "type": "number",
+                    "unit": "degC"
+                  }
+                },
+                "velExterna": {
+                  "type": "array",
+                  "description": "Velocidades do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando houver formação (ou seja, se 'idFormacao' for informado).",
+                  "items": {
+                    "type": "number",
+                    "unit": "m/s"
+                  }
+                },
+                "kExterna": {
+                  "type": "array",
+                  "unit": "W/(m.K)",
+                  "description": "Condutividades térmicas do meio externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "W/(m.K)"
+                  }
+                },
+                "calorEspecificoExterno": {
+                  "type": "array",
+                  "description": "Calores específicos do meio externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "J/(kg/K)"
+                  }
+                },
+                "rhoExterno": {
+                  "type": "array",
+                  "description": "Massas específicas do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "kg/m3"
+                  }
+                },
+                "viscExterna": {
+                  "type": "array",
+                  "description": "Viscosidades do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "cP"
+                  }
+                }
+            }
+          },
+          "dPdLHidro": {
+            "type": "integer",
+            "description": "Índice do elemento do vetor dPdLHidro do objeto 'correcao' usado como fator de ajuste para corrigir a perda de carga devido a hidrostática no presente duto."
+          },
+          "dPdLFric": {
+            "type": "integer",
+            "description": "Índice do elemento do vetor dPdLFric do objeto 'correcao' usado como fator de ajuste para corrigir a perda de carga devido à fricção no presente duto."
+          },
+          "dTdL": {
+            "type": "integer",
+            "description": "Índice do elemento do vetor dTdL do objeto 'correcao' usado como fator de ajuste para corrigir o gradiente de temperatura no presente duto."
+          }
+          }
+        }
+      },
+    "ipr": {
+        "type": "array",
+        "description": "Fonte do tipo Inflow Performance Relationship (IPR), que estabelece uma relação entre a vazão produzida com a diferença de pressão entre a pressão estática do reservatório e a pressão de fundo do poço.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a IPR está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador da IPR."
+            },
+            "indFluidoPro": {
+              "type": "integer",
+              "description": "ID do fluido de produção a ser produzido pela presente fonte."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Posição onde a IPR se encontra na linha de produção.",
+              "unit": "m"
+            },
+            "tipoIPR": {
+              "type": "integer",
+              "enum": [0,1,2],
+              "default": 1,
+              "description": "Modelo IPR: 0-> IPR linear; 1->Vogel combinada; 2-> Vogel."
+            },
+            "tempoPressaoEstatica": {
+              "type": "array",
+              "description": "Instantes de tempo correspondentes aos valores do array pressaoEstatica.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "pressaoEstatica": {
+              "type": "array",
+              "description": "Pressão estática do reservatório ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "kgf/cm2"
+              }
+            },
+            "tempoqMax": {
+              "type": "array",
+              "description": "Instantes de tempo correspondentes aos valores do array qMax.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "qMax": {
+              "type": "array",
+              "description": "Vazão máxima ao longo do tempo. Válido para tipoIPR = 2 (Vogel).",
+              "items": {
+                "type": "number",
+                "unit": "sm3/d"
+              }
+            },
+            "tempoTemperaturas": {
+              "type": "array",
+              "description": "Instantes de tempo correspondentes aos valores no array temperaturas.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "temperaturas": {
+              "type": "array",
+              "description": "Temperatura do reservatório ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "degC"
+              }
+            },
+            "tempoip": {
+              "type": "array",
+              "description": "Instantes de tempo correspondentes aos valores no array ip.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "ip": {
+              "type": "array",
+              "description": "Índice de produtividade do reservatório ao longo do tempo. Válido para tipoIPR = 0 ou 1 (linear e Vogel combinado).",
+              "items": {
+                "type": "number",
+                "unit": "(sm3/d)/(kgf/cm2)"
+              }
+            },
+            "tempoii": {
+              "type": "array",
+              "description": "Instantes de tempo correspondentes aos valores no array ii.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "ii": {
+              "type": "array",
+              "description": "Índice de injetividade do reservatório ao longo do tempo. Válido para os três tipos de IPR. Necessário para casos em que haja fluxo reverso, em especial no regime transiente, e para poço injetor. ",
+              "items": {
+                "type": "number",
+                "unit": "(sm3/d)/(kgf/cm2)"
+              }
+            }
+          }
+        }
+      },
+    "bcs": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a uma bomba centrífuga submersa (BCS).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a BCS está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador da BCS."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento onde a BCS se encontra no sistema de produção.",
+              "unit": "m"
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os valores de frequência de operação da bomba.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "frequencia": {
+              "type": "array",
+              "description": "Frequência de rotação da BCS ao longo do tempo, o que define a operação da bomba durante a simulação.",
+              "items": {
+                "type": "number",
+                "unit": "Hz"
+              }
+            },
+            "vazao": {
+              "type": "array",
+              "description": "Valores de vazão da curva de BCS.",
+              "items": {
+                "type": "number",
+                "unit": "BPD"
+              }
+            },
+            "potencia": {
+              "type": "array",
+              "description": "Valores de potência da curva de BCS.",
+              "items": {
+                "type": "number",
+                "unit": "hp"
+              }
+            },
+            "eficiencia": {
+              "type": "array",
+              "description": "Valores de eficiência da curva de BCS.",
+              "items": {
+                "type": "number"
+              }
+            },
+            "head": {
+              "type": "array",
+              "description": "Valores de head da curva de BCS.",
+              "items": {
+                "type": "number",
+                "unit": "ft"
+              }
+            },
+            "freqref": {
+              "type": "number",
+              "description": "Frequência de referência em que a curva foi levantada.",
+              "unit": "Hz"
+            },
+            "nestag": {
+              "type": "integer",
+              "description": "Número de estágios da bomba."
+            },
+            "nestagFab": {
+              "type": "integer",
+              "description": "Número de estágios com que o fabricante levantou a curva da bomba."
+            },
+            "EficienciaMotor": {
+              "type": "number",
+              "description": "Eficiência do motor."
+            },
+            "FrequenciaMinima": {
+              "type": "number",
+              "description": "Frequência mínima de operação da BCS.",
+              "unit": "Hz"
+            },
+            "correcHI": {
+              "type": "boolean",
+              "default": false,
+              "description": ""
+            }
+          }
+        }
+      },
+    "bombaVolumetrica": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a uma bomba volumétrica (modelo de compressão isocórica).",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a bomba está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador da bomba."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento onde a bomba se encontra no sistema de produção.",
+              "unit": "m"
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os valores de frequência de operação da bomba.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "frequencia": {
+              "type": "array",
+              "description": "Frequência de rotação da bomba ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "Hz"
+              }
+            },
+            "capacidade": {
+              "type": "number",
+              "description": "Capacidade volumétrica da câmara da bomba. A vazão volumétrica obtida corresponde ao produto entre a capacidade volumétrica e a frequência de rotação.",
+              "unit": "cm3"
+            },
+            "fatorpoli": {
+              "type": "number",
+              "description": "Fator politrópico, usado para definir o ganho de temperatura devido ao processo de compressão."
+            }
+          }
+        }
+      },
+    "deltaPressao": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a um incremento de pressão localizado.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se o incremento de pressão está ou não ativo."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador do incremento de pressão."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento onde o incremento de pressão se encontra no sistema de produção.",
+              "unit": "m"
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de incremento de pressão nos demais vetores deste objeto.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "deltaPressao": {
+              "type": "array",
+              "description": "Incrementos de pressão ao longo do tempo.",
+              "items": {
+                "type": "number",
+                "unit": "kgf/cm2"
+              }
+            },
+            "tipoCompGas": {
+              "type": "integer",
+              "default": 0,
+              "enum": [0,1,2],
+              "description": "Indica qual será o processo de compressão do gás: 0->adiabático, 1->politrópico, 2->isotérmico."
+            },
+            "fatPoli": {
+              "type": "number",
+              "description": "Caso tipoCompGas==1, fatPoli será o fator politrópico; senão, será a constante adiabática."
+            },
+            "eficLiq": {
+              "type": "number",
+              "default": 100,
+              "description": "Eficiência de bombeio da fase líquida (%). Útil para casos em que se deseja usar o delta de pressão como analogia para bomba volumétrica. A potência requerida total (usada para definir a bomba volumétrica desejada) é obtida por meio da soma da potência de bombeio do líquido com a potência da compressão do gás."
+            },
+            "eficGas": {
+              "type": "number",
+              "default": 100,
+              "description": "Eficiência de bombeio da fase gás (%). Útil para casos em que se deseja usar o delta de pressão como analogia para bomba volumétrica. A potência requerida total (usada para definir a bomba volumétrica desejada) é obtida por meio da soma da potência de bombeio do líquido com a potência da compressão do gás."
+            }
+          }
+        }
+      },
+    "master1": {
+        "type": "object",
+        "description": "Neste objeto definem-se as propriedades da válvula da ANM na linha de produção. Este objeto deve ser definido sempre que se desejar indicar a posição da ANM. Para o caso permanente, não tem nenhuma função além dessa indicação de posição. No transiente, é sempre necessário defini-lo, incluindo os eventos de abertura. Operam com coeficiente de descarga fixo 0.84.",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se a válvula Master1 está ou não ativa."
+          },
+          "curvaCV": {
+            "type": "integer",
+            "enum": [0,1],
+            "description": "Indicativo do significado da curva na variável 'abertura'. Se 0, corresponde às razões entre a área livre da válvula e a área da tubulação ao longo do tempo. Se 1, corresponde ao deslocamento da haste da válvula ao longo do tempo."
+          },
+          "razaoAreaAtiva": {
+            "type": "number",
+            "default": 0.4,
+            "description": "Limiar abaixo do qual é utilizado o modelo de válvula. Acima deste valor, considera-se válvula totalmente aberta, para evitar instabilidades numéricas no regime transiente. Válido para o regime transiente."
+          },
+          "comprimentoMedido": {
+            "type": "number",
+              "description": "Comprimento onde a válvula Master1 se encontra no sistema de produção.",
+              "unit": "m"
+          },
+          "tempo": {
+            "type": "array",
+            "description": "Instantes de tempo em que são informados os eventos de Master1 nos demais vetores deste objeto.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "abertura": {
+            "type": "array",
+            "description": "Abertura da válvula ao longo do tempo (razão com a área da tubulação).",
+            "items": {
+              "type": "number"
+            }
+          },
+          "x1": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+            }
+          },
+          "cv1": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
+              "unit": "(gal/min)/(psi)"
+            }
+          }
+        }
+      },
+    "master2": {
+        "type": "object",
+        "description": "Válvula da ANM na linha de serviço (por enquanto, padrão simplificado esfera, ou seja, binária; está aberta (valores abaixo de 0.5) ou fechada (valores acima de 0.5)).",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se a válvula Master2 está ou não ativa."
+          },
+          "comprimentoMedido": {
+            "type": "number",
+            "description": "Comprimento onde a válvula Master2 se encontra no sistema de serviço.",
+            "unit": "m"
+          },
+          "tempo": {
+            "type": "array",
+            "description": "Instantes de tempo em que são informados os eventos de Master2 nos demais vetores deste objeto.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "abertura": {
+            "type": "array",
+            "description": "Abertura da válvula ao longo do tempo (razão com a área da tubulação).",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      },
+    "pig": {
+        "type": "array",
+        "description": "Cada objeto dentro dessa array corresponde a um pig a ser lançado e recebido no sistema de produção.",
+        "items": {
+          "type": "object",
+            "properties": {
+              "ativo": {
+                "type": "boolean",
+                "description": "Indica se o pig está ou não ativo."
+              },
+              "id": {
+                "type": "integer",
+                "description": "Inteiro identificador do pig."
+              },
+              "lancador": {
+                "type": "number",
+                "description": "Comprimento onde o pig é lançado no sistema de produção.",
+                "unit": "m"
+              },
+              "recebedor": {
+                "type": "number",
+                "description": "Comprimento onde o pig é recebido no sistema de produção.",
+                "unit": "m"
+              },
+              "tempo": {
+                "type": "number",
+                "description": "Instante de tempo em que o pig é lançado.",
+                "unit": "s"
+              }
+            }
+          }
+        },
+    "fontePressao": {
+        "type": "array",
+        "description": "Furo entre o sistema de produção e um reservatório de fluido, com pressão e temperatura especificadas. Esse furo pode permitir tanto o vazamento do duto de produção para o reservatório quanto a entrada de fluido do meio externo para o sistema de produção.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se a fonte está ou não ativa."
+            },
+            "id": {
+              "type": "integer",
+              "description": "Inteiro identificador da fonte."
+            },
+            "tipoFluido": {
+              "type": "integer",
+              "enum": [0,1],
+              "default": 1,
+              "description": "Se 1-> o hidrocarboneto externo ao ambiente é aquele que se encontra na tubulação no momento; se 0 -> determina-se o fluido com a variável 'indiFluidoPro'."
+            },
+            "indiFluidoPro": {
+              "type": "integer",
+              "description": "ID do fluido de produção externo à tubulação. Válido para tipoFluido = 0."
+            },
+            "ambienteGas": {
+              "type": "boolean",
+              "default": false,
+              "description": "Se true, apenas a fração gasosa do fluido de produção externo é admitido para a tubulação. Válido para tipoFluido = 0."
+            },
+            "check": {
+              "type": "integer",
+              "enum": [0,1,-1],
+              "default": 0,
+              "description": "Se 0 -> Furo normal; permite escoamento em ambos os sentidos: da tubulação para o meio ambiente e do meio ambiente para a tubulação. Se 1 -> válvula do tipo 'vacuum breaker'; impede escoamento da tubulação para fora, permitindo apenas escoamento do meio ambiente para a tubulação. Se -1 -> válvula do tipo 'check valve'; impede escoamento do meio ambiente para a tubulação, permitindo apenas escoamento da tubulação para o meio ambiente."
+            },
+            "TipoAbertura": {
+              "type": "integer",
+              "enum": [0,1],
+              "default": 0,
+              "description": "0: tamanho do furo dado pela razão entre a área do furo e a área da tubulação; 1: tamanho do furo dado pela razão entre o diâmetro do furo e o diâmetro da tubulação."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento onde o furo se encontra no sistema de produção.",
+              "unit": "m"
+            },
+            "beta": {
+              "type": "number",
+              "default": 0,
+              "description": "Razão de fluido complementar. No caso, se a simulação possui fontePressao ativa, o fluido complementar do modelo de simulação é equivalente ao fluido externo ao furo."
+            },
+            "cd": {
+              "type": "number",
+              "default": 0.84,
+              "description": "Coeficiente de descarga da fonte de pressão."
+            },
+            "temperatura": {
+              "type": "number",
+              "description": "Temperatura externa à tubulação. Usada para definir a vazão de entrada ou saída da fonte.",
+              "unit": "degC"
+            },
+            "pressao": {
+              "type": "number",
+              "description": "Pressão externa à tubulação. Usada para definir a vazão de entrada ou saída da fonte.",
+              "unit": "kgf/cm2"
+            },
+            "abertura": {
+              "type": "array",
+              "description": "Valores das aberturas ao longo do tempo, da forma como especificado na variável TipoAbertura.",
+              "items": {
+                "type": "number"
+              }
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de abertura.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "titAmb": {
+              "type": "number",
+              "description": ""
+            },
+            "tempoChk": {
+              "type": "array",
+              "description": "",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            }
+          }
+        }
+      },
+      "gasInj": {
+        "type": "object",
+        "description": "Objeto com as condições de contorno de injeção de gas-lift na linha de serviço.",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se o objeto está ou não ativo."
+          },
+            "tipoCC": {
+              "type": "integer",
+              "description": "Tipo de condição de contorno: 0-> pressão de injeção, 1-> vazão de injeção. Caso a condição inicial seja do tipo descarga de gas lift e houver controle de descarga, o simulador automaticamente define as CC usando pressão de injeção, sem necessidade do objeto gasInj."
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de condições de contorno de injeção de gás nos demais vetores deste objeto.",
+              "items": {
+                  "type": "number",
+                  "unit": "s"
+              }
+            },
+            "temperatura": {
+              "type": "array",
+              "description": "Temperaturas de injeção ao longo do tempo.",
+              "items": {
+                  "type": "number",
+                  "unit": "degC"
+              }
+            },
+            "vazaoGas": {
+              "type": "array",
+              "description": "Vazões de injeção ao longo do tempo.",
+              "items": {
+                  "type": "number",
+                  "unit": "sm3/d"
+              }
+            },
+            "pressaoInjecao": {
+              "type": "array",
+              "description": "Pressões de injeção ao longo do tempo.",
+              "items": {
+                  "type": "number",
+                  "unit": "kgf/cm2"
+              }
+            },
+            "chuteVazaoInjecao": {
+              "type": "boolean",
+              "description": "Para CC do tipo pressão, se true, o primeiro elemento do vetor 'vazaoGas' é usado como chute inicial da vazão de gás. Útil para facilitar a convergência.",
+              "default": false
+            }
+        }
+        },
+    "chokeSup": {
+        "type": "object",
+        "description": "Objeto com o detalhamento da choke de superfície. É análogo ao objeto 'válvula', mas com posição fixa (final do sistema de produção).",
+        "properties": {
+            "curvaCV": {
+              "type": "integer",
+              "enum": [0,1],
+              "default": 0,
+              "description": "Indicativo do significado da curva na variável 'abertura'. Se 0, corresponde às razões entre a área livre da válvula e a área da tubulação ao longo do tempo. Se 1, corresponde ao deslocamento da haste da válvula ao longo do tempo."
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de choke de superfície nos demais vetores deste objeto.",
+              "items": {
+                  "type": "number",
+                  "unit": "s"
+              }
+            },
+            "abertura": {
+              "type": "array",
+              "description": "Abertura da válvula ao longo do tempo (razão com a área da tubulação).",
+              "items": {
+                  "type": "number"
+              }
+            },
+            "coeficienteDescarga": {
+              "type": "number",
+              "default": 0.84,
+              "description": "Coeficiente de descarga da choke."
+            },
+            "modelo": {
+              "type": "integer",
+              "enum": [0],
+              "default": 0,
+              "description": "Modelo de válvula. 0: Sachdeva."
+            },
+            "x1": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+              }
+            },
+            "cv1": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
+                "unit": "(gal/min)/(psi)"
+              }
+            }
+        }
+        },
+    "chokeInj": {
+        "type": "object",
+        "description": "Objeto com o detalhamento da choke de injeção. Não considera CV e o escoamento é sempre monofásico (gás).",
+        "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": ""
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de abertura.",
+              "items": {
+                  "type": "number",
+                  "unit": "s"
+              }
+            },
+            "abertura": {
+              "type": "array",
+              "description": "Abertura da válvula ao longo do tempo (razão com a área da tubulação).",
+              "items": {
+                  "type": "number"
+              }
+            },
+            "coeficienteDescarga": {
+              "type": "number",
+              "description": "Coeficiente de descarga da choke de injeção.",
+              "default": 0.9
+            }
+        }
+        },
+    "CondicaoContPocInjec": {
+        "type": "object",
+        "description": "Objeto com as informações de condições de contorno para simulações de poço injetor.",
+        "properties": {
+            "ativo": {
+            "type": "boolean",
+            "description": "Indica se o objeto está ou não ativo."
+            },
+            "tipoFluido": {
+            "type": "integer",
+            "enum": [0,1,2,3],
+            "description": "0: fluido (líquido) dado pelo usuário (informado no campo fluidoComplementar); 1: água (é preciso informar a salinidade); 2: gás rico em CO2 via tabela flash (arquivo Pvtsim .tab requerido, cadastro de fluido de produção requerido; 3: gás rico em CO2 via composicional (arquivo Pvtsim .ctm requerido, cadastro de fluido de produção requerido)."
+            },
+            "salinidade": {
+                "type": "number",
+                "unit": "g/(kg água)",
+                "description": "Salinidade da água injetada."
+              },
+              "arquivoPvtsim": {
+                "type": "string",
+                "description": "Nome do arquivo (.tab ou .ctm) da tabela PVT."
+              },
+              "condContorno": {
+                "type": "integer",
+                "enum": [0,1,2,3,4,5],
+                "description": "0: requer vazLiq e IPR; 1: requer presInjec e IPR; 2: requer presFundo e IPR; 3 requer presInjec e presFundo; 4 requer vazLiq e presInjec; 5: requer vazLiq e presFundo. Todas requerem tempInj."
+              },
+              "tempInj": {
+                "type": "number",
+                "unit": "degC",
+                "description": "Temperatura de injeção. Sempre requerida, independente do tipo de condição de contorno."
+              },
+              "vazLiq": {
+                "type": "number",
+                "unit": "sm3/d",
+                "description": "Vazão de injeção (requerida para condContorno 0, 4 e 5). O nome é restrito a líquidos por questões históricas; atualmente é possível injeção de gás."
+              },
+              "presInjec": {
+                "type": "number",
+                "unit": "kgf/cm2",
+                "description": "Pressão de injeção (requerida para condContorno 1, 3 e 4)."
+              },
+              "presFundo": {
+                "type": "number",
+                "unit": "kgf/cm2",
+                "description": "Pressão de fundo (requerida para condContorno 2, 3 e 5)."
+              }
+            }
+        },
+    "separador": {
+        "type": "object",
+        "description": "Detalhamento da dinâmica da pressão à jusante da linha (separador).",
+        "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se este objeto está ativo ou não."
+            },
+            "tempo": {
+              "type": "array",
+              "description": "Instantes de tempo em que são informados os eventos de pressão nos demais vetores deste objeto.",
+              "items": {
+                  "type": "number",
+                  "unit": "s"
+              }
+            },
+            "pressao": {
+              "type": "array",
+              "description": "Pressão no separador ao longo do tempo.",
+              "items": {
+                  "type": "number",
+                  "unit": "kgf/cm2"
+              }
+            }
+        }
+        },
+    "correcao": {
+      "type": "object",
+      "description": "Fatores de ajuste multiplicadores de dP/dL e dT/dL. Úteis para ajustar o modelo de simulação a testes de produção.",
+      "properties": {
+          "ativo": {
+          "type": "boolean",
+          "description": "Indica se o objeto está ou não ativo."
+          },
+          "dPdLHidro": {
+          "type": "array",
+          "description": "Lista de possíveis fatores de ajuste para corrigir a perda de carga devido a hidrostática nos dutos de produção ou serviço. O uso de dado fator em um duto é indicado por meio do índice (posição) nesta lista.",
+          "items": {
+              "type": "number"
+          }
+          },
+          "dPdLFric": {
+          "type": "array",
+          "description": "Lista de possíveis fatores de ajuste para corrigir a perda de carga devido a fricção nos dutos de produção ou serviço. O uso de dado fator em um duto é indicado por meio do índice (posição) nesta lista.",
+          "items": {
+              "type": "number"
+          }
+          },
+          "dTdL": {
+          "type": "array",
+          "description": "Lista de possíveis fatores de ajuste para corrigir o gradiente de temperatura nos dutos de produção ou serviço. O uso de dado fator em um duto é indicado por meio do índice (posição) nesta lista.",
+          "items": {
+              "type": "number"
+          }
+          }
+      }
+      },
+    "perfilProducao": {
+        "type": "object",
+        "description": "Especifica quais variáveis da linha de produção terão perfis (variações ao longo da linha) registrados no arquivo de saída.",
+        "properties": {
+            "ativo": {
+            "type": "boolean",
+            "description": "Indica se o objeto está ou não ativo."
+            },
+            "tempo": {
+            "type": "array",
+            "description": "Especifica os instantes de tempo em que serão registrados os perfis. Válido para simulações transientes.",
+            "items": {
+                "type": "number",
+                "unit": "s"
+            }
+            },
+            "pressao": {
+            "type": "boolean",
+            "description": "Pressão (kgf/cm2)."
+            },
+            "temperatura": {
+            "type": "boolean",
+            "description": "Temperatura (degC)."
+            },
+            "holdup": {
+            "type": "boolean",
+            "description": "Holdup de líquido."
+            },
+            "bet": {
+            "type": "boolean",
+            "description": "Fração volumétrica de fluido complementar em relação à fase líquida."
+            },
+            "ugs": {
+            "type": "boolean",
+            "description": "Velocidade superficial do gás (m/s)."
+            },
+            "uls": {
+            "type": "boolean",
+            "description": "Velocidade superficial do líquido (m/s)."
+            },
+            "ug": {
+            "type": "boolean",
+            "description": "Velocidade do gás (m/s)."
+            },
+            "ul": {
+            "type": "boolean",
+            "description": "Velocidade do líquido (m/s)."
+            },
+            "arra": {
+            "type": "boolean",
+            "description": "Indicador de arranjo de fases: -2 = anular ou churn, -1 = estratificado, 0 = monofásico, 1 = bolha, 2 = golfada."
+            },
+            "viscosidadeLiquido": {
+            "type": "boolean",
+            "description": "Viscosidade do líquido (cP)."
+            },
+            "viscosidadeGas": {
+            "type": "boolean",
+            "description": "Viscosidade do gás (cP)."
+            },
+            "rhog": {
+            "type": "boolean",
+            "description": "Massa específica do gás (kg/m3) in situ."
+            },
+            "rhol": {
+            "type": "boolean",
+            "description": "Massa específica do líquido (kg/m3) in situ."
+            },
+            "rhoMix": {
+              "type": "boolean",
+              "description": "Massa específica da mistura (kg/m3) in situ."
+              },
+            "RS": {
+            "type": "boolean",
+            "description": "Razão de solubilidade (Sm3/Sm3) in situ."
+            },
+            "vazaoMassicaGas": {
+            "type": "boolean",
+            "description": "Vazão mássica do gás (kg/s)."
+            },
+            "vazaoMassicaLiquido": {
+            "type": "boolean",
+            "description": "Vazão mássica do líquido (kg/s)."
+            },
+            "c0": {
+            "type": "boolean",
+            "description": "Coeficiente de distribuição do modelo drift-flux."
+            },
+            "ud": {
+            "type": "boolean",
+            "description": "Velocidade de escorregamento (m/s) do modelo drift-flux."
+            },
+            "RGO": {
+            "type": "boolean",
+            "description": "Razão gás-óleo (sm3/sm3)."
+            },
+            "deng": {
+            "type": "boolean",
+            "description": "Densidade do gás nas condições standard em relação ao ar."
+            },
+            "yco2": {
+            "type": "boolean",
+            "description": "Fração molar de CO2 na fase vapor (somente black oil)."
+            },
+            "calor": {
+            "type": "boolean",
+            "description": "Fluxo de calor entre escoamento e parede (W/m)."
+            },
+            "masstrans": {
+            "type": "boolean",
+            "description": "Transferência de massa entre fases (kg / [s m])."
+            },
+            "cpgas": {
+            "type": "boolean",
+            "description": "Calor específico a pressão constante do gás (J/[kg C])."
+            },
+            "cpliq": {
+            "type": "boolean",
+            "description": "Calor específico a pressão constante do líquido (J/[kg C])."
+            },
+            "QLstd": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de óleo morto (Sm3/d)."
+            },
+            "QLWstd": {
+            "type": "boolean",
+            "description":  "Vazão volumétrica standard de óleo morto + água (Sm3/d)."
+            },
+            "QLstdTotal": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de óleo morto + água + fluido complementar (Sm3/d)."
+            },
+            "QGstd": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de gás livre + dissolvido (Sm3/d)."
+            },
+            "api": {
+            "type": "boolean",
+            "description": "Grau API do óleo morto."
+            },
+            "bsw": {
+            "type": "boolean",
+            "description": "BSW volumétrico."
+            },
+            "hidro": {
+            "type": "boolean",
+            "description": "Parcela da perda de carga devido à hidrostática (Pa/m)."
+            },
+            "fric": {
+            "type": "boolean",
+            "description": "Parcela da perda de carga devido à fricção (Pa/m)."
+            },
+            "Term1": {
+            "type": "boolean",
+            "description": "Termo de relação de vazão mássica 1 (para verificação de consistência das vazões mássicas das fases), kg/s."
+            },
+            "Term2": {
+            "type": "boolean",
+            "description": "Termo de relação de vazão mássica 2 (para verificação de consistência das vazões mássicas das fases), kg/s."
+            },
+            "dengD": {
+            "type": "boolean",
+            "description": "Densidade do gás dissolvido in situ."
+            },
+            "dengL": {
+            "type": "boolean",
+            "description": "Densidade do gás livre in situ."
+            },
+            "ReyInterno": {
+            "type": "boolean",
+            "description": "Número de Reynolds interno da mistura."
+            },
+            "ReyExterno": {
+            "type": "boolean",
+            "description": "Número de Reynolds externo, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "GrashInterno": {
+            "type": "boolean",
+            "description": "Número de Grashof interno da mistura."
+            },
+            "GrashExterno": {
+            "type": "boolean",
+            "description": "Número de Grashof externo da mistura, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "NusselInterno": {
+            "type": "boolean",
+            "description": "Número de Nusselt interno da mistura."
+            },
+            "NusselExterno": {
+            "type": "boolean",
+            "description": "Número de Nusselt externo da mistura, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "PrandtlInterno": {
+            "type": "boolean",
+            "description": "Número de Prandtl interno da mistura."
+            },
+            "PrandtlExterno": {
+            "type": "boolean",
+            "description": "Número de Prandtl externo da mistura, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "Froud": {
+            "type": "boolean",
+            "description": "Número de Froud."
+            },
+            "Bo": {
+            "type": "boolean",
+            "description": "Fator volume de formação."
+            },
+            "Hint": {
+            "type": "boolean",
+            "description": "Coeficiente de película interno da mistura (W / [m2 K])."
+            },
+            "Hext": {
+            "type": "boolean",
+            "description": "Coeficiente de película externo (W / [m2 K])."
+            },
+            "temperaturaAmbiente": {
+            "type": "boolean",
+            "description": "Temperatura ambiente (degC) referente ao ar atmosférico, água do mar ou formação (perfil geotérmico)."
+            },
+            "PrandtlGas": {
+            "type": "boolean",
+            "description": "Número de Prandtl do gás."
+            },
+            "PrandtlLiquido": {
+            "type": "boolean",
+            "description": "Número de Prandtl do líquido."
+            },
+            "pseudoLiquido": {
+            "type": "boolean",
+            "description": "Frações molares das espécies químicas (pseudocomponentes) na fase líquida. Válido para modelos de fluido composicionais."
+            },
+            "pseudoGas": {
+            "type": "boolean",
+            "description": "Frações molares das espécies químicas (pseudocomponentes) na fase vapor. Válido para modelos de fluido composicionais."
+            },
+            "pseudoMist": {
+            "type": "boolean",
+            "description": "Frações molares das espécies químicas (pseudocomponentes) nas fases hidrocarboneto líquido+vapor. Válido para modelos de fluido composicionais."
+            },
+            "TResi": {
+            "type": "boolean",
+            "description": "Tempo de residência do fluido complementar (s)."
+            },
+            "RedutorAtrito": {
+            "type": "boolean",
+            "description": "Fator de redução de fricção. Aplicável somente quando o fluido complementar representa o redutor de atrito."
+            },
+            "angulo": {
+            "type": "boolean",
+            "description": "Ângulo do duto (rad)."
+            }
+        }
+        },
+    "perfilServico": {
+        "type": "object",
+        "description": "Especifica quais variáveis da linha de serviço terão perfis (variações ao longo da linha) registrados no arquivo de saída.",
+        "properties": {
+            "ativo": {
+            "type": "boolean",
+            "description": "Indica se o objeto está ou não ativo."
+            },
+            "tempo": {
+            "type": "array",
+            "description": "Especifica os instantes de tempo em que serão registrados os perfis. Válido para simulações transientes.",
+            "items": {
+                "type": "number",
+                "unit": "s"
+            }
+            },
+            "pressao": {
+            "type": "boolean",
+            "description": "Pressão (kgf/cm2)."
+            },
+            "temperatura": {
+            "type": "boolean",
+            "description": "Temperatura (degC)."
+            },
+            "ugs": {
+            "type": "boolean",
+            "description": "Velocidade superficial do gás (m/s)."
+            },
+            "ug": {
+            "type": "boolean",
+            "description": "Velocidade do gás (m/s)."
+            },
+            "tensaoCisalhamento": {
+            "type": "boolean",
+            "description": "Tensão cisalhante (N/m2)."
+            },
+            "viscosidadeGas": {
+            "type": "boolean",
+            "description": "Viscosidade do gás (cP)."
+            },
+            "rhog": {
+            "type": "boolean",
+            "description": "Massa epecifica do gás (kg/m3) in situ."
+            },
+            "vazaoMassicaGas": {
+            "type": "boolean",
+            "description": "Vazão mássica do gás (kg/s)."
+            },
+            "QGstd": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de gás (Sm3/d)."
+            },
+            "fric": {
+            "type": "boolean",
+            "description": "Parcela da perda de carga devido à fricção (Pa/m)."
+            },
+            "calor": {
+            "type": "boolean",
+            "description": "Fluxo de calor entre escoamento e parede (W/m)."
+            },
+            "hidro": {
+            "type": "boolean",
+            "description": "Parcela da perda de carga devido à hidrostática (Pa/m)."
+            },
+            "ReyInterno": {
+            "type": "boolean",
+            "description": "Número de Reynolds interno."
+            },
+            "ReyExterno": {
+            "type": "boolean",
+            "description": "Número de Reynolds do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+            },
+            "GrashInterno": {
+            "type": "boolean",
+            "description": "Número de Grashof interno."
+            },
+            "GrashExterno": {
+            "type": "boolean",
+            "description": "Número de Grashof do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+            },
+            "NusselInterno": {
+            "type": "boolean",
+            "description": "Número de Nusselt interno."
+            },
+            "NusselExterno": {
+            "type": "boolean",
+            "description": "Número de Nusselt do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+            },
+            "PrandtlInterno": {
+            "type": "boolean",
+            "description": "Número de Prandtl interno."
+            },
+            "PrandtlExterno": {
+            "type": "boolean",
+            "description": "Número de Prandtl do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+            },
+            "Hint": {
+            "type": "boolean",
+            "description": "Coeficiente de pelicula interno (W / [m2 K])."
+            },
+            "Hext": {
+            "type": "boolean",
+            "description": "Coeficiente de pelicula externo (W / [m2 K])."
+            },
+            "temperaturaAmbiente": {
+            "type": "boolean",
+            "description": "Temperatura ambiente (degC) referente ao ar atmosférico, água do mar ou formação (perfil geotérmico)."
+            },
+            "angulo": {
+            "type": "boolean",
+            "description": "Ângulo do duto (rad)."
+            }
+        }
+        },
+    "tendP": {
+        "type": "array",
+        "description": "Especifica quais variáveis da linha de produção terão tendências (variações ao longo do tempo) registradas no arquivo de saída.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "ativo": {
+              "type": "boolean",
+              "description": "Indica se o item está ou não ativo."
+            },
+            "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento medido do ponto na linha de produção.",
+              "unit": "m"
+            },
+            "dt": {
+              "type": "number",
+              "description": "Intervalo de tempo entre os registros.",
+              "unit": "s"
+            },
+            "rotulo": {
+              "type": "string",
+              "description": "Rótulo do item."
+            },
+            "pressao": {
+              "type": "boolean",
+              "description": "Pressão (kgf/cm2)."
+            },
+            "temperatura": {
+              "type": "boolean",
+              "description": "Temperatura (degC)."
+            },
+            "holdup": {
+              "type": "boolean",
+              "description": "Holdup de líquido."
+            },
+            "bet": {
+              "type": "boolean",
+              "description": "Fração volumétrica de fluido complementar em relação à fase líquida."
+            },
+            "ugs": {
+              "type": "boolean",
+              "description": "Velocidade superficial do gás (m/s)."
+            },
+            "uls": {
+              "type": "boolean",
+              "description": "Velocidade superficial do líquido (m/s)."
+            },
+            "ug": {
+              "type": "boolean",
+              "description": "Velocidade do gás (m/s)."
+            },
+            "ul": {
+              "type": "boolean",
+              "description": "Velocidade do líquido (m/s)."
+            },
+            "arra": {
+              "type": "boolean",
+              "description": "Indicador de arranjo de fases: -2 = anular ou churn, -1 = estratificado, 0 = monofásico, 1 = bolha, 2 = golfada."
+            },
+            "viscosidadeLiquido": {
+              "type": "boolean",
+              "description": "Viscosidade do líquido (cP)."
+            },
+            "viscosidadeGas": {
+              "type": "boolean",
+              "description": "Viscosidade do gás (cP)."
+            },
+            "rhog": {
+              "type": "boolean",
+              "description": "Massa específica do gás (kg/m3) in situ."
+            },
+            "rhol": {
+              "type": "boolean",
+              "description": "Massa específica do líquido (kg/m3) in situ."
+            },
+            "vazaoMassicaGas": {
+            "type": "boolean",
+            "description": "Vazão mássica do gás (kg/s)."
+            },
+            "vazaoMassicaLiquido": {
+            "type": "boolean",
+            "description": "Vazão mássica do líquido (kg/s)."
+            },
+            "c0": {
+            "type": "boolean",
+            "description": "Coeficiente de distribuição do modelo drift-flux."
+            },
+            "ud": {
+            "type": "boolean",
+            "description": "Velocidade de escorregamento (m/s) do modelo drift-flux."
+            },
+            "RGO": {
+            "type": "boolean",
+            "description": "Razão gás-óleo (sm3/sm3)."
+            },
+            "deng": {
+            "type": "boolean",
+            "description": "Densidade do gás nas condições standard em relação ao ar."
+            },
+            "yco2": {
+            "type": "boolean",
+            "description": "Fração molar de CO2 na fase vapor (somente black oil)."
+            },
+            "calor": {
+            "type": "boolean",
+            "description": "Fluxo de calor entre escoamento e parede (W/m)."
+            },
+            "masstrans": {
+            "type": "boolean",
+            "description": "Transferência de massa entre fases (kg / [s m])."
+            },
+            "QLstd": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de óleo morto (Sm3/d)."
+            },
+            "QLWstd": {
+            "type": "boolean",
+            "description":  "Vazão volumétrica standard de óleo morto + água (Sm3/d)."
+            },
+            "QLstdTotal": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de óleo morto + água + fluido complementar (Sm3/d)."
+            },
+            "QGstd": {
+            "type": "boolean",
+            "description": "Vazão volumétrica standard de gás livre + dissolvido (Sm3/d)."
+            },
+            "api": {
+            "type": "boolean",
+            "description": "Grau API do óleo morto."
+            },
+            "bsw": {
+            "type": "boolean",
+            "description": "BSW volumétrico."
+            },
+            "hidro": {
+            "type": "boolean",
+            "description": "Parcela da perda de carga devido à hidrostática (Pa/m)."
+            },
+            "fric": {
+            "type": "boolean",
+            "description": "Parcela da perda de carga devido à fricção (Pa/m)."
+            },
+            "dengD": {
+            "type": "boolean",
+            "description": "Densidade do gás dissolvido in situ."
+            },
+            "dengL": {
+            "type": "boolean",
+            "description": "Densidade do gás livre in situ."
+            },
+            "ReyInterno": {
+            "type": "boolean",
+            "description": "Número de Reynolds interno da mistura."
+            },
+            "ReyExterno": {
+            "type": "boolean",
+            "description": "Número de Reynolds externo, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "GrashInterno": {
+            "type": "boolean",
+            "description": "Número de Grashof interno da mistura."
+            },
+            "GrashExterno": {
+            "type": "boolean",
+            "description": "Número de Grashof externo da mistura, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "NusselInterno": {
+            "type": "boolean",
+            "description": "Número de Nusselt interno da mistura."
+            },
+            "NusselExterno": {
+            "type": "boolean",
+            "description": "Número de Nusselt externo da mistura, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "PrandtlInterno": {
+            "type": "boolean",
+            "description": "Número de Prandtl interno da mistura."
+            },
+            "PrandtlExterno": {
+            "type": "boolean",
+            "description": "Número de Prandtl externo da mistura, referente ao ar atmosférico, água do mar ou gás no anular."
+            },
+            "Froud": {
+            "type": "boolean",
+            "description": "Número de Froud."
+            },
+            "Rs": {
+            "type": "boolean",
+            "description": "Razão de solubilidade (Sm3/Sm3) in situ."
+            },
+            "Bo": {
+            "type": "boolean",
+            "description": "Fator volume de formação."
+            },
+            "Hint": {
+            "type": "boolean",
+            "description": "Coeficiente de película interno da mistura (W / [m2 K])."
+            },
+            "Hext": {
+            "type": "boolean",
+            "description": "Coeficiente de película externo (W / [m2 K])."
+            },
+            "mlFonte": {
+            "type": "boolean",
+            "description": "Vazão mássica de líquido (Hidrocarb+Água) (kg/s) oriunda de fonte na célula de discretização."
+            },
+            "mgFonte": {
+            "type": "boolean",
+            "description": "Vazão mássica de gás (kg/s) oriunda de fonte na célula de discretização."
+            },
+            "mcFonte": {
+            "type": "boolean",
+            "description": "Vazão mássica de fluido complementar (kg/s) oriunda de fonte na célula de discretização."
+            },
+            "tempChokeJusante": {
+            "type": "boolean",
+            "description": "Temperatura (degC) à jusante da choke de superfície (final do sistema de produção)."
+            },
+            "deltaPBomba": {
+            "type": "boolean",
+            "description": "Incremento de pressão de bombeio (kgf/cm2) em bomba na célula de discretização."
+            },
+            "potenciaBomba": {
+            "type": "boolean",
+            "description": "Potência de bombeio (kW) em bomba na célula de discretização."
+            },
+            "volMonM1PT": {
+            "type": "boolean",
+            "description": "Volume de líquido a montante da Master1 (m3) in situ."
+            },
+            "volJusM1PT": {
+            "type": "boolean",
+            "description": "Volume de líquido a jusante da Master1 (m3) in situ."
+            },
+            "volMonM1ST": {
+            "type": "boolean",
+            "description": "Volume standard de líquido a montante da Master1 (sm3)."
+            },
+            "volJusM1ST": {
+            "type": "boolean",
+            "description": "Volume standard de líquido a jusante da Master1 (sm3)."
+            },
+            "autoVal": {
+            "type": "boolean",
+            "description": "Celeridade, família de onda  (m/s) (importante para depuração numérica avançada)." 
+            },
+            "autoVel": {
+            "type": "boolean",
+            "description": "Componente do autovetor, condição adiabática, família de onda (importante para depuração numérica avançada)."
+            },
+            "flutuacao": {
+            "type": "boolean",
+            "description": "Componente de flutuação da família de onda (importante para depuração numérica avançada)."
+            }
+        }
+        }
+    },
+    "tendS": {
+      "type": "array",
+      "description": "Especifica quais variáveis da linha de serviço terão tendências (variações ao longo do tempo) registradas no arquivo de saída.",
+      "items": {
+          "type": "object",
+          "properties": {
+          "ativo": {
+              "type": "boolean",
+              "description": "Indica se o item está ou não ativo."
+          },
+          "comprimentoMedido": {
+              "type": "number",
+              "description": "Comprimento medido do ponto na linha de produção."
+          },
+          "dt": {
+              "type": "number",
+              "description": "Intervalo de tempo entre os registros."
+          },
+          "rotulo": {
+              "type": "string",
+              "description": "Rótulo do item."
+          },
+          "pressao": {
+              "type": "boolean",
+              "description": "Pressão (kgf/cm2)."
+          },
+          "temperatura": {
+              "type": "boolean",
+              "description": "Temperatura (degC)."
+          },
+          "ugs": {
+              "type": "boolean",
+              "description": "Velocidade superficial do gás (m/s)."
+          },
+          "ug": {
+              "type": "boolean",
+              "description": "Velocidade do gás (m/s)."
+          },
+          "tensaoCisalhamento": {
+              "type": "boolean",
+              "description": "Tensão cisalhante (N/m2)."
+          },
+          "viscosidadeGas": {
+              "type": "boolean",
+              "description": "Viscosidade do gás (cP)."
+          },
+          "rhog": {
+              "type": "boolean",
+              "description": "Massa epecifica do gás (kg/m3) in situ."
+          },
+          "vazaoMassicaGas": {
+              "type": "boolean",
+              "description": "Vazão mássica do gás (kg/s)."
+          },
+          "hidro": {
+              "type": "boolean",
+              "description": "Parcela da perda de carga devido à hidrostática (Pa/m)."
+          },
+          "fric": {
+              "type": "boolean",
+              "description": "Parcela da perda de carga devido à fricção (Pa/m)."
+          },
+          "calor": {
+              "type": "boolean",
+              "description": "Fluxo de calor entre escoamento e parede (W/m)."
+          },
+          "QGstd": {
+              "type": "boolean",
+              "description": "Vazão volumétrica standard de gás (Sm3/d)."
+          },
+          "presEstagVGL": {
+              "type": "boolean",
+              "description": "Pressão de revestimento (a montante) em VGL na célula de discretização (kgf/cm2)."
+          },
+          "tempEstagVGL": {
+              "type": "boolean",
+              "description": "Temperatura de revestimento (a montante) em VGL na célula de discretização (degC)."
+          },
+          "presGargVGL": {
+              "type": "boolean",
+              "description": "Pressão na vena contracta (garganta) em VGL na célula de discretização (kgf/cm2)."
+          },
+          "tempGargVGL": {
+              "type": "boolean",
+              "description": "Temperatura na vena contracta (garganta) em VGL na célula de discretização (degC)."
+          },
+          "vazaoVGL": {
+              "type": "boolean",
+              "description": "Vazão volumétrica na VGL (m3/s)."
+
+          },
+          "VelocidadeMaximaGarganta": {
+              "type": "boolean",
+              "description": "Velocidade média na vena contracta em VGL na célula de discretização (m/s)."
+          },
+          "ReyInterno": {
+              "type": "boolean",
+              "description": "Número de Reynolds interno."
+          },
+          "ReyExterno": {
+              "type": "boolean",
+              "description": "Número de Reynolds do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+          },
+          "GrashInterno": {
+              "type": "boolean",
+              "description": "Número de Grashof  interno."
+          },
+          "GrashExterno": {
+              "type": "boolean",
+              "description": "Número de Grashof do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+          },
+          "NusselInterno": {
+              "type": "boolean",
+              "description": "Número de Nusselt  interno."
+          },
+          "NusselExterno": {
+              "type": "boolean",
+              "description": "Número de Nusselt do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+          },
+          "PrandtlInterno": {
+              "type": "boolean",
+              "description": "Número de Prandtl  interno."
+          },
+          "PrandtlExterno": {
+              "type": "boolean",
+              "description": "Número de Prandtl do fluido no ambiente externo (ar atmosférico, água do mar, etc)."
+          },
+          "Froud": {
+              "type": "boolean",
+              "description": "Número de Froud."
+          },
+          "Hint": {
+              "type": "boolean",
+              "description": "Coeficiente de pelicula interno (W / [m2 K])."
+          },
+          "Hext": {
+              "type": "boolean",
+              "description": "Coeficiente de pelicula externo (W / [m2 K])."
+          }
+          }
+      }
+      },
+      "perfisTransP": {
+        "type": "object",
+        "description": "Gravação dos perfis radiais de temperatura em seções transversais específicas da tubulação na linha de produção.",
+        "properties": {
+            "ativo": {
+            "type": "boolean",
+            "description": "Indica se o objeto está ou não ativo."
+            },
+            "tempo": {
+            "type": "array",
+            "description": "Especifica os instantes de tempo em que serão registrados os perfis. Válido para simulações transientes.",
+            "items": {
+                "type": "number",
+                "unit": "s"
+            }
+            },
+            "comprimentoMedido": {
+            "type": "array",
+            "description": "Posições dos perfis na linha de produção.",
+            "items": {
+                "type": "number",
+                "unit": "m"
+            }
+            }
+        }
+        },
+    "perfisTransS": {
+        "type": "object",
+        "description": "Gravação dos perfis radiais de temperatura em seções transversais específicas da tubulação na linha de serviço.",
+        "properties": {
+            "ativo": {
+            "type": "boolean",
+            "description": "Indica se o objeto está ou não ativo."
+            },
+            "tempo": {
+            "type": "array",
+            "description": "Especifica os instantes de tempo em que serão registrados os perfis. Válido para simulações transientes.",
+            "items": {
+                "type": "number",
+                "unit": "s"
+            }
+            },
+            "comprimentoMedido": {
+            "type": "array",
+            "description": "Posição do perfil na linha de serviço.",
+            "items": {
+                "type": "number",
+                "unit": "m"
+            }
+            }
+        }
+        },
+    "tendTransP": {
+        "type": "array",
+        "description": "Especifica o registro de tendências (evoluções temporais) de temperaturas em pontos específicos da seção transversal na linha de produção.",
+        "items": {
+            "type": "object",
+            "properties": {
+            "ativo": {
+                "type": "boolean",
+                "description": "Especifica se o item está ou não ativo"
+            },
+            "comprimentoMedido": {
+                "type": "number",
+                "description": "Comprimento medido do ponto na linha de produção."
+            },
+            "camada": {
+                "type": "integer",
+                "description": "Camada da seção transversal."
+            },
+            "discretizacao": {
+                "type": "integer",
+                "description": "Ponto de discretização da camada."
+            },
+            "dt": {
+                "type": "number",
+                "description": "Intervalo de tempo entre os registros."
+              },
+            "rotulo": {
+                "type": "string",
+                "description": "Rótulo do item."
+            }
+            }
+        }
+        },
+
+    "tendTransS": {
+        "type": "array",
+        "description": "Especifica o registro de tendências (evoluções temporais) de temperaturas em pontos específicos da seção transversal na linha de serviço.",
+        "items": {
+            "type": "object",
+            "properties": {
+            "ativo": {
+                "type": "boolean",
+                "description": "Especifica se o item está ou não ativo"
+            },
+            "comprimentoMedido": {
+                "type": "number",
+                "description": "Comprimento medido do ponto na linha de serviço."
+            },
+            "camada": {
+                "type": "integer",
+                "description": "Camada da seção transversal."
+            },
+            "discretizacao": {
+                "type": "integer",
+                "description": "Ponto de discretização da camada."
+            },
+            "dt": {
+                "type": "number",
+                "description": "Intervalo de tempo entre os registros."
+            },
+            "rotulo": {
+                "type": "string",
+                "description": "Rótulo do item."
+            }
+            }
+        }
+        },
+        "tela": {
+          "type": "array",
+          "description": "Especifica colunas a serem impressas na tela durante execução da simulação.",
+          "items": {
+              "type": "object",
+              "properties": {
+              "ativo": {
+                  "type": "boolean",
+                  "description": "Indica se o item está ou não ativo."
+              },
+              "coluna": {
+                  "type": "boolean",
+                  "description": "Se true, linha de produção. Se false, linha de serviço."
+              },
+              "celula": {
+                  "type": "integer",
+                  "description": "Posição da célula referente às informações impressas."
+              },
+              "variavel": {
+                  "type": "integer",
+                  "enum": [1, 2, 3, 4, 5],
+                  "description": "Se coluna = true, então: 1: indicador de modelo completo (que inclui termos de derivada de massa específica de líquido em relação ao tempo); 2: temperatura; 3: fração de vazio; 4: fração de fluido complementar; 5: velocidade superficial de gás; 6: velocidade superficial de líquido. Se coluna = false, então: 1: pressão; 2: temperatura; 3: velocidade de gás."
+              }
+              }
+          }
+          },
+    "parafina": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "arquivoWax": {
+          "type": "string",
+          "description": ""
+        },
+        "usuarioPorosidade": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "porosidade": {
+          "type": "number",
+          "description": ""
+        },
+        "usuarioC2C3": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "c2": {
+          "type": "number",
+          "description": ""
+        },
+        "c3": {
+          "type": "number",
+          "description": ""
+        },
+        "usuarioDifus": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "alteraViscFlu": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "difus": {
+          "type": "number",
+          "description": ""
+        },
+        "rugosidade": {
+          "type": "number",
+          "description": "",
+          "unit": "m"
+        },
+        "multVis": {
+          "type": "number",
+          "description": ""
+        },
+        "DmultipWax": {
+          "type": "number",
+          "description": ""
+        },
+        "EmultipWax": {
+          "type": "number",
+          "description": ""
+        },
+        "FmultipWax": {
+          "type": "number",
+          "description": ""
+        }
+      }
+    },
+    "intermitenciaSevera": {
+      "type": "array",
+      "description": "",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": ""
+          },
+          "id": {
+            "type": "integer",
+            "description": ""
+          },
+          "inicioTrechoAcumula": {
+            "type": "number",
+            "description": "",
+            "unit": "m"
+          },
+          "fimTrechoAcumula": {
+            "type": "number",
+            "description": "",
+            "unit": "m"
+          },
+          "fimTrechoColuna": {
+            "type": "number",
+            "description": "",
+            "unit": "m"
+          },
+          "fracaoVazioPenetracao": {
+            "type": "number",
+            "description": ""
+          },
+          "criterio": {
+            "type": "integer",
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}
