@@ -4,6 +4,10 @@
 name: Upload Python Package
 
 on:
+  workflow_run:
+    workflows: ["Build Marlim3"]
+    types:
+      - completed
   release:
     types: [published]
 
@@ -13,8 +17,10 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Only run on the official repository, not on forks
-    if: github.repository == 'petrobras/marlim3'
+    # Only run on the official repository, not on forks, and only if build workflow succeeded
+    if: |
+      github.repository == 'petrobras/marlim3' &&
+      (github.event_name == 'release' || github.event.workflow_run.conclusion == 'success')
 
     steps:
     - uses: actions/checkout@v4
