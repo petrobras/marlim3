@@ -22,7 +22,12 @@ CXXFLAGS = -std=c++11 $(CXX_OPTIMIZATION_FLAGS) $(DEBUG_FLAGS) $(WARNING_FLAGS) 
 F90FLAGS = -J$(OBJDIR) -c $(F90_OPTIMIZATION_FLAGS) -g -fmax-errors=3 -ffree-line-length-none -fopenmp -lquadmath
 
 # Flags para linkagem
-LDFLAGS = -static-libgcc -static-libstdc++ -fopenmp -lgfortran -lquadmath
+# No Windows, -static garante que libgomp e outras DLLs do MinGW sejam embutidas
+ifeq ($(OS),Windows_NT)
+    LDFLAGS = -static -fopenmp -lgfortran -lquadmath
+else
+    LDFLAGS = -static-libgcc -static-libstdc++ -fopenmp -lgfortran -lquadmath
+endif
 
 # Arquivos fontes
 CXX_SRCS := $(wildcard *.cpp)
