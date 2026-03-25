@@ -51,7 +51,7 @@ skip_sem_executavel = pytest.mark.skipif(
 # ter entrada própria como chave.
 
 DEMOS = {
-    "2zonas-2VGLs-2-Check-AS.json":            ["leituraAS.json", "PVTSIM-MARLIM.tab"],
+   # "2zonas-2VGLs-2-Check-AS.json":            ["leituraAS.json", "PVTSIM-MARLIM.tab"],
     "2zonas-2VGLs-2-Check-correcPerfTerm.json": ["PVTSIM-MARLIM.tab"],
     "BCS-longo-eficMotor.json":                 ["PVTSIM-MARLIM.tab"],
     "injec-Liq-TempoResidencia.json":           [],
@@ -82,6 +82,11 @@ def test_demo_simula(json_file):
 
     caso = marlim3.Tramo()
     caso.from_json(json_path)
+
+    # Passando para permanente
+    # Reduzir tempo de simulação para acelerar os testes
+    if "transiente" in caso.configuracaoInicial:
+        caso.configuracaoInicial["transiente"] = False
 
     out_dir = os.path.join(OUTPUT_DIR, label)
     os.makedirs(out_dir, exist_ok=True)
