@@ -1,3 +1,4 @@
+include _version.py
 include tutoriais/*.json
 include marlim3/Marlim3
 include marlim3/Marlim3.exe
