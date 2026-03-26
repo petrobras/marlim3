@@ -8,8 +8,6 @@ on:
     workflows: ["Build Marlim3"]
     types:
       - completed
-  release:
-    types: [published]
 
 permissions:
   contents: read
@@ -20,7 +18,7 @@ jobs:
     # Only run on the official repository, not on forks, and only if build workflow succeeded
     if: |
       github.repository == 'petrobras/marlim3' &&
-      (github.event_name == 'release' || github.event.workflow_run.conclusion == 'success')
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
     - uses: actions/checkout@v4
