@@ -1,0 +1,1613 @@
+{
+    "system":  "PROD",
+    "initialConfig":  {
+                          "geometryOrigin":  "POCO",
+                          "gasLine":  true,
+                          "screenPrint":  false,
+                          "thermalEquilibrium":  true,
+                          "latentHeat":  false,
+                          "cpModel":  0,
+                          "pvtFile":  "PVTSIM-MARLIM.tab",
+                          "tabP":  true,
+                          "tabG":  true,
+                          "trackGOR":  true,
+                          "trackGasDensity":  true,
+                          "permanente":  true,
+                          "steadyStateOrder":  1,
+                          "transient":  false,
+                          "massTransfer":  0,
+                          "initialFluidId":  0,
+                          "formation":  {
+                                            "productionTime":  365,
+                                            "properties":  [
+                                                               {
+                                                                   "id":  0,
+                                                                   "label":  "Marlim2",
+                                                                   "conductivity":  2.5,
+                                                                   "density":  2000,
+                                                                   "specificHeat":  1250
+                                                               },
+                                                               {
+                                                                   "id":  1,
+                                                                   "label":  "Shale",
+                                                                   "conductivity":  1.6,
+                                                                   "density":  2057,
+                                                                   "specificHeat":  2151
+                                                               },
+                                                               {
+                                                                   "id":  2,
+                                                                   "label":  "Marl",
+                                                                   "conductivity":  1.38,
+                                                                   "density":  1970,
+                                                                   "specificHeat":  1734
+                                                               },
+                                                               {
+                                                                   "id":  3,
+                                                                   "label":  "Sandstone",
+                                                                   "conductivity":  2.5,
+                                                                   "density":  2198,
+                                                                   "specificHeat":  737
+                                                               },
+                                                               {
+                                                                   "id":  4,
+                                                                   "label":  "Cementstone",
+                                                                   "conductivity":  1.96,
+                                                                   "density":  2644,
+                                                                   "specificHeat":  844
+                                                               },
+                                                               {
+                                                                   "id":  5,
+                                                                   "label":  "Halite",
+                                                                   "conductivity":  3.97,
+                                                                   "density":  2160,
+                                                                   "specificHeat":  875
+                                                               },
+                                                               {
+                                                                   "id":  6,
+                                                                   "label":  "Anhydrite",
+                                                                   "conductivity":  4.1,
+                                                                   "density":  2980,
+                                                                   "specificHeat":  819
+                                                               },
+                                                               {
+                                                                   "id":  7,
+                                                                   "label":  "Dolomite",
+                                                                   "conductivity":  3.56,
+                                                                   "density":  2840,
+                                                                   "specificHeat":  933
+                                                               },
+                                                               {
+                                                                   "id":  8,
+                                                                   "label":  "Limestone",
+                                                                   "conductivity":  2.19,
+                                                                   "density":  2540,
+                                                                   "specificHeat":  887
+                                                               },
+                                                               {
+                                                                   "id":  9,
+                                                                   "label":  "Packstone",
+                                                                   "conductivity":  3.23,
+                                                                   "density":  2620,
+                                                                   "specificHeat":  1000
+                                                               },
+                                                               {
+                                                                   "id":  10,
+                                                                   "label":  "Wackstone",
+                                                                   "conductivity":  3.16,
+                                                                   "density":  2590,
+                                                                   "specificHeat":  390
+                                                               },
+                                                               {
+                                                                   "id":  11,
+                                                                   "label":  "Clay",
+                                                                   "conductivity":  2.127,
+                                                                   "density":  2080,
+                                                                   "specificHeat":  2127
+                                                               }
+                                                           ]
+                                        },
+                          "advanced":  {
+                                           "monophasicCriterion":  1E-05,
+                                           "condensationCriterion":  0.001,
+                                           "simplePressureFrontier":  true,
+                                           "slipBoundaryCell":  false,
+                                           "despressRate":  0,
+                                           "compModelCorrectionTime":  [
+                                                                           0,
+                                                                           40000,
+                                                                           50001
+                                                                       ],
+                                           "compModelCorrectionFlag":  [
+                                                                           true,
+                                                                           true,
+                                                                           true
+                                                                       ],
+                                           "disableMassTransferTempDeriv":  false,
+                                           "strongAnnularColCoupling":  20
+                                       },
+                          "slipCorrelations":  true,
+                          "correlationsByPattern":  {
+                                                       "stratified":  1,
+                                                       "slugBubble":  1,
+                                                       "annularChurn":  3
+                                                   }
+                      },
+    "CondicaoContPocInjec_reserva":  {
+                                         "boundaryCondition":  2,
+                                         "salinity":  20.0,
+                                         "injectionTemp":  40.0,
+                                         "stdLiquidFlowRate":  1000.0,
+                                         "injectionPressure":  33.91,
+                                         "bottomholePressure":  339.0
+                                     },
+    "time":  {
+                         "finalTime":  50001,
+                         "times":  [
+                                       0,
+                                       1000,
+                                       1060,
+                                       15800,
+                                       15810,
+                                       16000,
+                                       16010,
+                                       29990,
+                                       30000,
+                                       30060,
+                                       30160
+                                   ],
+                         "maxDT":  [
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4,
+                                             4
+                                         ]
+                     },
+    "compTable":  {
+                     "numPoints":  31,
+                     "maxPressure":  700,
+                     "minPressure":  2,
+                     "maxTemperature":  200,
+                     "minTemperature":  -100
+                 },
+    "productionFluid":  [
+                             {
+                                 "id":  0,
+                                 "api":  32,
+                                 "gor":  400,
+                                 "gasDensity":  0.85,
+                                 "bsw":  0.0,
+                                 "waterDensity":  1.0,
+                                 "temp1":  20.0,
+                                 "visc1":  5.0,
+                                 "temp2":  40.0,
+                                 "visc2":  3.0,
+                                 "emulsionType":  3,
+                                 "bswInversion":  0.8,
+                                 "co2Fraction":  0.0,
+                                 "criticalCorrelation":  1
+                             }
+                         ],
+    "complementaryFluid":  {
+                               "id":  0,
+                               "density":  1000,
+                               "compressibility":  0.0,
+                               "thermalExpansivity":  0.0,
+                               "surfaceTension":  0.000001,
+                               "specificHeat":  4000.0,
+                               "conductivity":  0.14,
+                               "temp1":  20.0,
+                               "visc1":  1.0,
+                               "temp2":  40.0,
+                               "visc2":  0.8,
+                               "salinity":  0.0,
+                               "fluidType":  2
+                           },
+    "gasFluid":  {
+                     "id":  0,
+                     "gasDensity":  0.55,
+                     "co2Fraction":  0.0,
+                     "criticalCorrelation":  0
+                 },
+    "material":  [
+                     {
+                         "id":  0,
+                         "label":  "aco1",
+                         "conductivity":  55.0,
+                         "specificHeat":  465.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  1,
+                         "label":  "fluido",
+                         "conductivity":  0.61,
+                         "specificHeat":  4180.0,
+                         "rho":  1000.0,
+                         "type":  2,
+                         "visc":  0.001
+                     },
+                     {
+                         "id":  2,
+                         "label":  "formacao",
+                         "conductivity":  0.6,
+                         "specificHeat":  1000.0,
+                         "rho":  500.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  3,
+                         "label":  "flex0",
+                         "conductivity":  70.0,
+                         "specificHeat":  460.0,
+                         "rho":  1000.0,
+                         "type":  0,
+                         "visc":  0.001
+                     },
+                     {
+                         "id":  4,
+                         "label":  "flex1",
+                         "conductivity":  0.195,
+                         "specificHeat":  1700.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  5,
+                         "label":  "flex2",
+                         "conductivity":  45.0,
+                         "specificHeat":  460.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  6,
+                         "label":  "flex3",
+                         "conductivity":  0.19,
+                         "specificHeat":  2100.0,
+                         "rho":  500.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  7,
+                         "label":  "flex4",
+                         "conductivity":  45.00,
+                         "specificHeat":  460.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  8,
+                         "label":  "flex5",
+                         "conductivity":  0.19,
+                         "specificHeat":  2100.0,
+                         "rho":  1000.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  9,
+                         "label":  "flex6",
+                         "conductivity":  0.289,
+                         "specificHeat":  2000.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  10,
+                         "label":  "flex7",
+                         "conductivity":  0.19,
+                         "specificHeat":  2100.0,
+                         "rho":  500.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  11,
+                         "label":  "flex8",
+                         "conductivity":  0.45,
+                         "specificHeat":  460.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  12,
+                         "label":  "flex9",
+                         "conductivity":  0.19,
+                         "specificHeat":  2100.0,
+                         "rho":  1000.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  13,
+                         "label":  "flex10",
+                         "conductivity":  0.289,
+                         "specificHeat":  2000.0,
+                         "rho":  7833.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  14,
+                         "label":  "flex11",
+                         "conductivity":  0.19,
+                         "specificHeat":  2100.0,
+                         "rho":  500.0,
+                         "type":  0,
+                         "visc":  0.0
+                     },
+                     {
+                         "id":  15,
+                         "label":  "flex12",
+                         "conductivity":  0.259,
+                         "specificHeat":  2300.0,
+                         "rho":  500.0,
+                         "type":  0,
+                         "visc":  0.0
+                     }
+                 ],
+    "crossSection":  [
+                         {
+                             "id":  0,
+                             "label":  "corte1",
+                             "annular":  false,
+                             "outerDiameter":  0.12573,
+                             "innerDiameter":  0.12573,
+                             "roughness":  0.0001,
+                             "layers":  [
+                                            {
+                                                "diameter":  0.1397,
+                                                "materialId":  0,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.216789,
+                                                "materialId":  1,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.244475,
+                                                "materialId":  0,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.508,
+                                                "materialId":  2,
+                                                "discretization":  10
+                                            }
+                                        ]
+                         },
+                         {
+                             "id":  1,
+                             "label":  "corte2",
+                             "annular":  false,
+                             "outerDiameter":  0.12573,
+                             "innerDiameter":  0.12573,
+                             "roughness":  0.0001,
+                             "layers":  [
+                                            {
+                                                "diameter":  0.1397,
+                                                "materialId":  0,
+                                                "discretization":  1
+                                            }
+                                        ]
+                         },
+                         {
+                             "id":  2,
+                             "label":  "corte3",
+                             "annular":  false,
+                             "outerDiameter":  0.1524,
+                             "innerDiameter":  0.1524,
+                             "roughness":  0.0001,
+                             "layers":  [
+                                            {
+                                                "diameter":  0.1692,
+                                                "materialId":  3,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1832,
+                                                "materialId":  4,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1959,
+                                                "materialId":  5,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1965,
+                                                "materialId":  6,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.2025,
+                                                "materialId":  7,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.2031,
+                                                "materialId":  8,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.20472,
+                                                "materialId":  9,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.20532,
+                                                "materialId":  10,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.21132,
+                                                "materialId":  11,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.21192,
+                                                "materialId":  12,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.21354,
+                                                "materialId":  13,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.21414,
+                                                "materialId":  14,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.23014,
+                                                "materialId":  15,
+                                                "discretization":  1
+                                            }
+                                        ]
+                         },
+                         {
+                             "id":  3,
+                             "label":  "corte3G",
+                             "annular":  false,
+                             "outerDiameter":  0.1016,
+                             "innerDiameter":  0.1016,
+                             "roughness":  0.0001,
+                             "layers":  [
+                                            {
+                                                "diameter":  0.1184,
+                                                "materialId":  3,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1324,
+                                                "materialId":  4,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1451,
+                                                "materialId":  5,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1457,
+                                                "materialId":  6,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1517,
+                                                "materialId":  7,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.1523,
+                                                "materialId":  8,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.15392,
+                                                "materialId":  9,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.15452,
+                                                "materialId":  10,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.16052,
+                                                "materialId":  11,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.16112,
+                                                "materialId":  12,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.16274,
+                                                "materialId":  13,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.16334,
+                                                "materialId":  14,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.17934,
+                                                "materialId":  15,
+                                                "discretization":  1
+                                            }
+                                        ]
+                         },
+                         {
+                             "id":  4,
+                             "label":  "corte4G",
+                             "annular":  true,
+                             "outerDiameter":  0.216789,
+                             "innerDiameter":  0.1397,
+                             "roughness":  0.0001,
+                             "layers":  [
+                                            {
+                                                "diameter":  0.244475,
+                                                "materialId":  0,
+                                                "discretization":  1
+                                            },
+                                            {
+                                                "diameter":  0.5080,
+                                                "materialId":  2,
+                                                "discretization":  10
+                                            }
+                                        ]
+                         }
+                     ],
+    "productionPipe":  [
+                            {
+                                "id":  0,
+                                "crossSectionId":  0,
+                                "angle":  1.5708,
+                                "label":  "duto0SG",
+                                "convectionDirection":  0,
+                                "thermalCoupling":  0,
+                                "discretization":  [
+                                                       {
+                                                           "numCells":  9,
+                                                           "length":  20.0
+                                                       }
+                                                   ],
+                                "initialConditions":  {
+                                                          "measuredPosition":  [
+                                                                                    0.0,
+                                                                                    1.0
+                                                                                ],
+                                                          "temp":  [
+                                                                       70.0,
+                                                                       65.05
+                                                                   ],
+                                                          "pressure":  [
+                                                                           299.962,
+                                                                           284.394
+                                                                       ],
+                                                          "holdup":  [
+                                                                         1.0,
+                                                                         1.0
+                                                                     ],
+                                                          "complementaryFluidFraction":  [
+                                                                             0.0,
+                                                                             0.0
+                                                                         ],
+                                                          "usl":  [
+                                                                                       0.0,
+                                                                                       0.0
+                                                                                   ],
+                                                          "usg":  [
+                                                                                    0.0,
+                                                                                    0.0
+                                                                                ],
+                                                          "ambientTemp":  [
+                                                                               70.0,
+                                                                               64.72
+                                                                           ],
+                                                          "ambientVel":  [
+                                                                              100.0,
+                                                                              100.0
+                                                                          ],
+                                                          "ambientConductivity":  [
+                                                                                       0.322453,
+                                                                                       0.321938
+                                                                                   ],
+                                                          "ambientSpecificHeat":  [
+                                                                                       4182,
+                                                                                       4182
+                                                                                   ],
+                                                          "ambientDensity":  [
+                                                                                  1000.0,
+                                                                                  1000.0
+                                                                              ],
+                                                          "ambientVisc":  [
+                                                                               0.001,
+                                                                               0.001
+                                                                           ]
+                                                      }
+                            },
+                            {
+                                "id":  1,
+                                "crossSectionId":  1,
+                                "angle":  1.5708,
+                                "label":  "duto0CG",
+                                "convectionDirection":  1,
+                                "thermalCoupling":  1,
+                                "discretization":  [
+                                                       {
+                                                           "numCells":  91,
+                                                           "length":  20.0
+                                                       }
+                                                   ],
+                                "initialConditions":  {
+                                                          "measuredPosition":  [
+                                                                                    0.0,
+                                                                                    1.0
+                                                                                ],
+                                                          "temp":  [
+                                                                       64.72,
+                                                                       4.99
+                                                                   ],
+                                                          "pressure":  [
+                                                                           284.394,
+                                                                           107.303
+                                                                       ],
+                                                          "holdup":  [
+                                                                         1.0,
+                                                                         1.0
+                                                                     ],
+                                                          "complementaryFluidFraction":  [
+                                                                             0.0,
+                                                                             0.0
+                                                                         ],
+                                                          "usl":  [
+                                                                                       0.0,
+                                                                                       0.0
+                                                                                   ],
+                                                          "usg":  [
+                                                                                    0.0,
+                                                                                    0.0
+                                                                                ],
+                                                          "ambientTemp":  [
+                                                                               64.72,
+                                                                               4.66
+                                                                           ],
+                                                          "ambientVel":  [
+                                                                              100.0,
+                                                                              100.0
+                                                                          ],
+                                                          "ambientConductivity":  [
+                                                                                       0.321938,
+                                                                                       0.305502
+                                                                                   ],
+                                                          "ambientSpecificHeat":  [
+                                                                                       4182.0,
+                                                                                       4182.0
+                                                                                   ],
+                                                          "ambientDensity":  [
+                                                                                  1000.0,
+                                                                                  1000.0
+                                                                              ],
+                                                          "ambientVisc":  [
+                                                                               0.001,
+                                                                               0.001
+                                                                           ]
+                                                      }
+                            },
+                            {
+                                "id":  2,
+                                "crossSectionId":  2,
+                                "angle":  0.034907,
+                                "label":  "duto1a",
+                                "convectionDirection":  0,
+                                "thermalCoupling":  0,
+                                "discretization":  [
+                                                       {
+                                                           "numCells":  50,
+                                                           "length":  40.0
+                                                       }
+                                                   ],
+                                "initialConditions":  {
+                                                          "measuredPosition":  [
+                                                                                    0.0,
+                                                                                    1.0
+                                                                                ],
+                                                          "temp":  [
+                                                                       4.0,
+                                                                       4.0
+                                                                   ],
+                                                          "pressure":  [
+                                                                           107.33,
+                                                                           103.411
+                                                                       ],
+                                                          "holdup":  [
+                                                                         0.5,
+                                                                         0.5
+                                                                     ],
+                                                          "complementaryFluidFraction":  [
+                                                                             0.0,
+                                                                             0.0
+                                                                         ],
+                                                          "usl":  [
+                                                                                       0.0,
+                                                                                       0.0
+                                                                                   ],
+                                                          "usg":  [
+                                                                                    0.0,
+                                                                                    0.0
+                                                                                ],
+                                                          "ambientTemp":  [
+                                                                               4.0,
+                                                                               4.0
+                                                                           ],
+                                                          "ambientVel":  [
+                                                                              0.2,
+                                                                              0.2
+                                                                          ],
+                                                          "ambientConductivity":  [
+                                                                                       0.305284,
+                                                                                       0.305284
+                                                                                   ],
+                                                          "ambientSpecificHeat":  [
+                                                                                       4182.0,
+                                                                                       4182.0
+                                                                                   ],
+                                                          "ambientDensity":  [
+                                                                                  1000.0,
+                                                                                  1000.0
+                                                                              ],
+                                                          "ambientVisc":  [
+                                                                               0.001,
+                                                                               0.001
+                                                                           ]
+                                                      }
+                            },
+                            {
+                                "id":  3,
+                                "crossSectionId":  2,
+                                "angle":  0.034907,
+                                "label":  "duto1b",
+                                "convectionDirection":  0,
+                                "thermalCoupling":  0,
+                                "discretization":  [
+                                                       {
+                                                           "numCells":  50,
+                                                           "length":  40.0
+                                                       }
+                                                   ],
+                                "initialConditions":  {
+                                                          "measuredPosition":  [
+                                                                                    0.0,
+                                                                                    1.0
+                                                                                ],
+                                                          "temp":  [
+                                                                       4.0,
+                                                                       4.0
+                                                                   ],
+                                                          "pressure":  [
+                                                                           103.33,
+                                                                           103.411
+                                                                       ],
+                                                          "holdup":  [
+                                                                         0.5,
+                                                                         0.5
+                                                                     ],
+                                                          "complementaryFluidFraction":  [
+                                                                             0.0,
+                                                                             0.0
+                                                                         ],
+                                                          "usl":  [
+                                                                                       0.0,
+                                                                                       0.0
+                                                                                   ],
+                                                          "usg":  [
+                                                                                    0.0,
+                                                                                    0.0
+                                                                                ],
+                                                          "ambientTemp":  [
+                                                                               4.00,
+                                                                               4.00
+                                                                           ],
+                                                          "ambientVel":  [
+                                                                              0.2,
+                                                                              0.2
+                                                                          ],
+                                                          "ambientConductivity":  [
+                                                                                       0.305284,
+                                                                                       0.305284
+                                                                                   ],
+                                                          "ambientSpecificHeat":  [
+                                                                                       4182.0,
+                                                                                       4182.0
+                                                                                   ],
+                                                          "ambientDensity":  [
+                                                                                  1000.0,
+                                                                                  1000.0
+                                                                              ],
+                                                          "ambientVisc":  [
+                                                                               0.001,
+                                                                               0.001
+                                                                           ]
+                                                      }
+                            },
+                            {
+                                "id":  4,
+                                "crossSectionId":  2,
+                                "angle":  1.570796,
+                                "label":  "duto2",
+                                "convectionDirection":  0,
+                                "thermalCoupling":  0,
+                                "discretization":  [
+                                                       {
+                                                           "numCells":  20,
+                                                           "length":  20.0
+                                                       }
+                                                   ],
+                                "initialConditions":  {
+                                                          "measuredPosition":  [
+                                                                                    0.0,
+                                                                                    1.0
+                                                                                ],
+                                                          "temp":  [
+                                                                       4.0,
+                                                                       4.0
+                                                                   ],
+                                                          "pressure":  [
+                                                                           103.411,
+                                                                           68.3816
+                                                                       ],
+                                                          "holdup":  [
+                                                                         0.5,
+                                                                         0.5
+                                                                     ],
+                                                          "complementaryFluidFraction":  [
+                                                                             0.0,
+                                                                             0.0
+                                                                         ],
+                                                          "usl":  [
+                                                                                       0.0,
+                                                                                       0.0
+                                                                                   ],
+                                                          "usg":  [
+                                                                                    0.0,
+                                                                                    0.0
+                                                                                ],
+                                                          "ambientTemp":  [
+                                                                               4.00,
+                                                                               4.00
+                                                                           ],
+                                                          "ambientVel":  [
+                                                                              0.2,
+                                                                              0.2
+                                                                          ],
+                                                          "ambientConductivity":  [
+                                                                                       0.305284,
+                                                                                       0.305284
+                                                                                   ],
+                                                          "ambientSpecificHeat":  [
+                                                                                       4182.0,
+                                                                                       4182.0
+                                                                                   ],
+                                                          "ambientDensity":  [
+                                                                                  1000.0,
+                                                                                  1000.0
+                                                                              ],
+                                                          "ambientVisc":  [
+                                                                               0.001,
+                                                                               0.001
+                                                                           ]
+                                                      }
+                            },
+                            {
+                                "id":  5,
+                                "crossSectionId":  2,
+                                "angle":  1.570796,
+                                "label":  "duto2",
+                                "convectionDirection":  0,
+                                "thermalCoupling":  0,
+                                "discretization":  [
+                                                       {
+                                                           "numCells":  30,
+                                                           "length":  20.0
+                                                       }
+                                                   ],
+                                "initialConditions":  {
+                                                          "measuredPosition":  [
+                                                                                    0.0,
+                                                                                    1.0
+                                                                                ],
+                                                          "temp":  [
+                                                                       4.0,
+                                                                       25.0
+                                                                   ],
+                                                          "pressure":  [
+                                                                           103.411,
+                                                                           68.3816
+                                                                       ],
+                                                          "holdup":  [
+                                                                         0.5,
+                                                                         0.5
+                                                                     ],
+                                                          "complementaryFluidFraction":  [
+                                                                             0.0,
+                                                                             0.0
+                                                                         ],
+                                                          "usl":  [
+                                                                                       0.0,
+                                                                                       0.0
+                                                                                   ],
+                                                          "usg":  [
+                                                                                    0.0,
+                                                                                    0.0
+                                                                                ],
+                                                          "ambientTemp":  [
+                                                                               4.00,
+                                                                               25.00
+                                                                           ],
+                                                          "ambientVel":  [
+                                                                              0.4,
+                                                                              0.4
+                                                                          ],
+                                                          "ambientConductivity":  [
+                                                                                       0.305284,
+                                                                                       0.305284
+                                                                                   ],
+                                                          "ambientSpecificHeat":  [
+                                                                                       4182.0,
+                                                                                       4182.0
+                                                                                   ],
+                                                          "ambientDensity":  [
+                                                                                  1000.0,
+                                                                                  1000.0
+                                                                              ],
+                                                          "ambientVisc":  [
+                                                                               0.001,
+                                                                               0.001
+                                                                           ]
+                                                      }
+                            }
+                        ],
+    "servicePipe":  [
+                         {
+                             "id":  0,
+                             "crossSectionId":  3,
+                             "angle":  -1.570796,
+                             "label":  "duto0GV",
+                             "thermalCoupling":  0,
+                             "discretization":  [
+                                                    {
+                                                        "numCells":  50,
+                                                        "length":  20.0
+                                                    }
+                                                ],
+                             "initialConditions":  {
+                                                       "measuredPosition":  [
+                                                                                 0.0,
+                                                                                 1.0
+                                                                             ],
+                                                       "temp":  [
+                                                                    25.0,
+                                                                    4.0
+                                                                ],
+                                                       "pressure":  [
+                                                                        200.0,
+                                                                        208.897
+                                                                    ],
+                                                       "gasMassFlowRate":  [
+                                                                               0.0,
+                                                                               0.0
+                                                                           ],
+                                                       "ambientTemp":  [
+                                                                            25.0,
+                                                                            4.0
+                                                                        ],
+                                                       "ambientVel":  [
+                                                                           1.0,
+                                                                           1.0
+                                                                       ],
+                                                       "ambientConductivity":  [
+                                                                                    0.0585726,
+                                                                                    0.0569396
+                                                                                ],
+                                                       "ambientSpecificHeat":  [
+                                                                                    4182.0,
+                                                                                    4182.0
+                                                                                ],
+                                                       "ambientDensity":  [
+                                                                               1000.0,
+                                                                               1000.0
+                                                                           ],
+                                                       "ambientVisc":  [
+                                                                            0.001,
+                                                                            0.001
+                                                                        ]
+                                                   }
+                         },
+                         {
+                             "id":  1,
+                             "crossSectionId":  3,
+                             "angle":  0.0,
+                             "label":  "duto0G",
+                             "thermalCoupling":  0,
+                             "discretization":  [
+                                                    {
+                                                        "numCells":  100,
+                                                        "length":  40.0
+                                                    }
+                                                ],
+                             "initialConditions":  {
+                                                       "measuredPosition":  [
+                                                                                 0.0,
+                                                                                 1.0
+                                                                             ],
+                                                       "temp":  [
+                                                                    4.0,
+                                                                    4.0
+                                                                ],
+                                                       "pressure":  [
+                                                                        208.897,
+                                                                        221.233
+                                                                    ],
+                                                       "gasMassFlowRate":  [
+                                                                               0.0,
+                                                                               0.0
+                                                                           ],
+                                                       "ambientTemp":  [
+                                                                            4.0,
+                                                                            4.0
+                                                                        ],
+                                                       "ambientVel":  [
+                                                                           0.5,
+                                                                           0.5
+                                                                       ],
+                                                       "ambientConductivity":  [
+                                                                                    0.0570177,
+                                                                                    0.0592117
+                                                                                ],
+                                                       "ambientSpecificHeat":  [
+                                                                                    4182.0,
+                                                                                    4182.0
+                                                                                ],
+                                                       "ambientDensity":  [
+                                                                               1000.0,
+                                                                               1000.0
+                                                                           ],
+                                                       "ambientVisc":  [
+                                                                            0.001,
+                                                                            0.001
+                                                                        ]
+                                                   }
+                         },
+                         {
+                             "id":  2,
+                             "crossSectionId":  4,
+                             "angle":  -1.570796,
+                             "label":  "duto1G",
+                             "thermalCoupling":  1,
+                             "discretization":  [
+                                                    {
+                                                        "numCells":  91,
+                                                        "length":  20.0
+                                                    }
+                                                ],
+                             "initialConditions":  {
+                                                       "measuredPosition":  [
+                                                                                 0.0,
+                                                                                 1.0
+                                                                             ],
+                                                       "temp":  [
+                                                                    4.66,
+                                                                    64.6
+                                                                ],
+                                                       "pressure":  [
+                                                                        222.135,
+                                                                        265.347
+                                                                    ],
+                                                       "gasMassFlowRate":  [
+                                                                               0.0,
+                                                                               0.0
+                                                                           ],
+                                                       "ambientTemp":  [
+                                                                            4.66,
+                                                                            64.06
+                                                                        ],
+                                                       "ambientVel":  [
+                                                                           100.0,
+                                                                           100.0
+                                                                       ],
+                                                       "ambientConductivity":  [
+                                                                                    0.0594865,
+                                                                                    0.0770507
+                                                                                ],
+                                                       "ambientSpecificHeat":  [
+                                                                                    4182.0,
+                                                                                    4182.0
+                                                                                ],
+                                                       "ambientDensity":  [
+                                                                               1000.0,
+                                                                               1000.0
+                                                                           ],
+                                                       "ambientVisc":  [
+                                                                            0.001,
+                                                                            0.001
+                                                                        ]
+                                                   }
+                         }
+                     ],
+    "ipr":  [
+                {
+                    "id":  0,
+                    "measuredLength":  10.0,
+                    "staticPressure":  [
+                                           500.0
+                                       ],
+                    "staticPressureTime":  [
+                                               0.0
+                                           ],
+                    "temperatures":  [
+                                         70.0
+                                     ],
+                    "temperaturesTime":  [
+                                             0.0
+                                         ],
+                    "ip":  [
+                               800.0,
+                               10.0
+                           ],
+                    "ipTime":  [
+                                   0.0,
+                                   1000.0
+                               ],
+                    "ii":  [
+                               100.0,
+                               10.0
+                           ],
+                    "iiTime":  [
+                                   0.0,
+                                   1000.0
+                               ],
+                    "prodFluidId":  0
+                }
+            ],
+    "gasInj":  {
+                         "bcType":  1,
+                         "temperature":  [
+                                             40,
+                                             40,
+                                             40,
+                                             40,
+                                             40,
+                                             40,
+                                             40
+                                         ],
+                         "injectionPressures":  [
+                                                    160,
+                                                    160,
+                                                    160,
+                                                    160,
+                                                    160,
+                                                    160,
+                                                    160
+                                                ],
+                         "gasFlowRate":  [
+                                             100000,
+                                             100000,
+                                             150000,
+                                             150000,
+                                             0,
+                                             0,
+                                             150000
+                                         ],
+                         "time":  [
+                                              0,
+                                              3000,
+                                              3060,
+                                              7000,
+                                              7065,
+                                              30000,
+                                              30065
+                                          ]
+                     },
+    "gasLiftSource":  [
+                          {
+                              "id":  0,
+                              "prodMeasuredLength":  190.0,
+                              "serviceMeasuredLength":  6810,
+                              "valveType":  0,
+                              "orificeDiameter":  0.007938,
+                              "vglDischCoef":  1.0,
+                              "recoveryFactor":  0,
+                              "areaRatio":  0.1,
+                              "calibrationPressure":  0.2
+                          }
+                      ],
+    "fonteGas_reserva":  [
+                             {
+                                 "id":  0,
+                                 "prodMeasuredLength":  2020.0,
+                                 "temperature":  [
+                                                     40,
+                                                     40,
+                                                     40,
+                                                     40,
+                                                     40
+                                                 ],
+                                 "gasFlowRate":  [
+                                                     0,
+                                                     0,
+                                                     150000,
+                                                     150000,
+                                                     0
+                                                 ],
+                                 "time":  [
+                                                      0,
+                                                      21000,
+                                                      21060,
+                                                      27000,
+                                                      27060
+                                                  ]
+                             }
+                         ],
+    "liquidSource":  [
+                         {
+                             "id":  0,
+                             "measuredLength":  2020.0,
+                             "temperature":  [
+                                                 40.0,
+                                                 40.0,
+                                                 40.0,
+                                                 40.0,
+                                                 40.0
+                                             ],
+                             "beta":  [
+                                          1.0,
+                                          1.0,
+                                          1.0,
+                                          1.0,
+                                          1.0
+                                      ],
+                             "liquidFlowRate":  [
+                                                    0.9,
+                                                    0.9,
+                                                    0.9,
+                                                    0.9,
+                                                    0.9
+                                                ],
+                             "time":  [
+                                                  0.0,
+                                                  15000.0,
+                                                  15060.0,
+                                                  16060.0,
+                                                  16120.0
+                                              ],
+                             "prodFluidId":  0
+                         }
+                     ],
+    "bcs_reserva":  [
+                        {
+                            "measuredLength":  100.0,
+                            "time":  [
+                                                 0,
+                                                 500,
+                                                 501,
+                                                 7000,
+                                                 7065,
+                                                 30060,
+                                                 30120
+                                             ],
+                            "frequency":  [
+                                              0,
+                                              0,
+                                              60,
+                                              60,
+                                              0,
+                                              0,
+                                              60
+                                          ],
+                            "flowRate":  [
+                                             0,
+                                             1500,
+                                             3200,
+                                             4000,
+                                             4760,
+                                             5500
+                                         ],
+                            "pumpHead":  [
+                                             53.5,
+                                             47,
+                                             39,
+                                             34,
+                                             26,
+                                             17
+                                         ],
+                            "power":  [
+                                          1.2,
+                                          1.3,
+                                          1.5,
+                                          1.5,
+                                          1.5,
+                                          1.4
+                                      ],
+                            "efficiency":  [
+                                               0,
+                                               40,
+                                               64,
+                                               68,
+                                               64,
+                                               50
+                                           ],
+                            "referenceFreq":  60,
+                            "stage":  60
+                        }
+                    ],
+    "bombaVolumetrica_reserva":  [
+                                     {
+                                         "measuredLength":  4020.0,
+                                         "time":  [
+                                                              0.0,
+                                                              500.0,
+                                                              560.0,
+                                                              7000.0,
+                                                              7005.0,
+                                                              30500.0,
+                                                              30560.0
+                                                          ],
+                                         "frequency":  [
+                                                           0,
+                                                           0,
+                                                           60,
+                                                           60,
+                                                           0,
+                                                           0,
+                                                           60
+                                                       ],
+                                         "capacity":  2000.0,
+                                         "polyFactor":  1.4
+                                     }
+                                 ],
+    "deltaPressao_reserva":  [
+                                 {
+                                     "measuredLength":  4020.0,
+                                     "pressureDrop":  [
+                                                          50,
+                                                          50,
+                                                          0,
+                                                          0,
+                                                          50
+                                                      ],
+                                     "time":  [
+                                                          0,
+                                                          7000,
+                                                          7005,
+                                                          30500,
+                                                          30560
+                                                      ]
+                                 }
+                             ],
+    "masterValve":  {
+                        "measuredLength":  1980.0,
+                        "opening":  [
+                                        1,
+                                        1,
+                                        0,
+                                        0,
+                                        1
+                                    ],
+                        "time":  [
+                                             0,
+                                             7000,
+                                             7065,
+                                             30000,
+                                             30060
+                                         ]
+                    },
+    "masterValve2":  {
+                         "measuredLength":  5020,
+                         "opening":  [
+                                         1.0,
+                                         1.0,
+                                         0.0,
+                                         0.0,
+                                         1.0
+                                     ],
+                         "time":  [
+                                              0.0,
+                                              7000.0,
+                                              7065.0,
+                                              30000.0,
+                                              30065.0
+                                          ]
+                     },
+    "separator":  {
+                      "pressure":  [
+                                       10,
+                                       10,
+                                       6.0,
+                                       6.0,
+                                       10.0
+                                   ],
+                      "time":  [
+                                           0,
+                                           500.0,
+                                           560,
+                                           4000.0,
+                                           4060.0
+                                       ]
+                  },
+    "surfaceChoke":  {
+                         "dischargeCoefficient":  0.84,
+                         "model":  0,
+                         "opening":  [
+                                         0.3,
+                                         0.3,
+                                         0,
+                                         0,
+                                         0.3,
+                                         0.3,
+                                         0.3,
+                                         0.3,
+                                         0.3
+                                     ],
+                         "time":  [
+                                              0,
+                                              7000.0,
+                                              7065,
+                                              8000.0,
+                                              8065.0,
+                                              8500.0,
+                                              8565.0,
+                                              29000.0,
+                                              29065
+                                          ]
+                     },
+    "pig_reserva":  [
+                        {
+                            "launcher":  2420.0,
+                            "receiver":  7940.0,
+                            "time":  25100.0
+                        }
+                    ],
+    "productionProfile":  {
+                              "pressure":  true,
+                              "temperature":  true,
+                              "holdup":  true,
+                              "complementaryFluidFraction":  true,
+                              "usg":  true,
+                              "usl":  true,
+                              "ug":  false,
+                              "ul":  false,
+                              "flowPattern":  true,
+                              "liquidViscosity":  false,
+                              "gasViscosity":  false,
+                              "gasInSituDensity":  false,
+                              "liquidInSituDensity":  false,
+                              "gasMassFlowRate":  true,
+                              "liquidMassFlowRate":  true,
+                              "c0":  true,
+                              "driftVelocity":  true,
+                              "gor":  true,
+                              "gasStdDensity":  true,
+                              "yCO2":  true,
+                              "heat":  false,
+                              "massTransferRate":  false,
+                              "cpGas":  true,
+                              "cpLiquid":  true,
+                              "stdLiqFlowRate":  true,
+                              "stdTotalLiqFlowRate":  true,
+                              "stdGasFlowRate":  true,
+                              "api":  true,
+                              "bsw":  true,
+                              "internalReynolds":  true,
+                              "tempoResiLiqComp":  true,
+                              "frictionReducer":  true,
+                              "time":  [
+                                                   0,
+                                                   1000,
+                                                   7000,
+                                                   7100,
+                                                   7500,
+                                                   8000,
+                                                   10000,
+                                                   15000,
+                                                   20000,
+                                                   30000,
+                                                   30500,
+                                                   31000,
+                                                   32500,
+                                                   33000,
+                                                   33500,
+                                                   34000,
+                                                   34500,
+                                                   35000,
+                                                   35500,
+                                                   36000,
+                                                   37000,
+                                                   38000,
+                                                   39000,
+                                                   40000,
+                                                   41000,
+                                                   42000,
+                                                   43000,
+                                                   44000,
+                                                   45000,
+                                                   47000,
+                                                   50000
+                                               ]
+                          },
+    "serviceProfile":  {
+                           "pressure":  true,
+                           "temperature":  true,
+                           "usg":  true,
+                           "ug":  false,
+                           "gasViscosity":  false,
+                           "gasInSituDensity":  false,
+                           "gasMassFlowRate":  false,
+                           "shearStress":  false,
+                           "hydrostaticPressureGradient":  false,
+                           "frictionPressureGradient":  false,
+                           "heat":  false,
+                           "stdGasFlowRate":  true,
+                           "time":  [
+                                                0.0,
+                                                1000.0,
+                                                7000.0,
+                                                7100.0,
+                                                7500.0,
+                                                8000.0,
+                                                10000.0,
+                                                15000.0,
+                                                20000.0,
+                                                30000.0,
+                                                35000.0,
+                                                35100.0,
+                                                36000.0,
+                                                37000.0,
+                                                40000.0,
+                                                42000.0,
+                                                44000.0,
+                                                46000.0,
+                                                48000.0,
+                                                50000.0
+                                            ]
+                       },
+    "screenConfig":  [
+                         {
+                             "tubing":  true,
+                             "cellIndex":  0,
+                             "variable":  1
+                         },
+                         {
+                             "tubing":  true,
+                             "cellIndex":  249,
+                             "variable":  3
+                         },
+                         {
+                             "tubing":  true,
+                             "cellIndex":  249,
+                             "variable":  1
+                         }
+                     ],
+    "language":  "en"
+}
+

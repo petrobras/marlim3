@@ -7,6 +7,25 @@ import pandas as pd
 import numpy as np
 import matplotlib.animation as animation 
 
+
+def _is_production_line(linha):
+    return linha in ('producao', 'production')
+
+
+def _is_service_line(linha):
+    return linha in ('servico', 'service')
+
+
+def _plot_language(linha):
+    return 'en' if linha in ('production', 'service') else 'pt'
+
+
+def _pick_column(df, aliases):
+    for alias in aliases:
+        if alias in df.columns:
+            return alias
+    raise KeyError(f"None of the aliases were found in DataFrame columns: {aliases}")
+
 def _plotar_perfis(df, linha = 'producao', posicao_anm=None, gradiente=False, 
                    dt=1, rotulos=None):
 
@@ -24,21 +43,36 @@ def _plotar_perfis(df, linha = 'producao', posicao_anm=None, gradiente=False,
         
        # comprimento_centro = 'Comprimento (m) Centro Volume C'
 
-    if linha == 'producao':
+    lang = _plot_language(linha)
+    x_label = 'Measured length (m)' if lang == 'en' else 'Comprimento medido (m)'
+    time_bar_label = 'Time (h)' if lang == 'en' else 'Tempo (h)'
+
+    if _is_production_line(linha):
         cols_desconsiderar = ['Comprimento (m) Fronteira F',
+                              'Length (m) Boundary F',
     #                comprimento_centro,
                               'Comprimento (m) Centro Volume C',
+                              'Length (m) Cell center C',
                     'Unidade de Producao',
                     'Elevacao (m) F',
-                    'Elevacao (m) C']
-    else:
+                    'Elevation (m) F',
+                    'Elevacao (m) C',
+                    'Elevation (m) C']
+    elif _is_service_line(linha):
         #comprimento_centro = 'Comprimento (m) centro de Volume C'
         cols_desconsiderar = ['Comprimento (m) Fronteira F',
+            'Length (m) Boundary F',
             'Comprimento (m) Centro Volume C',
+            'Length (m) Cell center C',
             'Unidade de Servico',
             'Profundidade (m) F',
+            'Depth (m) F',
             'Profundidade (m) C',
-            'comprimento_fundoPoco (m) F']
+            'Depth (m) C',
+            'comprimento_fundoPoco (m) F',
+            'bottomhole_length (m) F']
+    else:
+        raise ValueError("'linha' must be 'producao'/'servico' or 'production'/'service'")
 
 
 
@@ -111,8 +145,9 @@ def _plotar_perfis(df, linha = 'producao', posicao_anm=None, gradiente=False,
             for col in df.columns:
                 if col.startswith(variable):
                     eixo_x_col = (
-                        'Comprimento (m) Fronteira F' if col.endswith('F')
-                        else 'Comprimento (m) Centro Volume C'
+                        _pick_column(df, ('Comprimento (m) Fronteira F', 'Length (m) Boundary F'))
+                        if col.endswith('F')
+                        else _pick_column(df, ('Comprimento (m) Centro Volume C', 'Length (m) Cell center C'))
                     )
 
                     if gradiente:
@@ -134,9 +169,7 @@ def _plotar_perfis(df, linha = 'producao', posicao_anm=None, gradiente=False,
                         ax.axvline(posicao_anm,
                                    color='k', linestyle='--', linewidth=1)
 
-                    # ISSO AQUI SO FUNCIONA DIREITO NO VIDEO....
-                    if i >= (num_rows - 1) * num_cols or (i + num_cols) >= num_variables:
-                        ax.set_xlabel('Comprimento medido (m)', fontsize=9)    
+            ax.set_xlabel(x_label, fontsize=9)
 
             ax.set_ylabel(variable, fontsize=9, labelpad=10)
 
@@ -155,7 +188,7 @@ def _plotar_perfis(df, linha = 'producao', posicao_anm=None, gradiente=False,
         sm.set_array([])
         fig.subplots_adjust(right=0.92, hspace=0.4, wspace=0.3)
         cbar_ax = fig.add_axes([0.93, 0.15, 0.02, 0.7])
-        fig.colorbar(sm, cax=cbar_ax, label="Tempo (h)")
+        fig.colorbar(sm, cax=cbar_ax, label=time_bar_label)
 
     # Ajustar a legenda compartilhada
     if not gradiente:
@@ -183,20 +216,35 @@ def _plotar_perfis_animados(df, linha = 'producao',
 
     #comprimento_centro = 'Comprimento (m) Centro Volume C'
     
-    if linha == 'producao':
+    lang = _plot_language(linha)
+    x_label = 'Measured length (m)' if lang == 'en' else 'Comprimento medido (m)'
+    sim_time_label = 'Simulation time' if lang == 'en' else 'Tempo de simulacao'
+
+    if _is_production_line(linha):
         cols_desconsiderar = ['Comprimento (m) Fronteira F',
+                    'Length (m) Boundary F',
                     'Comprimento (m) Centro Volume C',
+                    'Length (m) Cell center C',
                     'Unidade de Producao',
                     'Elevacao (m) F',
-                    'Elevacao (m) C']
-    else:
+                    'Elevation (m) F',
+                    'Elevacao (m) C',
+                    'Elevation (m) C']
+    elif _is_service_line(linha):
         #comprimento_centro = 'Comprimento (m) centro de Volume C'
         cols_desconsiderar = ['Comprimento (m) Fronteira F',
+            'Length (m) Boundary F',
             'Comprimento (m) Centro Volume C',
+            'Length (m) Cell center C',
             'Unidade de Servico',
             'Profundidade (m) F',
+            'Depth (m) F',
             'Profundidade (m) C',
-            'comprimento_fundoPoco (m) F']
+            'Depth (m) C',
+            'comprimento_fundoPoco (m) F',
+            'bottomhole_length (m) F']
+    else:
+        raise ValueError("'linha' must be 'producao'/'servico' or 'production'/'service'")
 
     base_color="#39C0E0"
     
@@ -248,16 +296,16 @@ def _plotar_perfis_animados(df, linha = 'producao',
         for col in df.columns: 
             if col.startswith(variable): 
                 eixo_x_col = ( 
-                    'Comprimento (m) Fronteira F' if col.endswith('F') 
-                    else 'Comprimento (m) Centro Volume C' 
+                    _pick_column(df, ('Comprimento (m) Fronteira F', 'Length (m) Boundary F'))
+                    if col.endswith('F') 
+                    else _pick_column(df, ('Comprimento (m) Centro Volume C', 'Length (m) Cell center C'))
                 ) 
                 line, = ax.plot([], [], color=base_color, linewidth=2) 
                 lines.append(line) 
                 ax.set_xlim(df[eixo_x_col].min(), df[eixo_x_col].max()) 
                 ax.set_ylim(df[col].min(), df[col].max()) 
                 ax.set_ylabel(variable, fontsize=9, labelpad=10) 
-                if i>=(num_rows-1)*num_cols or (i+num_cols)>=num_variables: 
-                    ax.set_xlabel('Comprimento medido (m)', fontsize=9) 
+                ax.set_xlabel(x_label, fontsize=9) 
                 if posicao_anm: 
                     ax.axvline(posicao_anm, 
                                 color='k', linestyle='--', linewidth=1) 
@@ -282,8 +330,9 @@ def _plotar_perfis_animados(df, linha = 'producao',
             for col in df.columns: 
                 if col.startswith(variable): 
                     eixo_x_col = ( 
-                        'Comprimento (m) Fronteira F' if col.endswith('F') 
-                        else 'Comprimento (m) Centro Volume C' 
+                        _pick_column(df, ('Comprimento (m) Fronteira F', 'Length (m) Boundary F'))
+                        if col.endswith('F') 
+                        else _pick_column(df, ('Comprimento (m) Centro Volume C', 'Length (m) Cell center C'))
                     ) 
                     x = df.loc[time, eixo_x_col] 
                     y = df.loc[time, col] 
@@ -291,7 +340,7 @@ def _plotar_perfis_animados(df, linha = 'producao',
                     i += 1 
         
         # Atualizar o texto do tempo de simulação 
-        time_text.set_text(f'Tempo de simulação: {(time)/3600:.2f} h') 
+        time_text.set_text(f'{sim_time_label}: {(time)/3600:.2f} h') 
         
         return lines + [time_text] 
 

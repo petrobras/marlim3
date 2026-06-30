@@ -1,0 +1,11 @@
+[flake8]
+max-line-length = 127
+max-complexity = 10
+extend-exclude =
+    src,
+    build,
+    .venv,
+    .venv-*,
+    __pycache__,
+    *.egg-info,
+    saida_testes

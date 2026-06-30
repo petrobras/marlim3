@@ -1,0 +1,637 @@
+name: Build, Test & Release
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  push:
+    branches:
+      - develop
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  actions: write  # skip-duplicate-actions needs this to cancel duplicate runs
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  MARLIM3_SKIP_BUILD: "1"
+  MARLIM3_SKIP_EXECUTABLE_RESOLUTION: "1"
+  ARTIFACT_RETENTION_DAYS: "7"
+
+jobs:
+  # Skips the workflow when a develop merge has identical content to an
+  # already-passed PR run. Tag pushes always run (never skipped).
+  pre_check:
+    name: Pre-check (skip duplicates)
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.decide.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: step-security/skip-duplicate-actions@v5
+        with:
+          concurrent_skipping: same_content_newer
+          skip_after_successful_duplicate: true
+
+      - id: decide
+        shell: bash
+        env:
+          SKIP_FROM_CHECK: ${{ steps.skip_check.outputs.should_skip }}
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "should_skip=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_skip=${SKIP_FROM_CHECK:-false}" >> "$GITHUB_OUTPUT"
+          fi
+
+  # Python-only package sanity. Does not depend on the native executable.
+  python-checks:
+    name: Python checks / package sanity
+    needs: pre_check
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          enable-cache: true
+
+      - name: Install package and dev dependencies
+        run: uv sync --locked --group dev
+
+      - name: Import package
+        run: uv run python -c "import marlim3; print(marlim3.__version__)"
+
+      - name: Lint (syntax / undefined names)
+        run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Lint (full report, non-blocking)
+        run: uv run flake8 . --count --exit-zero --statistics
+
+  # Build jobs: produce the native executable only. No tests here.
+  build-linux:
+    name: Build – Linux x64 (manylinux2014)
+    needs:
+      - pre_check
+      - python-checks
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build executable in manylinux2014
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            quay.io/pypa/manylinux2014_x86_64 \
+            bash -lc '
+              set -euo pipefail
+              # devtoolset-10/enable references MANPATH/LD_LIBRARY_PATH, which
+              # are unset in the clean manylinux container; pre-initialize them
+              # so `set -u` does not abort on the unbound variable.
+              export MANPATH="${MANPATH:-}"
+              export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
+              source /opt/rh/devtoolset-10/enable
+              /opt/python/cp312-cp312/bin/python -m pip install "cmake>=3.27,<4"
+              export PATH="/opt/python/cp312-cp312/bin:${PATH}"
+              cd /workspace
+              rm -rf build
+              cmake --preset gcc-release
+              cmake --build --preset gcc-release -j$(nproc)
+            '
+          sudo chown -R "$(id -u):$(id -g)" build src/include/versao.h
+
+      - name: Inspect executable
+        run: |
+          set -euo pipefail
+          test -x build/Marlim3
+          file build/Marlim3
+          ldd build/Marlim3 || true
+          objdump -p build/Marlim3 | grep GLIBC || true
+
+      - name: Compute SHA-256 of executable
+        working-directory: build
+        run: |
+          set -euo pipefail
+          sha256sum Marlim3 > Marlim3.sha256
+          cat Marlim3.sha256
+
+      - name: Upload executable + checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: Marlim3-linux-x64
+          path: |
+            build/Marlim3
+            build/Marlim3.sha256
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  build-windows:
+    name: Build – Windows x64
+    needs:
+      - pre_check
+      - python-checks
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Configure MSYS2 / MinGW64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-cmake
+            mingw-w64-x86_64-make
+
+      - name: Build executable
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          rm -rf build
+          cmake --preset mingw-release
+          cmake --build --preset mingw-release -j$(nproc)
+
+      - name: Inspect executable
+        shell: msys2 {0}
+        run: |
+          set -euo pipefail
+          test -f build/Marlim3.exe
+          file build/Marlim3.exe
+          ldd build/Marlim3.exe || true
+          ./build/Marlim3.exe --help >/dev/null
+
+      - name: Compute SHA-256 of executable
+        shell: msys2 {0}
+        working-directory: build
+        run: |
+          set -euo pipefail
+          sha256sum Marlim3.exe > Marlim3.exe.sha256
+          cat Marlim3.exe.sha256
+
+      - name: Upload executable + checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: Marlim3-windows-x64
+          path: |
+            build/Marlim3.exe
+            build/Marlim3.exe.sha256
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  build-macos:
+    name: Build – macOS ARM64
+    needs:
+      - pre_check
+      - python-checks
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Install system dependencies
+        run: brew install gcc cmake
+
+      - name: Build executable
+        run: |
+          set -euo pipefail
+          rm -rf build
+          cmake --preset gcc-release
+          cmake --build --preset gcc-release -j$(sysctl -n hw.ncpu)
+
+      - name: Inspect executable
+        run: |
+          set -euo pipefail
+          test -x build/Marlim3
+          file build/Marlim3
+          lipo -info build/Marlim3
+          otool -L build/Marlim3 | tee build/Marlim3.otool
+          otool -l build/Marlim3 | tee build/Marlim3.load-commands
+          ! grep -E '/opt/homebrew|libgomp|libgfortran|libquadmath|libstdc\+\+' build/Marlim3.otool
+          ! grep -E 'LC_RPATH|/opt/homebrew|libgomp|libgfortran|libquadmath|libstdc\+\+' build/Marlim3.load-commands
+          ./build/Marlim3 --help >/dev/null
+
+      - name: Compute SHA-256 of executable
+        working-directory: build
+        run: |
+          set -euo pipefail
+          shasum -a 256 Marlim3 > Marlim3.sha256
+          cat Marlim3.sha256
+
+      - name: Upload executable + checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: Marlim3-macos-arm64
+          path: |
+            build/Marlim3
+            build/Marlim3.sha256
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  # Test jobs: run pytest against the artifact built by the matching build job
+  # in the SAME run. No build, no network download of the executable.
+  test-linux:
+    name: Test – Linux x64
+    runs-on: ubuntu-latest
+    needs: build-linux
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          enable-cache: true
+
+      - name: Install package and test dependencies
+        run: uv sync --locked --group dev
+
+      - name: Remove any pre-existing executable from the workspace
+        run: rm -f marlim3/Marlim3 marlim3/Marlim3.exe build/Marlim3 build/Marlim3.exe
+
+      - name: Download Marlim3-linux-x64 artifact (from this run)
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-linux-x64
+          path: artifact-in
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SHA-256 of downloaded artifact
+        working-directory: artifact-in
+        run: |
+          set -euo pipefail
+          test -f Marlim3 && test -f Marlim3.sha256
+          sha256sum -c Marlim3.sha256
+
+      - name: Install executable into package directory
+        run: |
+          set -euo pipefail
+          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
+          test -x marlim3/Marlim3
+          file marlim3/Marlim3
+          ldd marlim3/Marlim3 || true
+
+      - name: Verify the installed executable still matches the artifact hash
+        run: |
+          set -euo pipefail
+          test -x marlim3/Marlim3
+          EXPECTED=$(awk '{print $1}' artifact-in/Marlim3.sha256)
+          ACTUAL=$(sha256sum marlim3/Marlim3 | awk '{print $1}')
+          echo "expected=$EXPECTED"
+          echo "actual=$ACTUAL"
+          [ "$EXPECTED" = "$ACTUAL" ]
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short
+
+  test-windows:
+    name: Test – Windows x64
+    runs-on: windows-2022
+    needs: build-windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          enable-cache: true
+
+      - name: Install package and test dependencies
+        shell: pwsh
+        run: uv sync --locked --group dev
+
+      - name: Remove any pre-existing executable from the workspace
+        shell: pwsh
+        run: |
+          Remove-Item -Force -ErrorAction SilentlyContinue marlim3\Marlim3.exe, marlim3\Marlim3, build\Marlim3.exe, build\Marlim3
+
+      - name: Download Marlim3-windows-x64 artifact (from this run)
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-windows-x64
+          path: artifact-in
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SHA-256 of downloaded artifact
+        shell: pwsh
+        run: |
+          if (-not (Test-Path artifact-in\Marlim3.exe)) { throw "Artifact missing Marlim3.exe" }
+          if (-not (Test-Path artifact-in\Marlim3.exe.sha256)) { throw "Artifact missing Marlim3.exe.sha256" }
+          $expected = (Get-Content artifact-in\Marlim3.exe.sha256 -Raw).Split()[0].ToLower()
+          $actual = (Get-FileHash artifact-in\Marlim3.exe -Algorithm SHA256).Hash.ToLower()
+          Write-Host "expected=$expected"
+          Write-Host "actual=$actual"
+          if ($expected -ne $actual) { throw "SHA-256 mismatch on downloaded artifact" }
+
+      - name: Install executable into package directory
+        shell: pwsh
+        run: |
+          Copy-Item artifact-in\Marlim3.exe marlim3\Marlim3.exe -Force
+          if (-not (Test-Path marlim3\Marlim3.exe)) { throw "Failed to install Marlim3.exe" }
+          Get-Item marlim3\Marlim3.exe | Format-List FullName, Length
+
+      - name: Verify the installed executable still matches the artifact hash
+        shell: pwsh
+        run: |
+          if (-not (Test-Path marlim3\Marlim3.exe)) { throw "marlim3\Marlim3.exe disappeared after uv sync" }
+          $expected = (Get-Content artifact-in\Marlim3.exe.sha256 -Raw).Split()[0].ToLower()
+          $actual = (Get-FileHash marlim3\Marlim3.exe -Algorithm SHA256).Hash.ToLower()
+          Write-Host "expected=$expected"
+          Write-Host "actual=$actual"
+          if ($expected -ne $actual) { throw "Installed executable hash differs from artifact" }
+
+      - name: Run tests
+        shell: pwsh
+        run: uv run pytest tests/ -v --tb=short
+
+  test-macos:
+    name: Test – macOS ARM64
+    runs-on: macos-14
+    needs: build-macos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          enable-cache: true
+
+      - name: Install package and test dependencies
+        run: uv sync --locked --group dev
+
+      - name: Remove any pre-existing executable from the workspace
+        run: rm -f marlim3/Marlim3 marlim3/Marlim3.exe build/Marlim3 build/Marlim3.exe
+
+      - name: Download Marlim3-macos-arm64 artifact (from this run)
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-macos-arm64
+          path: artifact-in
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SHA-256 of downloaded artifact
+        working-directory: artifact-in
+        run: |
+          set -euo pipefail
+          test -f Marlim3 && test -f Marlim3.sha256
+          shasum -a 256 -c Marlim3.sha256
+
+      - name: Install executable into package directory
+        run: |
+          set -euo pipefail
+          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
+          test -x marlim3/Marlim3
+          file marlim3/Marlim3
+          otool -L marlim3/Marlim3
+
+      - name: Verify the installed executable still matches the artifact hash
+        run: |
+          set -euo pipefail
+          test -x marlim3/Marlim3
+          EXPECTED=$(awk '{print $1}' artifact-in/Marlim3.sha256)
+          ACTUAL=$(shasum -a 256 marlim3/Marlim3 | awk '{print $1}')
+          echo "expected=$EXPECTED"
+          echo "actual=$ACTUAL"
+          [ "$EXPECTED" = "$ACTUAL" ]
+
+      - name: Run tests
+        run: uv run pytest tests/ -v --tb=short
+
+  # Publishes the same artifacts the test-* jobs validated. Tag pushes only.
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs:
+      - test-linux
+      - test-windows
+      - test-macos
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download Linux executable
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-linux-x64
+          path: artifacts/linux
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Windows executable
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-windows-x64
+          path: artifacts/windows
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download macOS ARM64 executable
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-macos-arm64
+          path: artifacts/macos-arm64
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify SHA-256 of all downloaded artifacts
+        run: |
+          set -euo pipefail
+          ( cd artifacts/linux       && sha256sum -c Marlim3.sha256 )
+          ( cd artifacts/windows     && sha256sum -c Marlim3.exe.sha256 )
+          ( cd artifacts/macos-arm64 && sha256sum -c Marlim3.sha256 )
+
+      - name: Prepare release assets
+        run: |
+          set -euo pipefail
+          mv artifacts/linux/Marlim3              artifacts/linux/Marlim3-linux-x64
+          mv artifacts/macos-arm64/Marlim3        artifacts/macos-arm64/Marlim3-macos-arm64
+          # Rebuild .sha256 files referencing the final release filenames so users
+          # can run e.g. `sha256sum -c Marlim3-linux-x64.sha256` after downloading.
+          ( cd artifacts/linux       && sha256sum Marlim3-linux-x64       > Marlim3-linux-x64.sha256       && rm Marlim3.sha256 )
+          ( cd artifacts/windows     && sha256sum Marlim3.exe             > Marlim3.exe.sha256 )
+          ( cd artifacts/macos-arm64 && sha256sum Marlim3-macos-arm64     > Marlim3-macos-arm64.sha256     && rm Marlim3.sha256 )
+          ls -la artifacts/linux artifacts/windows artifacts/macos-arm64
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            artifacts/linux/Marlim3-linux-x64
+            artifacts/linux/Marlim3-linux-x64.sha256
+            artifacts/windows/Marlim3.exe
+            artifacts/windows/Marlim3.exe.sha256
+            artifacts/macos-arm64/Marlim3-macos-arm64
+            artifacts/macos-arm64/Marlim3-macos-arm64.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  # PyPI publish: runs only after the GitHub Release has been created.
+  publish-python:
+    name: Publish Python Package
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'petrobras/marlim3'
+    needs:
+      - release
+
+    steps:
+      - name: Checkout tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          enable-cache: true
+
+      - name: Build package
+        run: uv build
+
+      - name: Check package
+        run: uv run --with twine twine check dist/*
+
+      - name: Publish package
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  # Installs the freshly published package from PyPI on clean runners and
+  # verifies the executable resolves and answers `--help`. Catches packaging
+  # bugs that pre-release tests cannot, by exercising the exact published
+  # artifact. Tag pushes + official repository only.
+  smoke-test-pypi:
+    name: Smoke Test (PyPI install)
+    if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'petrobras/marlim3'
+    needs:
+      - publish-python
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-2022
+          - macos-14
+    runs-on: ${{ matrix.os }}
+    env:
+      MARLIM3_SKIP_EXECUTABLE_RESOLUTION: "0"
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Wait for version to be visible on PyPI
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${REF_NAME#v}"
+          echo "Looking for marlim3==$VERSION on PyPI (JSON API)..."
+          export TARGET_VERSION="$VERSION"
+          for i in $(seq 1 30); do
+            if python -c "import os,json,sys,urllib.request; d=json.load(urllib.request.urlopen('https://pypi.org/pypi/marlim3/json',timeout=10)); sys.exit(0 if os.environ['TARGET_VERSION'] in d.get('releases',{}) else 1)"; then
+              echo "marlim3==$VERSION is available on PyPI"
+              exit 0
+            fi
+            echo "Attempt $i: marlim3==$VERSION not yet on PyPI, sleeping 20s..."
+            sleep 20
+          done
+          echo "marlim3==$VERSION did not become available on PyPI in time"
+          exit 1
+
+      - name: Install marlim3 from PyPI (clean environment)
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${REF_NAME#v}"
+          python -m pip install --upgrade pip
+          python -m pip install "marlim3==${VERSION}"
+
+      - name: Import package and trigger executable resolution
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -c "import marlim3; from marlim3._download import get_executable_path, executable_exists; assert executable_exists(), 'executable not present after install/import'; print('executable at:', get_executable_path())"
+
+      - name: Run executable --help
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXE_PATH=$(python -c "from marlim3._download import get_executable_path; print(get_executable_path())")
+          echo "Resolved executable: $EXE_PATH"
+          test -f "$EXE_PATH"
+          "$EXE_PATH" --help >/dev/null

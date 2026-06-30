@@ -1,0 +1,10 @@
+// Auto-generated from marlim3/translations.json by CMake — do not edit.
+// Re-run cmake configure after changing translations.json.
+#ifndef TRANSLATIONS_DATA_H_
+#define TRANSLATIONS_DATA_H_
+
+static const char TRANSLATIONS_JSON_RAW[] = R"TJSON(
+@TRANSLATIONS_JSON_CONTENT@
+)TJSON";
+
+#endif // TRANSLATIONS_DATA_H_

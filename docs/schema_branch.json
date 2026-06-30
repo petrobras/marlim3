@@ -1,0 +1,4058 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "JSON de entrada do Marlim 3",
+  "type": "object",
+  "properties": {
+    "system": {
+      "type": "string",
+      "enum": [
+        "PROD",
+        "INJ"
+      ],
+      "description": "Defines the system to be modeled: producer well (PROD) or injector well (INJ)."
+    },
+    "initialConfig": {
+      "type": "object",
+      "description": "General simulation parameters.",
+      "properties": {
+        "classicOutput": {
+          "type": "boolean",
+          "default": false,
+          "description": "Controls the output text style shown at the end of the simulation (cosmetic setting)."
+        },
+        "geometryFollowsFlow": {
+          "type": "boolean",
+          "default": true,
+          "description": "Indicates whether geometry filling follows the flow direction. If true, zero is the start of the pipeline. If false, zero is the end of the pipeline. In the false case, angles are still defined with respect to the flow direction to keep consistency with Marlim 2."
+        },
+        "gasLine": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates whether the production system includes a service (gas injection) line."
+        },
+        "screenPrint": {
+          "type": "boolean",
+          "default": false,
+          "description": "Defines terminal output during the simulation. Output can show only completion percentage or more detailed information such as time, time step, and variables. Value 0 means percentage-only output (default behavior)."
+        },
+        "thermalEquilibrium": {
+          "type": "boolean",
+          "default": true,
+          "description": "Defines the strategy for temperature distribution across the pipe wall cross-section. If true, temperature is linearly interpolated between ambient and fluid temperatures. If false, ambient temperature is used across the full wall cross-section. Used for initialConfig: {initialCondition: 0}."
+        },
+        "latentHeat": {
+          "type": "boolean",
+          "default": false,
+          "description": "Option for black-oil enthalpy calculation. If true, uses interpolation from a PVT table. If false, uses the black-oil model directly. The PVTSim file with liquid and gas enthalpies must also be provided."
+        },
+        "latentHeatCond": {
+          "type": "boolean",
+          "default": true,
+          "description": "If false, disables latent heat in condensation mass-transfer processes in the mixture energy equation. This can be useful in rare extreme retrograde-condensation cases (exotic oils, mainly in compositional models)."
+        },
+        "pvtFile": {
+          "type": "string",
+          "description": "Name of the .tab or .ctm PVT file, when used. Valid for producer wells (for injector wells, the file is defined in 'injectionWellBC')."
+        },
+        "flashTableFluidModel": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, uses a flash PVT table for fluid modeling. If false, modeling uses black-oil or compositional mode depending on {initialConfig: {compositionalFluidModel}}."
+        },
+        "compositionalFluidModel": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, uses compositional models for fluid modeling. This parameter is considered only when {initialConfig: {flashTableFluidModel}} is false."
+        },
+        "dynamicTableModel": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, computes a posterior table from an initial black-oil simulation using the compositional model, for line segments with different compositions, leveraging the P and T map from the initial BO result. Valid only for steady-state compositional simulations. It can significantly reduce runtime, especially in network cases, by avoiding repeated flash calculations at each iteration."
+        },
+        "cpModel": {
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ],
+          "default": 0,
+          "description": "Option for black-oil fluid Cp calculation. If 1, uses interpolation from a PVT table. If 0, uses the black-oil model directly."
+        },
+        "jtlModel": {
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ],
+          "default": 0,
+          "description": "If 1, indicates that d(rho_l)/dT values from a PVTSim table are used even when the black-oil model is selected."
+        },
+        "pressureTable": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, generates a table before simulation start with black-oil fluid compressibilities and derivatives for declared production-line fluids using reduced P and T. The compressibility factor is then estimated by interpolation at each iteration, which can significantly reduce simulation time, especially in transient runs."
+        },
+        "parametricAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, runs steady-state parametric analysis using the 'leituraAP.json' file."
+        },
+        "parametricAnalysisFile": {
+          "type": "string",
+          "default": "leituraAP.json",
+          "description": "Name of the JSON file for parametric analysis (valid when parametricAnalysis == true)."
+        },
+        "trackGOR": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, updates GOR (and other variables such as API and BSW) along the pipeline using mixing rules when streams merge."
+        },
+        "trackGasDensity": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, updates gas density (and other variables such as CO2 fraction) along the pipeline using mixing rules when streams merge."
+        },
+        "freeGasDensityCorrectionBO": {
+          "type": "boolean",
+          "default": false,
+          "description": "If false, in-situ density is calculated from standard conditions. If true, in-situ deviation due to higher pressure is considered, which results in release of lighter hydrocarbons."
+        },
+        "RsPbTable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates pre-building a solubility-ratio (RS) table with a black-oil model before simulation start. This can improve performance, especially for Livia Fulchignoni's RS model, which is computationally expensive."
+        },
+        "fluidProp": {
+          "type": "integer",
+          "default": 0,
+          "enum": [
+            0,
+            1
+          ],
+          "description": "Legacy feature for fluid-property calculation using a hybrid model (black-oil-dominant, with some properties from PVTSim files: enthalpies, optionally phase CPs, and liquid Joule-Thomson). 0 - black oil; 1 - hybrid. Valid for black-oil modeling."
+        },
+        "initialFluidId": {
+          "type": "integer",
+          "default": 0,
+          "description": "ID of the fluid that initially fills the production system (valid for initialConfig: {initialCondition: 0})."
+        },
+        "gasTable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Similar to pressureTable, but for service-line gas."
+        },
+        "steadyStateSlip": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, the model considers slip in the steady-state solver."
+        },
+        "transientSlip": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, the model considers slip in the transient solver."
+        },
+        "flowPatternMap": {
+          "type": "integer",
+          "default": 0,
+          "description": "Flow-pattern map type. 0: simplified Barnea; 1: full Barnea."
+        },
+        "initialCondition": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "default": 1,
+          "description": "Defines how the simulation starts, mainly for transient mode. It can also be used in steady mode when the user wants to inspect a specific initial condition. In that case, no simulation is run; the code only generates plots for variables from the defined initial condition. 0: user-defined conditions; 1: from steady-state solution; 2: from snapshot (.snp) file; 3: gas-lift unloading."
+        },
+        "steadyStateOrder": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ],
+          "default": 1,
+          "description": "Order of the differential-equation numerical method in steady-state mode. 1: first order; 2: second-order Runge-Kutta. Note: in transient simulations, the method is always first order."
+        },
+        "snapshotFile": {
+          "type": "string",
+          "description": "Name of the .snp input file for initial-condition data when initialConfig: {initialCondition: 2}."
+        },
+        "hisep": {
+          "type": "integer",
+          "default": 0,
+          "description": "Specific to the HISEP feature (still under development)."
+        },
+        "fluidSalinity": {
+          "type": "number",
+          "default": 0,
+          "unit": "g/(kg água)",
+          "description": "Completion-fluid salinity used in a gas-lift unloading simulation."
+        },
+        "gasLineInterfaceLength": {
+          "type": "number",
+          "description": "Initial position, referenced from the platform, of the gas/completion-fluid interface in the service line during gas-lift unloading simulation.",
+          "unit": "m"
+        },
+        "prodLineInterfaceLength": {
+          "type": "number",
+          "description": "Initial position, referenced from the platform, of the gas/completion-fluid interface in the production line during gas-lift unloading simulation.",
+          "unit": "m"
+        },
+        "dischargeControl": {
+          "type": "boolean",
+          "default": false,
+          "description": "For gas-lift unloading mode, when true enables automatic unloading control, setting gas injection to avoid erosional velocities at gas-lift valves during unloading."
+        },
+        "dischargeParameters": {
+          "type": "object",
+          "description": "Unloading control parameters (valid when dischargeControl == true).",
+          "properties": {
+            "maxDischargeFlowRate": {
+              "type": "number",
+              "unit": "sm3/d",
+              "description": "Maximum liquid flow-rate limit at the valve, determined by erosional velocity criteria."
+            },
+            "maxDischargePressure": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Maximum downstream pressure at the production choke during unloading control."
+            },
+            "minDischargePressure": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Minimum downstream pressure at the production choke during unloading control."
+            },
+            "workGasChargePressure": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Downstream pressure at the production choke at which unloading starts."
+            },
+            "maxGasChargePressure": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Maximum injection pressure during unloading control."
+            },
+            "minGasChargePressure": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Minimum injection pressure during unloading control."
+            },
+            "initialGasDischargePressure": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "description": "Initial pressure in the gas line at unloading start."
+            },
+            "dischargeTemperature": {
+              "type": "number",
+              "unit": "degC",
+              "description": "Temperature at which unloading is performed."
+            },
+            "latencyTime": {
+              "type": "number",
+              "unit": "s",
+              "description": "Time between simulation stabilization and unloading process start."
+            }
+          }
+        },
+        "fluidType": {
+          "type": "integer",
+          "default": 0,
+          "enum": [
+            0,
+            1
+          ],
+          "description": "0: liquid-dominated fluid (mass-transfer models tied to black-oil logic); 1: gas-dominated fluid (mass-transfer models derived from quality/void-fraction relations)."
+        },
+        "reverseTemp": {
+          "type": "number",
+          "unit": "degC",
+          "description": "Return-gas temperature for cases with reverse flow at the last system boundary in transient simulations. If not provided, ambient temperature is assumed."
+        },
+        "steadyGuess": {
+          "type": "number",
+          "default": -1,
+          "description": "Initial guess for steady-state solution. It may be flow rate or pressure depending on boundary conditions. If not provided, or if a negative value is provided, the code computes an internal guess from hydrostatics (and friction as well when a non-IPR mass source exists)."
+        },
+        "transient": {
+          "type": "boolean",
+          "default": false,
+          "description": "true: transient simulation; false: steady-state simulation."
+        },
+        "massTransfer": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "default": 0,
+          "description": "Mass-transfer model to use. 0: full model, implicit numerical method (more stable); 1: full model, explicit numerical method (same model as 0, but less stable); 2: simplified isothermal model without transient mass-transfer terms; 3: no mass transfer."
+        },
+        "checkValve": {
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ],
+          "default": 0,
+          "description": "If set to 1, a check valve is placed at the end of the production system, preventing reverse flow at the last boundary when indicated by pressure differential. If set to 0, reverse gas inflow at the system boundary is allowed."
+        },
+        "xyMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, inclinations are inferred from XY coordinates of each pipe segment endpoint. In this case, initial positions must be provided in xProdStart and yProdStart (and if initialConfig: {gasLine: true}, also xServiceStart and yServiceStart). Otherwise, inclinations are provided directly by angles in productionPipe and servicePipe."
+        },
+        "xProdStart": {
+          "type": "number",
+          "description": "x coordinate of the production-line start, used for inclination inference when initialConfig: {xyMode: true}.",
+          "unit": "m",
+          "default": 0
+        },
+        "yProdStart": {
+          "type": "number",
+          "description": "y coordinate of the production-line start, used for inclination inference when xyMode = true.",
+          "unit": "m",
+          "default": 0
+        },
+        "xServiceStart": {
+          "type": "number",
+          "description": "x coordinate of the service-line start, used for inclination inference when xyMode = true. Valid when gasLine = true.",
+          "unit": "m",
+          "default": 0
+        },
+        "yServiceStart": {
+          "type": "number",
+          "description": "y coordinate of the service-line start, used for inclination inference when xyMode = true. Valid when gasLine = true.",
+          "unit": "m",
+          "default": 0
+        },
+        "parallelizePA": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, runs parametric analysis (PA) in parallel."
+        },
+        "diffusion3dMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, enables the 3D thermal diffusion model."
+        },
+        "diffusion3dThreads": {
+          "type": "integer",
+          "default": 1,
+          "description": "Number of threads used for 3D diffusion calculations."
+        },
+        "diffusion3dJson": {
+          "type": "string",
+          "description": "Name of the JSON file that defines the 3D thermal diffusion model."
+        },
+        "waxMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, enables the wax-deposition model."
+        },
+        "driftModel": {
+          "type": "boolean",
+          "default": true,
+          "description": "If true, uses a drift-type model. If false, uses one of the black-box correlations. Valid for steady-state simulations (in transient simulations, the model is always drift-type)."
+        },
+        "advanced": {
+          "type": "object",
+          "properties": {
+            "monophasicCriterion": {
+              "type": "number",
+              "default": 1e-04,
+              "description": "Minimum void-fraction value below which the system is treated as single-phase. Very small void fractions may cause numerical problems, so this threshold helps stabilization. Avoid excessively high truncation values because they may artificially remove mass. Valid for transient simulations."
+            },
+            "condensationCriterion": {
+              "type": "number",
+              "default": 0.001,
+              "description": "Minimum void-fraction value for applying interphase mass-transfer modeling. Very small void fractions may lead to condensation behavior that violates physical holdup limits, forcing restrictive time-step corrections and increasing runtime. Avoid high truncation values, which can cause numerical instability or poor physical representation. Valid for transient simulations."
+            },
+            "regulaFalsiSearchCriterion": {
+              "type": "number",
+              "default": 0.1,
+              "description": "Increment/decrement fraction applied to the objective-function input while searching for the second point in steady-state false-position solving. In scenarios with very high IPR values (common in pre-salt cases), reducing this value may help avoid numerical issues caused by excessively high rates. Valid for steady-state simulations."
+            },
+            "despressRate": {
+              "type": "number",
+              "default": 0.01,
+              "unit": "kgf/(cm2.s)",
+              "description": "Criterion for using or skipping the two-step evolution in the full model (including time derivatives of liquid density). If average depressurization rate along the production system is below this value, only one evolution step is used, simplifying the model and reducing runtime. Valid for transient simulations when at least one element of initialConfig: {advanced: {compModelCorrectionFlag}} is true."
+            },
+            "simplePressureFrontier": {
+              "type": "boolean",
+              "default": true,
+              "description": "Cell-boundary pressure calculation mode: true uses the average pressure of adjacent cell centers; false uses the full method with hydrostatic and friction marching from cell center to boundary. Valid for transient simulations (steady-state always uses marching). Watch for numerical instabilities when set to false."
+            },
+            "massTransferLimit": {
+              "type": "number",
+              "default": 10,
+              "unit": "kg/(s.m)",
+              "description": "Disables latent heat in interphase mass-transfer processes (condensation or evaporation) in the mixture energy equation at points where interphase mass transfer exceeds this limit. Like initialConfig: {latentHeatCond}, this is useful in rare extreme retrograde-condensation scenarios (exotic oils, mainly in compositional models)."
+            },
+            "relaxChokeTimestep": {
+              "type": "boolean",
+              "default": false,
+              "description": "Flag that penalizes time-step growth when oscillations occur in liquid flow entering and leaving the surface choke."
+            },
+            "steadyConvergenceCriterion": {
+              "type": "number",
+              "default": 0.001,
+              "description": "Steady-state convergence criterion for a more rigorous solver mode, currently less used due to initialConfig: {advanced: {accelerateSteadyConvergence}}."
+            },
+            "accelerateSteadyConvergence": {
+              "type": "boolean",
+              "default": true,
+              "description": "Enables a simplification in the steady-state solver that accelerates convergence and improves stability. This is currently the simulator default. In practice, there is rarely a need to disable this accelerator."
+            },
+            "slipBoundaryCell": {
+              "type": "boolean",
+              "default": true,
+              "description": "Controls slip modeling in the last production-system control volume. Oscillations may occur there due to high-frequency flow-pattern changes, common at low pressure. To mitigate this, interphase slip can be disabled. Watch for nonphysical holdup variations in the last cell when doing so."
+            },
+            "counterflowCorrectionSteady": {
+              "type": "boolean",
+              "default": false,
+              "description": "Used in the steady-state solver. When true, applies a correction to gas temperature entering the annulus using an approximate countercurrent heat-exchange model with column flow. Note: in transient mode, this countercurrent heat exchange is modeled with full fidelity."
+            },
+            "columnStabilization": {
+              "type": "boolean",
+              "default": false,
+              "description": "Uses the simplified model (discarding time derivatives of liquid density) only in the production column to keep it numerically stable in scenarios with intelligent completion valves. Valid for transient mode."
+            },
+            "compModelCorrectionTime": {
+              "type": "array",
+              "description": "Time instants that, together with initialConfig: {advanced: {compModelCorrectionFlag}}, determine when the full model (including time derivatives of liquid density) is used.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "compModelCorrectionFlag": {
+              "type": "array",
+              "description": "Boolean values indicating whether the full model (including time derivatives of liquid density) must be used at the time instants specified by 'compModelCorrectionTime'.",
+              "items": {
+                "type": "boolean"
+              }
+            },
+            "correctSepCondition": {
+              "type": "boolean",
+              "default": true,
+              "description": "Corrects the error introduced in the marching objective function when comparing pressure computed at the center of the last cell against separator pressure at the cell end."
+            },
+            "strongAnnularColCoupling": {
+              "type": "integer",
+              "default": 0,
+              "description": "Number of pseudo-transient steps applied to obtain higher numerical resolution of the temperature profile in the region just below the ANM, in both annulus and production column. The steady-state model usually does not resolve heat exchange well in this area, where most annulus-column heat exchange occurs. Valid for steady-state mode."
+            },
+            "areaChange": {
+              "type": "integer",
+              "default": 0,
+              "enum": [
+                0,
+                1
+              ],
+              "description": "If set to 1, the simulator adds localized losses for each area change from one cell to another."
+            },
+            "threads": {
+              "type": "integer",
+              "default": 1,
+              "description": "Number of threads used for simulation execution."
+            },
+            "dynTableMinDelay": {
+              "type": "integer",
+              "default": 0,
+              "description": "Every number of time steps defined by this parameter, a local mini-table is generated for each system cell. This mini-table stores pressure (P) and temperature (T) flash data using increments/decrements defined by dynTableMinDp and dynTableMinDt. Applicable to transient simulations with compositional fluid models."
+            },
+            "dynTableMinDp": {
+              "type": "number",
+              "unit": "kgf/cm2",
+              "default": 0,
+              "description": "Defines pressure increment/decrement used to generate flash mini-tables at intervals defined by dynTableMinDelay. Applicable to transient simulations with compositional fluid models."
+            },
+            "dynTableMinDt": {
+              "type": "number",
+              "unit": "degC",
+              "default": 0,
+              "description": "Defines temperature increment/decrement used to generate flash mini-tables at intervals defined by dynTableMinDelay. Applicable to transient simulations with compositional fluid models."
+            },
+            "sonicTime": {
+              "type": "array",
+              "description": "Time instants that, together with the 'sonicFlag' array, determine when the simulator uses sufficiently small time steps (according to the sonic CFL condition) to capture sonic phenomena related to pressure waves. Since Marlim3 uses first-order models, this is mainly a mitigation mechanism to reduce representation error for such events.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "sonicFlag": {
+              "type": "array",
+              "description": "Flags indicating, at times specified by 'sonicTime', whether the simulator uses sufficiently small time steps (according to sonic CFL condition) to capture sonic pressure-wave phenomena. Since Marlim3 uses first-order models, this is mainly a mitigation mechanism to reduce representation error for these events.",
+              "items": {
+                "type": "integer"
+              }
+            },
+            "minTimestepCriterion": {
+              "type": "number",
+              "description": ""
+            },
+            "liquidJTSimple": {
+              "type": "number",
+              "description": "If set to 1, disables the d_rho/dT term in liquid Joule-Thomson calculation. Useful for legacy cases converted from Marlim2, especially in the production column.",
+              "default": 0
+            },
+            "disablePenalizeTimestep": {
+              "type": "boolean",
+              "default": false,
+              "description": "Disables time-step penalization that occurs with abrupt holdup oscillations, especially during segregation processes typical of production shutdown (determinaDT function in SisProd())."
+            },
+            "valveTimestepControl": {
+              "type": "boolean",
+              "default": false,
+              "description": "Applies a time-step increment restriction during valve opening/closing to avoid numerical oscillations."
+            },
+            "disableMassTransferTempDeriv": {
+              "type": "boolean",
+              "default": false,
+              "description": ""
+            },
+            "matrixThreads": {
+              "type": "integer",
+              "default": 1,
+              "description": ""
+            }
+          }
+        },
+        "pressureCondition": {
+          "type": "object",
+          "description": "Object with pressure boundary-condition data at pipeline inlet. If this or another inlet boundary-condition object is not provided, the pipeline is treated as closed, and incoming fluids must be defined through sources (massSource, IPR, etc.).",
+          "properties": {
+            "active": {
+              "type": "boolean",
+              "description": "Indicates whether this boundary condition is active."
+            },
+            "time": {
+              "type": "array",
+              "description": "Time instants for boundary-condition events in this object's other vectors.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "pressure": {
+              "type": "array",
+              "description": "Fluid pressure at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "unit": "kgf/cm2"
+              }
+            },
+            "temperature": {
+              "type": "array",
+              "description": "Fluid temperature at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "unit": "degC"
+              }
+            },
+            "fluidQuality": {
+              "type": "array",
+              "description": "Fluid quality at pipeline inlet over time (ratio between free-gas mass and total associated gas, oil, and water mass).",
+              "items": {
+                "type": "number"
+              }
+            },
+            "betaRatio": {
+              "type": "array",
+              "description": "Volumetric ratio between complementary fluid and the sum complementary fluid + oil + water at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "default": 0
+              }
+            }
+          }
+        },
+        "flowRatePressureCondition": {
+          "type": "object",
+          "description": "Object with pressure and flow boundary-condition data at pipeline inlet. If this or another inlet boundary-condition object is not provided, the pipeline is treated as closed, and incoming fluids must be defined through sources (massSource, IPR, etc.). This boundary condition fully determines the system from inlet side, ignoring any outlet boundary condition. It is intended for steady-state only, since wave-propagation effects are not considered there (unlike transient mode, which also needs outlet information).",
+          "properties": {
+            "active": {
+              "type": "boolean",
+              "description": "Indicates whether this boundary condition is active."
+            },
+            "time": {
+              "type": "array",
+              "description": "Time instants for boundary-condition events in this object's other vectors.",
+              "items": {
+                "type": "number",
+                "unit": "s"
+              }
+            },
+            "pressure": {
+              "type": "array",
+              "description": "Fluid pressure at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "unit": "kgf/cm2"
+              }
+            },
+            "temperature": {
+              "type": "array",
+              "description": "Fluid temperature at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "unit": "degC"
+              }
+            },
+            "massFlowRate": {
+              "type": "array",
+              "description": "Fluid mass flow rate at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "unit": "kg/s"
+              }
+            },
+            "betaRatio": {
+              "type": "array",
+              "description": "Volumetric ratio between complementary fluid and the sum complementary fluid + oil + water at pipeline inlet over time.",
+              "items": {
+                "type": "number",
+                "default": 0
+              }
+            }
+          }
+        },
+        "correlationsByPattern": {
+          "type": "object",
+          "description": "Slip correlations to be used for each flow pattern.",
+          "properties": {
+            "stratified": {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                2,
+                4
+              ],
+              "default": 1,
+              "description": "Correlation options for stratified flow pattern. 0: Choi et al; 1: Bhagwat & Ghajar; 2: Franca & Lahey; 4: modified Bhagwat & Ghajar."
+            },
+            "slugBubble": {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                4
+              ],
+              "default": 1,
+              "description": "Correlation options for bubble and slug flow patterns. 0: Choi et al; 1: Bhagwat & Ghajar; 4: modified Bhagwat & Ghajar."
+            },
+            "annularChurn": {
+              "type": "integer",
+              "enum": [
+                0,
+                1,
+                3,
+                4
+              ],
+              "default": 1,
+              "description": "Correlation options for annular and churn flow patterns. 0: Choi et al; 1: Bhagwat & Ghajar; 3: Hibiki & Ishii (annular); 4: modified Bhagwat & Ghajar."
+            }
+          }
+        },
+        "formation": {
+          "type": "object",
+          "description": "Object with lithology thermal-property data for possible rocks used in well-to-formation heat exchange.",
+          "properties": {
+            "properties": {
+              "type": "array",
+              "description": "Rock thermal properties.",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "integer",
+                    "description": "Rock identifier integer."
+                  },
+                  "conductivity": {
+                    "type": "number",
+                    "description": "Rock thermal conductivity.",
+                    "unit": "W/(m.degC)"
+                  },
+                  "specificHeat": {
+                    "type": "number",
+                    "description": "Rock specific heat.",
+                    "unit": "J/(kg.degC)"
+                  },
+                  "density": {
+                    "type": "number",
+                    "description": "Rock density.",
+                    "unit": "kg/m3"
+                  }
+                }
+              }
+            },
+            "productionTime": {
+              "type": "number",
+              "description": "Well production time, important for determining formation heating radius.",
+              "unit": "dias"
+            }
+          }
+        }
+      }
+    },
+    "compTable": {
+      "type": "object",
+      "description": "Parameters of pressureTable and gasTable, when requested in initialConfig.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether this table is active."
+        },
+        "numPoints": {
+          "type": "integer",
+          "description": "Number of points for both P and T in the table."
+        },
+        "maxPressure": {
+          "type": "number",
+          "description": "Maximum pressure in the table.",
+          "unit": "kgf/cm2"
+        },
+        "minPressure": {
+          "type": "number",
+          "description": "Minimum pressure in the table.",
+          "unit": "kgf/cm2"
+        },
+        "maxTemperature": {
+          "type": "number",
+          "description": "Maximum temperature in the table.",
+          "unit": "degC"
+        },
+        "minTemperature": {
+          "type": "number",
+          "description": "Minimum temperature in the table.",
+          "unit": "degC"
+        }
+      }
+    },
+    "gasFluid": {
+      "type": "object",
+      "description": "Object with gas-fluid data for the service line or gas source, when gas is defined as dry.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether gas fluid is active."
+        },
+        "gasDensity": {
+          "type": "number",
+          "description": "Gas relative density (ratio between gas density and air density, both at ambient conditions)."
+        },
+        "CO2Fraction": {
+          "type": "number",
+          "description": "CO2 fraction.",
+          "default": 0
+        },
+        "criticalCorrelation": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ],
+          "description": "Correlation used to calculate gas pseudo-critical temperature and pressure. 1 --> Brown et al; 2 --> Piper et al."
+        },
+        "useFlashTable": {
+          "type": "boolean",
+          "description": "Indicates whether the simulator should use a flash table to calculate gas properties in the service line when flashTableFluidModel is active.",
+          "default": false
+        },
+        "userMolarFraction": {
+          "type": "boolean",
+          "description": "Indicates whether the user provides the current gas composition in molarFraction. If false, composition is read from the .ctm table provided in initialConfig: {pvtFile}. Valid only for compositional simulations."
+        },
+        "molarFraction": {
+          "type": "array",
+          "description": "Molar fractions of pseudocomponents (same sequence as in the .ctm file provided in initialConfig: {pvtFile}). Valid only for compositional simulations.",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "productionFluid": {
+      "type": "array",
+      "description": "Each object in this array represents a possible fluid used in the production system. Three model types are possible: black-oil, table, and compositional.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether this fluid is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Fluid identifier integer."
+          },
+          "api": {
+            "type": "number",
+            "description": "Oil API gravity. Valid only for black-oil models."
+          },
+          "gor": {
+            "type": "number",
+            "description": "Gas-oil ratio. Valid for all three fluid types. In compositional mode, if userGORComp is true, original molar fractions are corrected to match this value. In table mode, if this value is below table GOR, table value is used; if above, the excess is treated as additional free-gas mass (added in table RS variable).",
+            "unit": "Sm3/Sm3"
+          },
+          "gasDensity": {
+            "type": "number",
+            "description": "Relative gas density with respect to air at standard conditions. Valid for black-oil (and therefore also compositional, since black-oil is used to compute gas viscosity)."
+          },
+          "bsw": {
+            "type": "number",
+            "description": "Basic Sediment and Water (BSW). Valid for all three fluid types.",
+            "unit": "m^3/m^3",
+            "default": 0
+          },
+          "waterDensity": {
+            "type": "number",
+            "description": "Relative water density with respect to pure water (rho = 1000 kg/cm^3). Valid for all three fluid types.",
+            "default": 1
+          },
+          "emulsionType": {
+            "type": "integer",
+            "default": 0,
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "description": "Emulsion-correlation selector for oil-viscosity modification. 0 -> oil-water mixture viscosity weighted by water quality; 1 -> weak Woelflin; 2 -> medium Woelflin; 3 -> strong Woelflin; 4 -> exponential; 5 -> Pal Rhodes; 6 -> BSW vs user multiplier pair; 7 -> oil viscosity below saturation BSW. Valid for all three fluid types."
+          },
+          "emulsionCoefA": {
+            "type": "number",
+            "description": "Parameter 'a' for emulsion model 4 (exponential)."
+          },
+          "emulsionCoefB": {
+            "type": "number",
+            "description": "Parameter 'b' for emulsion model 4 (exponential)."
+          },
+          "phi100": {
+            "type": "number",
+            "description": "Emulsion multiplier for emulsion model 5 (Pal Rhodes)."
+          },
+          "bswInversion": {
+            "type": "number",
+            "default": 1,
+            "description": "BSW value at emulsion inversion."
+          },
+          "bswVec": {
+            "type": "array",
+            "description": "Vector of user-defined BSW values for emulsion model 6.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "emulVec": {
+            "type": "array",
+            "description": "Vector of user-defined emulsion multipliers for emulsion model 6.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "CO2Fraction": {
+            "type": "number",
+            "default": 0,
+            "description": "CO2 molar fraction in the fluid. Valid for black-oil (and therefore also compositional, since black-oil is used to compute gas viscosity)."
+          },
+          "criticalCorrelation": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 1,
+            "description": "Correlation selector for gas critical pressure and temperature. Three correlations inherited from Marlim2 are available. Correlations 1 and 2 are more suitable for CO2-rich cases. Valid for black-oil (and therefore also compositional, since black-oil is used to compute gas viscosity)."
+          },
+          "RsPbModel": {
+            "type": "integer",
+            "default": 0,
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "description": "Solution-gas ratio (RS) correlation; 0 -> Vazquez and Beggs, 1 -> Lasater, 2 -> Standing, 3 -> Glaso, 4 -> Livia Fulchignoni. Valid only for black-oil models."
+          },
+          "deadOilModel": {
+            "type": "integer",
+            "default": 3,
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "description": "Dead-oil viscosity model. 0 -> ASTM; 1 -> Beggs&Robinson; 2 -> Modified Beggs & Robinson; 3 -> Glaso; 4 -> Kartoatmodjo_Schmidt; 5 -> Petrosky_Farshad; 6 -> Beal; 7 -> viscosity-vs-temperature table pairs. Valid for black-oil, compositional, and table models (in the table case, when productionFluid: {items: {blackOilViscModel}} is true)."
+          },
+          "temp1": {
+            "type": "number",
+            "description": "For ASTM liquid-viscosity calculation, temperature at ASTM point 1.",
+            "unit": "degC"
+          },
+          "visc1": {
+            "type": "number",
+            "description": "For ASTM liquid-viscosity calculation, viscosity (cP) at ASTM point 1.",
+            "unit": "cP"
+          },
+          "temp2": {
+            "type": "number",
+            "description": "For ASTM liquid-viscosity calculation, temperature at ASTM point 2.",
+            "unit": "degC"
+          },
+          "visc2": {
+            "type": "number",
+            "description": "For ASTM liquid-viscosity calculation, viscosity at ASTM point 2.",
+            "unit": "cP"
+          },
+          "deadOilTemp": {
+            "type": "array",
+            "description": "Temperature points for the temperature-vs-viscosity pair when deadOilModel is 7.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "deadOilVisc": {
+            "type": "array",
+            "description": "Viscosity points for the temperature-vs-viscosity pair when deadOilModel is 7.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "liveOilModel": {
+            "type": "integer",
+            "default": 0,
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "description": "Live-oil viscosity model. 0->Beggs_Robinson; 1->Kartoatmodjo_Schmidt; 2->Petrosky_Farshad. Valid for black-oil, compositional, and table models (in the table case, when productionFluid: {items: {blackOilViscModel}} is true)."
+          },
+          "undersaturatedOilModel": {
+            "type": "integer",
+            "default": 0,
+            "enum": [
+              0,
+              1,
+              2,
+              3,
+              4
+            ],
+            "description": "Undersaturated-oil viscosity model. 0-> Vasquez and Beggs; 1-> Kartoatmodjo_Schmidt; 2-> Petrosky_Farshad; 3-> Beal; 4-> Khan. Valid for black-oil, compositional, and flash-table models (in the table case, when productionFluid: {items: {blackOilViscModel}} is true)."
+          },
+          "blackOilViscModel": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0,
+            "description": "For flash-table mode, if this option is 1 it uses dead-oil, undersaturated-oil, and saturated-oil viscosity correlations from the black-oil model. If 0, viscosities from the table are used. Valid for flash-table mode (in compositional mode, all viscosity-related properties are computed by the black-oil model)."
+          },
+          "blackOilWaterModel": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 1,
+            "description": "For flash-table mode, if this option is 1 it uses black-oil water correlations to compute the Joule-Thomson coefficient. If 0, the Joule-Thomson coefficient from the table is used. Valid for flash-table mode (in compositional mode, all water-related properties are computed by the black-oil model)."
+          },
+          "userMolarFraction": {
+            "type": "boolean",
+            "default": false,
+            "description": "Indicates whether the user provides composition of this fluid in productionFluid: {items: {molarFraction}}. If false, composition is read from the .ctm table provided by initialConfig.pvtFile. Valid only for compositional simulations."
+          },
+          "molarFraction": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "Molar fractions of pseudocomponents (same sequence provided in the .ctm file referenced by initialConfig.pvtFile). Valid only for compositional simulations."
+            }
+          },
+          "userGORComp": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, in compositional mode the original molar fractions are corrected to match the value of the 'gor' variable."
+          }
+        }
+      }
+    },
+    "complementaryFluid": {
+      "type": "object",
+      "description": "Object containing data for the complementary fluid, a third liquid-phase fluid besides hydrocarbons and water. This fluid is inert, does not dissolve in gas, and does not slip relative to the hydrocarbon mixture. Examples include glycol or ethanol cushions (used to prevent hydrate formation before master valve opening), chemical inhibitor, and completion fluid (such as brine).",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the fluid is active."
+        },
+        "density": {
+          "type": "number",
+          "description": "Liquid density at standard conditions.",
+          "unit": "kg/m3"
+        },
+        "compressibility": {
+          "type": "number",
+          "description": "Liquid compressibility.",
+          "unit": "1/Pa"
+        },
+        "thermalExpansivity": {
+          "type": "number",
+          "description": "Liquid thermal expansivity.",
+          "unit": "1/K"
+        },
+        "surfaceTension": {
+          "type": "number",
+          "description": "Liquid surface tension.",
+          "unit": "N/m"
+        },
+        "specificHeat": {
+          "type": "number",
+          "description": "Liquid specific heat.",
+          "unit": "J/kg.K"
+        },
+        "conductivity": {
+          "type": "number",
+          "description": "Liquid conductivity.",
+          "unit": " W/m.K"
+        },
+        "temp1": {
+          "type": "number",
+          "description": "Temperature at ASTM point 1.",
+          "unit": "degC"
+        },
+        "visc1": {
+          "type": "number",
+          "description": "Viscosity at ASTM point 1.",
+          "unit": "cP"
+        },
+        "temp2": {
+          "type": "number",
+          "description": "Temperature at ASTM point 2.",
+          "unit": "degC"
+        },
+        "visc2": {
+          "type": "number",
+          "description": "Viscosity at ASTM point 2.",
+          "unit": "cP"
+        },
+        "salinity": {
+          "type": "number",
+          "description": "Water salinity when the complementary fluid is water or completion fluid.",
+          "unit": "g/(kg água)"
+        },
+        "complementaryFluidType": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2
+          ],
+          "default": 0,
+          "description": "Fluid type. 0 -> standard complementary fluid (requires all properties except salinity); 1 -> water (only salinity is needed); 2 -> similar to type 0, but friction reducer is internally calculated."
+        }
+      }
+    },
+    "valve": {
+      "type": "array",
+      "description": "Optional two-phase valve (for example, DHSV) using the Sachdeva model (https://doi.org/10.2118/15657-MS). As in single-phase valves, it is based on discharge coefficient and ratio between pipe and throat areas. For two-phase flow, the model also provides choking rules based on critical upstream/downstream pressure ratio. Note that this object does not include mandatory choke and master valves, which are defined in other objects.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the valve is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Valve identifier integer."
+          },
+          "cvCurve": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0,
+            "description": "Meaning of the curve used in 'opening'. If 0, values are ratios between valve free area and pipe area over time. If 1, values represent valve-stem displacement over time."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the valve is located in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants for valve events in this object's other vectors.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "opening": {
+            "type": "array",
+            "description": "Valve opening over time (area ratio or stem displacement, depending on 'cvCurve').",
+            "items": {
+              "type": "number"
+            }
+          },
+          "cd": {
+            "type": "number",
+            "default": 0.84,
+            "description": "Discharge coefficient according to the Sachdeva model (https://doi.org/10.2118/15657-MS)."
+          },
+          "x1": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "CV-curve abscissa (percentage of valve-stem displacement). Valid when cvCurve = 1."
+            }
+          },
+          "cv1": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "description": "CV-curve ordinate (valve coefficient; valve flow capacity per unit pressure using water as reference). Used to correlate stem displacement with valve opening. Valid when cvCurve = 1.",
+              "unit": "(gal/min)/(psi)"
+            }
+          }
+        }
+      }
+    },
+    "liquidSource": {
+      "type": "array",
+      "description": "Each object in this array represents a possible liquid source used in the system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the source is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Liquid-source identifier integer."
+          },
+          "prodFluidId": {
+            "type": "integer",
+            "description": "ID of the production fluid produced by this source."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the liquid source is located in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants for liquid-source events in this object's other vectors.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "temperature": {
+            "type": "array",
+            "description": "Source temperature over time.",
+            "items": {
+              "type": "number",
+              "unit": "degC"
+            }
+          },
+          "beta": {
+            "type": "array",
+            "description": "Source complementary-fluid ratio over time.",
+            "items": {
+              "type": "number",
+              "default": 0
+            }
+          },
+          "liquidFlowRate": {
+            "type": "array",
+            "description": "Source liquid volumetric flow rate at standard (dead-oil) conditions over time. Note that this liquid flow implies an associated in-situ free-gas flow based on properties of the fluid defined by prodFluidId and in-situ P and T.",
+            "items": {
+              "type": "number",
+              "unit": "sm3/d"
+            }
+          }
+        }
+      }
+    },
+    "massSource": {
+      "type": "array",
+      "description": "Each object in this array represents a possible mass source used in the system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the source is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Mass-source identifier integer."
+          },
+          "prodFluidId": {
+            "type": "integer",
+            "description": "ID of the production fluid produced by this source."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the mass source is located in the production system.",
+            "unit": "m"
+          },
+          "thermType": {
+            "type": "integer",
+            "default": 0,
+            "description": "If 0, gas flow is calculated from thermodynamic equilibrium at in-situ conditions based on hydrocarbon flow (difference between totalMassFlowRate and complementaryMassFlowRate), similar to liquidSource behavior. If 1, free-gas inflow must be provided via gasMassFlow."
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants for mass-source events in this object's other vectors.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "temperature": {
+            "type": "array",
+            "description": "Source temperature over time.",
+            "items": {
+              "type": "number",
+              "unit": "degC"
+            }
+          },
+          "totalMassFlowRate": {
+            "type": "array",
+            "description": "Total source mass flow rate over time.",
+            "items": {
+              "type": "number",
+              "unit": "kg/s"
+            }
+          },
+          "complementaryMassFlowRate": {
+            "type": "array",
+            "description": "Complementary-liquid mass flow rate of the source over time.",
+            "items": {
+              "type": "number",
+              "default": 0,
+              "unit": "kg/s"
+            }
+          },
+          "gasMassFlow": {
+            "type": "array",
+            "description": "Gas mass flow rate of the source over time. Valid only when termType = 1.",
+            "items": {
+              "type": "number",
+              "unit": "kg/s"
+            }
+          }
+        }
+      }
+    },
+    "gasSource": {
+      "type": "array",
+      "description": "Each object in this array represents a possible gas source used in the system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the source is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Gas-source identifier integer."
+          },
+          "dry": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, the source produces dry gas (uses the gasFluid object). If false, gas is rich (typical in gas pipelines); in this case, fluid must be defined in gasSource: {prodFluidId}, which may carry associated liquid (mass calculated by thermodynamic equilibrium) and impurities (defined as complementary fluid)."
+          },
+          "prodFluidId": {
+            "type": "integer",
+            "description": "ID of the production fluid produced by this source. Valid for gasSource: {dry: false}."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the gas source is located in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants for gas-source events in this object's other vectors.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "temperature": {
+            "type": "array",
+            "description": "Source temperature over time.",
+            "items": {
+              "type": "number",
+              "unit": "degC"
+            }
+          },
+          "gasFlowRate": {
+            "type": "array",
+            "description": "Gas-source flow rate over time.",
+            "items": {
+              "type": "number",
+              "unit": "sm3/d"
+            }
+          },
+          "complementaryFluidFlowRate": {
+            "type": "array",
+            "description": "Impurity fraction of gas-source flow rate over time (treated as complementary fluid).",
+            "items": {
+              "type": "number",
+              "default": 0,
+              "unit": "ppm"
+            }
+          }
+        }
+      }
+    },
+    "porousRadialSource": {
+      "type": "array",
+      "description": "Each object in this array represents a possible radial-porous source used in the system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the source is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Source identifier integer."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the source is located in the production system.",
+            "unit": "m"
+          },
+          "file": {
+            "type": "string",
+            "description": "Name of the JSON file describing this source."
+          }
+        }
+      }
+    },
+    "porous2DSource": {
+      "type": "array",
+      "description": "Each object in this array represents a possible 2D porous source used in the system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the source is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Source identifier integer."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the source is located in the production system.",
+            "unit": "m"
+          },
+          "file": {
+            "type": "string",
+            "description": "Name of the JSON file describing this source."
+          }
+        }
+      }
+    },
+    "gasLiftSource": {
+      "type": "array",
+      "description": "Each object in this array represents a possible gas-lift source (gas-lift valve, VGL) used in the system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the valve is active."
+          },
+          "annulusColumnFlag": {
+            "type": "boolean",
+            "default": true,
+            "description": "If false, the user must provide service-line pressure-tap position in 'serviceMeasuredLength'. If true, this position is internally computed to be at the same elevation as the production-line pressure tap ('prodMeasuredLength')."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Gas-lift source (VGL) identifier integer."
+          },
+          "prodMeasuredLength": {
+            "type": "number",
+            "description": "Measured length where the source (VGL) is located in the production line.",
+            "unit": "m"
+          },
+          "serviceMeasuredLength": {
+            "type": "number",
+            "description": "Measured length where the source (VGL) is located in the service line. Valid when annulusColumnFlag is false.",
+            "unit": "m"
+          },
+          "valveType": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 0,
+            "description": "VGL type; 0: orifice; 1: pressure; 2: Venturi."
+          },
+          "orificeDiameter": {
+            "type": "number",
+            "description": "Orifice diameter.",
+            "unit": "m"
+          },
+          "vglDischCoef": {
+            "type": "number",
+            "description": "Valve discharge coefficient (single-phase model).",
+            "default": 0.84
+          },
+          "liquidDischCoef": {
+            "type": "number",
+            "description": "Valve discharge coefficient (single-phase model) for liquid-flow condition (gas-lift unloading).",
+            "default": 0.9
+          },
+          "areaRatio": {
+            "type": "number",
+            "description": "Ratio between port area and diaphragm area (for pressure-calibrated valves, valveType 1), based on Marlim2 VGL model."
+          },
+          "calibrationPressure": {
+            "type": "number",
+            "description": "Calibration pressure inside valve bellows (for pressure-calibrated valve, valveType 1).",
+            "unit": "psi"
+          },
+          "calibrationTemperature": {
+            "type": "number",
+            "description": "Valve-bellows calibration temperature (for pressure-calibrated valve, valveType 1).",
+            "unit": "degF"
+          },
+          "outerDiameter": {
+            "type": "number",
+            "description": "Port diameter (for pressure-calibrated valve, valveType 1).",
+            "unit": "m"
+          }
+        }
+      }
+    },
+    "material": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a possible material to be used in production system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the material is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Material identifier integer."
+          },
+          "type": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2,
+              3
+            ],
+            "default": 0,
+            "description": "Material type. 0-> solid, 1-> fluid (user-defined), 2-> water, 3-> air."
+          },
+          "conductivity": {
+            "type": "number",
+            "description": "Material conductivity. Required for types 0 or 1.",
+            "unit": "W/m.K"
+          },
+          "specificHeat": {
+            "type": "number",
+            "description": "Material specific heat. Required for types 0 or 1.",
+            "unit": "J/kg.K"
+          },
+          "rho": {
+            "type": "number",
+            "description": "Material density. Required for types 0 or 1.",
+            "unit": "kg/m3"
+          },
+          "visc": {
+            "type": "number",
+            "description": "Viscosity (required only for type 1).",
+            "unit": "cP"
+          },
+          "beta": {
+            "type": "number",
+            "description": "Thermal expansivity (required only for type 1).",
+            "unit": "1/K"
+          }
+        }
+      }
+    },
+    "crossSection": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a possible cross-section used in the pipeline.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the cross-section is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Cross-section identifier integer."
+          },
+          "annular": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, the flow region is annular."
+          },
+          "outerDiameter": {
+            "type": "number",
+            "description": "For annular flow, largest diameter of the annular flow area (valid when annular = true)."
+          },
+          "innerDiameter": {
+            "type": "number",
+            "description": "For annular flow, smallest diameter of the annular flow area. If annular=false, this is the section inner diameter."
+          },
+          "roughness": {
+            "type": "number",
+            "description": "Absolute roughness.",
+            "unit": "m"
+          },
+          "layers": {
+            "type": "array",
+            "description": "Each object in this array corresponds to a layer in the cross-section. Layers are assembled from inner to outer according to JSON order.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "layerMeasurementType": {
+                  "type": "string",
+                  "enum": [
+                    "THICKNESS",
+                    "DIAMETER"
+                  ],
+                  "default": "DIAMETER",
+                  "description": "Layer added-length measurement type (by radial thickness or by diameter from pipe center to the layer outer circumference)."
+                },
+                "diameter": {
+                  "type": "number",
+                  "description": "Diameter from pipe center to the layer outer circumference. Valid when layerMeasurementType = DIAMETER.",
+                  "unit": "m"
+                },
+                "thickness": {
+                  "type": "number",
+                  "description": "Layer radial thickness. Valid when layerMeasurementType = THICKNESS.",
+                  "unit": "m"
+                },
+                "discretization": {
+                  "type": "integer",
+                  "default": 1,
+                  "description": "Number of discretizations considered in this layer for heat-transfer calculations."
+                },
+                "materialId": {
+                  "type": "integer",
+                  "description": "Identifier of the material that composes this layer."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "description": "Time configuration for the simulation.",
+      "properties": {
+        "finalTime": {
+          "type": "number",
+          "description": "Total simulation time.",
+          "unit": "s"
+        },
+        "times": {
+          "type": "array",
+          "description": "Time instants associated with maxDT values defined in this object.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          },
+          "default": [
+            0
+          ]
+        },
+        "maxDT": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "Maximum time-step increments associated with instants defined in the 'times' object.",
+            "unit": "s"
+          },
+          "default": [
+            5
+          ]
+        },
+        "segregationTime": {
+          "type": "array",
+          "unit": "s",
+          "items": {
+            "type": "number",
+            "description": "Time instants associated with 'segregation' values defined in this object. Optional."
+          }
+        },
+        "segregation": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "If set to 1, the simulator uses a special time-control mode associated with production shutdown (useful when segregation-process simulation is difficult). Optional."
+          }
+        },
+        "saveSnapshot": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "Time instants for writing snapshot (.snt) files.",
+            "unit": "s"
+          }
+        }
+      }
+    },
+    "productionPipe": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a production pipe segment. Segment changes are usually motivated by changes in diameter, pipe property, cross-section, or inclination.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the pipe segment is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Pipe-segment identifier integer."
+          },
+          "angle": {
+            "type": "number",
+            "description": "Production-pipe inclination relative to horizontal axis. Valid for {initialConfig: {xyMode = false}}, which is the default.",
+            "unit": "rad"
+          },
+          "xCoor": {
+            "type": "number",
+            "description": "X coordinate of this pipe segment end position, used for inclination inference. Valid for initialConfig: {xyMode: true} (otherwise inclination is obtained directly from 'angle').",
+            "unit": "m"
+          },
+          "yCoor": {
+            "type": "number",
+            "description": "Y coordinate of this pipe segment end position, used for inclination inference. Valid for initialConfig: {xyMode: true} (otherwise inclination is obtained directly from 'angle').",
+            "unit": "m"
+          },
+          "crossSectionId": {
+            "type": "integer",
+            "description": "ID of the cross-section used by this pipe segment."
+          },
+          "formationId": {
+            "type": "integer",
+            "description": "ID of the formation with which the pipe segment exchanges heat. If not informed, there is no formation; the pipe segment then exchanges heat with thermally coupled fluid or with marine/air environment."
+          },
+          "environment": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 0,
+            "description": "Infinite fluid with which the pipe segment exchanges heat. 0: user-defined; 1: seawater; 2: atmosphere. Required except when a formation is defined (formationId informed) or pipe segment is thermally coupled with annulus (thermalCoupling = 1)."
+          },
+          "convectionDirection": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0,
+            "description": "Indicates direction of convective attack by external fluid. 0: transversal; 1: longitudinal. Valid only when formationId is not informed. Usually 0 is used for pipe segment immersed in infinite medium and 1 for annulus coupling."
+          },
+          "thermalCoupling": {
+            "type": "integer",
+            "default": 0,
+            "enum": [
+              0,
+              1
+            ],
+            "description": "If set to 1, indicates this pipe segment is thermally coupled with a service pipe segment. The coupled service pipe segment must coincide in position, length, and discretization."
+          },
+          "grouping": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, discretization is read in grouped blocks. If false, each cell size is individually defined."
+          },
+          "discretization": {
+            "type": "array",
+            "description": "Objects in this array specify pipe-segment discretization logic (cell count and length). Valid for grouping = true and initialConfig.xyMode = false.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numCells": {
+                  "type": "integer",
+                  "description": "Number of cells."
+                },
+                "length": {
+                  "type": "number",
+                  "description": "Cell length.",
+                  "unit": "m"
+                }
+              }
+            }
+          },
+          "cellDx": {
+            "type": "array",
+            "description": "Array with each discretization length. Valid for grouping = false and initialConfig.xyMode = false.",
+            "items": {
+              "type": "number",
+              "unit": "m"
+            }
+          },
+          "numCellsXY": {
+            "type": "integer",
+            "description": "Number of pipe-segment cells for initialConfig: {xyMode: true}."
+          },
+          "initialConditions": {
+            "type": "object",
+            "description": "Object specifying initial conditions and heat-exchange variables with external environment.",
+            "properties": {
+              "measuredPosition": {
+                "type": "array",
+                "description": "Array of relative pipe-segment-length positions where this object's properties are defined. It must start at 0 and end at 1, with any number of points in between. Properties at other positions are linearly interpolated.",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "pressure": {
+                "type": "array",
+                "description": "Initial-condition pressures at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "kgf/cm2"
+                }
+              },
+              "temp": {
+                "type": "array",
+                "description": "Initial-condition temperatures at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "holdup": {
+                "type": "array",
+                "description": "Initial-condition holdup at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "complementaryFluidFraction": {
+                "type": "array",
+                "description": "Initial-condition complementary-fluid volumetric fractions at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active (initialConfig: {initialCondition: 0}) and complementary fluid exists and is active.",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "usl": {
+                "type": "array",
+                "description": "Initial-condition superficial liquid velocities at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "usg": {
+                "type": "array",
+                "description": "Initial-condition superficial gas velocities at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "ambientTemp": {
+                "type": "array",
+                "description": "Ambient temperatures at pipe-segment relative positions defined in measuredPosition. Always required except when production column is thermally coupled with annulus (thermalCoupling = 1).",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "ambientVel": {
+                "type": "array",
+                "description": "External-fluid velocities at pipe-segment relative positions defined in measuredPosition. Required except when production column is thermally coupled with annulus (thermalCoupling = 1) or when a formation is defined (formationId informed).",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "ambientConductivity": {
+                "type": "array",
+                "description": "External-medium thermal conductivities at pipe-segment relative positions defined in measuredPosition. Required except when production column is thermally coupled with annulus (thermalCoupling = 1), when formation is defined (formationId informed), or when environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "W/(m.K)"
+                }
+              },
+              "ambientSpecificHeat": {
+                "type": "array",
+                "unit": "J/(kg.K)",
+                "description": "External-medium specific heats at pipe-segment relative positions defined in measuredPosition. Required except when production column is thermally coupled with annulus (thermalCoupling = 1), when formation is defined (formationId informed), or when environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "J/(kg.K)"
+                }
+              },
+              "ambientDensity": {
+                "type": "array",
+                "description": "External-fluid densities at pipe-segment relative positions defined in measuredPosition. Required except when production column is thermally coupled with annulus (thermalCoupling = 1), when formation is defined (formationId informed), or when environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "kg/m3"
+                }
+              },
+              "ambientVisc": {
+                "type": "array",
+                "description": "External-fluid viscosities at pipe-segment relative positions defined in measuredPosition. Required except when production column is thermally coupled with annulus (thermalCoupling = 1), when formation is defined (formationId informed), or when environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "cP"
+                }
+              }
+            }
+          },
+          "correctionFactorHydro": {
+            "type": "integer",
+            "description": "Index of correctionFactorHydro vector element in 'correction' object used as adjustment factor to correct hydrostatic pressure loss in this pipe segment."
+          },
+          "correctionFactorFric": {
+            "type": "integer",
+            "description": "Index of correctionFactorFric vector element in 'correction' object used as adjustment factor to correct friction pressure loss in this pipe segment."
+          },
+          "correctionFactorTemp": {
+            "type": "integer",
+            "description": "Index of correctionFactorTemp vector element in 'correction' object used as adjustment factor to correct temperature gradient in this pipe segment."
+          },
+          "diffusion2d": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0,
+            "description": "If set to 1, this pipeline segment is buried and a 2D heat-transfer model is used based on JSON file in 'diffusion2dJson'."
+          },
+          "diffusion2dJson": {
+            "type": "string",
+            "description": "Name of JSON file detailing the 2D heat-transfer model when diffusion2d = 1."
+          },
+          "ssFlowModel": {
+            "type": "integer",
+            "description": "Black-box correlation used in this pipe segment when drift model is disabled (initialConfig: driftModel = false). Valid for steady-state mode. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill with Palmer correction; 13 = Dukler, Eaton and Flanigan; 14 = Dukler and Minami I; 15 = Dukler and Minami II."
+          },
+          "parallelNetworkThermalCoupling": {
+            "type": "integer",
+            "default": 0,
+            "description": ""
+          },
+          "diffusion3d": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "diffusion3dFE": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "number"
+            }
+          },
+          "diffusion3dCoupling": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "string"
+            }
+          },
+          "initialAndAmbientConditions": {
+            "type": "object",
+            "description": "",
+            "properties": {
+              "measuredPosition": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "temp": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "pressure": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "kgf/cm2"
+                }
+              },
+              "holdup": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "complementaryFluidFraction": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "usl": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "usg": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "ambientTemp": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "ambientVel": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "ambientConductivity": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "W/(m.K)"
+                }
+              },
+              "ambientSpecificHeat": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "J/(kg.K)"
+                }
+              },
+              "ambientDensity": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "kg/m3"
+                }
+              },
+              "ambientVisc": {
+                "type": "array",
+                "description": "",
+                "items": {
+                  "type": "number",
+                  "unit": "cP"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "servicePipe": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a service pipe segment. Segment changes are usually motivated by changes in diameter, pipe property, cross-section, or inclination.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the pipe segment is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Pipe-segment identifier integer."
+          },
+          "angle": {
+            "type": "number",
+            "description": "Service-pipe inclination relative to horizontal axis. Valid for {initialConfig: {xyMode = false}}, which is the default.",
+            "unit": "rad"
+          },
+          "xCoor": {
+            "type": "number",
+            "description": "X coordinate of this pipe segment end position, used for inclination inference. Valid for initialConfig: {xyMode: true} (otherwise inclination is obtained directly from 'angle').",
+            "unit": "m"
+          },
+          "yCoor": {
+            "type": "number",
+            "description": "Y coordinate of this pipe segment end position, used for inclination inference. Valid for initialConfig: {xyMode: true} (otherwise inclination is obtained directly from 'angle').",
+            "unit": "m"
+          },
+          "crossSectionId": {
+            "type": "integer",
+            "description": "ID of the cross-section used by this pipe segment."
+          },
+          "formationId": {
+            "type": "integer",
+            "description": "ID of the formation with which the pipe segment exchanges heat. If not informed, there is no formation; the pipe segment exchanges heat only with thermally coupled fluid or marine/air environment."
+          },
+          "environment": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 0,
+            "description": "Infinite fluid with which the pipe segment exchanges heat. 0: user-defined; 1: seawater; 2: atmosphere. Required except when a formation is defined (formationId informed)."
+          },
+          "convectionDirection": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0,
+            "description": "Indicates direction of convective attack by external fluid. 0: transversal; 1: longitudinal. Valid only when formationId is not informed. Usually 0 is used for ducts immersed in infinite medium; 1 is uncommon for service pipe segments."
+          },
+          "thermalCoupling": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "description": "If set to 1, indicates the pipe segment is thermally coupled with a production pipe segment."
+          },
+          "grouping": {
+            "type": "boolean",
+            "default": true,
+            "description": "If true, discretization is read in grouped blocks. If false, each cell size is individually defined."
+          },
+          "discretization": {
+            "type": "array",
+            "description": "Objects in this array specify pipe-segment discretization logic (cell count and length). Valid for grouping = true and initialConfig.xyMode = false.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "numCells": {
+                  "type": "integer",
+                  "description": "Number of cells."
+                },
+                "length": {
+                  "type": "number",
+                  "description": "Cell length.",
+                  "unit": "m"
+                }
+              }
+            }
+          },
+          "cellDx": {
+            "type": "array",
+            "description": "Array with each discretization length. Valid for grouping = false and initialConfig.xyMode = false.",
+            "items": {
+              "type": "number",
+              "unit": "m"
+            }
+          },
+          "numCellsXY": {
+            "type": "integer",
+            "description": "Number of pipe-segment cells for initialConfig: {xyMode: true}."
+          },
+          "initialConditions": {
+            "type": "object",
+            "description": "Object specifying initial conditions and heat-exchange variables with external environment.",
+            "properties": {
+              "measuredPosition": {
+                "type": "array",
+                "description": "Array defining relative pipe-segment-length positions where this object's properties are specified. It must start with 0 and end with 1. Properties at other pipe-segment positions are linearly interpolated.",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "pressure": {
+                "type": "array",
+                "description": "Initial-condition pressures at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "kgf/cm2"
+                }
+              },
+              "temp": {
+                "type": "array",
+                "description": "Initial-condition temperatures at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "gasMassFlowRate": {
+                "type": "array",
+                "description": "Initial-condition gas mass flow rate at pipe-segment relative positions defined in measuredPosition. Valid for transient simulations only when initialization by initial conditions is active, i.e., initialConfig: {initialCondition: 0}.",
+                "items": {
+                  "type": "number",
+                  "unit": "kg/s"
+                }
+              },
+              "ambientTemp": {
+                "type": "array",
+                "description": "Ambient temperatures at pipe-segment relative positions defined by measuredPosition. Always required.",
+                "items": {
+                  "type": "number",
+                  "unit": "degC"
+                }
+              },
+              "ambientVel": {
+                "type": "array",
+                "description": "External-fluid velocities at pipe-segment relative positions defined by measuredPosition. Required except when formationId is provided.",
+                "items": {
+                  "type": "number",
+                  "unit": "m/s"
+                }
+              },
+              "ambientConductivity": {
+                "type": "array",
+                "unit": "W/(m.K)",
+                "description": "External-medium thermal conductivities at pipe-segment relative positions defined by measuredPosition. Required except when formationId is provided or environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "W/(m.K)"
+                }
+              },
+              "ambientSpecificHeat": {
+                "type": "array",
+                "description": "External-medium specific heats at pipe-segment relative positions defined by measuredPosition. Required except when formationId is provided or environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "J/(kg/K)"
+                }
+              },
+              "ambientDensity": {
+                "type": "array",
+                "description": "External-fluid densities at pipe-segment relative positions defined by measuredPosition. Required except when formationId is provided or environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "kg/m3"
+                }
+              },
+              "ambientVisc": {
+                "type": "array",
+                "description": "External-fluid viscosities at pipe-segment relative positions defined by measuredPosition. Required except when formationId is provided or environment is marine/air (1 or 2).",
+                "items": {
+                  "type": "number",
+                  "unit": "cP"
+                }
+              }
+            }
+          },
+          "correctionFactorHydro": {
+            "type": "integer",
+            "description": "Index of the correctionFactorHydro vector element in 'correction' used as adjustment factor to correct hydrostatic pressure loss in this pipe segment."
+          },
+          "correctionFactorFric": {
+            "type": "integer",
+            "description": "Index of the correctionFactorFric vector element in 'correction' used as adjustment factor to correct friction pressure loss in this pipe segment."
+          },
+          "correctionFactorTemp": {
+            "type": "integer",
+            "description": "Index of the correctionFactorTemp vector element in 'correction' used as adjustment factor to correct temperature gradient in this pipe segment."
+          }
+        }
+      }
+    },
+    "ipr": {
+      "type": "array",
+      "description": "Inflow Performance Relationship (IPR) source, defining produced flow rate as a function of pressure difference between reservoir static pressure and well bottomhole pressure.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the IPR is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "IPR identifier integer."
+          },
+          "prodFluidId": {
+            "type": "integer",
+            "description": "ID of the production fluid produced by this source."
+          },
+          "prodFluidIndex": {
+            "type": "integer",
+            "description": "(Legacy, backward-compatibility) Same as prodFluidId."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Position where the IPR is located in the production line.",
+            "unit": "m"
+          },
+          "iprType": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "default": 1,
+            "description": "IPR model: 0 -> linear IPR; 1 -> combined Vogel; 2 -> Vogel."
+          },
+          "staticPressureTime": {
+            "type": "array",
+            "description": "Time instants corresponding to values in staticPressure array.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "staticPressure": {
+            "type": "array",
+            "description": "Reservoir static pressure over time.",
+            "items": {
+              "type": "number",
+              "unit": "kgf/cm2"
+            }
+          },
+          "qMaxTime": {
+            "type": "array",
+            "description": "Time instants corresponding to values in qMax array.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "qMax": {
+            "type": "array",
+            "description": "Maximum flow rate over time. Valid for iprType = 2 (Vogel).",
+            "items": {
+              "type": "number",
+              "unit": "sm3/d"
+            }
+          },
+          "temperaturesTime": {
+            "type": "array",
+            "description": "Time instants corresponding to values in temperatures array.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "temperatures": {
+            "type": "array",
+            "description": "Reservoir temperature over time.",
+            "items": {
+              "type": "number",
+              "unit": "degC"
+            }
+          },
+          "ipTime": {
+            "type": "array",
+            "description": "Time instants corresponding to values in ip array.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "ip": {
+            "type": "array",
+            "description": "Reservoir productivity index over time. Valid for iprType = 0 or 1 (linear and combined Vogel).",
+            "items": {
+              "type": "number",
+              "unit": "(sm3/d)/(kgf/cm2)"
+            }
+          },
+          "iiTime": {
+            "type": "array",
+            "description": "Time instants corresponding to values in ii array.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "ii": {
+            "type": "array",
+            "description": "Reservoir injectivity index over time. Valid for all three IPR types. Required for reverse-flow cases, especially in transient mode, and for injection wells.",
+            "items": {
+              "type": "number",
+              "unit": "(sm3/d)/(kgf/cm2)"
+            }
+          }
+        }
+      }
+    },
+    "esp": {
+      "type": "array",
+      "description": "Each object in this array corresponds to an ESP pump.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the ESP is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "ESP identifier integer."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the ESP is located in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants at which pump operating-frequency values are informed.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "frequency": {
+            "type": "array",
+            "description": "ESP rotational frequency over time, defining pump operation during simulation.",
+            "items": {
+              "type": "number",
+              "unit": "Hz"
+            }
+          },
+          "flowRate": {
+            "type": "array",
+            "description": "Flow-rate values of the ESP curve.",
+            "items": {
+              "type": "number",
+              "unit": "BPD"
+            }
+          },
+          "power": {
+            "type": "array",
+            "description": "Power values of the ESP curve.",
+            "items": {
+              "type": "number",
+              "unit": "hp"
+            }
+          },
+          "efficiency": {
+            "type": "array",
+            "description": "Efficiency values of the ESP curve.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "pumpHead": {
+            "type": "array",
+            "description": "Head values of the ESP curve.",
+            "items": {
+              "type": "number",
+              "unit": "ft"
+            }
+          },
+          "referenceFreq": {
+            "type": "number",
+            "description": "Reference frequency at which the curve was measured.",
+            "unit": "Hz"
+          },
+          "stage": {
+            "type": "integer",
+            "description": "Number of pump stages."
+          },
+          "manufacturerStage": {
+            "type": "integer",
+            "description": "Number of stages used by manufacturer when measuring the pump curve."
+          },
+          "motorEfficiency": {
+            "type": "number",
+            "description": "Motor efficiency."
+          },
+          "minFrequency": {
+            "type": "number",
+            "description": "Minimum ESP operating frequency.",
+            "unit": "Hz"
+          },
+          "hiCorrection": {
+            "type": "boolean",
+            "default": false,
+            "description": ""
+          }
+        }
+      }
+    },
+    "volumetricPump": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a volumetric pump (isochoric compression model).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the pump is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Pump identifier integer."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the pump is located in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants at which pump operating-frequency values are informed.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "frequency": {
+            "type": "array",
+            "description": "Pump rotational frequency over time.",
+            "items": {
+              "type": "number",
+              "unit": "Hz"
+            }
+          },
+          "capacity": {
+            "type": "number",
+            "description": "Pump-chamber volumetric capacity. Obtained volumetric flow equals volumetric capacity multiplied by rotational frequency.",
+            "unit": "cm3"
+          },
+          "polyFactor": {
+            "type": "number",
+            "description": "Polytropic factor used to define temperature increase due to compression process."
+          }
+        }
+      }
+    },
+    "pressureDrop": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a localized pressure increment.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether this pressure increment is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Pressure-increment identifier integer."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the pressure increment is located in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants for pressure-increment events in this object's other vectors.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "pressureDrop": {
+            "type": "array",
+            "description": "Pressure increments over time.",
+            "items": {
+              "type": "number",
+              "unit": "kgf/cm2"
+            }
+          },
+          "gasCompType": {
+            "type": "integer",
+            "default": 0,
+            "enum": [
+              0,
+              1,
+              2
+            ],
+            "description": "Defines gas compression process: 0 -> adiabatic, 1 -> polytropic, 2 -> isothermal."
+          },
+          "polyFacOrAdiabConst": {
+            "type": "number",
+            "description": "If gasCompType==1, this is the polytropic factor; otherwise it is the adiabatic constant."
+          },
+          "liquidEfficiency": {
+            "type": "number",
+            "default": 100,
+            "description": "Liquid-phase pumping efficiency (%). Useful when using pressure increment as an analogy for a volumetric pump. Total required power (used to define desired volumetric pump) is obtained by summing liquid pumping power and gas compression power."
+          },
+          "gasEfficiency": {
+            "type": "number",
+            "default": 100,
+            "description": "Gas-phase pumping efficiency (%). Useful when using pressure increment as an analogy for a volumetric pump. Total required power (used to define desired volumetric pump) is obtained by summing liquid pumping power and gas compression power."
+          }
+        }
+      }
+    },
+    "masterValve": {
+      "type": "object",
+      "description": "This object defines Wet Christmas Tree (WCT) valve properties in the production line. It should always be defined when WCT position needs to be indicated. In steady-state mode it only indicates position. In transient mode it must always be defined, including opening events. Operates with fixed discharge coefficient 0.84.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether Master1 valve is active."
+        },
+        "cvCurve": {
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ],
+          "description": "Meaning of the curve in 'opening'. If 0, values correspond to ratio between valve free area and pipe area over time. If 1, values correspond to valve stem displacement over time."
+        },
+        "activeAreaRatio": {
+          "type": "number",
+          "default": 0.4,
+          "description": "Threshold below which valve model is used. Above this value, valve is considered fully open to avoid numerical instabilities in transient mode. Valid for transient mode."
+        },
+        "measuredLength": {
+          "type": "number",
+          "description": "Measured length where Master1 valve is located in the production system.",
+          "unit": "m"
+        },
+        "time": {
+          "type": "array",
+          "description": "Time instants for Master1 events in this object's other vectors.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "opening": {
+          "type": "array",
+          "description": "Valve opening over time (ratio with pipe area).",
+          "items": {
+            "type": "number"
+          }
+        },
+        "x1": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "CV-curve abscissa (percentage of valve stem displacement). Valid for cvCurve = 1."
+          }
+        },
+        "cv1": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "CV-curve ordinate (valve coefficient; valve flow capacity per pressure unit using water as reference). Used to correlate stem displacement with valve opening. Valid for cvCurve = 1.",
+            "unit": "(gal/min)/(psi)"
+          }
+        }
+      }
+    },
+    "masterValve2": {
+      "type": "object",
+      "description": "WCT valve in the service line (currently simplified sphere/binary behavior: open for values below 0.5, closed for values above 0.5).",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether Master2 valve is active."
+        },
+        "measuredLength": {
+          "type": "number",
+          "description": "Measured length where Master2 valve is located in the service system.",
+          "unit": "m"
+        },
+        "time": {
+          "type": "array",
+          "description": "Time instants for Master2 events in this object's other vectors.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "opening": {
+          "type": "array",
+          "description": "Valve opening over time (ratio with pipe area).",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "pig": {
+      "type": "array",
+      "description": "Each object in this array corresponds to a pig to be launched and received in the production system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the pig is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Pig identifier integer."
+          },
+          "launcher": {
+            "type": "number",
+            "description": "Measured length where the pig is launched in the production system.",
+            "unit": "m"
+          },
+          "receiver": {
+            "type": "number",
+            "description": "Measured length where the pig is received in the production system.",
+            "unit": "m"
+          },
+          "time": {
+            "type": "number",
+            "description": "Time instant when the pig is launched.",
+            "unit": "s"
+          }
+        }
+      }
+    },
+    "pressureSource": {
+      "type": "array",
+      "description": "Leak/entry point between production system and fluid reservoir with specified pressure and temperature. This opening may allow leakage from production pipe segment to reservoir as well as inflow from external medium into production system.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the source is active."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Source identifier integer."
+          },
+          "fluidType": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 1,
+            "description": "If 1, external-environment hydrocarbon is assumed equal to current fluid in tubing; if 0, fluid is defined by prodFluidId."
+          },
+          "prodFluidId": {
+            "type": "integer",
+            "description": "ID of production fluid external to tubing. Valid when fluidType = 0."
+          },
+          "gasAmbient": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, only the gaseous fraction of external production fluid is admitted into tubing. Valid when fluidType = 0."
+          },
+          "check": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              -1
+            ],
+            "default": 0,
+            "description": "If 0 -> normal opening; allows flow in both directions: from tubing to environment and from environment to tubing. If 1 -> vacuum-breaker valve; blocks outflow from tubing, allowing only environment-to-tubing flow. If -1 -> check-valve behavior; blocks environment-to-tubing flow, allowing only tubing-to-environment flow."
+          },
+          "openingType": {
+            "type": "integer",
+            "enum": [
+              0,
+              1
+            ],
+            "default": 0,
+            "description": "0: opening size defined by ratio between opening area and tubing area; 1: opening size defined by ratio between opening diameter and tubing diameter."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length where the opening is located in the production system.",
+            "unit": "m"
+          },
+          "beta": {
+            "type": "number",
+            "default": 0,
+            "description": "Complementary-fluid ratio. When pressureSource is active, simulation-model complementary fluid is equivalent to fluid external to the opening."
+          },
+          "cd": {
+            "type": "number",
+            "default": 0.84,
+            "description": "Pressure-source discharge coefficient."
+          },
+          "temperature": {
+            "type": "number",
+            "description": "External temperature relative to tubing. Used to define source inflow/outflow rate.",
+            "unit": "degC"
+          },
+          "pressure": {
+            "type": "number",
+            "description": "External pressure relative to tubing. Used to define source inflow/outflow rate.",
+            "unit": "kgf/cm2"
+          },
+          "opening": {
+            "type": "array",
+            "description": "Opening values over time, as specified by openingType.",
+            "items": {
+              "type": "number"
+            }
+          },
+          "time": {
+            "type": "array",
+            "description": "Time instants at which opening events are informed.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "ambientFluidQuality": {
+            "type": "number",
+            "description": ""
+          },
+          "chokeTime": {
+            "type": "array",
+            "description": "",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          }
+        }
+      }
+    },
+    "gasInj": {
+      "type": "object",
+      "description": "Object with gas-lift injection boundary conditions in the service line.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "bcType": {
+          "type": "integer",
+          "description": "Boundary-condition type: 0 -> injection pressure, 1 -> injection flow rate. If initial condition is gas-lift unloading with unloading control, simulator automatically defines BCs using injection pressure without requiring gasInj object."
+        },
+        "time": {
+          "type": "array",
+          "description": "Time instants for gas-injection boundary-condition events in this object's other vectors.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "temperature": {
+          "type": "array",
+          "description": "Injection temperatures over time.",
+          "items": {
+            "type": "number",
+            "unit": "degC"
+          }
+        },
+        "gasFlowRate": {
+          "type": "array",
+          "description": "Injection flow rates over time.",
+          "items": {
+            "type": "number",
+            "unit": "sm3/d"
+          }
+        },
+        "injectionPressures": {
+          "type": "array",
+          "description": "Injection pressures over time.",
+          "items": {
+            "type": "number",
+            "unit": "kgf/cm2"
+          }
+        },
+        "initialFlowRateGuess": {
+          "type": "boolean",
+          "description": "For pressure-type BC, if true the first element of gasFlowRate is used as initial gas-flow guess. Useful to improve convergence.",
+          "default": false
+        }
+      }
+    },
+    "surfaceChoke": {
+      "type": "object",
+      "description": "Object defining the surface choke. It is analogous to the valve object, but with fixed position (end of production system).",
+      "properties": {
+        "cvCurve": {
+          "type": "integer",
+          "enum": [
+            0,
+            1
+          ],
+          "default": 0,
+          "description": "Meaning of the curve in opening. If 0, values are ratios between valve free area and pipe area over time. If 1, values represent valve-stem displacement over time."
+        },
+        "time": {
+          "type": "array",
+          "description": "Time instants for surface-choke events in this object's other vectors.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "opening": {
+          "type": "array",
+          "description": "Valve opening over time (ratio with pipe area).",
+          "items": {
+            "type": "number"
+          }
+        },
+        "dischargeCoefficient": {
+          "type": "number",
+          "default": 0.84,
+          "description": "Choke discharge coefficient."
+        },
+        "model": {
+          "type": "integer",
+          "enum": [
+            0
+          ],
+          "default": 0,
+          "description": "Valve model. 0: Sachdeva."
+        },
+        "x1": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "CV-curve abscissa (percentage of valve-stem displacement). Valid for cvCurve = 1."
+          }
+        },
+        "cv1": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "description": "CV-curve ordinate (valve coefficient; valve flow capacity per pressure unit referenced to water). Used to correlate stem displacement with valve opening. Valid for cvCurve = 1.",
+            "unit": "(gal/min)/(psi)"
+          }
+        }
+      }
+    },
+    "injectionChoke": {
+      "type": "object",
+      "description": "Object defining injection choke. It does not use CV and flow is always single-phase gas.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": ""
+        },
+        "time": {
+          "type": "array",
+          "description": "Time instants at which opening events are informed.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "opening": {
+          "type": "array",
+          "description": "Valve opening over time (ratio with pipe area).",
+          "items": {
+            "type": "number"
+          }
+        },
+        "dischargeCoefficient": {
+          "type": "number",
+          "description": "Injection choke discharge coefficient.",
+          "default": 0.9
+        }
+      }
+    },
+    "injectionWellBC": {
+      "type": "object",
+      "description": "Object with boundary-condition data for injection-well simulations.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "fluidType": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "description": "0: user-provided fluid (liquid) from complementaryFluid; 1: water (requires salinity); 2: CO2-rich gas via flash table (.tab Pvtsim file and production-fluid registration required); 3: CO2-rich gas via compositional model (.ctm Pvtsim file and production-fluid registration required)."
+        },
+        "salinity": {
+          "type": "number",
+          "unit": "g/(kg água)",
+          "description": "Injected-water salinity."
+        },
+        "pvtsimFile": {
+          "type": "string",
+          "description": "PVT table file name (.tab or .ctm)."
+        },
+        "boundaryCondition": {
+          "type": "integer",
+          "enum": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "description": "0: requires stdLiquidFlowRate and IPR; 1: requires injectionPressure and IPR; 2: requires bottomholePressure and IPR; 3: requires injectionPressure and bottomholePressure; 4: requires stdLiquidFlowRate and injectionPressure; 5: requires stdLiquidFlowRate and bottomholePressure. All require injectionTemp."
+        },
+        "injectionTemp": {
+          "type": "number",
+          "unit": "degC",
+          "description": "Injection temperature. Always required regardless of boundary-condition type."
+        },
+        "stdLiquidFlowRate": {
+          "type": "number",
+          "unit": "sm3/d",
+          "description": "Injection flow rate (required for boundaryCondition 0, 4, and 5). Name is historically liquid-oriented; gas injection is currently possible."
+        },
+        "injectionPressure": {
+          "type": "number",
+          "unit": "kgf/cm2",
+          "description": "Injection pressure (required for boundaryCondition 1, 3, and 4)."
+        },
+        "bottomholePressure": {
+          "type": "number",
+          "unit": "kgf/cm2",
+          "description": "Bottomhole pressure (required for boundaryCondition 2, 3, and 5)."
+        }
+      }
+    },
+    "separator": {
+      "type": "object",
+      "description": "Details of pressure dynamics downstream of the line (separator).",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether this object is active."
+        },
+        "time": {
+          "type": "array",
+          "description": "Time instants for pressure events in this object's other vectors.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "pressure": {
+          "type": "array",
+          "description": "Separator pressure over time.",
+          "items": {
+            "type": "number",
+            "unit": "kgf/cm2"
+          }
+        }
+      }
+    },
+    "correction": {
+      "type": "object",
+      "description": "Adjustment factors multiplying dP/dL and dT/dL. Useful for calibrating simulation model to production tests.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "correctionFactorHydro": {
+          "type": "array",
+          "description": "List of possible adjustment factors to correct hydrostatic pressure loss in production/service pipe segments. A factor is applied to a pipe segment by its index (position) in this list.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "correctionFactorFric": {
+          "type": "array",
+          "description": "List of possible adjustment factors to correct friction pressure loss in production/service pipe segments. A factor is applied to a pipe segment by its index (position) in this list.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "correctionFactorTemp": {
+          "type": "array",
+          "description": "List of possible adjustment factors to correct temperature gradient in production/service pipe segments. A factor is applied to a pipe segment by its index (position) in this list.",
+          "items": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "productionProfile": {
+      "type": "object",
+      "description": "Specifies which production-line variables will have profiles (linewise variations) recorded in output file.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "time": {
+          "type": "array",
+          "description": "Specifies time instants when profiles will be recorded. Valid for transient simulations.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "pressure": {
+          "type": "boolean",
+          "description": "Pressure (kgf/cm2)."
+        },
+        "temperature": {
+          "type": "boolean",
+          "description": "Temperature (degC)."
+        },
+        "holdup": {
+          "type": "boolean",
+          "description": "Liquid holdup."
+        },
+        "complementaryFluidFraction": {
+          "type": "boolean",
+          "description": "Complementary-fluid volumetric fraction relative to liquid phase."
+        },
+        "usg": {
+          "type": "boolean",
+          "description": "Gas superficial velocity (m/s)."
+        },
+        "usl": {
+          "type": "boolean",
+          "description": "Liquid superficial velocity (m/s)."
+        },
+        "ug": {
+          "type": "boolean",
+          "description": "Gas velocity (m/s)."
+        },
+        "ul": {
+          "type": "boolean",
+          "description": "Liquid velocity (m/s)."
+        },
+        "flowPattern": {
+          "type": "boolean",
+          "description": "Flow-pattern indicator: -2 = annular or churn, -1 = stratified, 0 = single-phase, 1 = bubble, 2 = slug."
+        },
+        "liquidViscosity": {
+          "type": "boolean",
+          "description": "Liquid viscosity (cP)."
+        },
+        "gasViscosity": {
+          "type": "boolean",
+          "description": "Gas viscosity (cP)."
+        },
+        "gasInSituDensity": {
+          "type": "boolean",
+          "description": "In-situ gas density (kg/m3)."
+        },
+        "liquidInSituDensity": {
+          "type": "boolean",
+          "description": "In-situ liquid density (kg/m3)."
+        },
+        "mixtureDensity": {
+          "type": "boolean",
+          "description": "In-situ mixture density (kg/m3)."
+        },
+        "SR": {
+          "type": "boolean",
+          "description": "In-situ solubility ratio (Sm3/Sm3)."
+        },
+        "gasMassFlowRate": {
+          "type": "boolean",
+          "description": "Gas mass flow rate (kg/s)."
+        },
+        "liquidMassFlowRate": {
+          "type": "boolean",
+          "description": "Liquid mass flow rate (kg/s)."
+        },
+        "c0": {
+          "type": "boolean",
+          "description": "Drift-flux model distribution coefficient."
+        },
+        "driftVelocity": {
+          "type": "boolean",
+          "description": "Drift-flux slip velocity (m/s)."
+        },
+        "gasOilRatio": {
+          "type": "boolean",
+          "description": "Gas-oil ratio (sm3/sm3)."
+        },
+        "gasStdDensity": {
+          "type": "boolean",
+          "description": "Gas density at standard conditions relative to air."
+        },
+        "yCO2": {
+          "type": "boolean",
+          "description": "CO2 molar fraction in vapor phase (black-oil only)."
+        },
+        "heat": {
+          "type": "boolean",
+          "description": "Heat flux between flow and wall (W/m)."
+        },
+        "massTransferRate": {
+          "type": "boolean",
+          "description": "Interphase mass transfer (kg/[s m])."
+        },
+        "cpGas": {
+          "type": "boolean",
+          "description": "Gas specific heat at constant pressure (J/[kg C])."
+        },
+        "cpLiquid": {
+          "type": "boolean",
+          "description": "Liquid specific heat at constant pressure (J/[kg C])."
+        },
+        "stdLiqFlowRate": {
+          "type": "boolean",
+          "description": "Standard volumetric flow rate of dead oil (Sm3/d)."
+        },
+        "stdLiqWaterFlowRate": {
+          "type": "boolean",
+          "description": "Standard volumetric flow rate of dead oil + water (Sm3/d)."
+        },
+        "stdTotalLiqFlowRate": {
+          "type": "boolean",
+          "description": "Standard volumetric flow rate of dead oil + water + complementary fluid (Sm3/d)."
+        },
+        "stdGasFlowRate": {
+          "type": "boolean",
+          "description": "Standard volumetric flow rate of free + dissolved gas (Sm3/d)."
+        },
+        "api": {
+          "type": "boolean",
+          "description": "Dead-oil API gravity."
+        },
+        "bsw": {
+          "type": "boolean",
+          "description": "Volumetric BSW."
+        },
+        "hydrostaticPressureGradient": {
+          "type": "boolean",
+          "description": "Hydrostatic component of pressure loss (Pa/m)."
+        },
+        "frictionPressureGradient": {
+          "type": "boolean",
+          "description": "Friction component of pressure loss (Pa/m)."
+        },
+        "term1": {
+          "type": "boolean",
+          "description": "Mass-flow relation term 1 (for phase mass-flow consistency checks), kg/s."
+        },
+        "term2": {
+          "type": "boolean",
+          "description": "Mass-flow relation term 2 (for phase mass-flow consistency checks), kg/s."
+        },
+        "dissolvedGasDensity": {
+          "type": "boolean",
+          "description": "In-situ dissolved-gas density."
+        },
+        "freeGasDensity": {
+          "type": "boolean",
+          "description": "In-situ free-gas density."
+        },
+        "internalReynolds": {
+          "type": "boolean",
+          "description": "Mixture internal Reynolds number."
+        },
+        "externalReynolds": {
+          "type": "boolean",
+          "description": "External Reynolds number for atmospheric air, seawater, or annulus gas."
+        },
+        "internalGrashof": {
+          "type": "boolean",
+          "description": "Mixture internal Grashof number."
+        },
+        "externalGrashof": {
+          "type": "boolean",
+          "description": "External Grashof number for atmospheric air, seawater, or annulus gas."
+        },
+        "internalNusselt": {
+          "type": "boolean",
+          "description": "Mixture internal Nusselt number."
+        },
+        "externalNusselt": {
+          "type": "boolean",
+          "description": "External Nusselt number for atmospheric air, seawater, or annulus gas."
+        },
+        "internalPrandtl": {
+          "type": "boolean",
+          "description": "Mixture internal Prandtl number."
+        },
+        "externalPrandtl": {
+          "type": "boolean",
+          "description": "External Prandtl number for atmospheric air, seawater, or annulus gas."
+        },
+        "froude": {
+          "type": "boolean",
+          "description": "Froude number."
+        },
+        "formationVolumeFactor": {
+          "type": "boolean",
+          "description": "Formation volume factor."
+        },
+        "internalHeatCoef": {
+          "type": "boolean",
+          "description": "Mixture internal film coefficient (W/[m2 K])."
+        },
+        "externalHeatCoef": {
+          "type": "boolean",
+          "description": "External film coefficient (W/[m2 K])."
+        },
+        "ambientTemperature": {
+          "type": "boolean",
+          "description": "Ambient temperature (degC) for atmospheric air, seawater, or formation (geothermal profile)."
+        },
+        "gasPrandtl": {
+          "type": "boolean",
+          "description": "Gas Prandtl number."
+        },
+        "liquidPrandtl": {
+          "type": "boolean",
+          "description": "Liquid Prandtl number."
+        },
+        "pseudoLiquid": {
+          "type": "boolean",
+          "description": "Chemical-species (pseudocomponent) molar fractions in liquid phase. Valid for compositional fluid models."
+        },
+        "pseudoGas": {
+          "type": "boolean",
+          "description": "Chemical-species (pseudocomponent) molar fractions in vapor phase. Valid for compositional fluid models."
+        },
+        "pseudoMix": {
+          "type": "boolean",
+          "description": "Chemical-species (pseudocomponent) molar fractions in combined liquid+vapor hydrocarbon phases. Valid for compositional fluid models."
+        },
+        "residenceTime": {
+          "type": "boolean",
+          "description": "Complementary-fluid residence time (s)."
+        },
+        "frictionReducer": {
+          "type": "boolean",
+          "description": "Friction-reduction factor. Applicable only when complementary fluid represents friction reducer."
+        },
+        "angle": {
+          "type": "boolean",
+          "description": "Pipe-segment angle (rad)."
+        }
+      }
+    },
+    "serviceProfile": {
+      "type": "object",
+      "description": "Specifies which service-line variables will have profiles (linewise variations) recorded in output file.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "time": {
+          "type": "array",
+          "description": "Specifies time instants when profiles will be recorded. Valid for transient simulations.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "pressure": {
+          "type": "boolean",
+          "description": "Pressure (kgf/cm2)."
+        },
+        "temperature": {
+          "type": "boolean",
+          "description": "Temperature (degC)."
+        },
+        "usg": {
+          "type": "boolean",
+          "description": "Gas superficial velocity (m/s)."
+        },
+        "ug": {
+          "type": "boolean",
+          "description": "Gas velocity (m/s)."
+        },
+        "shearStress": {
+          "type": "boolean",
+          "description": "Shear stress (N/m2)."
+        },
+        "gasViscosity": {
+          "type": "boolean",
+          "description": "Gas viscosity (cP)."
+        },
+        "gasInSituDensity": {
+          "type": "boolean",
+          "description": "In-situ gas density (kg/m3)."
+        },
+        "gasMassFlowRate": {
+          "type": "boolean",
+          "description": "Gas mass flow rate (kg/s)."
+        },
+        "stdGasFlowRate": {
+          "type": "boolean",
+          "description": "Standard gas volumetric flow rate (Sm3/d)."
+        },
+        "frictionPressureGradient": {
+          "type": "boolean",
+          "description": "Friction component of pressure loss (Pa/m)."
+        },
+        "heat": {
+          "type": "boolean",
+          "description": "Heat flux between flow and wall (W/m)."
+        },
+        "hydrostaticPressureGradient": {
+          "type": "boolean",
+          "description": "Hydrostatic component of pressure loss (Pa/m)."
+        },
+        "internalReynolds": {
+          "type": "boolean",
+          "description": "Internal Reynolds number."
+        },
+        "externalReynolds": {
+          "type": "boolean",
+          "description": "External-fluid Reynolds number (atmospheric air, seawater, etc)."
+        },
+        "internalGrashof": {
+          "type": "boolean",
+          "description": "Internal Grashof number."
+        },
+        "externalGrashof": {
+          "type": "boolean",
+          "description": "External-fluid Grashof number (atmospheric air, seawater, etc)."
+        },
+        "internalNusselt": {
+          "type": "boolean",
+          "description": "Internal Nusselt number."
+        },
+        "externalNusselt": {
+          "type": "boolean",
+          "description": "External-fluid Nusselt number (atmospheric air, seawater, etc)."
+        },
+        "internalPrandtl": {
+          "type": "boolean",
+          "description": "Internal Prandtl number."
+        },
+        "externalPrandtl": {
+          "type": "boolean",
+          "description": "External-fluid Prandtl number (atmospheric air, seawater, etc)."
+        },
+        "internalHeatCoef": {
+          "type": "boolean",
+          "description": "Internal film coefficient (W/[m2 K])."
+        },
+        "externalHeatCoef": {
+          "type": "boolean",
+          "description": "External film coefficient (W/[m2 K])."
+        },
+        "ambientTemperature": {
+          "type": "boolean",
+          "description": "Ambient temperature (degC) for atmospheric air, seawater, or formation (geothermal profile)."
+        },
+        "angle": {
+          "type": "boolean",
+          "description": "Pipe-segment angle (rad)."
+        }
+      }
+    },
+    "productionTrend": {
+      "type": "array",
+      "description": "Specifies which production-line variables will have trends (time variations) recorded in output file.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the item is active."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length of the point in production line.",
+            "unit": "m"
+          },
+          "dt": {
+            "type": "number",
+            "description": "Time interval between records.",
+            "unit": "s"
+          },
+          "label": {
+            "type": "string",
+            "description": "Item label."
+          },
+          "pressure": {
+            "type": "boolean",
+            "description": "Pressure (kgf/cm2)."
+          },
+          "temperature": {
+            "type": "boolean",
+            "description": "Temperature (degC)."
+          },
+          "holdup": {
+            "type": "boolean",
+            "description": "Liquid holdup."
+          },
+          "complementaryFluidFraction": {
+            "type": "boolean",
+            "description": "Complementary-fluid volumetric fraction relative to liquid phase."
+          },
+          "usg": {
+            "type": "boolean",
+            "description": "Gas superficial velocity (m/s)."
+          },
+          "usl": {
+            "type": "boolean",
+            "description": "Liquid superficial velocity (m/s)."
+          },
+          "ug": {
+            "type": "boolean",
+            "description": "Gas velocity (m/s)."
+          },
+          "ul": {
+            "type": "boolean",
+            "description": "Liquid velocity (m/s)."
+          },
+          "flowPattern": {
+            "type": "boolean",
+            "description": "Flow-pattern indicator: -2 = annular or churn, -1 = stratified, 0 = single-phase, 1 = bubble, 2 = slug."
+          },
+          "liquidViscosity": {
+            "type": "boolean",
+            "description": "Liquid viscosity (cP)."
+          },
+          "gasViscosity": {
+            "type": "boolean",
+            "description": "Gas viscosity (cP)."
+          },
+          "gasInSituDensity": {
+            "type": "boolean",
+            "description": "In-situ gas density (kg/m3)."
+          },
+          "liquidInSituDensity": {
+            "type": "boolean",
+            "description": "In-situ liquid density (kg/m3)."
+          },
+          "gasMassFlowRate": {
+            "type": "boolean",
+            "description": "Gas mass flow rate (kg/s)."
+          },
+          "liquidMassFlowRate": {
+            "type": "boolean",
+            "description": "Liquid mass flow rate (kg/s)."
+          },
+          "c0": {
+            "type": "boolean",
+            "description": "Drift-flux model distribution coefficient."
+          },
+          "driftVelocity": {
+            "type": "boolean",
+            "description": "Drift-flux slip velocity (m/s)."
+          },
+          "gasOilRatio": {
+            "type": "boolean",
+            "description": "Gas-oil ratio (sm3/sm3)."
+          },
+          "gasStdDensity": {
+            "type": "boolean",
+            "description": "Gas density at standard conditions relative to air."
+          },
+          "yCO2": {
+            "type": "boolean",
+            "description": "CO2 molar fraction in vapor phase (black-oil only)."
+          },
+          "heat": {
+            "type": "boolean",
+            "description": "Heat flux between flow and wall (W/m)."
+          },
+          "massTransferRate": {
+            "type": "boolean",
+            "description": "Interphase mass transfer (kg/[s m])."
+          },
+          "stdLiqFlowRate": {
+            "type": "boolean",
+            "description": "Standard volumetric flow rate of dead oil (Sm3/d)."
+          },
+          "stdLiqWaterFlowRate": {
+            "type": "boolean",
+            "description": "Standard volumetric flow rate of dead oil + water (Sm3/d)."
+          },
+          "stdTotalLiqFlowRate": {
+            "type": "boolean",
+            "description": "Standard volumetric flow rate of dead oil + water + complementary fluid (Sm3/d)."
+          },
+          "stdGasFlowRate": {
+            "type": "boolean",
+            "description": "Standard volumetric flow rate of free + dissolved gas (Sm3/d)."
+          },
+          "api": {
+            "type": "boolean",
+            "description": "Dead-oil API gravity."
+          },
+          "bsw": {
+            "type": "boolean",
+            "description": "Volumetric BSW."
+          },
+          "hydrostaticPressureGradient": {
+            "type": "boolean",
+            "description": "Hydrostatic component of pressure loss (Pa/m)."
+          },
+          "frictionPressureGradient": {
+            "type": "boolean",
+            "description": "Friction component of pressure loss (Pa/m)."
+          },
+          "dissolvedGasDensity": {
+            "type": "boolean",
+            "description": "In-situ dissolved-gas density."
+          },
+          "freeGasDensity": {
+            "type": "boolean",
+            "description": "In-situ free-gas density."
+          },
+          "internalReynolds": {
+            "type": "boolean",
+            "description": "Mixture internal Reynolds number."
+          },
+          "externalReynolds": {
+            "type": "boolean",
+            "description": "External Reynolds number for atmospheric air, seawater, or annulus gas."
+          },
+          "internalGrashof": {
+            "type": "boolean",
+            "description": "Mixture internal Grashof number."
+          },
+          "externalGrashof": {
+            "type": "boolean",
+            "description": "External Grashof number for atmospheric air, seawater, or annulus gas."
+          },
+          "internalNusselt": {
+            "type": "boolean",
+            "description": "Mixture internal Nusselt number."
+          },
+          "externalNusselt": {
+            "type": "boolean",
+            "description": "External Nusselt number for atmospheric air, seawater, or annulus gas."
+          },
+          "internalPrandtl": {
+            "type": "boolean",
+            "description": "Mixture internal Prandtl number."
+          },
+          "externalPrandtl": {
+            "type": "boolean",
+            "description": "External Prandtl number for atmospheric air, seawater, or annulus gas."
+          },
+          "froude": {
+            "type": "boolean",
+            "description": "Froude number."
+          },
+          "solubRatio": {
+            "type": "boolean",
+            "description": "In-situ solubility ratio (Sm3/Sm3)."
+          },
+          "formationVolumeFactor": {
+            "type": "boolean",
+            "description": "Formation volume factor."
+          },
+          "internalHeatCoef": {
+            "type": "boolean",
+            "description": "Mixture internal film coefficient (W/[m2 K])."
+          },
+          "externalHeatCoef": {
+            "type": "boolean",
+            "description": "External film coefficient (W/[m2 K])."
+          },
+          "sourceLiqMassFlow": {
+            "type": "boolean",
+            "description": "Liquid mass flow rate (Hydrocarbon+Water) (kg/s) from source at discretization cell."
+          },
+          "sourceGasMassFlow": {
+            "type": "boolean",
+            "description": "Gas mass flow rate (kg/s) from source at discretization cell."
+          },
+          "sourceCompMassFlow": {
+            "type": "boolean",
+            "description": "Complementary-fluid mass flow rate (kg/s) from source at discretization cell."
+          },
+          "chokeDownstreamTemp": {
+            "type": "boolean",
+            "description": "Temperature (degC) downstream of surface choke (end of production system)."
+          },
+          "pumpDeltaP": {
+            "type": "boolean",
+            "description": "Pump pressure increment (kgf/cm2) at pump in discretization cell."
+          },
+          "pumpPower": {
+            "type": "boolean",
+            "description": "Pumping power (kW) at pump in discretization cell."
+          },
+          "master1UpstreamVol": {
+            "type": "boolean",
+            "description": "In-situ liquid volume upstream of Master1 (m3)."
+          },
+          "master1DownstreamVol": {
+            "type": "boolean",
+            "description": "In-situ liquid volume downstream of Master1 (m3)."
+          },
+          "master1UpstreamVolStd": {
+            "type": "boolean",
+            "description": "Standard liquid volume upstream of Master1 (sm3)."
+          },
+          "master1DownstreamVolStd": {
+            "type": "boolean",
+            "description": "Standard liquid volume downstream of Master1 (sm3)."
+          },
+          "eigenVal": {
+            "type": "boolean",
+            "description": "Wave-family celerity (m/s) (important for advanced numerical debugging)."
+          },
+          "eigenVelocity": {
+            "type": "boolean",
+            "description": "Eigenvector component, adiabatic condition, wave family (important for advanced numerical debugging)."
+          },
+          "fluctuation": {
+            "type": "boolean",
+            "description": "Wave-family fluctuation component (important for advanced numerical debugging)."
+          }
+        }
+      }
+    },
+    "serviceTrend": {
+      "type": "array",
+      "description": "Specifies which service-line variables will have trends (time variations) recorded in output file.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the item is active."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length of the point in production line."
+          },
+          "dt": {
+            "type": "number",
+            "description": "Time interval between records."
+          },
+          "label": {
+            "type": "string",
+            "description": "Item label."
+          },
+          "pressure": {
+            "type": "boolean",
+            "description": "Pressure (kgf/cm2)."
+          },
+          "temperature": {
+            "type": "boolean",
+            "description": "Temperature (degC)."
+          },
+          "usg": {
+            "type": "boolean",
+            "description": "Gas superficial velocity (m/s)."
+          },
+          "ug": {
+            "type": "boolean",
+            "description": "Gas velocity (m/s)."
+          },
+          "shearStress": {
+            "type": "boolean",
+            "description": "Shear stress (N/m2)."
+          },
+          "gasViscosity": {
+            "type": "boolean",
+            "description": "Gas viscosity (cP)."
+          },
+          "gasInSituDensity": {
+            "type": "boolean",
+            "description": "In-situ gas density (kg/m3)."
+          },
+          "gasMassFlowRate": {
+            "type": "boolean",
+            "description": "Gas mass flow rate (kg/s)."
+          },
+          "hydrostaticPressureGradient": {
+            "type": "boolean",
+            "description": "Hydrostatic component of pressure loss (Pa/m)."
+          },
+          "frictionPressureGradient": {
+            "type": "boolean",
+            "description": "Friction component of pressure loss (Pa/m)."
+          },
+          "heat": {
+            "type": "boolean",
+            "description": "Heat flux between flow and wall (W/m)."
+          },
+          "stdGasFlowRate": {
+            "type": "boolean",
+            "description": "Standard gas volumetric flow rate (Sm3/d)."
+          },
+          "vglStagePressure": {
+            "type": "boolean",
+            "description": "VGL casing pressure (upstream) at discretization cell (kgf/cm2)."
+          },
+          "vglStageTemp": {
+            "type": "boolean",
+            "description": "VGL casing temperature (upstream) at discretization cell (degC)."
+          },
+          "vglThroatPressure": {
+            "type": "boolean",
+            "description": "VGL throat pressure (vena contracta) at discretization cell (kgf/cm2)."
+          },
+          "vglThroatTemp": {
+            "type": "boolean",
+            "description": "VGL throat temperature (vena contracta) at discretization cell (degC)."
+          },
+          "vglFlowRate": {
+            "type": "boolean",
+            "description": "Volumetric flow rate in VGL (m3/s)."
+          },
+          "maxThroatVelocity": {
+            "type": "boolean",
+            "description": "Mean velocity in VGL throat (vena contracta) at discretization cell (m/s)."
+          },
+          "internalReynolds": {
+            "type": "boolean",
+            "description": "Internal Reynolds number."
+          },
+          "externalReynolds": {
+            "type": "boolean",
+            "description": "External-fluid Reynolds number (atmospheric air, seawater, etc)."
+          },
+          "internalGrashof": {
+            "type": "boolean",
+            "description": "Internal Grashof number."
+          },
+          "externalGrashof": {
+            "type": "boolean",
+            "description": "External-fluid Grashof number (atmospheric air, seawater, etc)."
+          },
+          "internalNusselt": {
+            "type": "boolean",
+            "description": "Internal Nusselt number."
+          },
+          "externalNusselt": {
+            "type": "boolean",
+            "description": "External-fluid Nusselt number (atmospheric air, seawater, etc)."
+          },
+          "internalPrandtl": {
+            "type": "boolean",
+            "description": "Internal Prandtl number."
+          },
+          "externalPrandtl": {
+            "type": "boolean",
+            "description": "External-fluid Prandtl number (atmospheric air, seawater, etc)."
+          },
+          "froude": {
+            "type": "boolean",
+            "description": "Froude number."
+          },
+          "internalHeatCoef": {
+            "type": "boolean",
+            "description": "Internal film coefficient (W/[m2 K])."
+          },
+          "externalHeatCoef": {
+            "type": "boolean",
+            "description": "External film coefficient (W/[m2 K])."
+          }
+        }
+      }
+    },
+    "crossProductionProfile": {
+      "type": "object",
+      "description": "Records radial temperature profiles at specific cross sections of production line.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "time": {
+          "type": "array",
+          "description": "Specifies time instants when profiles will be recorded. Valid for transient simulations.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "measuredLength": {
+          "type": "array",
+          "description": "Profile positions in production line.",
+          "items": {
+            "type": "number",
+            "unit": "m"
+          }
+        }
+      }
+    },
+    "crossServiceProfile": {
+      "type": "object",
+      "description": "Records radial temperature profiles at specific cross sections of service line.",
+      "properties": {
+        "active": {
+          "type": "boolean",
+          "description": "Indicates whether the object is active."
+        },
+        "time": {
+          "type": "array",
+          "description": "Specifies time instants when profiles will be recorded. Valid for transient simulations.",
+          "items": {
+            "type": "number",
+            "unit": "s"
+          }
+        },
+        "measuredLength": {
+          "type": "array",
+          "description": "Profile position in service line.",
+          "items": {
+            "type": "number",
+            "unit": "m"
+          }
+        }
+      }
+    },
+    "crossProductionTrend": {
+      "type": "array",
+      "description": "Specifies recording of temperature trends (time evolutions) at specific cross-sectional points in production line.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Specifies whether item is active."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length of point in production line."
+          },
+          "layerIndex": {
+            "type": "integer",
+            "description": "Cross-sectional layer."
+          },
+          "discretization": {
+            "type": "integer",
+            "description": "Layer discretization point."
+          },
+          "dt": {
+            "type": "number",
+            "description": "Time interval between records."
+          },
+          "label": {
+            "type": "string",
+            "description": "Item label."
+          }
+        }
+      }
+    },
+    "crossServiceTrend": {
+      "type": "array",
+      "description": "Specifies recording of temperature trends (time evolutions) at specific cross-sectional points in service line.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Specifies whether item is active."
+          },
+          "measuredLength": {
+            "type": "number",
+            "description": "Measured length of point in service line."
+          },
+          "layerIndex": {
+            "type": "integer",
+            "description": "Cross-sectional layer."
+          },
+          "discretization": {
+            "type": "integer",
+            "description": "Layer discretization point."
+          },
+          "dt": {
+            "type": "number",
+            "description": "Time interval between records."
+          },
+          "label": {
+            "type": "string",
+            "description": "Item label."
+          }
+        }
+      }
+    },
+    "screenConfig": {
+      "type": "array",
+      "description": "Specifies columns to print on screen during simulation execution.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Indicates whether the item is active."
+          },
+          "tubing": {
+            "type": "boolean",
+            "description": "If true, production line. If false, service line."
+          },
+          "cellIndex": {
+            "type": "integer",
+            "description": "Cell position for printed information."
+          },
+          "variable": {
+            "type": "integer",
+            "enum": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "description": "If tubing = true: 1 model indicator (includes liquid-density time-derivative terms), 2 temperature, 3 void fraction, 4 complementary-fluid fraction, 5 gas superficial velocity, 6 liquid superficial velocity. If tubing = false: 1 pressure, 2 temperature, 3 gas velocity."
+          }
+        }
+      }
+    },
+    "wax": {
+      "type": "object",
+      "description": "",
+      "properties": {
+        "waxFile": {
+          "type": "string",
+          "description": ""
+        },
+        "userPorosity": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "porosity": {
+          "type": "number",
+          "description": ""
+        },
+        "userC2C3": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "c2": {
+          "type": "number",
+          "description": ""
+        },
+        "c3": {
+          "type": "number",
+          "description": ""
+        },
+        "userDiffusion": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "changeFluidVisc": {
+          "type": "boolean",
+          "default": false,
+          "description": ""
+        },
+        "diffusivity": {
+          "type": "number",
+          "description": ""
+        },
+        "roughness": {
+          "type": "number",
+          "description": "",
+          "unit": "m"
+        },
+        "viscMultiplier": {
+          "type": "number",
+          "description": ""
+        },
+        "waxMultD": {
+          "type": "number",
+          "description": ""
+        },
+        "waxMultE": {
+          "type": "number",
+          "description": ""
+        },
+        "waxMultF": {
+          "type": "number",
+          "description": ""
+        }
+      }
+    },
+    "severeSlugging": {
+      "type": "array",
+      "description": "",
+      "items": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": ""
+          },
+          "id": {
+            "type": "integer",
+            "description": ""
+          },
+          "accumStartLength": {
+            "type": "number",
+            "description": "",
+            "unit": "m"
+          },
+          "accumEndLength": {
+            "type": "number",
+            "description": "",
+            "unit": "m"
+          },
+          "columnEndLength": {
+            "type": "number",
+            "description": "",
+            "unit": "m"
+          },
+          "voidFractionPenetration": {
+            "type": "number",
+            "description": ""
+          },
+          "criterion": {
+            "type": "integer",
+            "description": ""
+          }
+        }
+      }
+    }
+  }
+}

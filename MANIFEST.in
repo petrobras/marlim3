@@ -2,3 +2,5 @@ include _version.py
 include tutoriais/*.json
 include marlim3/Marlim3
 include marlim3/Marlim3.exe
+include marlim3/translations.json
+include marlim3/_conversores/_conversor_mr2/_resources/templateMR2toMRT.json

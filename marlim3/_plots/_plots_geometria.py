@@ -2,19 +2,28 @@ import math
 import plotly.graph_objects as go
 
 
+def _g(d, *keys, default=None):
+    """Get value from dict trying multiple key names (PT/EN compatibility)."""
+    for k in keys:
+        if k in d:
+            return d[k]
+    return default
+
+
 def _get_duto_length(duto):
-    """Calculate duct length from discretization or dxCelula."""
-    agrupamento = duto.get("agrupamento", True)
+    """Calculate duct length from discretization or cellDx."""
+    agrupamento = _g(duto, "grouping", default=True)
     if agrupamento:
-        disc = duto.get("discretizacao", [])
+        disc = _g(duto, "discretization", default=[])
         if not isinstance(disc, list) or not disc:
             return 0
         return sum(
-            (item.get("nCelulas", 0) or 0) * (item.get("comprimento", 0) or 0)
+            (_g(item, "numCells", default=0) or 0) *
+            (_g(item, "length", default=0) or 0)
             for item in disc if isinstance(item, dict)
         )
     else:
-        dx_celula = duto.get("dxCelula", [])
+        dx_celula = _g(duto, "cellDx", default=[])
         if not isinstance(dx_celula, list) or not dx_celula:
             return 0
         return sum(float(x) for x in dx_celula)
@@ -27,29 +36,43 @@ def _plotar_geometria(tramo):
     y_coords_prod = [0]  # Coordenada Y inicial para dutos de produção
     tooltips_prod = []  # Tooltip para dutos de produção
 
-    if tramo.dutosServico:
+    if tramo.servicePipe:
         x_coords_serv = []  # Coordenada X inicial para dutos de serviço
         y_coords_serv = []  # Coordenada Y inicial para dutos de serviço
         tooltips_serv = []  # Tooltip para dutos de serviço
 
-    # Determine if modoXY is active
-    config_inicial = getattr(tramo, "configuracaoInicial", None) or {}
+    # Determine if xyMode is active
+    config_inicial = getattr(tramo, "initialConfig", None) or {}
     if isinstance(config_inicial, dict):
-        modo_xy = config_inicial.get("modoXY", False)
+        modo_xy = _g(config_inicial, "xyMode", default=False)
+        segue_escoamento = _g(config_inicial, "geometryFollowsFlow", default=True)
     else:
-        modo_xy = getattr(config_inicial, "modoXY", False)
+        modo_xy = getattr(config_inicial, "xyMode", False)
+        segue_escoamento = getattr(config_inicial, "geometryFollowsFlow", True)
+
+    # When sentidoGeometriaSegueEscoamento=false:
+    # - Duct 0 is at the platform, last duct is at the reservoir
+    # - Angles are defined relative to flow direction (reservoir→platform)
+    # - For geometry plotting, we reverse ducts to traverse reservoir→platform
+    # - The -dx convention in service already mirrors the x-direction
+    if segue_escoamento:
+        dutos_prod_plot = tramo.productionPipe
+        angle_offset_prod = 0.0
+        angle_offset_serv = 0.0
+    else:
+        dutos_prod_plot = list(reversed(tramo.productionPipe))
+        angle_offset_prod = 0.0
+        angle_offset_serv = 0.0
 
     # Processando dutos de produção
-    for idx, duto in enumerate(tramo.dutosProducao):
-        if modo_xy and "xCoor" in duto and "yCoor" in duto:
-            # In XY mode, xCoor/yCoor represent absolute endpoint coordinates.
-            # For production ducts starting from origin, we can use them directly.
-            x_coords_prod.append(float(duto["xCoor"]))
-            y_coords_prod.append(float(duto["yCoor"]))
-        elif "angulo" in duto:
+    for idx, duto in enumerate(dutos_prod_plot):
+        if modo_xy and (_g(duto, "xCoor") is not None) and (_g(duto, "yCoor") is not None):
+            x_coords_prod.append(float(_g(duto, "xCoor")))
+            y_coords_prod.append(float(_g(duto, "yCoor")))
+        elif _g(duto, "angle") is not None:
             # Angle mode: compute displacement from angle and length
             comprimento = _get_duto_length(duto)
-            ang = float(duto["angulo"])
+            ang = float(_g(duto, "angle")) + angle_offset_prod
             dx = comprimento * math.cos(ang)
             dy = comprimento * math.sin(ang)
             x_coords_prod.append(x_coords_prod[-1] + dx)
@@ -57,42 +80,43 @@ def _plotar_geometria(tramo):
         else:
             continue
         tooltips_prod.append(
-            f"ID: {duto.get('id', '?')}<br>"
-            f"Rótulo: {duto.get('rotulo', 'N/A')}<br>"
-            f"idCorte: {duto.get('idCorte', 'N/A')}<br>"
-            f"Acoplamento Térmico: {duto.get('acoplamentoTermico', 'N/A')}"
+            f"ID: {_g(duto, 'id', default='?')}<br>"
+            f"Label: {_g(duto, 'label', default='N/A')}<br>"
+            f"Cross-section ID: {_g(duto, 'crossSectionId', default='N/A')}<br>"
+            f"Thermal Coupling: {_g(duto, 'thermalCoupling', default='N/A')}"
         )
 
-    # Coordenadas iniciais da plataforma (último ponto da produção)
+    # Coordenadas iniciais da plataforma
+    # In both cases, after traversal production ends at the platform
     platform_x = x_coords_prod[-1]
     platform_y = y_coords_prod[-1]
 
-    if tramo.dutosServico:
+    if tramo.servicePipe:
         # Coordenadas iniciais para os dutos de serviço
         # (começam na plataforma)
         x_coords_serv.append(platform_x)
         y_coords_serv.append(platform_y)
 
     # Processando dutos de serviço
-    if tramo.dutosServico:
-        for idx, duto in enumerate(tramo.dutosServico):
-            if modo_xy and "xCoor" in duto and "yCoor" in duto:
-                # In XY mode, compute delta from previous duct's xCoor/yCoor
-                # (first duct's reference is origin 0,0)
+    # Service flows platform→reservoir; when geometryFollowsFlow=false, duct 0
+    # is already at the platform (our starting point), so no reversal needed.
+    if tramo.servicePipe:
+        dutos_serv_plot = tramo.servicePipe
+        for idx, duto in enumerate(dutos_serv_plot):
+            if modo_xy and (_g(duto, "xCoor") is not None) and (_g(duto, "yCoor") is not None):
                 if idx == 0:
                     prev_x, prev_y = 0.0, 0.0
                 else:
-                    prev_duto = tramo.dutosServico[idx - 1]
-                    prev_x = float(prev_duto.get("xCoor", 0))
-                    prev_y = float(prev_duto.get("yCoor", 0))
-                dx = float(duto["xCoor"]) - prev_x
-                dy = float(duto["yCoor"]) - prev_y
+                    prev_duto = dutos_serv_plot[idx - 1]
+                    prev_x = float(_g(prev_duto, "xCoor", default=0))
+                    prev_y = float(_g(prev_duto, "yCoor", default=0))
+                dx = float(_g(duto, "xCoor")) - prev_x
+                dy = float(_g(duto, "yCoor")) - prev_y
                 x_coords_serv.append(x_coords_serv[-1] + dx)
                 y_coords_serv.append(y_coords_serv[-1] + dy)
-            elif "angulo" in duto:
-                # Angle mode: invert X direction for service ducts
+            elif _g(duto, "angle") is not None:
                 comprimento = _get_duto_length(duto)
-                ang = float(duto["angulo"])
+                ang = float(_g(duto, "angle")) + angle_offset_serv
                 dx = comprimento * math.cos(ang)
                 dy = comprimento * math.sin(ang)
                 x_coords_serv.append(x_coords_serv[-1] - dx)
@@ -100,10 +124,10 @@ def _plotar_geometria(tramo):
             else:
                 continue
             tooltips_serv.append(
-                f"ID: {duto.get('id', '?')}<br>"
-                f"Rótulo: {duto.get('rotulo', 'N/A')}<br>"
-                f"idCorte: {duto.get('idCorte', 'N/A')}<br>"
-                f"Acoplamento Térmico: {duto.get('acoplamentoTermico', 'N/A')}"
+                f"ID: {_g(duto, 'id', default='?')}<br>"
+                f"Label: {_g(duto, 'label', default='N/A')}<br>"
+                f"Cross-section ID: {_g(duto, 'crossSectionId', default='N/A')}<br>"
+                f"Thermal Coupling: {_g(duto, 'thermalCoupling', default='N/A')}"
             )
 
     # Criando o gráfico interativo
@@ -122,7 +146,7 @@ def _plotar_geometria(tramo):
     ))
 
     # Adicionando os dutos de serviço
-    if tramo.dutosServico:
+    if tramo.servicePipe:
         fig.add_trace(go.Scatter(
             x=x_coords_serv,
             y=y_coords_serv,

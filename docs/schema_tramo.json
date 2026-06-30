@@ -8,12 +8,6 @@
       "enum": ["MULTIFASICO","INJETOR"],
       "description": "Define o sistema a ser modelado: poço produtor (MULTIFASICO) ou injetor (INJETOR)."
     },
-    "versaoJSON": {
-      "type": "string",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$",
-      "examples": ["3.0.0", "3.1.6"],
-      "description": "Versão do software referenciada por este JSON."
-    },
     "configuracaoInicial": {
       "type": "object",
       "description": "Parâmetros gerais da simulação.",
@@ -40,7 +34,7 @@
         },
         "equilibrioTermico": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Define estratégia para cálculo da distribuição de temperatura da seção transversal da parede da tubulação. Se true, interpola-se linearmente entre a temperatura ambiente e a temperatura do fluido. Se false, usa-se a temperatura ambiente por toda a seção transversal da parede. Usada para o caso configuracaoInicial: {condicaoInicial: 0}."
         },
         "latente": {
@@ -89,19 +83,24 @@
           "default": false,
           "description": "Se true, antes do início da simulação, gera uma tabela com as compressibilidades e suas derivadas dos fluidos black oil da linha de produção declarados utilizando P e T reduzidas. O fator de compressibilidade é estimado por meio de interpolações dessa tabela a cada iteração, o que pode reduzir significativamente o tempo de simulação, especialmente a transiente."
         },
-        "AS": {
+        "AP": {
           "type": "boolean",
           "default": false,
-          "description": "Se true, efetua análise de sensibilidade para o regime permanente a partir do arquivo 'leituraAS.json'."
+          "description": "Se true, efetua análise paramétrica para o regime permanente a partir do arquivo 'leituraAP.json'."
+        },
+        "arquivoAP": {
+          "type": "string",
+          "description": "Nome do arquivo JSON de leitura para análise paramétrica (válido quando AP == true).",
+          "default": "leituraAP.json"
         },
         "trackRgo": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Se true, realiza uma atualização do RGO (além de outras variáveis como API e BSW) ao longo da tubulação utilizando regras de mistura quando correntes se encontram."
         },
         "trackDensidadeGas": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Se true, realiza uma atualização da densidade do gás (além de outras variáveis como a fração de CO2) ao longo da tubulação utilizando regras de mistura quando correntes se encontram."
         },
         "correcaoDenGasLivreBlackOil": {
@@ -301,10 +300,10 @@
           "unit": "m",
           "default": 0
         },
-        "paralelizaAS": {
+        "paralelizaAP": {
           "type": "boolean",
           "default": false,
-          "description": "Se true, paraleliza a análise de sensibilidade (AS)."
+          "description": "Se true, paraleliza a análise paramétrica (AP)."
         },
         "modoDifus3D": {
           "type": "boolean",
@@ -332,10 +331,11 @@
         },
         "Avancado": {
           "type": "object",
+          "description": "Configurações avançadas da simulação.",
           "properties": {
             "CriterioMonofasico": {
               "type": "number",
-              "default": 1e-5,
+              "default": 1e-4,
               "description": "Menor valor de fração de vazio em que se considera um sistema monofásico. Frações de vazio muito pequenas podem dar origem a problemas numéricos, por isso é útil estabelecer um valor partir do qual o sistema é considerado monofásico. Atentar para não usar valores de truncamentos muito altos, pois pode-se retirar massa artificialmente do sistema. Válido para simulações transientes."
             },
             "CriterioCondensacao": {
@@ -469,17 +469,18 @@
             },
             "JTLiquidoSimple": {
               "type": "number",
-              "description": ""
+              "description": "Se 1, desliga o termo d_rho/dT do cálculo de Joule-Thompson de líquido. Útil para casos legados convertidos do Marlim2, em especial na coluna de produção.",
+              "default": 0
             },
             "desligaPenalizaDT": {
               "type": "boolean",
               "default": false,
-              "description": ""
+              "description": "Desliga a penalização do incremento de tempo que ocorre quando há oscilações abruptas no holdup, em especial durante processos de segregação típicos de parada de produção (função determinaDT em SisProd())."
             },
             "controleDTvalv": {
               "type": "boolean",
               "default": false,
-              "description": ""
+              "description": "Impõe uma restrição de incremento de tempo quando está em abertura ou fechamento de válvula, para evitar oscilações numéricas."
             },
             "desligaDeriTransMassDTemp": {
               "type": "boolean",
@@ -713,6 +714,11 @@
           "enum": [1,2],
           "description": "Correlação para calcular temperatura e pressão pseudocríticas do gás. 1 --> Brown et al; 2 --> Piper et al."
         },
+        "usaTabelaFlash": {
+          "type": "boolean",
+          "description": "Indica se o simulador deve usar uma tabela de flash para calcular as propriedades do gás na linha de serviço, quando a opção modeloFluidoTabelaFlash estiver ativo.",
+          "default": false
+        },
         "fracMolarUsuario": {
           "type": "boolean",
           "description": "Indica se o usuário informa a composição do presente gás na variável fracMolar. Se for false, procura-se a informação na tabela .ctm fornecida em configuracaoInicial: {pvtsimArq}. Válido apenas para simulações composicionais."
@@ -889,9 +895,9 @@
           },
           "fracMolar": {
             "type": "array",
+              "description": "Frações molares dos pseudocomponentes (mesma sequência informado no arquivo .ctm fornecido na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais.",
             "items": {
-              "type": "number",
-              "description": "Frações molares dos pseudocomponentes (mesma sequência informado no arquivo .ctm fornecido na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais."
+              "type": "number"
             }
           },
           "RGOCompUsuario": {
@@ -1021,16 +1027,16 @@
           },
           "x1": {
             "type": "array",
+              "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1.",
             "items": {
-              "type": "number",
-              "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+              "type": "number"
             }
           },
           "cv1": {
             "type": "array",
+            "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
             "items": {
               "type": "number",
-              "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
               "unit": "(gal/min)/(psi)"
             }
           }
@@ -1492,34 +1498,34 @@
           },
           "dtmax": {
             "type": "array",
+            "description": "Máximos incrementos de tempo associados aos instantes definidos no objeto 'tempos'.",
             "items": {
               "type": "number",
-              "description": "Máximos incrementos de tempo associados aos instantes definidos no objeto 'tempos'.",
               "unit": "s"
             },
             "default": [5]
           },
           "tempoSegrega": {
             "type": "array",
+            "description": "Instantes de tempo associados aos 'segrega' definidos neste objeto. Opcional.",
             "unit": "s",
             "items": {
-              "type": "number",
-              "description": "Instantes de tempo associados aos 'segrega' definidos neste objeto. Opcional."
+              "type": "number"
             }
           },
           "segrega": {
             "type": "array",
+            "description": "Se 1, o simulador utiliza um modo especial de controle de tempo associado à parada de produção (útil quando se observa dificuldades na simulação de processos de segregação). Opcional.",
             "items": {
               "type": "integer",
-              "enum": [0,1],
-              "description": "Se 1, o simulador utiliza um modo especial de controle de tempo associado à parada de produção (útil quando se observa dificuldades na simulação de processos de segregação). Opcional."
+              "enum": [0,1]
             }
           },
           "gravaMomento": {
             "type": "array",
+            "description": "Instantes de tempo para gravação dos arquivos snapshot (.snt).",
             "items": {
               "type": "number",
-              "description": "Instantes de tempo para gravação dos arquivos snapshot (.snt).",
               "unit": "s"
             }
           }
@@ -1715,11 +1721,11 @@
                 },
                 "viscExterna": {
                   "type": "array",
-                  "description": "Viscosidades do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1'), quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2)."
-                },
-                "items": {
-                  "type": "number",
-                  "unit": "cP"
+                  "description": "Viscosidades do fluido externo nas posições relativas do duto definidas na variável 'compInter'. Necessário sempre, exceto quando a coluna de produção está termicamente acoplada com o anular (ou seja, se 'acoplamentoTermico = 1'), quando houver formação (ou seja, se 'idFormacao' for informado) ou quando o ambiente externo for marítimo ou aéreo (ambienteExterno = 1 ou 2).",
+                  "items": {
+                    "type": "number",
+                    "unit": "cP"
+                  }
                 }
             }
           },
@@ -1747,7 +1753,7 @@
             },
             "correlacaoMR2": {
               "type": "integer",
-              "description": ""
+              "description": "Correlação caixa-preta utilizada no duto, quando o modelo de drift está desabilitado (configuracaoInicial: tipoModeloDrift = false). Válida para o regime permanente. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill com correção de Palmer; 13 = Dukler, Eaton e Flanigan;  14 = Dukler e Minami I; 15 = Dukler e Minami II."
             },
             "acoplamentoTermicoRedeParalela": {
               "type": "integer",
@@ -2053,9 +2059,13 @@
               "type": "integer",
               "description": "Inteiro identificador da IPR."
             },
-            "indFluidoPro": {
+            "indiFluidoPro": {
               "type": "integer",
               "description": "ID do fluido de produção a ser produzido pela presente fonte."
+            },
+           "indFluidoPro": {
+              "type": "integer",
+              "description": "(Legado, retrocompatibilidade) Mesmo que indiFluidoPro."
             },
             "comprimentoMedido": {
               "type": "number",
@@ -2241,8 +2251,8 @@
             },
             "correcHI": {
               "type": "boolean",
-              "default": false,
-              "description": ""
+              "default": true,
+              "description": "Correção da curva devido à degradação do head por meio da norma do Hydraulic Institute."
             }
           }
         }
@@ -2392,16 +2402,16 @@
           },
           "x1": {
             "type": "array",
+            "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1.",
             "items": {
-              "type": "number",
-              "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+              "type": "number"
             }
           },
           "cv1": {
             "type": "array",
+            "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
             "items": {
               "type": "number",
-              "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
               "unit": "(gal/min)/(psi)"
             }
           }
@@ -2492,7 +2502,7 @@
               "type": "integer",
               "description": "ID do fluido de produção externo à tubulação. Válido para tipoFluido = 0."
             },
-            "ambienteGas": {
+            "ambGas": {
               "type": "boolean",
               "default": false,
               "description": "Se true, apenas a fração gasosa do fluido de produção externo é admitido para a tubulação. Válido para tipoFluido = 0."
@@ -2653,16 +2663,17 @@
             },
             "x1": {
               "type": "array",
+              "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+              ,
               "items": {
-                "type": "number",
-                "description": "Abcissa da curva CV (porcentagem do deslocamento da haste da válvula). Válido para curvaCV = 1."
+                "type": "number"
               }
             },
             "cv1": {
               "type": "array",
+              "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
               "items": {
                 "type": "number",
-                "description": "Ordenada da curva CV (coeficiente de válvula; capacidade de vazão de válvula para uma unidade de pressão tomando-se como referência a água). Usada para correlacionar deslocamento de haste com abertura de válvula. Válido para curvaCV = 1.",
                 "unit": "(gal/min)/(psi)"
               }
             }
@@ -2674,7 +2685,7 @@
         "properties": {
             "ativo": {
               "type": "boolean",
-              "description": ""
+              "description": "Indica se a choke de injeção está ou não ativa."
             },
             "tempo": {
               "type": "array",
@@ -3055,7 +3066,24 @@
             "angulo": {
             "type": "boolean",
             "description": "Ângulo do duto (rad)."
-            }
+            },
+            "tempParede": {
+            "type": "boolean",
+            "description": "Temperatura da parede (degC)."
+            },  
+            "diametroInterno": {
+            "type": "boolean",
+            "description": "Diâmetro interno da tubulação (m)."
+            },  
+            "dadosParafina": {
+            "type": "boolean",
+            "description": "Dados do modelo de deposição de parafinas."
+            },  
+            "subResfria": {
+            "type": "boolean",
+            "description": "Diferencial de temperatura em relação ao envelope de hidratos (subresfriamento)."
+
+            }            
         }
         },
     "perfilServico": {
@@ -3388,7 +3416,7 @@
             "type": "boolean",
             "description": "Vazão mássica de fluido complementar (kg/s) oriunda de fonte na célula de discretização."
             },
-            "tempChokeJusante": {
+            "tempChokeJus": {
             "type": "boolean",
             "description": "Temperatura (degC) à jusante da choke de superfície (final do sistema de produção)."
             },
@@ -3720,38 +3748,39 @@
           },
     "parafina": {
       "type": "object",
-      "description": "",
+      "description": "Parâmetros do modelo de deposição de parafinas. Este modelo é ativado se configuracaoInicial.modoParafina for true.",
       "properties": {
         "arquivoWax": {
           "type": "string",
-          "description": ""
+          "description": "Arquivo .wax utilizado."
         },
         "usuarioPorosidade": {
           "type": "boolean",
           "default": false,
-          "description": ""
+          "description": "Indica se o usuário irá informar a porosidade."
         },
         "porosidade": {
           "type": "number",
-          "description": ""
+          "description": "Porosidade do depósito de parafinas."
         },
         "usuarioC2C3": {
           "type": "boolean",
           "default": false,
-          "description": ""
+          "description": "Indica se o usuário irá informar os coeficientes C2 e C3."
         },
         "c2": {
           "type": "number",
-          "description": ""
+          "description": "Constante para cálculo da erosão por cisalhamento ('shear stripping')"
         },
         "c3": {
           "type": "number",
-          "description": ""
+          "description": "Constante para cálculo da erosão por cisalhamento ('shear stripping')"
         },
         "usuarioDifus": {
           "type": "boolean",
           "default": false,
-          "description": ""
+          "description": "Indica se o usuário irá informar o valor da difusividade do depósito."
+
         },
         "alteraViscFlu": {
           "type": "boolean",
@@ -3760,16 +3789,16 @@
         },
         "difus": {
           "type": "number",
-          "description": ""
+          "description": "Multiplicador da difusividade das parafinas dissolvidas."
         },
         "rugosidade": {
           "type": "number",
-          "description": "",
+          "description": "Rugosidade absoluta do depósito de parafinas. Obs: na indisponibilidade de um valor, recomenda-se utilizar o valor da rugosidade da tubulação.",
           "unit": "m"
         },
         "multVis": {
           "type": "number",
-          "description": ""
+          "description": "'Multiplicador da viscosidade da fase líquida para considerar os efeitos da suspensão de parafinas."
         },
         "DmultipWax": {
           "type": "number",
@@ -3787,40 +3816,42 @@
     },
     "intermitenciaSevera": {
       "type": "array",
-      "description": "",
+      "description": "Regiões para análise de intermitência severa de acordo com Taitel e Barnea (1990).",
       "items": {
         "type": "object",
         "properties": {
           "ativo": {
             "type": "boolean",
-            "description": ""
+            "description": "Indica se a região para análise de intermitência severa está ativa."
           },
           "id": {
             "type": "integer",
-            "description": ""
+            "description": "Identificador do critério de intermitência severa."
           },
           "inicioTrechoAcumula": {
             "type": "number",
-            "description": "",
+            "description": "Início do trecho de acumulação de gás na região de arranjo estratificado.",
             "unit": "m"
           },
           "fimTrechoAcumula": {
             "type": "number",
-            "description": "",
+            "description": "Fim do trecho de acumulação de gás na região de arranjo estratificado (exemplo típico: base do riser ou touchdown point).",
             "unit": "m"
           },
           "fimTrechoColuna": {
             "type": "number",
-            "description": "",
+            "description": "Fim do trecho em que se acumula líquido na região vertical (ex: riser ou coluna).",
             "unit": "m"
           },
           "fracaoVazioPenetracao": {
             "type": "number",
-            "description": ""
+            "description": "Fração de vazio referente à região de penetração da bolha (após fimTrechoAcumula). Utilizado apenas para o critério de intermitência baseado na pressão (Eq 81 de Taitel e Barnea, 1990).",
+            "default": 0.1
           },
           "criterio": {
             "type": "integer",
-            "description": ""
+            "default": 0,
+            "description": "Critérios de intermitência de acordo com Taitel e Barnea (1990). 0: Boe (Eq 78). 1: diferencial de pressão (Eq 81)."
           }
         }
       }

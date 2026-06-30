@@ -3,7 +3,8 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 
-def _plotar_tendencias(dict_dfs, posicoes = None):
+def _plotar_tendencias(dict_dfs, posicoes = None, language='pt'):
+    x_label = 'Time (h)' if language == 'en' else 'Tempo (h)'
     
     # preparativos iniciais
     custom_params = {"axes.spines.right": False, "axes.spines.top": False}
@@ -54,7 +55,7 @@ def _plotar_tendencias(dict_dfs, posicoes = None):
                          ax=ax
                          )
             ax.set_ylabel(col,fontsize=9, labelpad=10)
-            ax.set_xlabel('Tempo (h)',fontsize=9)
+            ax.set_xlabel(x_label,fontsize=9)
             ax.legend() 
      
     # Remover os subplots vazios, se houver
@@ -65,14 +66,15 @@ def _plotar_tendencias(dict_dfs, posicoes = None):
     for i in range(num_variables,  len(axes.ravel())):  # Subplots apagados estão a partir de len(y)
         row, col = divmod(i, num_cols)  # Converte índice linear para (linha, coluna)
         if row > 0:  # Verifica se há uma linha acima
-            axes[row - 1, col].set_xlabel('Tempo (h)') 
+            axes[row - 1, col].set_xlabel(x_label) 
 
     # Ajustar o layout 
     plt.tight_layout(pad=3.0, w_pad=2.0, h_pad=2.0) 
     
     return fig, axes
 
-def _plotar_tendencias_cenarios(lista_dict_dfs, rotulos, posicoes=None):
+def _plotar_tendencias_cenarios(lista_dict_dfs, rotulos, posicoes=None, language='pt'):
+    x_label = 'Time (h)' if language == 'en' else 'Tempo (h)'
 
     # Preparativos iniciais
     custom_params = {"axes.spines.right": False, "axes.spines.top": False}
@@ -136,7 +138,7 @@ def _plotar_tendencias_cenarios(lista_dict_dfs, rotulos, posicoes=None):
                 )
                 ax.set_title(rotulos_title[j], fontsize=10) # Título para a coluna
                 ax.set_ylabel(col, fontsize=9, labelpad=10)
-                ax.set_xlabel('Tempo (h)', fontsize=9)
+                ax.set_xlabel(x_label, fontsize=9)
                 ax.legend()
 
     # Remover subplots vazios, se houver

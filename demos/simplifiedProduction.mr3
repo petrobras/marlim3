@@ -1,0 +1,399 @@
+{
+  "language": "en",
+  "system": "PROD",
+  "initialConfig": {
+    "formation": {
+      "properties": [
+        {
+          "id": 0,
+          "conductivity": 2.5,
+          "specificHeat": 1000.0,
+          "density": 2500.0,
+          "label": "Typical rock"
+        }
+      ],
+      "productionTime": 365
+    },
+    "gasLine": true,
+    "xyMode": true
+  },
+  "productionFluid": [
+    {
+      "id": 0,
+      "api": 20,
+      "gor": 50,
+      "gasDensity": 0.7,
+      "bsw": 0.0
+    }
+  ],
+  "gasFluid": {
+    "gasDensity": 0.7
+  },
+  "material": [
+    {
+      "id": 0,
+      "label": "Steel",
+      "type": 0,
+      "conductivity": 58,
+      "specificHeat": 480,
+      "rho": 7850
+    },
+    {
+      "id": 1,
+      "label": "Completion fluid",
+      "type": 2
+    },
+    {
+      "id": 2,
+      "label": "Cement",
+      "type": 0,
+      "conductivity": 0.6,
+      "specificHeat": 1000.0,
+      "rho": 500.0
+    },
+    {
+      "id": 3,
+      "label": "Insulation",
+      "type": 0,
+      "conductivity": 0.12,
+      "specificHeat": 1214,
+      "rho": 510
+    }
+  ],
+  "crossSection": [
+    {
+      "id": 0,
+      "label": "Well cross-section",
+      "innerDiameter": 0.2032,
+      "roughness": 0.000183,
+      "layers": [
+        {
+          "label": "Inner steel layer",
+          "materialId": 0,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.00635
+        },
+        {
+          "label": "Completion fluid layer",
+          "materialId": 1,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.07619999999999999
+        },
+        {
+          "label": "Casing steel layer",
+          "materialId": 0,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.0127
+        },
+        {
+          "label": "Cement layer",
+          "materialId": 2,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.07619999999999999
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "label": "Flowline+riser cross-section",
+      "innerDiameter": 0.2032,
+      "roughness": 0.000183,
+      "layers": [
+        {
+          "label": "Inner steel layer",
+          "materialId": 0,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.00635
+        },
+        {
+          "label": "Insulation layer",
+          "materialId": 3,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.0508
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "Well cross-section - uncoupled segment",
+      "innerDiameter": 0.2032,
+      "roughness": 0.000183,
+      "layers": [
+        {
+          "label": "Inner steel layer",
+          "materialId": 0,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.00635
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "label": "Flowline+riser cross-section [SERVICE]",
+      "innerDiameter": 0.127,
+      "roughness": 0.000183,
+      "layers": [
+        {
+          "label": "Inner steel layer",
+          "materialId": 0,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.00635
+        },
+        {
+          "label": "Insulation layer",
+          "materialId": 3,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.0508
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "label": "Well cross-section [SERVICE]",
+      "annular": true,
+      "innerDiameter": 0.21589999999999998,
+      "outerDiameter": 0.36829999999999996,
+      "roughness": 0.000183,
+      "layers": [
+        {
+          "label": "Casing steel layer",
+          "materialId": 0,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.0127
+        },
+        {
+          "label": "Cement layer",
+          "materialId": 2,
+          "layerMeasurementType": "thickness",
+          "thickness": 0.07619999999999999
+        }
+      ]
+    }
+  ],
+  "productionPipe": [
+    {
+      "id": 3,
+      "label": "Well - uncoupled segment",
+      "crossSectionId": 2,
+      "formationId": 0,
+      "angle": 1.5707963267948966,
+      "xCoor": 0,
+      "yCoor": 200,
+      "discretization": [
+        {
+          "numCells": 2,
+          "length": 100
+        }
+      ],
+      "numCellsXY": 2,
+      "initialConditions": {
+        "measuredPosition": [0, 1],
+        "ambientTemp": [90.0, 80.0]
+      }
+    },
+    {
+      "id": 0,
+      "label": "Well",
+      "crossSectionId": 0,
+      "angle": 1.5707963267948966,
+      "xCoor": 0,
+      "yCoor": 1000,
+      "discretization": [
+        {
+          "numCells": 8,
+          "length": 100
+        }
+      ],
+      "numCellsXY": 8,
+      "thermalCoupling": 1
+    },
+    {
+      "id": 1,
+      "label": "Flowline",
+      "crossSectionId": 1,
+      "environment": 1,
+      "angle": 0,
+      "xCoor": 1000,
+      "yCoor": 1000,
+      "discretization": [
+        {
+          "numCells": 10,
+          "length": 100.0
+        }
+      ],
+      "numCellsXY": 10,
+      "initialConditions": {
+        "measuredPosition": [0, 1],
+        "ambientTemp": [4, 4],
+        "ambientVel": [0.1, 0.1]
+      }
+    },
+    {
+      "id": 2,
+      "label": "Riser",
+      "crossSectionId": 1,
+      "environment": 1,
+      "angle": 1.5707963267948966,
+      "xCoor": 1000,
+      "yCoor": 2000,
+      "discretization": [
+        {
+          "numCells": 10,
+          "length": 100.0
+        }
+      ],
+      "numCellsXY": 10,
+      "initialConditions": {
+        "measuredPosition": [0, 1],
+        "ambientTemp": [4, 20],
+        "ambientVel": [0.1, 1]
+      }
+    }
+  ],
+  "servicePipe": [
+    {
+      "id": 0,
+      "label": "Riser [SERVICE]",
+      "crossSectionId": 3,
+      "environment": 1,
+      "angle": -1.5707963267948966,
+      "xCoor": 0,
+      "yCoor": -1000,
+      "discretization": [
+        {
+          "numCells": 10,
+          "length": 100.0
+        }
+      ],
+      "numCellsXY": 10,
+      "initialConditions": {
+        "measuredPosition": [0, 1],
+        "ambientTemp": [20, 4],
+        "ambientVel": [1, 0.1]
+      },
+      "thermalCoupling": 0
+    },
+    {
+      "id": 1,
+      "label": "Flowline [SERVICE]",
+      "crossSectionId": 3,
+      "environment": 1,
+      "angle": 0,
+      "xCoor": -1000,
+      "yCoor": -1000,
+      "discretization": [
+        {
+          "numCells": 10,
+          "length": 100.0
+        }
+      ],
+      "numCellsXY": 10,
+      "initialConditions": {
+        "measuredPosition": [0, 1],
+        "ambientTemp": [4, 4],
+        "ambientVel": [0.1, 0.1]
+      },
+      "thermalCoupling": 0
+    },
+    {
+      "id": 2,
+      "label": "Well annulus [SERVICE]",
+      "crossSectionId": 4,
+      "formationId": 0,
+      "angle": -1.5707963267948966,
+      "xCoor": -1000,
+      "yCoor": -1800,
+      "discretization": [
+        {
+          "numCells": 10,
+          "length": 80.0
+        }
+      ],
+      "numCellsXY": 10,
+      "initialConditions": {
+        "measuredPosition": [0, 0.25, 1],
+        "ambientTemp": [4, 50, 80.0]
+      },
+      "thermalCoupling": 1
+    }
+  ],
+  "separator": {
+    "time": [0],
+    "pressure": [10]
+  },
+  "gasInj": {
+    "bcType": 1,
+    "time": [0],
+    "temperature": [40],
+    "gasFlowRate": [150000.0]
+  },
+  "ipr": [
+    {
+      "id": 0,
+      "iprType": 0,
+      "prodFluidId": 0,
+      "measuredLength": 0.1,
+      "staticPressureTime": [0],
+      "staticPressure": [150],
+      "temperaturesTime": [0],
+      "temperatures": [90],
+      "ipTime": [0],
+      "ip": [200],
+      "iiTime": [0],
+      "ii": [200],
+      "active": true
+    }
+  ],
+  "gasSource": [
+    {
+      "id": 0,
+      "measuredLength": 200,
+      "time": [0],
+      "temperature": [87],
+      "gasFlowRate": [150000.0],
+      "active": false
+    }
+  ],
+  "liquidSource": [
+    {
+      "id": 0,
+      "prodFluidId": 0,
+      "measuredLength": 0.1,
+      "time": [0],
+      "temperature": [90],
+      "active": false
+    }
+  ],
+  "gasLiftSource": [
+    {
+      "id": 0,
+      "prodMeasuredLength": 200,
+      "serviceMeasuredLength": 2800,
+      "valveType": 0,
+      "orificeDiameter": 0.005,
+      "recoveryFactor": 0.0,
+      "areaRatio": 0.1
+    }
+  ],
+  "masterValve": {
+    "measuredLength": 1000
+  },
+  "productionProfile": {
+    "time": [0],
+    "pressure": true,
+    "temperature": true,
+    "holdup": true,
+    "flowPattern": true,
+    "frictionPressureGradient": true,
+    "hydrostaticPressureGradient": true,
+    "stdLiqFlowRate": true
+  },
+  "serviceProfile": {
+    "time": [0],
+    "pressure": true,
+    "temperature": true,
+    "hydrostaticPressureGradient": true,
+    "frictionPressureGradient": true
+  }
+}
+

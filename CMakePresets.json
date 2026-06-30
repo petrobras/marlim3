@@ -1,0 +1,116 @@
+{
+    "version": 3,
+    "configurePresets": [
+        {
+            "name": "gcc",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER":          "g++",
+                "CMAKE_Fortran_COMPILER":      "gfortran"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "mingw",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER":          "g++",
+                "CMAKE_Fortran_COMPILER":      "gfortran"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "clang",
+            "hidden": true,
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_CXX_COMPILER":          "clang++-20",
+                "CMAKE_Fortran_COMPILER":      "gfortran"
+            },
+            "condition": {
+                "type": "notEquals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "gcc-release",
+            "displayName": "Release (GCC)",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "gcc-debug",
+            "displayName": "Debug (GCC)",
+            "inherits": "gcc",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "mingw-release",
+            "displayName": "Release (MinGW)",
+            "inherits": "mingw",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "mingw-debug",
+            "displayName": "Debug (MinGW)",
+            "inherits": "mingw",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        },
+        {
+            "name": "clang-release",
+            "displayName": "Release (Clang 20 + GFortran)",
+            "inherits": "clang",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+        },
+        {
+            "name": "clang-debug",
+            "displayName": "Debug (Clang 20 + GFortran)",
+            "inherits": "clang",
+            "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "gcc-release",
+            "displayName": "Release (GCC)",
+            "configurePreset": "gcc-release"
+        },
+        {
+            "name": "gcc-debug",
+            "displayName": "Debug (GCC)",
+            "configurePreset": "gcc-debug"
+        },
+        {
+            "name": "mingw-release",
+            "displayName": "Release (MinGW)",
+            "configurePreset": "mingw-release"
+        },
+        {
+            "name": "mingw-debug",
+            "displayName": "Debug (MinGW)",
+            "configurePreset": "mingw-debug"
+        },
+        {
+            "name": "clang-release",
+            "displayName": "Release (Clang)",
+            "configurePreset": "clang-release"
+        },
+        {
+            "name": "clang-debug",
+            "displayName": "Debug (Clang)",
+            "configurePreset": "clang-debug"
+        }
+    ]
+}

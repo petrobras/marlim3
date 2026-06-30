@@ -1,7 +1,7 @@
 from .._plots._plots_perfis import _plotar_perfis
 from .._plots._plots_tends import _plotar_tendencias_cenarios
 
-class Cenarios:
+class Scenarios:
 
     def __init__ (self, casos = None):
 
@@ -13,12 +13,13 @@ class Cenarios:
 
         dfs = []
 
-        if linha == 'producao':
-            PERFIS = 'perfilProducao'
-        elif linha == 'servico':
-            PERFIS = 'perfilServico'
+        if linha in ('producao', 'production'):
+            PERFIS = 'productionProfile'
+        elif linha in ('servico', 'service'):
+            PERFIS = 'serviceProfile'
         else:
-            print('argumento linha só pode ser producao ou servico')  
+            print("argument line must be 'producao'/'servico' or 'production'/'service'")
+            return None, None
 
         for rotulo, caso in self.casos.items():
             dfs.append(caso.resultados[PERFIS])
@@ -29,12 +30,27 @@ class Cenarios:
 
         return fig, axes
 
-    def plotar_tendencias(self):
+    def plotar_tendencias(self, language='pt'):
 
         tends_list = []
         
         for rotulo, caso in self.casos.items():
-            tends_list.append(caso.resultados['tendP'])
+            tends_list.append(caso.resultados['productionTrend'])
 
         _plotar_tendencias_cenarios(tends_list,
-                                    rotulos=list(self.casos.keys()))
+                                    rotulos=list(self.casos.keys()),
+                                    language=language)
+
+    ###########################################################################
+    # English API
+    ###########################################################################
+
+    def plot_profiles(self, line='production'):
+        return self.plotar_perfis(linha=line)
+
+    def plot_trends(self):
+        return self.plotar_tendencias(language='en')
+
+
+# Deprecated alias
+Cenarios = Scenarios

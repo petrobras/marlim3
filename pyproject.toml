@@ -2,13 +2,83 @@
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
-# All configuration is in setup.py to avoid conflicts
+# ──────────────────────────────────────────────────────────────────────────────
+# Project metadata  (single source of truth — setup.py only has CMake hooks)
+# ──────────────────────────────────────────────────────────────────────────────
+[project]
+name = "marlim3"
+dynamic = ["version"]   # version is read from _version.py via setup.py
+description = "Simulação de escoamento multifásico permanente e transiente."
+readme = "README.md"
+requires-python = ">=3.12"
+license = {file = "LICENSE.md"}
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "numpy",
+    "scikit-learn",
+    "pandas",
+    "matplotlib",
+    "openpyxl",
+    "plotly",
+    "seaborn",
+    "networkx",
+    "nbformat",
+    "ipython",
+    "jinja2",
+    "requests",
+    "xmltodict",
+    "lxml"
+]
 
+[project.urls]
+Homepage = "https://github.com/petrobras/marlim3"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Setuptools package discovery
+# ──────────────────────────────────────────────────────────────────────────────
+[tool.setuptools.packages.find]
+include = ["marlim3", "marlim3.*"]
+
+[tool.setuptools.package-data]
+marlim3 = ["translations.json",
+           "_conversores/_conversor_mr2/_resources/templateMR2toMRT.json",
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Development dependencies  (uv dependency groups — not shipped to end users)
+# ──────────────────────────────────────────────────────────────────────────────
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov",
+    "flake8",
+    "jupyter",
+    "nbconvert",
+]
+gui = [
+    "streamlit>=1.35.0",
+    "jsonschema>=4.0.0",
+]
+docs = [
+    "mkdocs-material>=9.5",
+]
+tutorials = [
+    "scipy",
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Tool configuration
+# ──────────────────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short --durations=0 -s"
 markers = [
-    "simulacao: testes que executam o simulador Marlim3 (requerem executável compilado)",
+    "simulacao: tests that run the Marlim3 simulator (require compiled executable)",
+    "regressao: regression tests that compare results against stored references",
 ]
 
 [tool.coverage.run]

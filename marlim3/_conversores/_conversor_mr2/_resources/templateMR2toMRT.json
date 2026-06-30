@@ -1,0 +1,186 @@
+{
+	"configuracaoInicial": {
+		"transiente": false,
+		"ordemperm": 1,
+		"equilibrioTermico": true,
+		"latente": false,
+		"sentidoGeometriaSegueEscoamento": false,
+		"modeloCp": 0,
+		"modeloJTL": 0,
+		"tabP": false,
+		"tabG": false,
+		"trackRgo": true,
+		"trackDensidadeGas": true,
+		"tipoModeloDrift": false,
+		"transferenciaMassa": 0,
+		"linhaGas": false,
+		"tabelaRSPB": false,
+		"modeloFluidoTabelaFlash": false,
+		"correlacoesEscorregamento": true,
+		"correlacoesPorArranjo": {
+			"estratificado": 1,
+			"bolhaGolfada": 1,
+			"anularChurn": 1
+		},
+		"Avancado": {"JTLiquidoSimple": 1},
+		"Formacao": {
+			"TempoProducao": 365.0,
+			"Propriedades": [
+				{
+					"id": 0,
+					"condutividade": 2.5,
+					"calorEspecifico": 1250.0,
+					"massaEspecifica": 2000.0,
+					"rotulo": "Marlim2"
+				},
+				{
+					"id": 1,
+					"condutividade": 1.6,
+					"calorEspecifico": 2151.0,
+					"massaEspecifica": 2057.0,
+					"rotulo": "Shale"
+				},
+				{
+					"id": 2,
+					"condutividade": 1.38,
+					"calorEspecifico": 1734.0,
+					"massaEspecifica": 1970.0,
+					"rotulo": "Marl"
+				},
+				{
+					"id": 3,
+					"condutividade": 2.5,
+					"calorEspecifico": 737.0,
+					"massaEspecifica": 2198.0,
+					"rotulo": "Sandstone"
+				},
+				{
+					"id": 4,
+					"condutividade": 1.96,
+					"calorEspecifico": 844.0,
+					"massaEspecifica": 2644.0,
+					"rotulo": "Cementstone"
+				},
+				{
+					"id": 5,
+					"condutividade": 3.97,
+					"calorEspecifico": 875.0,
+					"massaEspecifica": 2160.0,
+					"rotulo": "Halite"
+				},
+				{
+					"id": 6,
+					"condutividade": 4.1,
+					"calorEspecifico": 819.0,
+					"massaEspecifica": 2980.0,
+					"rotulo": "Anhydrite"
+				},
+				{
+					"id": 7,
+					"condutividade": 3.56,
+					"calorEspecifico": 933.0,
+					"massaEspecifica": 2840.0,
+					"rotulo": "Dolomite"
+				},
+				{
+					"id": 8,
+					"condutividade": 2.19,
+					"calorEspecifico": 887.0,
+					"massaEspecifica": 2540.0,
+					"rotulo": "Limestone"
+				},
+				{
+					"id": 9,
+					"condutividade": 3.23,
+					"calorEspecifico": 1000.0,
+					"massaEspecifica": 2620.0,
+					"rotulo": "Packstone"
+				},
+				{
+					"id": 10,
+					"condutividade": 3.16,
+					"calorEspecifico": 390.0,
+					"massaEspecifica": 2590.0,
+					"rotulo": "Wackstone"
+				},
+				{
+					"id": 11,
+					"condutividade": 2.127,
+					"calorEspecifico": 2127.0,
+					"massaEspecifica": 2080.0,
+					"rotulo": "Clay"
+				}
+			]
+		},
+		"condicaoPressao": {
+			"ativo": false
+		}
+	},
+	"tabela": {
+		"nPontos": 50,
+		"pressaoMaxima": 400,
+		"pressaoMinima": 1,
+		"temperaturaMaxima": 200,
+		"temperaturaMinima": -100
+	},
+	"fluidoComplementar": {
+		"ativo": false
+	},
+	"fluidoGas": {
+		"ativo": false
+	},
+	"secaoTransversal": [],
+	"dutosProducao": [],
+	"dutosServico": [],
+	"gasInj": {
+		"ativo": false
+	},
+	"master1": {
+		"comprimentoMedido": 0.0,
+		"abertura": [
+			1
+		],
+		"tempo": [
+			0
+		]
+	},
+	"master2": {
+		"comprimentoMedido": 0,
+		"abertura": [
+			1
+		],
+		"tempo": [
+			0.0
+		]
+	},
+	"chokeSup": {
+		"abertura": [
+			1
+		],
+		"coeficienteDescarga": 0.84,
+		"tempo": [
+			0
+		]
+	},
+  "perfilProducao": {
+    "tempo": [
+      0
+    ],
+    "pressao": true,
+    "temperatura": true,
+    "holdup": true,
+    "arra": true,
+    "fric": true,
+    "hidro": true,
+    "QLstd": true
+  },
+  "perfilServico": {
+    "tempo": [
+      0
+    ],
+    "pressao": true,
+    "temperatura": true,
+    "hidro": true,
+    "fric": true
+  }
+}
