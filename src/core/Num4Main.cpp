@@ -8214,6 +8214,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     string tmpAP = saidaAP.str();
     ofstream escreveAP(tmpAP.c_str(), ios_base::out);
     escreveAP << "relatorio de falhas da Analise Parametrica para um Tramo " << endl;
+    escreveAP << "Numero de combinacoes da Analise Parametrica "<< analisePara.nVariaveis<< endl;
     escreveAP.close();
     int indfalha[analisePara.nVariaveis];
     sistem1.kimpT = 1;
@@ -8842,6 +8843,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
     string tmpAP = saidaAP.str();
     ofstream escreveAP(tmpAP.c_str(), ios_base::out);
     escreveAP << "relatório de falhas da Analise Parametrica para um Tramo " << endl;
+    escreveAP << "Numero de combinacoes da Analise Parametrica "<< analisePara.nVariaveis<< endl;
     escreveAP.close();
     double falha = 0.;
     for (int iSeq = 0; iSeq < analisePara.nVariaveis; iSeq++) { // laco onde e calculado o permanente de cada combinacao

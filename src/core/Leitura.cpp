@@ -10377,6 +10377,8 @@ void Ler::parse_perfil_producao(
 				profp.masstrans = 0;
 				profp.cpg = 0;
 				profp.cpl = 0;
+				profp.condg = 0;
+				profp.condl = 0;
 				profp.qlst = 0;
 				profp.qlwst = 0;
 				profp.qlstTot = 0;
@@ -10606,6 +10608,18 @@ void Ler::parse_perfil_producao(
 				if (perfil_producao_json.cpliq().exists()) {
 					profp.cpl = perfil_producao_json.cpliq();
 					if (profp.cpl == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.condgas().exists()) {
+					profp.condg = perfil_producao_json.condgas();
+					if (profp.condg == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.condliq().exists()) {
+					profp.condl = perfil_producao_json.condliq();
+					if (profp.condl == 1)
 						nvarprofp++;
 				}
 
@@ -17625,6 +17639,15 @@ void Ler::imprimeProfile(Cel* const celula,
 						celula[i].fluicol.CalorLiq(pi,ti)*beti;
 				k++;
 			}
+			if (profp.condg == 1) {
+				flut[i][k] = celula[i].flui.CondGas(pi,ti);
+				k++;
+			}
+			if (profp.condl == 1) {
+				flut[i][k] = celula[i].flui.CondLiq(pi,ti)*(1.-beti)+
+						celula[i].fluicol.CondLiq(pi,ti)*beti;
+				k++;
+			}
 			if (profp.qlst == 1) {
 				flut[i][k] = fqlst(celula,i,tempo);
 				k++;
@@ -17924,6 +17947,10 @@ void Ler::imprimeProfile(Cel* const celula,
 			escreveIni << t(" Calor Especifico a pressao constante do Gas (J/[kg C]) C;", " Gas specific heat at constant pressure (J/[kg C]) C;");
 		if (profp.cpl == 1)
 			escreveIni << t(" Calor Especifico a pressao constante do Liquido (J/[kg C]) C;", " Liquid specific heat at constant pressure (J/[kg C]) C;");
+		if (profp.condg == 1)
+			escreveIni << t(" Condutividade termica do Gas (W/(m-K)) C;", " Gas thermal conductivity (W/(m-K)) C;");
+		if (profp.condl == 1)
+			escreveIni << t(" Condutividade Termica do Liquido (W/(m-K)) C;", " Liquid thermal conductivity (W/(m-K)) C;");
 		if (profp.qlst == 1)
 			escreveIni << t(" Vazao volumetrica standard de oleo morto (Sm3/d) F;", " Standard dead oil volumetric flow rate (Sm3/d) F;");
 		if (profp.qlwst == 1)
@@ -21181,6 +21208,8 @@ void Ler::copia_perfil_producao(Ler& arqAntigo) {
 		profp.masstrans = arqAntigo.profp.masstrans;
 		profp.cpg = arqAntigo.profp.cpg;
 		profp.cpl = arqAntigo.profp.cpl;
+		profp.condg = arqAntigo.profp.condg;
+		profp.condl = arqAntigo.profp.condl;
 		profp.qlst = arqAntigo.profp.qlst;
 		profp.qlwst = arqAntigo.profp.qlwst;
 		profp.qlstTot = arqAntigo.profp.qlstTot;
