@@ -71,6 +71,9 @@ docs = [
     "mkdocs-material>=9.5",
     "mkdocs-jupyter>=0.24",
 ]
+regression_tool = [
+    "pytest>=8",
+]
 tutorials = [
     "scipy",
 ]
