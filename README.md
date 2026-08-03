@@ -151,6 +151,19 @@ The GUI auto-detects an executable from `build/` or `marlim3/` under the reposit
 
 The GUI provides forms for defining fluids, geometry, boundary conditions, and output variables, launches simulations, and displays profile plots — all in the browser.
 
+#### Regression Tool
+
+`Marlim3` also includes a **regression and native coverage tool** for registering models, running them against the instrumented engine, and inspecting the execution flow graph and LLVM coverage.
+
+From a local clone:
+
+```bash
+uv sync --group regression_tool
+uv run regression_tool/run.py
+```
+
+See [regression_tool/README.md](regression_tool/README.md) for the toolchain requirements, the local data locations, and the full workflow.
+
 #### Scripting
 
 For automated workflows, parametric studies, or integration with other tools, use the Python API directly:
