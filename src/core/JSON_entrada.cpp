@@ -3428,6 +3428,8 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["masstrans"] = make_shared<JSON_entrada_perfilProducao_masstrans>();
 	contents["cpgas"] = make_shared<JSON_entrada_perfilProducao_cpgas>();
 	contents["cpliq"] = make_shared<JSON_entrada_perfilProducao_cpliq>();
+	contents["condgas"] = make_shared<JSON_entrada_perfilProducao_condgas>();
+	contents["condliq"] = make_shared<JSON_entrada_perfilProducao_condliq>();
 	contents["QLstd"] = make_shared<JSON_entrada_perfilProducao_QLstd>();
 	contents["QOstd"] = make_shared<JSON_entrada_perfilProducao_QOstd>();
 	contents["QLWstd"] = make_shared<JSON_entrada_perfilProducao_QLWstd>();
@@ -3594,6 +3596,14 @@ JSON_entrada_perfilProducao_cpgas& JSON_entrada_perfilProducao::cpgas(){
 
 JSON_entrada_perfilProducao_cpliq& JSON_entrada_perfilProducao::cpliq(){
 	return static_cast<JSON_entrada_perfilProducao_cpliq&>(*contents["cpliq"].get());
+}
+
+JSON_entrada_perfilProducao_condgas& JSON_entrada_perfilProducao::condgas(){
+	return static_cast<JSON_entrada_perfilProducao_condgas&>(*contents["condgas"].get());
+}
+
+JSON_entrada_perfilProducao_condliq& JSON_entrada_perfilProducao::condliq(){
+	return static_cast<JSON_entrada_perfilProducao_condliq&>(*contents["condliq"].get());
 }
 
 JSON_entrada_perfilProducao_QLstd& JSON_entrada_perfilProducao::QLstd(){

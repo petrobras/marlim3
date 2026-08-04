@@ -2178,6 +2178,8 @@ class JSON_entrada_gasInj : public JSONObject {
 #define JSON_entrada_perfilProducao_masstrans JSONBoolean
 #define JSON_entrada_perfilProducao_cpgas JSONBoolean
 #define JSON_entrada_perfilProducao_cpliq JSONBoolean
+#define JSON_entrada_perfilProducao_condgas JSONBoolean
+#define JSON_entrada_perfilProducao_condliq JSONBoolean
 #define JSON_entrada_perfilProducao_QLstd JSONBoolean
 #define JSON_entrada_perfilProducao_QOstd JSONBoolean
 #define JSON_entrada_perfilProducao_QLWstd JSONBoolean
@@ -2260,6 +2262,8 @@ class JSON_entrada_perfilProducao : public JSONObject {
     JSON_entrada_perfilProducao_masstrans &masstrans();
     JSON_entrada_perfilProducao_cpgas &cpgas();
     JSON_entrada_perfilProducao_cpliq &cpliq();
+    JSON_entrada_perfilProducao_condgas &condgas();
+    JSON_entrada_perfilProducao_condliq &condliq();
     JSON_entrada_perfilProducao_QLstd &QLstd();
     JSON_entrada_perfilProducao_QOstd &QOstd();
     JSON_entrada_perfilProducao_QLWstd &QLWstd();

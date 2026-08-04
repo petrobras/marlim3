@@ -679,6 +679,8 @@ struct detPROFP {
     int masstrans; // Indicates whether the mass-transfer profile must be recorded
     int cpg;       // Indicates whether the gas-specific-heat profile must be recorded
     int cpl;       // Indicates whether the liquid-specific-heat profile must be recorded
+    int condg;     // Indicates whether the gas-thermal conductivity profile must be recorded
+    int condl;     // Indicates whether the liquid-thermal conductivity profile must be recorded
     int api;       // Indicates whether the API-gravity profile must be recorded
     int bsw;       // Indicates whether the BSW profile must be recorded
     int hidro;     // Indicates whether the hydrostatic-term profile must be recorded

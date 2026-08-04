@@ -5518,7 +5518,7 @@ void validadorTipo::valida_perfil_producao(Value &perfilProducao_json, std::vect
         "pressao", "temperatura", "holdup", "FVH", "bet", "ugs", "uls", "ug", "ul", "arra",
         "viscosidadeLiquido", "viscosidadeGas", "rhog", "rhol", "rhoo", "rhoa", "rhoMix", "RS",
         "vazaoMassicaGas", "vazaoMassicaLiquido", "c0", "ud", "RGO", "deng", "yco2",
-        "calor", "masstrans", "cpgas", "cpliq", "QLstd", "QLWstd", "QLstdTotal", "QGstd",
+        "calor", "masstrans", "cpgas", "cpliq", "condgas", "condliq", "QLstd", "QLWstd", "QLstdTotal", "QGstd",
         "api", "bsw", "hidro", "fric", "Term1", "Term2", "dengD", "dengL",
         "ReyInterno", "ReyExterno", "GrashInterno", "GrashExterno",
         "NusselInterno", "NusselExterno", "PrandtlInterno", "PrandtlExterno",
