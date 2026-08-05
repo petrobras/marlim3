@@ -1,125 +1,67 @@
 ---
 name: marlim3-fluid-configuration
-description: Use when the user needs to configure production fluids (oil, gas, water), fluid models (Black Oil, compositional, flash table), PVT properties, emulsion models, or gas properties for a Marlim3 simulation.
+description: Use when defining fluids for a Marlim3 simulation — production fluid (black-oil, flash-table, or compositional), gas fluid for service lines/gas sources, complementary fluid (glycol, brine, inhibitors), viscosity and emulsion correlations, PVT files, and precomputed property tables.
 ---
 
 # Marlim3 Fluid Configuration
 
-## Fluid Modeling Approaches
+## Authoritative files
 
-1. **Black Oil** (default): Correlations based on API, RGO, gas density
-2. **Compositional**: Uses PVTSim `.ctm` files with flash calculations
-3. **Flash Table**: Uses PVTSim `.tab` files with pre-computed flash tables
+- [docs/user-guide/fluids.md](../../../docs/user-guide/fluids.md) — full field catalog and model-applicability tables (**read this**)
+- [docs/user-guide/general.md](../../../docs/user-guide/general.md) §6 — fluid model flags in `initialConfig`
+- [demos/PVTSIM-MARLIM.tab](../../../demos/PVTSIM-MARLIM.tab) — example PVT table file
+- [docs/schema_branch.json](../../../docs/schema_branch.json) — field-level schema (`productionFluid`, `gasFluid`, `complementaryFluid`, `compTable`)
 
-Selection via `configuracaoInicial`:
-- Default (both false) → Black Oil
-- `modeloFluidoTabelaFlash: true` → Flash table
-- `modeloFluidoComposicional: true` (with table false) → Compositional
+## Choosing the thermodynamic model (flags in `initialConfig`)
 
-## `fluidosProducao` (array)
+| Mode | `flashTableFluidModel` | `compositionalFluidModel` | `pvtFile` | Use for |
+|------|------------------------|---------------------------|-----------|---------|
+| Black-oil (default) | `false` | `false` | — | fast engineering studies |
+| Flash table | `true` | ignored | `.tab` | tabulated PVT from PVTsim/Multiflash |
+| Compositional | `false` | `true` | `.ctm` | rich gas / condensate, composition changes |
 
-Each element defines a production fluid.
+The PVT file must sit next to the input JSON when the executable runs (tests copy `PVTSIM-MARLIM.tab` into the run directory).
 
-### Core Properties
+## Production fluid — `productionFluid` (array, ≥1 entry)
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Unique identifier |
-| `ativo` | bool | — | Active flag (default true) |
-| `api` | number | °API | API gravity |
-| `rgo` | number | Sm³/Sm³ | Gas-Oil Ratio |
-| `densidadeGas` | number | — | Relative gas density (to air) |
-| `bsw` | number | m³/m³ | Water cut (0-1), default 0 |
-| `densidadeAgua` | number | — | Water density relative to pure water, default 1 |
+Black-oil core fields (per entry): `id`, `api`, `gor` (sm³/sm³), `gasDensity` (air=1), `bsw` (0–1), optional `waterDensity` (water=1), `CO2Fraction`.
 
-### Dead Oil Viscosity
+Correlation selectors (all optional, sensible defaults):
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `modeloOleoMorto` | int | 0=Beggs-Robinson (default), 1=user two-point |
-| `temp1`, `visc1` | number | Temperature/viscosity point 1 (°C, cP) |
-| `temp2`, `visc2` | number | Temperature/viscosity point 2 (°C, cP) |
+- `deadOilModel` (PT `modeloOleoMorto`): 0 ASTM (needs `temp1`/`visc1`/`temp2`/`visc2`), 1 Beggs&Robinson, 2 modified B&R, **3 Glaso (default)**, 4 Kartoatmodjo-Schmidt, 5 Petrosky-Farshad, 6 Beal, 7 user table (`deadOilTemp`/`deadOilVisc`).
+- `liveOilModel`: **0 Beggs&Robinson (default)**, 1 Kartoatmodjo-Schmidt, 2 Petrosky-Farshad.
+- `undersaturatedOilModel`: **0 Vasquez&Beggs (default)**, 1 K-S, 2 P-F, 3 Beal, 4 Khan.
+- `RsPbModel`: **0 Vazquez&Beggs (default)**, 1 Lasater, 2 Standing, 3 Glaso, 4 Lívia Fulchignoni (expensive — pair with `initialConfig.RsPbTable: true`).
+- `criticalCorrelation`: 0 Marlim2 standard, **1 Brown (default)**, 2 Piper (1/2 better for CO₂-rich gas).
+- `emulsionType`: **0 linear (default)**, 1–3 Woelflin weak/medium/strong, 4 exponential (`emulsionCoefA`/`emulsionCoefB`), 5 Pal-Rhodes (`phi100`), 6 user table (`bswVec`/`emulVec`), 7 below-saturation BSW.
 
-### Emulsion Models (`tipoEmul`)
+Compositional extras: `userMolarFraction: true` + `molarFraction: [...]` (same order as `.ctm` pseudocomponents), `userGORComp: true` to correct composition to match `gor`.
 
-| Value | Model |
-|-------|-------|
-| 0 | Oil-water mixture weighted by water cut (default) |
-| 1 | Woelflin — weak |
-| 2 | Woelflin — medium |
-| 3 | Woelflin — strong |
-| 4 | Exponential (uses `coefAModeloExp`, `coefBModeloExp`) |
-| 5 | Pal-Rhodes (uses `PHI100`) |
-| 6 | User-defined table (`BSWVec`, `emulVec`) |
-| 7 | Oil viscosity below saturation BSW |
+Flash-table overrides: `blackOilViscModel` (1 = use black-oil viscosity correlations instead of table), `blackOilWaterModel` (default 1 = black-oil water JT).
 
-Additional: `bswCorte` (inversion BSW, default 1.0)
+## Gas fluid — `gasFluid` (object; required when `gasLine: true` or dry gas sources)
 
-### Compositional Properties
+`gasDensity` (air=1), `CO2Fraction` (default 0), `criticalCorrelation` (1 or 2 only), `useFlashTable` (default false), optional `userMolarFraction`/`molarFraction`.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `fracCO2` | number | CO2 fraction (default 0) |
-| `correlacaoCritica` | int | 1=Brown et al, 2=Piper et al |
-| `fracMolarUsuario` | bool | User provides molar fractions |
-| `fracMolar` | array | Molar fractions of pseudocomponents |
-| `RGOCompUsuario` | bool | Correct fractions to match user RGO |
+## Complementary fluid — `complementaryFluid` (optional 3rd liquid phase)
 
-### Example: Simple Black Oil
+`complementaryFluidType` (PT `tipoF`): 0 generic (provide `density` kg/m³, `compressibility` 1/Pa, `thermalExpansivity` 1/K, `surfaceTension` N/m, `specificHeat`, `conductivity`, viscosity via `temp1`/`visc1`/`temp2`/`visc2`), 1 water-based (only `salinity` g/kg-water), 2 friction-reducer (generic + friction treatment).
+
+## Precomputed property tables — performance for transients
+
+Enable with `initialConfig.pressureTable: true` (production fluids) and/or `gasTable: true` (service gas), then define the grid:
 
 ```json
-"fluidosProducao": [{ "id": 0, "api": 25, "rgo": 100, "densidadeGas": 0.7, "bsw": 0.0 }]
+"compTable": { "numPoints": 50, "minPressure": 1.0, "maxPressure": 500.0,
+               "minTemperature": 4.0, "maxTemperature": 120.0 }
 ```
 
-### Example: Heavy Oil with Emulsion
+⚠️ The grid must cover the whole operating envelope — extrapolation is unreliable.
 
-```json
-"fluidosProducao": [{
-  "id": 0, "api": 15, "rgo": 30, "densidadeGas": 0.8, "bsw": 0.5,
-  "tipoEmul": 3, "bswCorte": 0.8,
-  "modeloOleoMorto": 1, "temp1": 20, "visc1": 300, "temp2": 60, "visc2": 30
-}]
-```
+## Other `initialConfig` fluid flags
 
-## `fluidoGas` (object)
+`fluidType` (0 liquid-dominated default, 1 gas-dominated), `cpModel` (0 black-oil / 1 PVT table), `jtlModel` (0/1), `latentHeat` (enthalpy from PVT table, needs `pvtFile`), `trackGOR` (default true), `trackGasDensity` (default true), `freeGasDensityCorrectionBO` (default false), `dynamicTableModel` (steady-state compositional networks), `latentHeatCond` (default true).
 
-Gas used in the service/injection line.
+## Typical starting values
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `densidadeGas` | number | Gas density relative to air |
-| `fracCO2` | number | CO2 fraction (default 0) |
-| `correlacaoCritica` | int | 1=Brown, 2=Piper |
-
-```json
-"fluidoGas": { "densidadeGas": 0.7 }
-```
-
-## `fluidoComplementar` (object)
-
-Custom single-phase fluid with user-defined properties.
-
-| Field | Type | Unit |
-|-------|------|------|
-| `massaEspecifica` | number | kg/m³ |
-| `compP` | number | 1/(kgf/cm²) |
-| `compT` | number | 1/°C |
-| `tensup` | number | N/m |
-| `calorEspecifico` | number | J/(kg·°C) |
-| `condutividade` | number | W/(m·°C) |
-| `temp1`/`visc1`, `temp2`/`visc2` | number | °C / Pa·s |
-| `salinidade` | number | g/kg |
-
-## `configuracaoInicial` Fluid Flags
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `modeloFluidoTabelaFlash` | false | Use PVT flash table |
-| `modeloFluidoComposicional` | false | Use compositional model |
-| `pvtsimArq` | — | PVT file name (.tab or .ctm) |
-| `modeloCp` | 0 | Cp model: 0=BO, 1=PVT table |
-| `latente` | false | Use PVT table for enthalpy |
-| `trackRgo` | false | Track RGO along pipeline |
-| `trackDensidadeGas` | false | Track gas density along pipeline |
-| `iniFluidoP` | 0 | ID of fluid initially filling system |
-| `tipoFluido` | 0 | 0=liquid-dominated, 1=gas-dominated |
+API 25–32, GOR 100 sm³/sm³, gasDensity 0.7, BSW 0, waterDensity 1.02. Start with one black-oil fluid, validate steady-state, then add complexity.

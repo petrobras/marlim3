@@ -1,198 +1,66 @@
 ---
 name: marlim3-boundary-conditions
-description: Use when the user needs to configure boundary conditions for a Marlim3 simulation, including IPR (reservoir inflow), fluid sources (liquid, gas, mass), separator pressure, gas injection, pressure boundaries, or injection well conditions.
+description: Use when closing a Marlim3 model with boundary conditions and inflow sources — inlet pressure or flow-rate conditions, separator outlet, IPR reservoir inflow, liquid/mass/gas/pressure sources, service-line gas injection (gasInj), and injection-well boundary modes.
 ---
 
 # Marlim3 Boundary Conditions & Sources
 
-## `ipr` (array) — Inflow Performance Relationship
+## Authoritative files
 
-The most common way to model reservoir fluid inflow. Defines the relationship between reservoir pressure and flow rate.
+- [docs/user-guide/boundary-conditions.md](../../../docs/user-guide/boundary-conditions.md) — closure strategies and BC objects (**read this**)
+- [docs/user-guide/accessories.md](../../../docs/user-guide/accessories.md) — source objects (`ipr`, `liquidSource`, `massSource`, `gasSource`, `pressureSource`)
+- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — IPR + separator + gasInj working example
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Unique identifier |
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Measured depth position along production line |
-| `tipoIPR` | int | — | 0=linear (Darcy), other=Vogel-type |
-| `indFluidoPro` / `indiFluidoPro` | int | — | Reference to `fluidosProducao[].id` |
-| `pressaoEstatica` | array | kgf/cm² | Static reservoir pressure (time-dependent) |
-| `tempoPressaoEstatica` | array | s | Time points for pressure |
-| `temperaturas` | array | °C | Reservoir temperature (time-dependent) |
-| `tempoTemperaturas` | array | s | Time points for temperature |
-| `ip` | array | m³/d/(kgf/cm²) | Productivity Index (time-dependent) |
-| `tempoip` | array | s | Time points for IP |
-| `ii` | array | m³/d/(kgf/cm²) | Injectivity Index (time-dependent) |
-| `tempoii` | array | s | Time points for II |
-| `qMax` | array | m³/d | Maximum flow rate (Vogel IPR, time-dependent) |
-| `tempoqMax` | array | s | Time points for qMax |
+## Closure strategy (pick exactly one inlet approach)
 
-### Example: Linear IPR
+1. **Source-driven** (most common for wells): no inlet BC object; fluid enters through `ipr` / `liquidSource` / `massSource` / `gasSource` placed at a `measuredLength`. Line inlet is closed.
+2. **Inlet pressure**: `initialConfig.pressureCondition` — schedule of `time`, `pressure`, `temperature`, `fluidQuality` (PT `titulo`), `betaRatio`.
+3. **Inlet pressure + mass flow** (steady-state only): `initialConfig.flowRatePressureCondition` — `time`, `pressure`, `temperature`, `massFlowRate` [kg/s], `betaRatio`. Fully determines the system from the inlet.
+
+An outlet is still required for cases 1–2: `separator` (optionally behind `surfaceChoke`).
+
+## Outlet — `separator`
 
 ```json
-"ipr": [{
-  "id": 0, "ativo": true,
-  "tipoIPR": 0, "indiFluidoPro": 0,
-  "comprimentoMedido": 0.1,
-  "tempoPressaoEstatica": [0], "pressaoEstatica": [150],
-  "tempoTemperaturas": [0], "temperaturas": [90],
-  "tempoip": [0], "ip": [200],
-  "tempoii": [0], "ii": [200]
-}]
+"separator": { "active": true, "time": [0], "pressure": [10.0] }
 ```
 
-## `separador` (object) — Downstream Separator
+Reverse-flow protection at outlet: `initialConfig.checkValve` (0 = reverse gas inflow allowed [default], 1 = blocked).
 
-Defines the outlet pressure boundary condition (platform separator).
+## Reservoir inflow — `ipr` (array)
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `tempo` | array | s | Time points |
-| `pressao` | array | kgf/cm² | Separator pressure at each time |
+`prodFluidId` → fluid id; `measuredLength` (use a small value like 0.1 for bottomhole at line start); `iprType`: 0 linear, 1 combined Vogel, 2 Vogel. Paired schedules (each `*Time` array matches its value array): `staticPressureTime`/`staticPressure` [kgf/cm²], `temperaturesTime`/`temperatures` [°C], `ipTime`/`ip` (linear PI, sm³/d per kgf/cm²), `qMaxTime`/`qMax` (Vogel), `iiTime`/`ii` (injectivity index — used for reverse flow, keep populated).
 
-```json
-"separador": { "tempo": [0], "pressao": [10] }
-```
+## Prescribed sources (arrays; all use `prodFluidId`, `measuredLength`, `time`, `temperature`)
 
-## `fonteLiquido` (array) — Liquid Sources
+- `liquidSource`: `liquidFlowRate` [sm³/d] standard-condition liquid; associated gas inferred from the fluid. Optional `beta` (complementary-fluid ratio).
+- `massSource`: `totalMassFlowRate` [kg/s]; `thermType` 0 = equilibrium gas split, 1 = explicit `gasMassFlow`; `complementaryMassFlowRate`.
+- `gasSource`: `gasFlowRate` [sm³/d]; `dry: true` uses `gasFluid`, `dry: false` links `prodFluidId`.
+- `pressureSource`: leak/opening coupled to an external pressurized medium — see the valves-choke skill.
+- `porousRadialSource` / `porous2DSource`: near-wellbore models delegated to external files (`measuredLength`, `file`).
 
-Injects liquid at a specific position in the production line.
+## Service-line gas injection — `gasInj` (requires `gasLine: true`)
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `ativo` | bool | — | Active flag |
-| `indiFluidoPro` | int | — | Fluid reference |
-| `comprimentoMedido` | number | m | Position |
-| `tempo` | array | s | Time schedule |
-| `vazaoLiquido` | array | m³/d | Liquid flow rate |
-| `temperatura` | array | °C | Fluid temperature |
-| `beta` | array | — | Complementary fluid fraction |
+`bcType`: **0 = injection pressure** (`injectionPressures` [kgf/cm²]) or **1 = injection flow rate** (`gasFlowRate` [sm³/d]); plus `time`, `temperature`, optional `initialFlowRateGuess`.
 
-```json
-"fonteLiquido": [{
-  "id": 0, "indiFluidoPro": 0, "comprimentoMedido": 0.1,
-  "tempo": [0], "vazaoLiquido": [1500], "temperatura": [90], "ativo": true
-}]
-```
+## Injection wells — `system: "INJ"` + `injectionWellBC`
 
-## `fonteGas` (array) — Gas Sources
+`fluidType`: 0 complementary-fluid liquid, 1 water (needs salinity), 2 CO₂-rich gas via flash table (`.tab`), 3 CO₂-rich gas compositional (`.ctm`); file via `pvtsimFile`. All modes need `injectionTemp`. `boundaryCondition` modes:
 
-Injects gas at a specific position.
+| Mode | Requires |
+|------|----------|
+| 0 | `stdLiquidFlowRate` + IPR |
+| 1 | `injectionPressure` + IPR |
+| 2 | `bottomholePressure` + IPR |
+| 3 | `injectionPressure` + `bottomholePressure` |
+| 4 | `stdLiquidFlowRate` + `injectionPressure` |
+| 5 | `stdLiquidFlowRate` + `bottomholePressure` |
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Position |
-| `tempo` | array | s | Time schedule |
-| `vazaoGas` | array | Sm³/d | Gas flow rate |
-| `temperatura` | array | °C | Gas temperature |
-| `seco` | bool | — | If true, uses `fluidoGas` properties |
-| `indiFluidoPro` | int | — | Fluid reference |
+Injection-side choke: `injectionChoke` (`time`, `opening`, `dischargeCoefficient`). Note: `Branch.simulate()` automatically passes `-s INJETOR` to the executable when `system` is `"INJ"` / `"INJETOR"`.
 
-```json
-"fonteGas": [{
-  "id": 0, "comprimentoMedido": 200,
-  "tempo": [0], "vazaoGas": [150000], "temperatura": [40], "ativo": true
-}]
-```
+## Validation checklist
 
-## `fonteMassa` (array) — Mass Sources
-
-Injects fluid by mass flow rate components.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `tipoTermo` | int | — | Thermal model type |
-| `comprimentoMedido` | number | m | Position |
-| `tempo` | array | s | Time schedule |
-| `temperatura` | array | °C | Temperature |
-| `vazaoMassT` | array | kg/s | Total mass flow rate |
-| `vazaoMassC` | array | kg/s | Condensate mass flow rate |
-| `vazaoMassG` | array | kg/s | Gas mass flow rate |
-| `indiFluidoPro` | int | — | Fluid reference |
-
-## `fontePressao` (array) — Pressure Sources
-
-Lateral connection with prescribed pressure.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Position |
-| `pressao` | number | kgf/cm² | Pressure |
-| `temperatura` | number | °C | Temperature |
-| `TipoAbertura` | int | — | Opening type |
-| `abertura` | array | — | Opening schedule (0-1) |
-| `tempo` | array | s | Time schedule |
-| `cd` | number | — | Discharge coefficient |
-| `tipoFluido` | int | — | Fluid type |
-| `indiFluidoPro` | int | — | Fluid reference |
-| `ambGas` | bool | — | External ambient is gas |
-
-## `gasInj` (object) — Gas Injection Boundary
-
-Top-of-line gas injection boundary for gas lift systems.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `tipoCC` | int | — | Boundary type: 0=flow rate, 1=pressure+flow |
-| `tempo` | array | s | Time schedule |
-| `temperatura` | array | °C | Gas temperature |
-| `vazaoGas` | array | Sm³/d | Gas injection rate |
-| `pressaoInjecao` | array | kgf/cm² | Injection pressure |
-| `chuteVazaoInjecao` | bool | — | Initial guess for injection rate |
-
-```json
-"gasInj": {
-  "tipoCC": 1,
-  "tempo": [0], "temperatura": [40], "vazaoGas": [150000]
-}
-```
-
-## `condicaoPressao` (object) — Upstream Pressure BC
-
-Prescribes pressure at the production line inlet.
-
-| Field | Type | Unit |
-|-------|------|------|
-| `ativo` | bool | — |
-| `tempo` | array | s |
-| `pressao` | array | kgf/cm² |
-| `temperatura` | array | °C |
-| `titulo` | array | — (gas mass fraction) |
-| `razaoBeta` | array | — |
-
-## `condicaoVazPres` (object) — Upstream Flow+Pressure BC
-
-Fully determines the inlet (steady-state only). Ignores the outlet BC.
-
-| Field | Type | Unit |
-|-------|------|------|
-| `ativo` | bool | — |
-| `tempo` | array | s |
-| `pressao` | array | kgf/cm² |
-| `temperatura` | array | °C |
-| `VazMass` | array | kg/s |
-| `razaoBeta` | array | — |
-
-## `CondicaoContPocInjec` (object) — Injection Well BC
-
-For `sistema: "INJETOR"`.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `tipoFluido` | int | — | Injected fluid type |
-| `salinidade` | number | g/kg | Salinity |
-| `condContorno` | int | — | BC type |
-| `tempInj` | number | °C | Injection temperature |
-| `vazLiq` | number | m³/d | Liquid flow rate |
-| `presInjec` | number | kgf/cm² | Injection pressure |
-| `presFundo` | number | kgf/cm² | Bottomhole pressure |
-| `arquivoPvtsim` | string | — | PVT file for injected fluid |
+- Exactly one closure strategy; at least one inflow AND one outlet (or a fully-determining inlet BC).
+- Every paired time/value array has equal lengths; times monotonic from 0.
+- Source `measuredLength` within line length; `prodFluidId` exists.
+- Typical sanity: separator 2–15 kgf/cm²; reservoir static pressure 150–350 kgf/cm²; reservoir temperature 60–120 °C.

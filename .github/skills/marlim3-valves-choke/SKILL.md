@@ -1,172 +1,62 @@
 ---
 name: marlim3-valves-choke
-description: Use when the user needs to configure valves, chokes (surface or injection), master valves (ANM/downhole), inline valves, or PIG operations in a Marlim3 simulation.
+description: Use when adding flow restrictions or events to a Marlim3 simulation — inline two-phase valves, production/service master valves (Wet Christmas Tree), surface and injection chokes, PIG runs, and pressure-coupled leaks/openings (pressureSource). Essential for shutdown/restart scenarios.
 ---
 
-# Marlim3 Valves, Chokes & PIG
+# Marlim3 Valves, Chokes, PIG & Leaks
 
-## `valvula` (array) — Inline Valves
+## Authoritative files
 
-Generic inline valves with Cv curves and time-dependent opening.
+- [docs/user-guide/accessories.md](../../../docs/user-guide/accessories.md) — all devices below (**read this**)
+- [docs/user-guide/boundary-conditions.md](../../../docs/user-guide/boundary-conditions.md) — `surfaceChoke`, `injectionChoke` context
+- [demos/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3](../../../demos/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3) — shutdown with valves + PIG
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Position on production line |
-| `curvaCV` | int | — | Cv curve type |
-| `curvaDinamic` | int | — | Dynamic curve type |
-| `tempo` | array | s | Time schedule |
-| `abertura` | array | — | Opening fraction (0=closed, 1=fully open) |
-| `cd` | number | — | Discharge coefficient |
-| `x1` | array | — | Cv curve X points (opening fraction) |
-| `cv1` | array | — | Cv curve Y points (Cv values) |
+## Common pattern
 
-## `fonteChoke` (object) — Production Choke
+Opening schedules pair `time` with `opening` (0 = closed, 1 = fully open). `cvCurve`: 0 = openings are **area ratios**, 1 = openings are **stem displacement** (then calibrate with `x1`/`cv1` arrays). Prefer ramps over instantaneous steps for numerical stability. Sachdeva is the two-phase choke model.
 
-Choke valve at the production side (typically downhole).
+## Inline two-phase valve — `valve` (array; PT `valvula`)
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `tempo` | array | s | Time schedule |
-| `abertura` | array | — | Opening fraction (0-1) |
-| `coeficienteDescarga` | number | — | Discharge coefficient |
-| `modelo` | int | — | Choke model: 0=standard |
+`id`, `measuredLength`, `cvCurve`, `cd` (typ. 0.84), `time`, `opening`, optional `x1`/`cv1`.
 
-## `chokeSup` (object) — Surface Choke
+## Production master valve — `masterValve` (object; PT `master1`)
 
-Production choke at the surface/platform.
+Wet-Christmas-Tree valve on the production line. In steady state mainly marks position; **always define it in transients where WCT operation matters** (shutdown/restart). Fields: `active`, `measuredLength`, `cvCurve`, `time`, `opening`, `activeAreaRatio` (PT `razaoAreaAtiva`, avoids instability near fully-open), `x1`/`cv1`. Discharge coefficient is fixed at 0.84 internally.
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `curvaCV` | int | — | Cv curve type |
-| `curvaDinamic` | int | — | Dynamic curve type |
-| `tempo` | array | s | Time schedule |
-| `abertura` | array | — | Opening fraction (0-1) |
-| `coeficienteDescarga` | number | — | Discharge coefficient (typically 0.84) |
-| `modelo` | int | — | Choke model: 0=standard |
-| `x1` | array | — | Cv curve X points |
-| `cv1` | array | — | Cv curve Y points |
+## Service master valve — `masterValve2` (object; PT `master2`)
 
-### Example: Surface Choke with Events
+Simplified/binary service-line WCT valve; same shape as `masterValve`.
 
-```json
-"chokeSup": {
-  "coeficienteDescarga": 0.84,
-  "modelo": 0,
-  "abertura": [0.3, 0.3, 0.0, 0.0, 0.3],
-  "tempo": [0, 7000, 7065, 8000, 8065]
-}
-```
+## Surface choke — `surfaceChoke` (object; PT `chokeSup`)
 
-## `chokeInj` (object) — Injection Choke
+Outlet restriction upstream of the separator: `cvCurve`, `time`, `opening`, `dischargeCoefficient`, `model` (only 0 = Sachdeva), `x1`/`cv1`.
 
-Choke on the injection/service line.
+## Injection choke — `injectionChoke` (object; PT `chokeInj`)
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `tempo` | array | s | Time schedule |
-| `abertura` | array | — | Opening fraction |
-| `coeficienteDescarga` | number | — | Discharge coefficient |
+Single-phase gas choke on the service line: `active`, `time`, `opening`, `dischargeCoefficient`.
 
-## `master1` (object) — Downhole Master Valve (ANM)
+## PIG — `pig` (array)
 
-Main wellhead/ANM valve. Critical for shutdown simulations.
+`launcher` (PT `lancador`), `receiver` (PT `recebedor`) — measured lengths with `launcher < receiver`, both within the production line — and `time` (launch instant).
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Position (typically at mudline) |
-| `curvaCV` | int | — | Cv curve type |
-| `razaoAreaAtiva` | number | — | Active area ratio |
-| `tempo` | array | s | Time schedule |
-| `abertura` | array | — | Opening fraction (0=closed, 1=open) |
-| `x1` | array | — | Cv curve X points |
-| `cv1` | array | — | Cv curve Y values |
+## Leak / opening — `pressureSource` (array; PT `fontePressao`)
 
-### Example: Master Valve with Shutdown
+Exchange point between tubing and an external pressurized medium:
 
-```json
-"master1": {
-  "comprimentoMedido": 1980,
-  "abertura": [1, 1, 0, 0, 1],
-  "tempo": [0, 7000, 7065, 35000, 35060]
-}
-```
+- Fluid: `fluidType` 1 = same as tubing fluid, 0 = external fluid via `prodFluidId`; `gasAmbient` to admit only gas.
+- Direction `check`: 0 bidirectional, 1 vacuum-breaker (in only), −1 check-valve (out only).
+- Opening: `openingType` (0 area ratio, 1 diameter ratio), `opening`, `time`, `cd`.
+- External state: `pressure`, `temperature`, `beta`, `ambientFluidQuality` (PT `titAmb`).
 
-## `master2` (object) — Secondary Master Valve
+## Shutdown/restart recipe (typical transient)
 
-Secondary wellhead valve (wing valve). Same structure as `master1` but without Cv fields.
+1. Steady state (`initialCondition: 1`) as the initial state.
+2. Close `surfaceChoke` and/or `masterValve` with a ramp (e.g., `time: [t0, t0+300]`, `opening: [1, 0]`).
+3. Tighten `time.maxDT` around the closure window; consider `time` segregation windows for long cooldowns.
+4. Restart: reopen with ramps; optionally start from a snapshot (`initialCondition: 2`).
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Position |
-| `tempo` | array | s | Time schedule |
-| `abertura` | array | — | Opening fraction |
+## Validation checklist
 
-```json
-"master2": {
-  "comprimentoMedido": 5020,
-  "abertura": [1, 1, 0, 0, 1],
-  "tempo": [0, 7000, 7065, 35000, 35065]
-}
-```
-
-## `pig` (array) — PIG Operations
-
-Pipeline pigging (Pipeline Inspection Gauge) operations.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `ativo` | bool | — | Active flag |
-| `lancador` | number | m | Launcher measured depth |
-| `recebedor` | number | m | Receiver measured depth |
-| `tempo` | number | s | Launch time |
-| `folgaArea` | number | — | Area clearance ratio (0 = perfect seal) |
-| `deltaPressao` | number | kgf/cm² | PIG differential pressure |
-| `cdPig` | number | — | PIG discharge coefficient |
-
-### Example: PIG Operation
-
-```json
-"pig": [{
-  "id": 0,
-  "lancador": 2060,
-  "recebedor": 6960,
-  "tempo": 20000,
-  "folgaArea": 0.0,
-  "deltaPressao": 0.1,
-  "cdPig": 0.84
-}]
-```
-
-## Typical Shutdown Scenario
-
-A common transient scenario involves closing valves and chokes for a well shutdown:
-
-```json
-{
-  "master1": {
-    "comprimentoMedido": 1980,
-    "abertura": [1, 1, 0, 0, 1],
-    "tempo": [0, 7000, 7065, 35000, 35060]
-  },
-  "master2": {
-    "comprimentoMedido": 5020,
-    "abertura": [1, 1, 0, 0, 1],
-    "tempo": [0, 7000, 7065, 35000, 35065]
-  },
-  "chokeSup": {
-    "coeficienteDescarga": 0.84, "modelo": 0,
-    "abertura": [0.3, 0.3, 0, 0, 0.3],
-    "tempo": [0, 7000, 7065, 8000, 8065]
-  }
-}
-```
-
-This closes all valves at t=7000-7065s and reopens at t=35000-35065s.
+- All `time`/`opening` arrays equal length; openings within [0, 1]; times monotonic.
+- Positions within line lengths; PIG `launcher < receiver`.
+- Valve events covered by output trends (place `productionTrend` gauges near valves) and by tighter `maxDT` in the time schedule.

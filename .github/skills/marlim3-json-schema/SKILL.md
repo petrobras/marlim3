@@ -1,164 +1,104 @@
 ---
 name: marlim3-json-schema
-description: Use when the user needs to understand the overall structure of a Marlim3 simulation JSON input file, validate a JSON, or create the skeleton/boilerplate for a new simulation. Covers the top-level fields, mandatory sections, versioning, and cross-reference validation rules.
+description: Use when creating, reading, or validating a Marlim3 simulation input file (.mr3 / JSON). Covers the top-level structure, the bilingual EN/PT key system, units conventions, ID cross-reference rules, and how to validate against the official JSON schemas. Load this FIRST for any simulation-building task.
 ---
 
-# Marlim3 JSON Input Schema — Structure & Validation
+# Marlim3 JSON Input — Structure, Bilingual Keys & Validation
 
-## Top-Level JSON Structure
+Marlim3 simulations are defined in a single JSON file (conventionally `.mr3`). The Python API (`marlim3.Branch`) and the C++ engine both consume this format.
 
-Every Marlim3 simulation input is a JSON object with the following top-level keys. The simulator reads this via the `JSON_entrada` root class defined in `src/JSON_entrada.h`.
+## Authoritative files — read these before generating input
 
-### Mandatory Fields
+| File | What it defines |
+|------|-----------------|
+| [docs/schema_branch.json](../../../docs/schema_branch.json) | Full JSON Schema, **English keys** (recommended format) |
+| [docs/schema_tramo.json](../../../docs/schema_tramo.json) | Full JSON Schema, Portuguese keys |
+| [docs/reference/json-schema.md](../../../docs/reference/json-schema.md) | Human-readable top-level catalog + units |
+| [marlim3/translations.json](../../../marlim3/translations.json) | EN ↔ PT key/value mapping (single source of truth) |
+| [docs/dev-guide/translations.md](../../../docs/dev-guide/translations.md) | How the bilingual system works |
+| [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) | Working English-keyed example (well + gas-lift line) |
+| `demos/pt-br/*.mr3` | Working Portuguese-keyed examples |
 
-```json
-{
-  "sistema": "MULTIFASICO",
-  "versao": "1.0",
-  "versaoJson": "1.3.9",
-  "configuracaoInicial": { ... },
-  "fluidosProducao": [ ... ],
-  "material": [ ... ],
-  "secaoTransversal": [ ... ],
-  "dutosProducao": [ ... ]
-}
-```
+## Language rules
 
-### `sistema` (string, required)
-Defines the simulation system type:
-- `"MULTIFASICO"` — Production well/system (default, most common)
-- `"INJETOR"` — Injection well
+- **Prefer English keys** and include `"language": "en"` at the root — the engine translates EN→PT internally. This is the format `Branch.to_json()` produces.
+- Portuguese-keyed files (no `language` marker, or PT keys) are equally valid; never mix languages in one file.
+- Enum value translations: `system`: `"PROD"` / `"INJ"` (EN) ↔ `"MULTIFASICO"` / `"INJETOR"` (PT); `layerMeasurementType`: `"THICKNESS"` / `"DIAMETER"` ↔ `"ESPESSURA"` / `"DIAMETRO"`.
 
-### `versao` (string, required)
-Always `"1.0"`.
-
-### `versaoJson` (string, required)
-Always `"1.3.9"` for the current version.
-
-## Complete List of Top-Level Sections
-
-| Key | Type | Purpose | Required |
-|-----|------|---------|----------|
-| `sistema` | string | System type | Yes |
-| `versao` | string | Version | Yes |
-| `versaoJson` | string | JSON schema version | Yes |
-| `configuracaoInicial` | object | General simulation parameters | Yes |
-| `tabela` | object | P/T table parameters | No |
-| `parafina` | object | Wax deposition model | No |
-| `fluidoGas` | object | Gas properties (service line) | No |
-| `fluidosProducao` | array | Production fluid definitions | Yes |
-| `fluidoComplementar` | object | Custom complementary fluid | No |
-| `valvula` | array | Inline valves | No |
-| `fonteLiquido` | array | Liquid source terms | No |
-| `fonteMassa` | array | Mass source terms | No |
-| `fonteGas` | array | Gas source terms | No |
-| `fontePoroRadial` | array | Radial porous sources | No |
-| `fontePoro2D` | array | 2D porous sources | No |
-| `fonteGasLift` | array | Gas lift valves | No |
-| `material` | array | Material property definitions | Yes |
-| `secaoTransversal` | array | Cross-section definitions | Yes |
-| `tempo` | object | Time stepping configuration | Transient only |
-| `dutosProducao` | array | Production duct segments | Yes |
-| `dutosServico` | array | Service line duct segments | When linhaGas=true |
-| `hidrato` | object | Hydrate modeling | No |
-| `ipr` | array | Inflow Performance Relationship | Common |
-| `fonteChoke` | object | Production choke | No |
-| `bcs` | array | ESP/BCS pumps | No |
-| `multibcs` | array | Multi-curve BCS pumps | No |
-| `bombaVolumetrica` | array | Volumetric pumps | No |
-| `deltaPressao` | array | Pressure differential devices | No |
-| `fonteCalor` | array | Heat sources | No |
-| `master1` | object | Downhole master valve (ANM) | No |
-| `master2` | object | Secondary master valve | No |
-| `pig` | array | PIG operations | No |
-| `fontePressao` | array | Pressure sources | No |
-| `tendP` | array | Production line trend monitors | No |
-| `tendTransP` | array | Transverse temperature trends (prod) | No |
-| `tendS` | array | Service line trend monitors | No |
-| `tendTransS` | array | Transverse temperature trends (serv) | No |
-| `tela` | array | Screen output configuration | No |
-| `gasInj` | object | Gas injection boundary condition | No |
-| `perfilProducao` | object | Production profile output config | Recommended |
-| `perfilServico` | object | Service profile output config | No |
-| `perfisTransP` | object | Transient profile snapshots (prod) | No |
-| `perfisTransS` | object | Transient profile snapshots (serv) | No |
-| `separador` | object | Separator boundary condition | Common |
-| `correcao` | object | Gradient correction factors | No |
-| `chokeSup` | object | Surface choke | No |
-| `chokeInj` | object | Injection choke | No |
-| `CondicaoContPocInjec` | object | Injection well boundary | INJETOR only |
-| `intermitenciaSevera` | array | Severe slugging model | No |
-
-## Cross-Reference Validation Rules
-
-When building a simulation JSON, ensure these ID references are consistent:
-
-1. **`dutosProducao[].idCorte`** and **`dutosServico[].idCorte`** must match an existing `secaoTransversal[].id`
-2. **`secaoTransversal[].camadas[].idMaterial`** must match an existing `material[].id`
-3. **`dutosProducao[].idFormacao`** and **`dutosServico[].idFormacao`** must match an existing `configuracaoInicial.Formacao.Propriedades[].id`
-4. **`ipr[].indFluidoPro`** / **`ipr[].indiFluidoPro`** must match an existing `fluidosProducao[].id`
-5. **`fonteLiquido[].indiFluidoPro`** must match an existing `fluidosProducao[].id`
-6. **`fonteMassa[].indiFluidoPro`** must match an existing `fluidosProducao[].id`
-7. **`fonteGas[].indiFluidoPro`** must match an existing `fluidosProducao[].id`
-8. **`fontePressao[].indiFluidoPro`** must match an existing `fluidosProducao[].id`
-9. **`configuracaoInicial.iniFluidoP`** must match an existing `fluidosProducao[].id`
-
-## Minimal Working Example
-
-A minimal steady-state production simulation:
+## Top-level structure (EN keys)
 
 ```json
 {
-  "sistema": "MULTIFASICO",
-  "versao": "1.0",
-  "versaoJson": "1.3.9",
-  "configuracaoInicial": {},
-  "fluidosProducao": [
-    { "id": 0, "api": 25, "rgo": 100, "densidadeGas": 0.7, "bsw": 0.0 }
-  ],
-  "material": [
-    { "id": 0, "tipo": 0, "condutividade": 58, "calorEspecifico": 480, "rho": 7850 }
-  ],
-  "secaoTransversal": [
-    {
-      "id": 0, "diametroInterno": 0.2032, "rugosidade": 0.000183,
-      "camadas": [
-        { "idMaterial": 0, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.00635 }
-      ]
-    }
-  ],
-  "dutosProducao": [
-    {
-      "id": 0, "idCorte": 0, "angulo": 1.5708,
-      "discretizacao": [{ "nCelulas": 20, "comprimento": 100 }],
-      "condicoesIniciais": { "compInter": [0, 1], "tempExterna": [90, 4] }
-    }
-  ],
-  "fonteLiquido": [
-    {
-      "id": 0, "indiFluidoPro": 0, "comprimentoMedido": 0.1,
-      "tempo": [0], "vazaoLiquido": [1500], "temperatura": [90]
-    }
-  ],
-  "separador": { "tempo": [0], "pressao": [10] },
-  "perfilProducao": {
-    "tempo": [0], "pressao": true, "temperatura": true, "holdup": true
-  }
+  "language": "en",
+  "system": "PROD",
+  "initialConfig": {},          // global physics, numerics, formation, inlet BCs
+  "productionFluid": [],        // ≥1 required in practice
+  "gasFluid": {},               // required when gasLine or dry gas sources
+  "complementaryFluid": {},     // optional 3rd liquid phase
+  "compTable": {},              // P-T grid for precomputed tables
+  "material": [],               // ≥1 required in practice
+  "crossSection": [],           // ≥1 required in practice
+  "productionPipe": [],         // ≥1 required in practice
+  "servicePipe": [],            // required when initialConfig.gasLine = true
+  "time": {},                   // required when initialConfig.transient = true
+  "ipr": [], "liquidSource": [], "massSource": [], "gasSource": [],
+  "pressureSource": [], "porousRadialSource": [], "porous2DSource": [],
+  "gasLiftSource": [], "valve": [], "esp": [], "volumetricPump": [],
+  "pressureDrop": [], "masterValve": {}, "masterValve2": {}, "pig": [],
+  "separator": {}, "gasInj": {}, "surfaceChoke": {}, "injectionChoke": {},
+  "injectionWellBC": {},
+  "productionProfile": {}, "serviceProfile": {},
+  "productionTrend": [], "serviceTrend": [],
+  "crossProductionProfile": {}, "crossServiceProfile": {},
+  "crossProductionTrend": [], "crossServiceTrend": [],
+  "wax": {}, "severeSlugging": {}, "screenConfig": []
 }
 ```
 
-## Python API Equivalent
+The schema marks nothing as formally required, but a runnable production case needs at minimum: `system`, `productionFluid`, `material`, `crossSection`, `productionPipe`, one inflow (source or inlet BC), one outlet (`separator`), and `productionProfile`.
+
+Do **not** invent `versao`/`versaoJson` fields — they are not part of the current schema.
+
+## Units (strict — no exceptions)
+
+| Quantity | Unit | | Quantity | Unit |
+|---|---|---|---|---|
+| Length/diameter/roughness | m | | Pressure | kgf/cm² |
+| Temperature | °C | | Time | s |
+| Angle | **radians** (π/2 = vertical up in flow direction) | | Liquid rate | sm³/d |
+| Mass rate | kg/s | | Gas rate | sm³/d |
+| Conductivity | W/(m·°C) | | Specific heat | J/(kg·°C) |
+| Solid/rock density | kg/m³ | | Fluid density | relative (air=1 gas, water=1 liquid) |
+| Viscosity | cP | | ESP: rate BPD, head ft, power hp |
+| Gas-lift valve calibration | pressure **psi**, temperature **°F** | | Formation `productionTime` | days |
+
+## ID cross-reference rules (validate every one)
+
+| Reference | Must point to |
+|-----------|---------------|
+| `productionPipe[].crossSectionId` / `servicePipe[].crossSectionId` | `crossSection[].id` |
+| `crossSection[].layers[].materialId` | `material[].id` |
+| `productionPipe[].formationId` | `initialConfig.formation.properties[].id` |
+| `ipr[].prodFluidId`, `liquidSource[].prodFluidId`, `massSource[].prodFluidId`, `pressureSource[].prodFluidId`, `gasSource[].prodFluidId` (when `dry=false`) | `productionFluid[].id` |
+| `initialConfig.initialFluidId` | `productionFluid[].id` |
+| Any `measuredLength` / `prodMeasuredLength` / `serviceMeasuredLength` | within total length of the corresponding line |
+
+Additional structural rules:
+
+- IDs unique within each array (convention: sequential from 0).
+- Paired schedule arrays must have equal length (`time`/`pressure`, `time`/`opening`, `times`/`maxDT`, ESP `flowRate`/`pumpHead`/`power`/`efficiency`, IPR `*Time` / value pairs).
+- All `time` arrays monotonically increasing, starting at 0.
+- `measuredPosition` (PT `compInter`) profiles go from 0 to 1.
+- `servicePipe`, `gasInj`, `gasLiftSource`, `serviceProfile`, `serviceTrend` all require `initialConfig.gasLine: true`.
+- `initialConfig.transient: true` requires `time.finalTime`.
+
+## Validation snippet
 
 ```python
-import marlim3
-
-caso = marlim3.Tramo()
-caso.sistema = "MULTIFASICO"
-caso.fluidosProducao = [{"id": 0, "api": 25, "rgo": 100, "densidadeGas": 0.7, "bsw": 0.0}]
-caso.material = [{"id": 0, "tipo": 0, "condutividade": 58, "calorEspecifico": 480, "rho": 7850}]
-caso.secaoTransversal = [{"id": 0, "diametroInterno": 0.2032, "rugosidade": 0.000183, "camadas": [...]}]
-caso.dutosProducao = [{"id": 0, "idCorte": 0, "angulo": 1.5708, "discretizacao": [...]}]
-caso.separador = {"tempo": [0], "pressao": [10]}
-caso.perfilProducao = {"tempo": [0], "pressao": True, "temperatura": True}
-caso.simular(label="my_sim", diretorio="results")
+import json, jsonschema
+schema = json.load(open("docs/schema_branch.json"))   # EN keys; use schema_tramo.json for PT
+data = json.load(open("my_case.mr3"))
+jsonschema.validate(data, schema)                     # raises on violation
 ```
+
+`jsonschema` is available via the `gui` dependency group: `uv sync --group gui`.

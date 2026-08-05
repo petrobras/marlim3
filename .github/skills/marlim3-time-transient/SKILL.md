@@ -1,136 +1,60 @@
 ---
 name: marlim3-time-transient
-description: Use when the user needs to configure time stepping, transient vs steady-state mode, initial conditions, mass transfer models, slip models, or numerical solver settings for a Marlim3 simulation.
+description: Use when configuring steady-state vs transient mode, initial-condition strategy (user-defined, steady-state, snapshot restart, gas-lift unloading), the time-step schedule (finalTime, times, maxDT), segregation windows, and snapshot saving for a Marlim3 simulation.
 ---
 
 # Marlim3 Time & Transient Configuration
 
-## Steady-State vs Transient
+## Authoritative files
 
-Set in `configuracaoInicial`:
-- `transiente: false` (default) → Steady-state simulation
-- `transiente: true` → Transient simulation (requires `tempo` section)
+- [docs/user-guide/time.md](../../../docs/user-guide/time.md) — full time-block reference with examples (**read this**)
+- [docs/user-guide/general.md](../../../docs/user-guide/general.md) §2, §12 — simulation-mode flags and unloading
+- [docs/tutorials/5_temperature_pulse.ipynb](../../../docs/tutorials/5_temperature_pulse.ipynb) — complete transient walkthrough
 
-## `configuracaoInicial` — Simulation Mode Settings
+## Mode selection — `initialConfig`
 
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `transiente` | bool | false | Enable transient mode |
-| `condicaoInicial` | int | 1 | Initial condition: 0=user-defined, 1=from steady-state (recommended), 2=from snapshot file, 3=gas-lift unloading |
-| `ordemperm` | int | 1 | Steady-state numerical order: 1=first order, 2=Runge-Kutta 2nd |
-| `transferenciaMassa` | int | 0 | Mass transfer model (see below) |
-| `escorregamentoPermanente` | bool | true | Slip in steady-state solver |
-| `escorregamentoTransiente` | bool | true | Slip in transient solver |
-| `mapaArranjo` | int | 0 | Flow pattern map: 0=simplified Barnea, 1=full Barnea |
-| `tipoModeloDrift` | bool | true | true=drift-flux model, false=black-box correlations |
-| `SnapShotArq` | string | — | Snapshot file name (.snp) for condicaoInicial=2 |
-| `CheckValve` | int | 0 | 0=allow reverse flow, 1=check valve at outlet |
+- `transient: false` (default) → steady-state only; the `time` block is not needed.
+- `transient: true` → transient run; **requires** top-level `time` with `finalTime`.
 
-### Mass Transfer Models (`transferenciaMassa`)
+## Initial-condition strategy — `initialConfig.initialCondition`
 
-| Value | Description |
-|-------|-------------|
-| 0 | Full model, implicit method (most stable, default) |
-| 1 | Full model, explicit method (same physics, less stable) |
-| 2 | Simplified isothermal, no transient mass transfer terms |
-| 3 | No mass transfer |
+| Value | Meaning | Extra requirements |
+|-------|---------|--------------------|
+| 0 | User-defined initial fields | per-segment `initialConditions` profiles (`pressure`, `temp`, `holdup`, `usl`, `usg`, …); optional `initialFluidId` (default 0) |
+| 1 | From steady-state solution (**default**) | — |
+| 2 | Restart from snapshot | `snapshotFile` (`.snp`) — parsing fails if missing |
+| 3 | Gas-lift unloading | interface lengths + salinity (see artificial-lift skill) |
 
-### Initial Condition Options (`condicaoInicial`)
-
-| Value | Description |
-|-------|-------------|
-| 0 | User-defined initial conditions (in `dutosProducao[].condicoesIniciais`) |
-| 1 | From steady-state solution (most common — runs SS first, then transient) |
-| 2 | From snapshot file (`.snp`) |
-| 3 | Gas-lift unloading initial condition |
-
-## `tempo` (object) — Time Stepping
-
-Controls the transient simulation timeline.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `tempoFinal` | number | s | Final simulation time |
-| `tempos` | array | s | Time breakpoints for time-step control |
-| `dtmax` | array | s | Maximum time step at each breakpoint |
-| `tempoSegrega` | array | s | Segregation time points |
-| `segrega` | array | int | Segregation flags |
-| `gravaMomento` | array | s | Snapshot save times |
-
-The `tempos[]` and `dtmax[]` arrays work together: between consecutive `tempos[i]` and `tempos[i+1]`, the maximum time step is `dtmax[i]`.
-
-### Example: Simple Transient
+## Time schedule — top-level `time` object
 
 ```json
-"configuracaoInicial": {
-  "transiente": true,
-  "condicaoInicial": 1,
-  "transferenciaMassa": 0
-},
-"tempo": {
-  "tempoFinal": 50001,
-  "tempos": [0, 7000, 7005, 7100, 7110],
-  "dtmax":  [4,    4,    4,    4,    4]
+"time": {
+  "finalTime": 3600,
+  "times":  [0, 10, 100],
+  "maxDT":  [0.1, 1.0, 5.0],
+  "saveSnapshot": [1800, 3600]
 }
 ```
 
-### Example: Variable Time Steps (finer around events)
+- `finalTime` [s] — total simulated time.
+- `times`/`maxDT` — piecewise cap on solver step: between `times[i]` and `times[i+1]` the step never exceeds `maxDT[i]` (solver may go smaller). Must be equal length; `times` monotonic starting at 0. Defaults if omitted: `times=[0]`, `maxDT=[5]`.
+- `saveSnapshot` (PT `gravaMomento`) — instants [s] to write `.snp`/`.snt` restart files.
 
-```json
-"tempo": {
-  "tempoFinal": 50001,
-  "tempos": [0, 26000, 26010, 27000, 27010, 32500, 32520, 33020, 33080],
-  "dtmax":  [4,     4,     4,     4,     4,     4,     4,     4,     4]
-}
-```
+Design the schedule around events: small `maxDT` (0.1–1 s) during valve closures, startups, and pulses; relax (5–30 s) in quiet phases.
 
-## Slip Correlations
+## Segregation windows (shutdown scenarios)
 
-### `configuracaoInicial.correlacoesEscorregamento` (bool)
+`segregationTime` (PT `tempoSegrega`) + `segregation` (PT `segrega`, 0 = normal, 1 = segregation) schedule a special mode for liquid-gas segregation during shutdowns. If omitted, a default schedule starts at t=0 in segregation mode.
 
-If true, enables per-pattern slip correlations.
+## Related knobs (see advanced-settings skill for the full list)
 
-### `configuracaoInicial.correlacoesPorArranjo` (object)
+- `initialConfig.steadyGuess` — initial guess for the steady-state solver.
+- Timestep penalization controls (`relaxChokeTimestep`, `valveTimestepControl`, `disablePenalizeTimestep`) — leave at defaults unless justified.
+- Sonic capture: `sonicTime`/`sonicFlag` arrays (limited first-order resolution — mitigation only).
 
-| Field | Type | Values | Description |
-|-------|------|--------|-------------|
-| `estratificado` | int | 0,1,2,4 | Stratified pattern: 0=Choi, 1=Bhagwat&Ghajar (default), 2=França&Lahey, 4=B&G modified |
-| `bolhaGolfada` | int | 0,1,4 | Bubble/slug: 0=Choi, 1=B&G (default), 4=B&G modified |
-| `anularChurn` | int | 0,1,3,4 | Annular/churn: 0=Choi, 1=B&G (default), 3=Hibiki&Ishii, 4=B&G modified |
+## Validation checklist
 
-```json
-"configuracaoInicial": {
-  "correlacoesEscorregamento": true,
-  "correlacoesPorArranjo": {
-    "estratificado": 1,
-    "bolhaGolfada": 1,
-    "anularChurn": 1
-  }
-}
-```
-
-## Gas-Lift Unloading Mode
-
-For `condicaoInicial: 3` (gas-lift unloading):
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `SalinidadeFluido` | number | g/kg | Completion fluid salinity |
-| `comprimentoMedidoInterfaceLinhaGas` | number | m | Gas/fluid interface position in service line |
-| `comprimentoMedidoInterfaceLinhaProd` | number | m | Gas/fluid interface position in production line |
-| `controleDescarga` | bool | — | Automated unloading control |
-| `parametrosDescarga` | object | — | Unloading control parameters |
-
-### Unloading Parameters
-
-| Field | Type | Unit |
-|-------|------|------|
-| `vazaoLimiteDescarga` | number | Sm³/d |
-| `pressaoLimiteDescarga` | number | kgf/cm² |
-| `pressaoMinimaDescarga` | number | kgf/cm² |
-| `pressaoTrabalhoDescargaGas` | number | kgf/cm² |
-| `pressaoLimiteDescargaGas` | number | kgf/cm² |
-| `pressaoMinimaDescargaGas` | number | kgf/cm² |
-| `pressaoInicialDescargaGas` | number | kgf/cm² |
-| `temperaturaDescarga` | number | °C |
-| `tempoLatencia` | number | s |
+- `transient: true` ⇒ `time.finalTime` present; profile/trend output times ≤ `finalTime`.
+- `times` and `maxDT` same length; `times[0] = 0`, strictly increasing.
+- `initialCondition: 0` ⇒ initial profiles present on every segment; `2` ⇒ snapshot file exists next to the input.
+- Trend `dt` values positive and much smaller than event durations you want to resolve.

@@ -1,152 +1,71 @@
 ---
 name: marlim3-materials-cross-sections
-description: Use when the user needs to define pipe materials (steel, cement, insulation, fluids), cross-section geometry (layers, diameters, roughness), or formation rock properties for thermal exchange in a Marlim3 simulation.
+description: Use when defining pipe wall materials, radial cross-section geometry (diameters, roughness, concentric layers, annular flow), or rock formation thermal properties for a Marlim3 simulation. Covers material types (solid, user fluid, water, air), layer construction, and formation coupling.
 ---
 
-# Marlim3 Materials & Cross-Sections
+# Marlim3 Materials, Cross-Sections & Formation
 
-## `material` (array)
+## Authoritative files
 
-Defines thermal and mechanical properties of pipe wall materials.
+- [docs/user-guide/materials.md](../../../docs/user-guide/materials.md) — material types and properties (**read this**)
+- [docs/user-guide/cross-sections.md](../../../docs/user-guide/cross-sections.md) — radial geometry and layers (**read this**)
+- [docs/user-guide/rock-formation.md](../../../docs/user-guide/rock-formation.md) — formation thermal properties
+- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — realistic well/flowline/riser cross-sections
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Unique identifier |
-| `rotulo` | string | — | Label/name |
-| `tipo` | int | — | 0=solid, 2=fluid (completion fluid, annular fluid) |
-| `condutividade` | number | W/(m·°C) | Thermal conductivity |
-| `calorEspecifico` | number | J/(kg·°C) | Specific heat |
-| `rho` | number | kg/m³ | Density |
-| `visc` | number | Pa·s | Dynamic viscosity (only for tipo=2 fluids) |
-| `beta` | number | 1/°C | Thermal expansion coefficient (for tipo=2) |
+## Materials — `material` (top-level array)
 
-### Common Materials Reference
+Each entry: `id`, optional `label`, `type`, and thermal properties.
 
-| Material | k [W/m·°C] | Cp [J/kg·°C] | ρ [kg/m³] | tipo |
-|----------|-----------|-------------|----------|------|
-| Carbon steel | 55-58 | 460-480 | 7833-7850 | 0 |
-| Cement | 0.6 | 1000 | 500 | 0 |
-| Insulation (polymer) | 0.12-0.19 | 1200-2100 | 500-510 | 0 |
-| Completion fluid | 0.61 | 4180 | 1000 | 2 |
-| Flexible pipe layers | 0.19-70 | 460-2300 | 500-7833 | 0 |
+| `type` | Meaning | Required properties |
+|--------|---------|---------------------|
+| 0 | Solid (steel, insulation, cement) | `conductivity` W/(m·°C), `specificHeat` J/(kg·°C), `rho` kg/m³ |
+| 1 | User-defined stagnant fluid layer | those above + `visc` (cP) + `beta` (1/K, thermal expansivity) |
+| 2 | Water (internal model) | none — only `id`, `type` |
+| 3 | Air (internal model) | none — only `id`, `type` |
 
-### Example
+Typical values: carbon steel 50/500/7800; stainless 15/500/8000; PU foam 0.03/1500/60; polypropylene 0.22/1800/900; cement 0.6/1000/500–2000; concrete coating 1.5/880/2300. Use `type: 2` for completion-fluid annuli. Use aged/wet insulation values, not laboratory ones.
+
+## Cross-sections — `crossSection` (top-level array)
+
+Per entry:
+
+- `id`, optional `label`
+- `innerDiameter` [m] — hydraulic inner boundary (for annular flow: smallest annulus diameter)
+- `outerDiameter` [m] — only when `annular: true` (largest annulus diameter; must exceed `innerDiameter`)
+- `roughness` [m] — 1.5e-6 (polished) to 4.6e-4 (corroded); common default 1.83e-4
+- `annular` (default false) — annular hydraulic geometry (tubing-casing production). Changes hydraulics only; thermal coupling is a pipe-segment setting.
+- `layers` — concentric layers from inner wall outward:
 
 ```json
-"material": [
-  { "id": 0, "rotulo": "Aço", "tipo": 0, "condutividade": 58, "calorEspecifico": 480, "rho": 7850 },
-  { "id": 1, "rotulo": "Fluido de completação", "tipo": 2 },
-  { "id": 2, "rotulo": "Cimento", "tipo": 0, "condutividade": 0.6, "calorEspecifico": 1000, "rho": 500 },
-  { "id": 3, "rotulo": "Isolante", "tipo": 0, "condutividade": 0.12, "calorEspecifico": 1214, "rho": 510 }
+"layers": [
+  { "label": "steel", "materialId": 0, "layerMeasurementType": "THICKNESS",
+    "thickness": 0.00635, "discretization": 1 },
+  { "label": "insulation", "materialId": 1, "layerMeasurementType": "THICKNESS",
+    "thickness": 0.0508, "discretization": 3 }
 ]
 ```
 
-## `secaoTransversal` (array)
+- `layerMeasurementType`: `"THICKNESS"` (radial thickness, cumulative outward) or `"DIAMETER"` (outer diameter of the layer; the default when omitted — then use key `diameter`).
+- `discretization` (default 1): radial heat-conduction nodes per layer. 1 node for steady state; 2–3 in insulation/cement for transient cooldown accuracy.
 
-Defines pipe cross-section geometry with radial layers.
+Well completion pattern (see demo): tubing steel → completion fluid (type 2) → casing steel → cement. Service annulus pattern: `annular: true` + casing/cement layers.
 
-### Cross-Section Properties
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Unique identifier |
-| `rotulo` | string | — | Label |
-| `anular` | bool | — | true if annular geometry (service line) |
-| `diametroInterno` | number | m | Inner diameter of the flow bore |
-| `diametroExterno` | number | m | Outer diameter (annular only) |
-| `rugosidade` | number | m | Inner wall roughness |
-| `camadas` | array | — | Radial layers from inside out |
-
-### Layer Properties (`camadas[]`)
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `rotulo` | string | — | Layer label |
-| `idMaterial` | int | — | Reference to `material[].id` |
-| `tipoMedicaoCamada` | string | — | `"ESPESSURA"` (thickness) or omit for diameter mode |
-| `espessura` | number | m | Layer thickness (when using ESPESSURA mode) |
-| `diametro` | number | m | Outer diameter of this layer (when using diameter mode) |
-| `discretizacao` | int | — | Number of radial nodes for thermal calculation |
-
-### Example: Well Cross-Section (thickness mode)
+## Rock formation — `initialConfig.formation`
 
 ```json
-{
-  "id": 0, "rotulo": "Corte do poço",
-  "diametroInterno": 0.2032, "rugosidade": 0.000183,
-  "camadas": [
-    { "rotulo": "Aço interno", "idMaterial": 0, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.00635 },
-    { "rotulo": "Fluido completação", "idMaterial": 1, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.0762 },
-    { "rotulo": "Revestimento", "idMaterial": 0, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.0127 },
-    { "rotulo": "Cimento", "idMaterial": 2, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.0762 }
-  ]
-}
+"initialConfig": { "formation": {
+  "productionTime": 365,
+  "properties": [ { "id": 0, "conductivity": 2.5, "specificHeat": 850.0, "density": 2500.0 } ]
+} }
 ```
 
-### Example: Flowline Cross-Section (diameter mode)
+- `productionTime` [**days**]: pre-heating history of surrounding rock — larger = slower early cooldown.
+- Pipe segments opt in via `productionPipe[].formationId`; segments without it use ambient environment settings instead.
+- Typical rock: k = 1.5–3 W/(m·°C), Cp = 850–1000 J/(kg·°C), ρ = 2400–2600 kg/m³.
 
-```json
-{
-  "id": 2, "rotulo": "Flexible pipe",
-  "diametroInterno": 0.1524, "rugosidade": 0.0001,
-  "camadas": [
-    { "diametro": 0.1692, "idMaterial": 3, "discretizacao": 1 },
-    { "diametro": 0.1832, "idMaterial": 4, "discretizacao": 1 },
-    { "diametro": 0.23014, "idMaterial": 5, "discretizacao": 1 }
-  ]
-}
-```
+## Cross-reference checklist
 
-### Example: Annular Cross-Section (service line)
-
-```json
-{
-  "id": 4, "rotulo": "Anular do poço",
-  "anular": true,
-  "diametroInterno": 0.2159, "diametroExterno": 0.3683,
-  "rugosidade": 0.000183,
-  "camadas": [
-    { "idMaterial": 0, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.0127 },
-    { "idMaterial": 2, "tipoMedicaoCamada": "ESPESSURA", "espessura": 0.0762 }
-  ]
-}
-```
-
-## `configuracaoInicial.Formacao` (object)
-
-Rock formation properties for wellbore-formation thermal exchange.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `TempoProducao` | number | Production time in **days** (affects thermal radius) |
-| `Propriedades` | array | Rock types |
-
-### Formation Rock Properties
-
-| Field | Type | Unit |
-|-------|------|------|
-| `id` | int | — |
-| `rotulo` | string | — |
-| `condutividade` | number | W/(m·°C) |
-| `calorEspecifico` | number | J/(kg·°C) |
-| `massaEspecifica` | number | kg/m³ |
-
-### Common Rock Types
-
-| Rock | k | Cp | ρ |
-|------|---|----|----|
-| Generic | 2.5 | 1000 | 2500 |
-| Shale | 1.6 | 2151 | 2057 |
-| Sandstone | 2.5 | 737 | 2198 |
-| Halite | 3.97 | 875 | 2160 |
-| Limestone | 2.19 | 887 | 2540 |
-| Dolomite | 3.56 | 933 | 2840 |
-
-```json
-"Formacao": {
-  "TempoProducao": 365,
-  "Propriedades": [
-    { "id": 0, "condutividade": 2.5, "calorEspecifico": 1000, "massaEspecifica": 2500 }
-  ]
-}
-```
+- Every `layers[].materialId` exists in `material[].id`.
+- Every `formationId` exists in `initialConfig.formation.properties[].id`.
+- Annular sections: `outerDiameter > innerDiameter`.
+- Buried/downhole segments → formation coupling; exposed subsea segments → `environment: 1` (seawater); topside → `environment: 2` (atmosphere).
