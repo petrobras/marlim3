@@ -1,163 +1,65 @@
 ---
 name: marlim3-pipeline-geometry
-description: Use when the user needs to define pipeline geometry, including production ducts, service line ducts, discretization, inclination angles, XY coordinates, initial conditions, and thermal coupling for a Marlim3 simulation.
+description: Use when building the axial geometry of a Marlim3 simulation — production and service pipe segments, inclination angles or XY coordinates, cell discretization, ambient environment (formation, seawater, atmosphere), initial condition profiles, and production/service thermal coupling.
 ---
 
 # Marlim3 Pipeline Geometry
 
-## `dutosProducao` (array) — Production Line Segments
+## Authoritative files
 
-The production line is composed of ordered duct segments. Flow goes from the first duct (wellbore bottom) to the last (platform arrival).
+- [docs/user-guide/pipes.md](../../../docs/user-guide/pipes.md) — segment fields and both examples (**read this**)
+- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — full well + flowline + riser + service line in XY mode
+- [docs/user-guide/cross-sections.md](../../../docs/user-guide/cross-sections.md) — the radial geometry referenced by `crossSectionId`
 
-### Duct Properties
+## Segments — `productionPipe` / `servicePipe` (arrays)
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Unique identifier |
-| `rotulo` | string | — | Label |
-| `idCorte` | int | — | Reference to `secaoTransversal[].id` |
-| `idFormacao` | int | — | Reference to `Formacao.Propriedades[].id` (for wellbore) |
-| `angulo` | number | rad | Inclination: π/2=vertical up, 0=horizontal, -π/2=vertical down |
-| `ambienteExterno` | int | — | 0=formation (default), 1=sea/ocean, 2=air |
-| `direcaoConveccao` | int | — | External convection direction |
-| `acoplamentoTermico` | int | — | 0=no coupling, 1=coupled with service line |
-| `agrupamento` | bool | — | Duct grouping flag |
-| `xCoor` | number | m | X coordinate of duct end (modoXY) |
-| `yCoor` | number | m | Y coordinate of duct end (modoXY) |
-| `nCelulas_XY` | int | — | Number of cells for XY mode |
+The production line is the main multiphase path (wellbore → flowline → riser); the service line (gas-lift/circulation) requires `initialConfig.gasLine: true`. Per segment:
 
-### Discretization (`discretizacao[]`)
+- `id`, optional `label`, `active`
+- `crossSectionId` (PT `idCorte`) → `crossSection[].id`
+- `formationId` (PT `idFormacao`) → formation properties id — for buried/downhole segments
+- `environment` (PT `ambienteExterno`): `0` user-defined medium, `1` seawater, `2` atmosphere
+- `angle` [radians, relative to horizontal] or XY coordinates
+- `thermalCoupling` (PT `acoplamentoTermico`): couples this production segment to the service line
+- `convectionDirection`: 0 transversal, 1 longitudinal
+- discretization + `initialConditions` / `initialAndAmbientConditions` (see below)
 
-Each duct can have multiple discretization segments:
+## Inclination
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `nCelulas` | int | — | Number of cells in this segment |
-| `comprimento` | number | m | Length of this segment |
+**Direct angle mode** (`initialConfig.xyMode: false`): `angle` in radians, measured in the flow direction. Ascending flow = +π/2 (1.5707963), horizontal = 0, descending = −π/2. In the demo, the well and riser (flow going up) use +π/2; the service line (flow going down from platform) uses −π/2.
 
-Total duct length = sum of all `comprimento` values.
+**XY mode** (`initialConfig.xyMode: true`): give each segment endpoint `xCoor`/`yCoor` plus `numCellsXY`; angles are inferred. Line start coordinates go in `initialConfig`: `xProdStart`/`yProdStart` (and `xServiceStart`/`yServiceStart` for the service line).
 
-### Initial Conditions (`condicoesIniciais`)
+`geometryFollowsFlow` (default true): indices increase in flow direction; angles always follow flow for Marlim2 compatibility.
 
-Interpolation arrays defined at duct boundaries (`compInter` goes from 0 to 1):
+## Discretization
 
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `compInter` | array | — | Normalized positions [0..1] for interpolation |
-| `temp` | array | °C | Temperature at each compInter point |
-| `pressao` | array | kgf/cm² | Pressure at each point |
-| `holdup` | array | — | Liquid holdup at each point |
-| `bet` | array | — | Beta (complementary fluid fraction) |
-| `uls` | array | m/s | Superficial liquid velocity |
-| `ugs` | array | m/s | Superficial gas velocity |
-| `tempExterna` | array | °C | External (ambient) temperature |
-| `velExterna` | array | m/s | External fluid velocity (sea current) |
-| `kExterna` | array | W/(m·°C) | External fluid conductivity |
-| `calorEspecificoExterno` | array | J/(kg·°C) | External fluid Cp |
-| `rhoExterno` | array | kg/m³ | External fluid density |
-| `viscExterna` | array | Pa·s | External fluid viscosity |
-
-**Minimum required**: `compInter` and `tempExterna` (for thermal BCs).
-
-### Example: Vertical Well Segment
+Grouped blocks (default, `grouping: true`):
 
 ```json
-{
-  "id": 0, "rotulo": "Poço", "idCorte": 0, "idFormacao": 0,
-  "angulo": 1.5707963267948966,
-  "discretizacao": [{ "nCelulas": 20, "comprimento": 100 }],
-  "condicoesIniciais": {
-    "compInter": [0, 1],
-    "tempExterna": [90, 60]
-  }
-}
+"discretization": [ { "numCells": 20, "length": 125.0 } ]   // 20 cells × 125 m
 ```
 
-### Example: Subsea Flowline
+Explicit cell sizes: `grouping: false` + `cellDx` array. Start coarse (20–50 m cells), refine near valves, pumps, elevation changes, and thermally coupled regions.
 
-```json
-{
-  "id": 1, "rotulo": "Flowline", "idCorte": 1,
-  "ambienteExterno": 1, "angulo": 0,
-  "discretizacao": [{ "nCelulas": 50, "comprimento": 40 }],
-  "condicoesIniciais": {
-    "compInter": [0, 1],
-    "tempExterna": [4, 4],
-    "velExterna": [0.2, 0.2]
-  }
-}
-```
+## Initial and ambient profiles
 
-### Example: Vertical Riser
+Both live under `initialConditions` (PT `condicoesIniciais`) or the fuller alias `initialAndAmbientConditions` (PT `condicoesIniciaisEAmbiente`), with all profiles given at relative positions `measuredPosition` (PT `compInter`) from **0 to 1** along the segment:
 
-```json
-{
-  "id": 2, "rotulo": "Riser", "idCorte": 1,
-  "ambienteExterno": 1, "angulo": 1.5708,
-  "discretizacao": [{ "nCelulas": 20, "comprimento": 50 }],
-  "condicoesIniciais": {
-    "compInter": [0, 1],
-    "tempExterna": [4, 20],
-    "velExterna": [0.2, 1.0]
-  }
-}
-```
+- Ambient (needed per `environment`/`formationId`): `ambientTemp` [°C], `ambientVel` [m/s], and for user-defined media `ambientConductivity`, `ambientSpecificHeat`, `ambientDensity`, `ambientVisc`.
+- Initial state (only when `initialConfig.transient: true` **and** `initialCondition: 0`): `pressure`, `temp`, `holdup`, `complementaryFluidFraction`, `usl`, `usg`; service line: `gasMassFlowRate`.
 
-## `dutosServico` (array) — Service Line Segments
+Example seabed profile: `{"measuredPosition": [0, 1], "ambientTemp": [4, 4], "ambientVel": [0.3, 0.3]}`. Riser: `ambientTemp` from 4 °C (seabed) to ~20 °C (surface).
 
-Service/gas injection line. Required when `configuracaoInicial.linhaGas: true`. Similar structure to `dutosProducao` but single-phase gas flow (no holdup/bet/uls).
+## Thermal coupling (annulus ↔ column)
 
-Key difference in initial conditions:
-- Uses `vazaoMassicaGas` instead of `uls`/`ugs`/`holdup`/`bet`
+- Set `thermalCoupling: 1` on the production segment (and matching service segment); requires `gasLine: true`.
+- Coupled segments must coincide in position, length, and discretization.
+- Coupling is a **pipe** setting; `crossSection.annular` only changes hydraulics.
 
-Flow direction is typically **opposite** to the production line (gas flows from platform down to the well), so angles are typically negative.
+## Validation checklist
 
-### Example: Service Riser (downward)
-
-```json
-{
-  "id": 0, "rotulo": "Riser Serviço", "idCorte": 3,
-  "ambienteExterno": 1, "angulo": -1.5708,
-  "discretizacao": [{ "nCelulas": 20, "comprimento": 50 }],
-  "condicoesIniciais": {
-    "compInter": [0, 1],
-    "temp": [20, 4],
-    "tempExterna": [20, 4],
-    "velExterna": [1.0, 0.2]
-  }
-}
-```
-
-## XY Coordinate Mode
-
-When `configuracaoInicial.modoXY: true`, angles are auto-calculated from endpoint coordinates. Each duct specifies its endpoint `xCoor`/`yCoor`, and the system automatically computes inclination angles.
-
-Set starting points:
-- `configuracaoInicial.xProdInicio`, `yProdInicio` (production line start)
-- `configuracaoInicial.xServInicio`, `yServInicio` (service line start, if applicable)
-
-### Example with XY Mode
-
-```json
-"configuracaoInicial": { "modoXY": true, "linhaGas": true },
-"dutosProducao": [
-  { "id": 0, "idCorte": 0, "xCoor": 0, "yCoor": 1000, "nCelulas_XY": 20,
-    "discretizacao": [{ "nCelulas": 20, "comprimento": 100 }] },
-  { "id": 1, "idCorte": 1, "xCoor": 2000, "yCoor": 1000, "nCelulas_XY": 50,
-    "discretizacao": [{ "nCelulas": 50, "comprimento": 40 }] },
-  { "id": 2, "idCorte": 1, "xCoor": 2000, "yCoor": 0, "nCelulas_XY": 20,
-    "discretizacao": [{ "nCelulas": 20, "comprimento": 50 }] }
-]
-```
-
-## Thermal Coupling
-
-`acoplamentoTermico: 1` couples a production duct with the corresponding service duct for thermal exchange (e.g., wellbore column + annular). The coupling is positional.
-
-## Angle Convention
-
-- `π/2` (1.5708) = vertical upward (wellbore going up, riser)
-- `0` = horizontal (flowline)
-- `-π/2` (-1.5708) = vertical downward (service line descending)
-- Small positive = slight uphill
-- Angles are always relative to the flow direction
+- Sum of `numCells × length` per segment = intended physical length; measured lengths of accessories must fall inside the total line length.
+- Every segment references an existing cross-section; buried segments reference an existing formation id.
+- XY mode: coordinates consistent with intended lengths/angles; `numCellsXY` present per segment.
+- Service line present ⇔ `gasLine: true`.

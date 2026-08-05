@@ -1,204 +1,74 @@
 ---
 name: marlim3-output-configuration
-description: Use when the user needs to configure simulation output in Marlim3, including production/service line profiles, time-series trend monitors, transient snapshots, screen output, or gradient correction factors.
+description: Use when configuring Marlim3 simulation outputs — spatial profiles along the line (productionProfile/serviceProfile), time trends at gauge points (productionTrend/serviceTrend), radial cross-section outputs, the .dat result files the engine writes, and how results surface as pandas DataFrames.
 ---
 
-# Marlim3 Output Configuration
+# Marlim3 Output Configuration & Results
 
-## `perfilProducao` (object) — Production Line Profiles
+## Authoritative files
 
-Configures which variables are output along the production line at specified times.
+- [docs/user-guide/results.md](../../../docs/user-guide/results.md) — output objects and variable flags (**read this**)
+- [marlim3/_output_headers.py](../../../marlim3/_output_headers.py) — canonical result-column names (EN/PT)
+- [marlim3/_tramo/_branch.py](../../../marlim3/_tramo/_branch.py) — `_process_profiles` / `_process_trends` (how `.dat` files become DataFrames)
+- [tests/comparison/](../../../tests/comparison/) — reference CSVs showing real output shapes
 
-### Control Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `ativo` | bool | Active flag |
-| `tempo` | array[number] | Output times in seconds |
-
-### Available Variables (boolean flags)
-
-| Flag | Description |
-|------|-------------|
-| `pressao` | Pressure (kgf/cm²) |
-| `temperatura` | Temperature (°C) |
-| `holdup` | Liquid holdup |
-| `bet` | Complementary fluid fraction |
-| `ugs` | Superficial gas velocity (m/s) |
-| `uls` | Superficial liquid velocity (m/s) |
-| `ug` | Gas velocity (m/s) |
-| `ul` | Liquid velocity (m/s) |
-| `arra` | Flow pattern |
-| `viscosidadeLiquido` | Liquid viscosity |
-| `viscosidadeGas` | Gas viscosity |
-| `rhog` | Gas density |
-| `rhol` | Liquid density |
-| `rhoo` | Oil density |
-| `rhoa` | Water density |
-| `rhoMix` | Mixture density |
-| `vazaoMassicaGas` | Gas mass flow rate (kg/s) |
-| `vazaoMassicaLiquido` | Liquid mass flow rate (kg/s) |
-| `c0` | Distribution parameter |
-| `ud` | Drift velocity (m/s) |
-| `RGO` | Gas-Oil Ratio |
-| `deng` | Gas density ratio |
-| `yco2` | CO2 mole fraction |
-| `calor` | Heat transfer |
-| `masstrans` | Mass transfer |
-| `cpgas` | Gas specific heat |
-| `cpliq` | Liquid specific heat |
-| `QLstd` | Standard liquid flow rate |
-| `QLWstd` | Standard water flow rate |
-| `QLstdTotal` | Total standard liquid flow rate |
-| `QGstd` | Standard gas flow rate |
-| `api` | API gravity along the pipe |
-| `bsw` | BSW along the pipe |
-| `hidro` | Hydrostatic gradient |
-| `fric` | Friction gradient |
-| `RS` | Solution gas ratio |
-| `Bo` | Oil formation volume factor |
-| `Hint` | Internal heat transfer coefficient |
-| `Hext` | External heat transfer coefficient |
-| `temperaturaAmbiente` | Ambient temperature |
-| `angulo` | Pipe angle |
-| `diametroInterno` | Internal diameter |
-| `tempParede` | Wall temperature |
-| `subResfria` | Subcooling |
-| `FVH` | Hydrate volume fraction |
-| `dadosParafina` | Wax deposition data |
-
-### Example: Basic Profile Output
+## Profiles — snapshot along the line (`productionProfile` / `serviceProfile`, objects)
 
 ```json
-"perfilProducao": {
-  "tempo": [0],
-  "pressao": true, "temperatura": true, "holdup": true, "arra": true
+"productionProfile": {
+  "active": true,
+  "time": [0, 1800, 3600],
+  "pressure": true, "temperature": true, "holdup": true,
+  "flowPattern": true, "frictionPressureGradient": true,
+  "hydrostaticPressureGradient": true, "stdLiqFlowRate": true
 }
 ```
 
-### Example: Comprehensive Transient Profile Output
+Each listed `time` writes one line-wise profile (steady state: use `[0]`). Common flags: `pressure`, `temperature`, `holdup`, `complementaryFluidFraction`, `usg`/`usl` (superficial velocities), `ug`/`ul`, `flowPattern` (PT `arra`), `frictionPressureGradient` (PT `fric`), `hydrostaticPressureGradient` (PT `hidro`), `gasInSituDensity` (PT `rhog`), `liquidInSituDensity` (PT `rhol`). Many advanced diagnostic flags exist in the schema — enable only what is needed.
+
+## Trends — time series at fixed points (`productionTrend` / `serviceTrend`, **arrays**)
+
+One entry per gauge:
 
 ```json
-"perfilProducao": {
-  "ativo": true,
-  "pressao": true, "temperatura": true, "holdup": true,
-  "bet": true, "ugs": true, "uls": true, "arra": true,
-  "vazaoMassicaGas": true, "vazaoMassicaLiquido": true,
-  "c0": true, "ud": true, "RGO": true, "deng": true,
-  "QLstd": true, "QGstd": true, "api": true, "bsw": true,
-  "tempo": [0, 1000, 3000, 7000, 10000, 20000, 30000, 40000, 50000]
-}
-```
-
-## `perfilServico` (object) — Service Line Profiles
-
-Same concept as `perfilProducao` but for the gas service line. Available variables differ (single-phase gas):
-
-| Flag | Description |
-|------|-------------|
-| `pressao` | Pressure |
-| `temperatura` | Temperature |
-| `ugs` | Gas superficial velocity |
-| `ug` | Gas velocity |
-| `tensaoCisalhamento` | Wall shear stress |
-| `viscosidadeGas` | Gas viscosity |
-| `rhog` | Gas density |
-| `vazaoMassicaGas` | Gas mass flow rate |
-| `QGstd` | Standard gas flow rate |
-| `fric` | Friction gradient |
-| `calor` | Heat transfer |
-| `hidro` | Hydrostatic gradient |
-| `FVHG` | Gas hydrate volume fraction |
-
-```json
-"perfilServico": {
-  "tempo": [0], "pressao": true, "temperatura": true, "hidro": true, "fric": true
-}
-```
-
-## `tendP` (array) — Production Line Trend Monitors
-
-Time-series monitors at specific positions along the production line.
-
-| Field | Type | Unit | Description |
-|-------|------|------|-------------|
-| `id` | int | — | Identifier |
-| `ativo` | bool | — | Active flag |
-| `comprimentoMedido` | number | m | Monitor position |
-| `dt` | number | s | Sampling interval |
-| `rotulo` | string | — | Label for the monitor |
-
-Plus the same boolean variable flags as `perfilProducao` (pressao, temperatura, holdup, etc.)
-
-### Example: Trend Monitors at Key Positions
-
-```json
-"tendP": [
-  {
-    "id": 0, "ativo": true, "comprimentoMedido": 10, "dt": 20,
-    "pressao": true, "temperatura": true, "holdup": true, "QLstd": true, "QGstd": true,
-    "rotulo": "Fundo"
-  },
-  {
-    "id": 1, "ativo": true, "comprimentoMedido": 2000, "dt": 20,
-    "pressao": true, "temperatura": true, "QLstd": true, "QGstd": true,
-    "rotulo": "Superficie"
-  }
+"productionTrend": [
+  { "active": true, "measuredLength": 50.0, "dt": 5.0, "label": "near-inlet",
+    "pressure": true, "temperature": true, "holdup": true }
 ]
 ```
 
-## `tendS` (array) — Service Line Trend Monitors
+- `dt` [s] must be positive in transient mode; keep it well below event time scales.
+- `measuredLength` is mapped to a cell index and validated against the mesh.
+- Place gauges at: bottomhole, upstream/downstream of valves and pumps, base of riser, outlet.
 
-Same concept for service line. Available flags: pressao, temperatura, ugs, ug, tensaoCisalhamento, viscosidadeGas, rhog, vazaoMassicaGas, hidro, fric, FVHG, calor, QGstd, plus VGL-specific: presEstagVGL, tempEstagVGL, presGargVGL, tempGargVGL, vazaoVGL.
+## Cross-section (radial) outputs
 
-## `tendTransP` / `tendTransS` (array) — Transverse Temperature Trends
+- `crossProductionProfile` / `crossServiceProfile` (objects): `time` + `measuredLength` arrays → radial snapshots.
+- `crossProductionTrend` / `crossServiceTrend` (arrays): `measuredLength`, `layerIndex` (PT `camada`), `discretization` (radial node), `dt`, `label` → wall-layer temperature vs time (cooldown studies).
 
-Monitors temperature through the pipe wall layers at a specific position.
+## Files the engine writes (into the `-d` output directory)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ativo` | bool | Active flag |
-| `comprimentoMedido` | number | Position (m) |
-| `camada` | int | Wall layer index |
-| `discretizacao` | int | Radial discretization point |
-| `dt` | number | Sampling interval (s) |
-| `rotulo` | string | Label |
+| File pattern | Content |
+|--------------|---------|
+| `PERFISP*.dat` / `PERFISG*.dat` | production/service profiles (`;`-separated, header on 2nd line) |
+| `TENDP-<pos>.dat` / `TENDG-<pos>.dat` | trends per gauge (3 header lines: position, label, cell) |
+| `simulacao.log` | JSON run log — on failure, contains `resultadoSimulacao.logs[]` entries with `log: "FALHA"` |
+| `LogEvento.dat` | progress log streamed during the run |
+| `*.snp` / `*.snt` | snapshots (when `time.saveSnapshot` is set) |
 
-## `perfisTransP` / `perfisTransS` (object) — Transient Profile Snapshots
+## Results in Python
 
-Saves full spatial profiles at specific times + specific positions.
+After `branch.simulate()`, `branch.resultados` holds:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ativo` | bool | Active flag |
-| `tempo` | array | Snapshot times (s) |
-| `comprimentoMedido` | array | Positions to output (m) |
+- `resultados['productionProfile']` — DataFrame indexed by (time, cell) with unit-labeled columns like `Pressure (kgf/cm2) C`, `Temperature (C) C` (`C` = cell center, `F` = boundary/face).
+- `resultados['productionTrend']` — dict {gauge-number → DataFrame indexed by time} with `.attrs` (`measured_length`, `label`, `cell_index`).
+- Service-line equivalents exist when `gasLine: true`.
 
-## `tela` (array) — Screen Output
+Plot helpers: `branch.plot_profiles()`, `branch.plot_trends()`, `branch.plot_geometry()`, `marlim3.Scenarios` for multi-case comparison.
 
-Controls what is displayed on screen during simulation.
+## Validation checklist
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `ativo` | bool | Active flag |
-| `coluna` | bool | true=production, false=service |
-| `celula` | int | Cell index |
-| `variavel` | int | Variable index (1=pressure, 3=holdup, etc.) |
-
-```json
-"tela": [
-  { "coluna": true, "celula": 0, "variavel": 1 },
-  { "coluna": true, "celula": 249, "variavel": 3 }
-]
-```
-
-## `correcao` (object) — Gradient Correction Factors
-
-Applies multipliers to pressure and temperature gradients.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `ativo` | bool | Active flag |
-| `dPdLHidro` | array | Hydrostatic gradient multipliers per duct |
-| `dPdLFric` | array | Friction gradient multipliers per duct |
-| `dTdL` | array | Temperature gradient multipliers per duct |
+- At least `productionProfile` configured (results processing expects it).
+- `serviceProfile`/`serviceTrend` only when `gasLine: true`.
+- Profile `time` values ≤ `time.finalTime`; trend `dt > 0` in transients.
+- Trend positions within line length and aligned with the phenomena being studied.
