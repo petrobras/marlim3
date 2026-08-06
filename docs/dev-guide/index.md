@@ -6,6 +6,7 @@ Internal architecture of `Marlim3` core engine.
 
 | Page | Description |
 |------|-------------|
+| [Model overview](model-overview.md) | Overview of the computational model tree hierarchy |
 | [Num4Main.cpp — Main Entry Point](num4main.md) | Main source file containing `main()`, global variable declarations, network convergence data structures, and top-level solver orchestration for steady-state and transient simulations |
 | [Core Domain Classes](core-domain-classes.md) | High-level overview of the main classes composing a simulation: each class's role, responsibilities, and relationships |
 | [Input Parsing and SProd Construction](input-parsing.md) | How the simulator reads a JSON input file, validates it, maps its contents to internal data structures, and constructs the fully initialized `SProd` simulation object |

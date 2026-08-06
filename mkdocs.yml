@@ -67,6 +67,7 @@ nav:
     - Service Line: theoretical-reference/service-line.md
   - Developer Guide:
     - Overview: dev-guide/index.md
+    - Model Overview: dev-guide/model-overview.md
     - Num4Main — Main Entry Point: dev-guide/num4main.md
     - Core Domain Classes: dev-guide/core-domain-classes.md
     - Input Parsing: dev-guide/input-parsing.md
@@ -95,9 +96,13 @@ extra:
       link: https://github.com/petrobras/marlim3
       name: Marlim3 repository
 
+extra_css:
+  - stylesheets/markmap-fullsize.css
+
 extra_javascript:
   - javascripts/mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - javascripts/markmap-fullsize.js
 
 markdown_extensions:
   - admonition
@@ -113,8 +118,18 @@ markdown_extensions:
   - toc:
       permalink: true
 
+hooks:
+  - mkdocs_markmap_local.py
+
 plugins:
   - search
+  - markmap:
+      base_path: docs
+      encoding: utf-8
+      file_extension: .md
+      d3_version: "7"
+      lib_version: "0.18"
+      view_version: "0.18"
   - mkdocs-jupyter:
       execute: false
       include_source: true
