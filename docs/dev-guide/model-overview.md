@@ -3,7 +3,7 @@
 The following interactive map of Marlim3's computational model hierarchy covers the most relevant modules in the simulation engine.
 Click any node to expand or collapse its subtree; scroll to zoom and drag to pan.
 
-```markmap
+~~~markmap
 ---
 markmap:
  colorFreezeLevel: 2
@@ -39,7 +39,7 @@ markmap:
 - Production only (type 3) — no injection variant
 - Coupled at shared `fontechk` source points
 - `RedeParalela` / `SolveRedeParalelaTrans`
-#### Satellite tie-back
+#### Single branch
 - Standalone single branch (`SProd`), not part of a `Rede`
 - Production (`-s TRANSIENTE`) and injection (`-s INJETOR`)
 
@@ -263,3 +263,4 @@ markmap:
 - Temperature: semi-implicit (explicit advection, heat loss at new time level via `calctemp`)
 - Mass-transfer coupling: implicit (default) or fully explicit (`TMModelL` flag)
 - Same scheme for single-branch and each network branch (`SolveTrans` / `SolveRedeTrans` / `TransAnel` / `SolveRedeParalelaTrans`)
+~~~
