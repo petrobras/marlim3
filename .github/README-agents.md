@@ -1,46 +1,46 @@
-# Guia dos agentes Marlim3
+# Marlim3 agents guide
 
-Este repositório inclui um fluxo de agentes do GitHub Copilot para criar simulações Marlim3 completas: do pedido em linguagem natural até o arquivo `.mr3` testado e verificado. Você descreve a simulação, o planner entrevista você e registra tudo em um ADR, o specialist implementa e o QA valida.
+This repository includes a GitHub Copilot agent workflow for building complete Marlim3 simulations: from a natural-language request to a tested and verified `.mr3` file. You describe the simulation, the planner interviews you and records everything in an ADR, the specialist implements it and the QA validates it.
 
-## Visão geral do fluxo
+## Workflow overview
 
 ```mermaid
 flowchart TD
-    U([Usuário descreve a simulação]) --> O[marlim3<br/>orquestrador]
-    O --> P[marlim3-planner<br/>entrevista via askQuestions]
+    U([User describes the simulation]) --> O[marlim3<br/>orchestrator]
+    O --> P[marlim3-planner<br/>interviews via askQuestions]
     P --> ADR["docs/slug.adr.md"]
-    ADR --> G{Usuário aprova o ADR?}
-    G -- revisar --> P
-    G -- sim --> S[marlim3-specialist<br/>implementa e testa]
+    ADR --> G{Does the user approve the ADR?}
+    G -- revise --> P
+    G -- yes --> S[marlim3-specialist<br/>implements and tests]
     S --> IMPL["simulations/slug/slug.mr3<br/>tests/test_slug.py"]
-    IMPL --> Q[marlim3-qa<br/>valida contra o ADR]
+    IMPL --> Q[marlim3-qa<br/>validates against the ADR]
     Q --> R["docs/slug.qa.md"]
-    R --> V{Veredito}
-    V -- FAIL, máx. 2 ciclos --> S
-    V -- PASS --> F([Relatório final])
+    R --> V{Verdict}
+    V -- FAIL, max. 2 cycles --> S
+    V -- PASS --> F([Final report])
 ```
 
-## Passo a passo
+## Step by step
 
-1. Invoque o agente `marlim3` (ou `marlim3-planner` direto) e descreva a simulação desejada: tipo de sistema, fluidos, geometria, evento transiente etc.
-2. O planner faz perguntas estruturadas em lotes (escopo, fluidos, geometria e térmica, condições de contorno e equipamentos, eventos e saídas). Tudo que você não responder vira um default registrado no ADR.
-3. O planner grava o plano completo em `docs/<slug>.adr.md`, com tabela de referências cruzadas, entregáveis e critérios de aceitação. Revise e aprove.
-4. O specialist lê o ADR e gera `simulations/<slug>/<slug>.mr3` (chaves em inglês, com `"language": "en"`), o script Python opcional e a suíte `tests/test_<slug>.py`, seguindo as convenções do repositório (marker `simulacao`, guarda de executável, `tmp_path`). Ele valida contra o schema e roda os testes antes de entregar.
-5. O QA verifica tudo de forma independente (conformidade com o ADR, schema, referências cruzadas, consistência de arrays, plausibilidade física, execução dos testes) e grava o relatório final em `docs/<slug>.qa.md` com veredito PASS, PASS WITH WARNINGS ou FAIL.
-6. Em caso de FAIL, o orquestrador devolve os achados ao specialist (no máximo 2 ciclos) e reexecuta o QA. Ao final, você recebe o resumo com todos os caminhos e resultados.
+1. Invoke the `marlim3` agent (or `marlim3-planner` directly) and describe the simulation you want: system type, fluids, geometry, transient event, etc.
+2. The planner asks structured questions in batches (scope, fluids, geometry and thermal, boundary conditions and equipment, events and outputs). Anything you don't answer becomes a default recorded in the ADR.
+3. The planner writes the complete plan to `docs/<slug>.adr.md`, with a cross-reference table, deliverables and acceptance criteria. Review and approve it.
+4. The specialist reads the ADR and generates `simulations/<slug>/<slug>.mr3` (English keys, with `"language": "en"`), the optional Python script and the `tests/test_<slug>.py` suite, following the repository conventions (`simulacao` marker, executable guard, `tmp_path`). It validates against the schema and runs the tests before delivering.
+5. The QA independently checks everything (ADR conformance, schema, cross-references, array consistency, physical plausibility, test execution) and writes the final report to `docs/<slug>.qa.md` with a PASS, PASS WITH WARNINGS or FAIL verdict.
+6. On a FAIL, the orchestrator returns the findings to the specialist (at most 2 cycles) and re-runs the QA. At the end, you receive the summary with all paths and results.
 
-## Agentes
+## Agents
 
-| Agente | Papel | Entrega |
+| Agent | Role | Deliverable |
 |--------|-------|---------|
-| [marlim3](agents/marlim3.agent.md) | Orquestra o pipeline e o ciclo de correção | Relatório final |
-| [marlim3-planner](agents/marlim3-planner.agent.md) | Entrevista o usuário e decide a engenharia | `docs/<slug>.adr.md` |
-| [marlim3-specialist](agents/marlim3-specialist.agent.md) | Implementa o ADR e escreve os testes | `simulations/<slug>/`, `tests/test_<slug>.py` |
-| [marlim3-qa](agents/marlim3-qa.agent.md) | Verifica e emite o veredito | `docs/<slug>.qa.md` |
+| [marlim3](agents/marlim3.agent.md) | Orchestrates the pipeline and the correction cycle | Final report |
+| [marlim3-planner](agents/marlim3-planner.agent.md) | Interviews the user and makes the engineering decisions | `docs/<slug>.adr.md` |
+| [marlim3-specialist](agents/marlim3-specialist.agent.md) | Implements the ADR and writes the tests | `simulations/<slug>/`, `tests/test_<slug>.py` |
+| [marlim3-qa](agents/marlim3-qa.agent.md) | Verifies and issues the verdict | `docs/<slug>.qa.md` |
 
 ## Skills
 
-Cada agente carrega apenas as skills relevantes ao caso. As de workflow definem o processo; as de domínio destilam a documentação oficial ([docs/user-guide/](../docs/index.md), [docs/schema_branch.json](../docs/schema_branch.json)) e apontam para os arquivos autoritativos.
+Each agent loads only the skills relevant to the case. The workflow ones define the process; the domain ones distill the official documentation ([docs/user-guide/](../docs/index.md), [docs/schema_branch.json](../docs/schema_branch.json)) and point to the authoritative files.
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,7 @@ flowchart LR
         W3[testing]
         W4[qa-checklist]
     end
-    subgraph Domínio
+    subgraph Domain
         D1[json-schema]
         D2[fluid-configuration]
         D3[materials-cross-sections]
@@ -69,25 +69,25 @@ flowchart LR
     P & S & Q --> D1
 ```
 
-| Skill | Quando é usada |
+| Skill | When it is used |
 |-------|----------------|
-| [marlim3-planning-interview](skills/marlim3-planning-interview/SKILL.md) | Protocolo de entrevista, defaults seguros e template do ADR |
-| [marlim3-python-api](skills/marlim3-python-api/SKILL.md) | API `Branch`/`Tramo`, `simulate()`, resultados e CLI |
-| [marlim3-testing](skills/marlim3-testing/SKILL.md) | Convenções de pytest do repositório e template de teste |
-| [marlim3-qa-checklist](skills/marlim3-qa-checklist/SKILL.md) | Checklist de verificação e template do relatório de QA |
-| [marlim3-json-schema](skills/marlim3-json-schema/SKILL.md) | Estrutura do `.mr3`, unidades, chaves EN/PT e referências cruzadas (sempre carregada) |
-| [marlim3-fluid-configuration](skills/marlim3-fluid-configuration/SKILL.md) | Black-oil, tabela flash, composicional, emulsões, PVT |
-| [marlim3-materials-cross-sections](skills/marlim3-materials-cross-sections/SKILL.md) | Materiais, camadas radiais, formação rochosa |
-| [marlim3-pipeline-geometry](skills/marlim3-pipeline-geometry/SKILL.md) | Segmentos, ângulos ou modo XY, discretização, acoplamento térmico |
-| [marlim3-boundary-conditions](skills/marlim3-boundary-conditions/SKILL.md) | IPR, fontes, separador, gasInj, poço injetor |
-| [marlim3-artificial-lift](skills/marlim3-artificial-lift/SKILL.md) | Gas lift, BCS/ESP, bombas, descarga de anular |
-| [marlim3-valves-choke](skills/marlim3-valves-choke/SKILL.md) | Válvulas, chokes, PIG, vazamentos, parada e repartida |
-| [marlim3-time-transient](skills/marlim3-time-transient/SKILL.md) | Modo transiente, condição inicial, cronograma de passos, snapshots |
-| [marlim3-output-configuration](skills/marlim3-output-configuration/SKILL.md) | Perfis, tendências, saídas radiais e DataFrames de resultado |
-| [marlim3-advanced-settings](skills/marlim3-advanced-settings/SKILL.md) | Ajustes numéricos, desempenho, parafina, difusão 3D |
+| [marlim3-planning-interview](skills/marlim3-planning-interview/SKILL.md) | Interview protocol, safe defaults and ADR template |
+| [marlim3-python-api](skills/marlim3-python-api/SKILL.md) | `Branch`/`Tramo` API, `simulate()`, results and CLI |
+| [marlim3-testing](skills/marlim3-testing/SKILL.md) | Repository pytest conventions and test template |
+| [marlim3-qa-checklist](skills/marlim3-qa-checklist/SKILL.md) | Verification checklist and QA report template |
+| [marlim3-json-schema](skills/marlim3-json-schema/SKILL.md) | `.mr3` structure, units, EN/PT keys and cross-references (always loaded) |
+| [marlim3-fluid-configuration](skills/marlim3-fluid-configuration/SKILL.md) | Black-oil, flash table, compositional, emulsions, PVT |
+| [marlim3-materials-cross-sections](skills/marlim3-materials-cross-sections/SKILL.md) | Materials, radial layers, rock formation |
+| [marlim3-pipeline-geometry](skills/marlim3-pipeline-geometry/SKILL.md) | Segments, angles or XY mode, discretization, thermal coupling |
+| [marlim3-boundary-conditions](skills/marlim3-boundary-conditions/SKILL.md) | IPR, sources, separator, gasInj, injector well |
+| [marlim3-artificial-lift](skills/marlim3-artificial-lift/SKILL.md) | Gas lift, BCS/ESP, pumps, annulus unloading |
+| [marlim3-valves-choke](skills/marlim3-valves-choke/SKILL.md) | Valves, chokes, PIG, leaks, shutdown and restart |
+| [marlim3-time-transient](skills/marlim3-time-transient/SKILL.md) | Transient mode, initial condition, step schedule, snapshots |
+| [marlim3-output-configuration](skills/marlim3-output-configuration/SKILL.md) | Profiles, trends, radial outputs and result DataFrames |
+| [marlim3-advanced-settings](skills/marlim3-advanced-settings/SKILL.md) | Numerical tuning, performance, paraffin, 3D diffusion |
 
-## Dicas
+## Tips
 
-- Para só planejar (sem implementar), chame `marlim3-planner` diretamente. Para implementar um ADR já aprovado, chame `marlim3-specialist` passando o caminho do ADR. Para auditar um caso existente, chame `marlim3-qa`.
-- Os testes com marker `simulacao` exigem o executável compilado e são pulados automaticamente sem ele (veja [tests/README.md](../tests/README.md)). Teste pulado não é teste aprovado.
-- Rode um caso pronto com `uv run pytest tests/test_<slug>.py -v` ou via `marlim3.Branch().from_json(...)`.
+- To only plan (without implementing), call `marlim3-planner` directly. To implement an already approved ADR, call `marlim3-specialist` passing the ADR path. To audit an existing case, call `marlim3-qa`.
+- Tests with the `simulacao` marker require the compiled executable and are skipped automatically without it (see [tests/README.md](../tests/README.md)). A skipped test is not a passing test.
+- Run a finished case with `uv run pytest tests/test_<slug>.py -v` or via `marlim3.Branch().from_json(...)`.
