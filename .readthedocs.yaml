@@ -8,7 +8,7 @@ build:
 
   jobs:
     pre_install:
-      - pip install mkdocs-material pymdown-extensions mkdocs-jupyter
+      - pip install mkdocs-material pymdown-extensions mkdocs-jupyter mkdocs-markmap==2.5.2 
 
 mkdocs:
   configuration: mkdocs.yml
