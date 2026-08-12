@@ -63,6 +63,11 @@ gui = [
     "streamlit>=1.35.0",
     "jsonschema>=4.0.0",
 ]
+flowedit-gui = [
+    "pyqt5>=5.15.3",
+    "pyqt5-qt5==5.15.2",
+    "openpyxl>=3.1",
+]
 desktop = [
     "pyinstaller>=6.0",
     "pyside6>=6.8",

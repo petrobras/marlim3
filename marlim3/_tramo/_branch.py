@@ -329,7 +329,7 @@ class Branch:
 
     def from_flowedit(self, source='file', path=None, json_template=None,
                       fluid_model=None, fluid_model_path=None,
-                      keep_flowedit_xy=False, write_log=False):
+                      keep_flowedit_xy=True, write_log=False):
         from .._conversores._conversor_flowedit import converter_flowedit_para_json
 
         data = converter_flowedit_para_json(

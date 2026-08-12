@@ -1,14 +1,26 @@
 import sys
+import os
 import json
 from tkinter import CURRENT
+
+# Garante que o pacote 'conversor/' seja encontrado mesmo ao executar este
+# script diretamente a partir da pasta 'gui/', sem precisar unificar pastas.
+_GUI_DIR = os.path.dirname(os.path.abspath(__file__))
+_FLOWEDIT_DIR = os.path.normpath(os.path.join(_GUI_DIR, ".."))
+if _FLOWEDIT_DIR not in sys.path:
+    sys.path.insert(0, _FLOWEDIT_DIR)
+# Também adiciona o próprio diretório gui/ para os módulos locais da interface.
+if _GUI_DIR not in sys.path:
+    sys.path.insert(0, _GUI_DIR)
+
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QFileDialog, QMessageBox, QTabWidget, QVBoxLayout, QHBoxLayout, QButtonGroup, QRadioButton, QCheckBox, QTableWidget, QTableWidgetItem, QAbstractItemView, QGroupBox, QComboBox, QHeaderView, QStackedWidget
 from PyQt5.QtCore import Qt
-from FloweditConversion import FloweditConversion
-from FloweditConversionInputInfo import FloweditConversionInputInfo 
+from conversor.FloweditConversion import FloweditConversion
+from conversor.FloweditConversionInputInfo import FloweditConversionInputInfo
+from conversor.VGLObject import VGLObject
 from ProductionFluidObject import ProductionFluidObject
 from GasFluidObject import GasFluidObject
 from GasInjObject import GasInjObject
-from VGLObject import VGLObject
 from SeparadorObject import SeparadorObject
 from ChokeSupObject import ChokeSupObject
 from ProdMassSourceCustomWidget import ProdMassSourceCustomWidget
