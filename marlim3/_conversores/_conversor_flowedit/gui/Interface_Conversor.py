@@ -3,15 +3,17 @@ import os
 import json
 from tkinter import CURRENT
 
-# Garante que o pacote 'conversor/' seja encontrado mesmo ao executar este
-# script diretamente a partir da pasta 'gui/', sem precisar unificar pastas.
-_GUI_DIR = os.path.dirname(os.path.abspath(__file__))
-_FLOWEDIT_DIR = os.path.normpath(os.path.join(_GUI_DIR, ".."))
-if _FLOWEDIT_DIR not in sys.path:
-    sys.path.insert(0, _FLOWEDIT_DIR)
-# Também adiciona o próprio diretório gui/ para os módulos locais da interface.
-if _GUI_DIR not in sys.path:
-    sys.path.insert(0, _GUI_DIR)
+# Quando executado como script (não como executável PyInstaller), garante que o
+# pacote 'conversor/' seja encontrado a partir da estrutura do repositório.
+# Dentro de um bundle PyInstaller, o pacote já está embutido — não é necessário
+# (e pode ser prejudicial) manipular sys.path.
+if not getattr(sys, "frozen", False):
+    _GUI_DIR = os.path.dirname(os.path.abspath(__file__))
+    _FLOWEDIT_DIR = os.path.normpath(os.path.join(_GUI_DIR, ".."))
+    if _FLOWEDIT_DIR not in sys.path:
+        sys.path.insert(0, _FLOWEDIT_DIR)
+    if _GUI_DIR not in sys.path:
+        sys.path.insert(0, _GUI_DIR)
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QLineEdit, QPushButton, QFileDialog, QMessageBox, QTabWidget, QVBoxLayout, QHBoxLayout, QButtonGroup, QRadioButton, QCheckBox, QTableWidget, QTableWidgetItem, QAbstractItemView, QGroupBox, QComboBox, QHeaderView, QStackedWidget
 from PyQt5.QtCore import Qt

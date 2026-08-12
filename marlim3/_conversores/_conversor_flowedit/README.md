@@ -53,7 +53,7 @@ Em seguida, execute o seguinte comando a partir da pasta `gui/`:
 
 ```sh
 cd marlim3/_conversores/_conversor_flowedit/gui
-uv run pyinstaller --onefile --windowed Interface_Conversor.py
+uv run pyinstaller Interface_Conversor.spec
 ```
 
 Ao final da compilação, o arquivo executável será disponibilizado em um novo subdiretório `dist/`.
