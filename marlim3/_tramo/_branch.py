@@ -327,6 +327,29 @@ class Branch:
                 nome = nome[:-4]
             self.label = nome
 
+    def from_flowedit(self, source='file', path=None, json_template=None,
+                      fluid_model=None, fluid_model_path=None,
+                      keep_flowedit_xy=True, write_log=False):
+        from .._conversores._conversor_flowedit import converter_flowedit_para_json
+
+        data = converter_flowedit_para_json(
+            excel_path=path,
+            json_template_dict=json_template,
+            fluid_model=fluid_model,
+            fluid_model_path=fluid_model_path,
+            keep_flowedit_xy=keep_flowedit_xy,
+            write_log=write_log,
+        )
+        self.from_json(data, is_string=True)
+
+        if not hasattr(self, 'label') or not self.label:
+            nome = os.path.basename(path)
+            for ext in ('.xlsm', '.xlsx', '.xls'):
+                if nome.endswith(ext):
+                    nome = nome[:-len(ext)]
+                    break
+            self.label = nome
+
     def simulate(self, kind='PRODUTOR',
                  label='marlim3_model',
                  directory='marlim3_resultados',

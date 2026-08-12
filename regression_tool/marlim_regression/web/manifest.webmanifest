@@ -1,0 +1,16 @@
+{
+  "name": "Regression Tool",
+  "short_name": "Regression Tool",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09111c",
+  "theme_color": "#09111c",
+  "icons": [
+    {
+      "src": "/api/app-icon?v=2",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

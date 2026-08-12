@@ -28,15 +28,6 @@ def _load_translations():
     for en, pt in en_to_pt.items():
         pt_to_en[pt] = en
 
-    # Identity overrides: abbreviated keys that are the same in both languages.
-    _IDENTITY_KEYS = [
-        "cdPig", "compP", "compT", "correlacoesPorArranjo",
-        "difusTerm3DFE", "fracTermMotorEfic", "mapaArranjo",
-        "tabG", "tabP", "taxaDespre", "xCoor", "yCoor",
-    ]
-    for k in _IDENTITY_KEYS:
-        pt_to_en[k] = k
-
     # --- Value translations (both directions) ---
     # PT→EN values (for loading)
     value_translations_pt_en = {}
