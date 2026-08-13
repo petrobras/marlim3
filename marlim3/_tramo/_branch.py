@@ -81,7 +81,13 @@ class Branch:
         are also translated PT→EN so the user can build models fully in PT.
         All dict/list values are wrapped in bilingual containers for
         transparent PT/EN nested access.
+        Tuples are coerced to list so that a trailing comma
+        (e.g. ``branch.perfilProducao = {...},``) does not silently bypass
+        translation.
         """
+        # Coerce tuples to list (guards against trailing-comma assignment)
+        if isinstance(value, tuple):
+            value = list(value)
         en_name = _PT_TO_EN.get(name)
         if en_name is not None and en_name != name:
             # Translate nested PT keys/values by wrapping in a dict
