@@ -55,7 +55,7 @@ def translate(data, _root=False):
     """Recursively translate Portuguese JSON keys (and some values) to English.
 
     Args:
-        data: A JSON-like structure (dict, list, or scalar).
+        data: A JSON-like structure (dict, list, tuple, or scalar).
         _root: Internal flag — kept for API compatibility.
 
     Returns:
@@ -69,7 +69,7 @@ def translate(data, _root=False):
                 v = _VALUE_TRANSLATIONS[k].get(v.upper(), v)
             result[en_key] = translate(v, _root=False)
         return result
-    elif isinstance(data, list):
+    elif isinstance(data, (list, tuple)):
         return [translate(item, _root=False) for item in data]
     else:
         return data
@@ -79,7 +79,7 @@ def translate_en_to_pt(data):
     """Recursively translate English JSON keys (and enum values) to Portuguese.
 
     Args:
-        data: A JSON-like structure (dict, list, or scalar).
+        data: A JSON-like structure (dict, list, tuple, or scalar).
 
     Returns:
         A new structure with English keys replaced by Portuguese equivalents.
@@ -92,7 +92,7 @@ def translate_en_to_pt(data):
                 v = _VALUE_TRANSLATIONS_EN_PT[k].get(v, v)
             result[pt_key] = translate_en_to_pt(v)
         return result
-    elif isinstance(data, list):
+    elif isinstance(data, (list, tuple)):
         return [translate_en_to_pt(item) for item in data]
     else:
         return data
@@ -196,6 +196,9 @@ def _make_bilingual(value):
 
     Used internally to wrap already-translated (English-keyed) data without
     re-translating keys.
+    Tuples are coerced to BilingualList so that a trailing comma on an
+    assignment (e.g. ``branch.perfilProducao = {...},``) does not silently
+    bypass translation.
     """
     if isinstance(value, BilingualDict):
         return value
@@ -207,7 +210,7 @@ def _make_bilingual(value):
         return bd
     if isinstance(value, BilingualList):
         return value
-    if isinstance(value, list):
+    if isinstance(value, (list, tuple)):
         bl = BilingualList.__new__(BilingualList)
         list.__init__(bl, [_make_bilingual(item) for item in value])
         return bl
