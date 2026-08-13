@@ -44,7 +44,12 @@ class Network:
         are also translated PT->EN so the user can build networks fully in PT.
         All dict/list values are wrapped in bilingual containers for
         transparent PT/EN nested access.
+        Tuples are coerced to list so that a trailing comma
+        (e.g. ``network.attr = {...},``) does not silently bypass translation.
         """
+        # Coerce tuples to list (guards against trailing-comma assignment)
+        if isinstance(value, tuple):
+            value = list(value)
         en_name = _PT_TO_EN.get(name)
         if en_name is not None and en_name != name:
             translated = _translate_pt_to_en({name: value})
