@@ -161,3 +161,4 @@ regression_output/
 # Versionamento interno
 versao.h
 versao.h.bak
+*.code-workspace
