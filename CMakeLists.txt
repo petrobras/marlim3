@@ -36,7 +36,7 @@ option(MARLIM_MINGW_STATIC "Build a fully static executable with MinGW" ON)
 set(MARLIM_FORTRAN_LIBS "" CACHE STRING "Additional Fortran runtime libraries to link explicitly")
 set(MARLIM_GCC_STATIC_LIB_DIR "" CACHE PATH "Directory containing static GNU runtime libraries for macOS builds")
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 

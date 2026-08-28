@@ -88,7 +88,7 @@ jobs:
 
   # Build jobs: produce the native executable only. No tests here.
   build-linux:
-    name: Build – Linux x64 (manylinux2014)
+    name: Build – Linux x64 (manylinux_2_28)
     needs:
       - pre_check
       - python-checks
@@ -101,19 +101,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build executable in manylinux2014
+      - name: Build executable in manylinux_2_28
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/workspace" \
-            quay.io/pypa/manylinux2014_x86_64 \
+            quay.io/pypa/manylinux_2_28_x86_64 \
             bash -lc '
               set -euo pipefail
-              # devtoolset-10/enable references MANPATH/LD_LIBRARY_PATH, which
-              # are unset in the clean manylinux container; pre-initialize them
-              # so `set -u` does not abort on the unbound variable.
-              export MANPATH="${MANPATH:-}"
-              export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
-              source /opt/rh/devtoolset-10/enable
+              # Unlike manylinux2014, this image ships GCC 14 as the default
+              # toolchain, so no devtoolset activation is required.
               /opt/python/cp312-cp312/bin/python -m pip install "cmake>=3.27,<4"
               export PATH="/opt/python/cp312-cp312/bin:${PATH}"
               cd /workspace
