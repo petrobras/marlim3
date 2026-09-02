@@ -202,7 +202,7 @@ JSON_entrada_configuracaoInicial_condicaoVazPres::JSON_entrada_configuracaoInici
 	contents["ativo"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_ativo>();
 	contents["pressao"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_pressao>();
 	contents["temperatura"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura>();
-	contents["Vazao Massica"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass>();
+	contents["VazMass"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass>();
 	contents["razaoBeta"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta>();
 	contents["tempo"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_tempo>();
 }
@@ -220,7 +220,7 @@ JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura& JSON_entrada_confi
 }
 
 JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass& JSON_entrada_configuracaoInicial_condicaoVazPres::VazMass(){
-	return static_cast<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass&>(*contents["Vazao Massica"].get());
+	return static_cast<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass&>(*contents["VazMass"].get());
 }
 
 JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta& JSON_entrada_configuracaoInicial_condicaoVazPres::razaoBeta(){
