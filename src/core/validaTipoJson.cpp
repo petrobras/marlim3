@@ -1648,11 +1648,11 @@ void validadorTipo::valida_fluido_complementar(Value &fluido_complementar_json, 
         }
     }
 
-    // Validar campo tipoFluido (opcional)
-    if (fluido_complementar_json.HasMember("tipoFluido")) {
-        if (!fluido_complementar_json["tipoFluido"].IsInt()) {
+    // Validar campo tipoF (opcional)
+    if (fluido_complementar_json.HasMember("tipoF")) {
+        if (!fluido_complementar_json["tipoF"].IsInt()) {
             sucesso = false;
-            erros.push_back("fluidoComplementar/tipoFluido: deve ser do tipo inteiro");
+            erros.push_back("fluidoComplementar/tipoF: deve ser do tipo inteiro");
         }
     }
 }

@@ -950,7 +950,7 @@ JSON_entrada_fluidoComplementar::JSON_entrada_fluidoComplementar(){
 	contents["temp2"] = make_shared<JSON_entrada_fluidoComplementar_temp2>();
 	contents["visc2"] = make_shared<JSON_entrada_fluidoComplementar_visc2>();
 	contents["salinidade"] = make_shared<JSON_entrada_fluidoComplementar_salinidade>();
-	contents["tipoFluido"] = make_shared<JSON_entrada_fluidoComplementar_tipoF>();
+	contents["tipoF"] = make_shared<JSON_entrada_fluidoComplementar_tipoF>();
 }
 
 JSON_entrada_fluidoComplementar_ativo& JSON_entrada_fluidoComplementar::ativo(){
@@ -1002,7 +1002,7 @@ JSON_entrada_fluidoComplementar_salinidade& JSON_entrada_fluidoComplementar::sal
 }
 
 JSON_entrada_fluidoComplementar_tipoF& JSON_entrada_fluidoComplementar::tipoF(){
-	return static_cast<JSON_entrada_fluidoComplementar_tipoF&>(*contents["tipoFluido"].get());
+	return static_cast<JSON_entrada_fluidoComplementar_tipoF&>(*contents["tipoF"].get());
 }
 
 JSON_entrada_valvula_Item::JSON_entrada_valvula_Item(){
