@@ -189,3 +189,14 @@ def test_network_class_bilingual_roundtrip():
     assert net.configuracaoInicial["ParametroInicial"] == 0.5
     assert net.connection[0]["imposedPressure"] is True
 
+
+def test_complementary_water_fluid_type_key_roundtrip():
+    """Water-mode complementary fluid uses the tipoF key accepted by the engine."""
+    from marlim3._tramo._keys import translate, translate_en_to_pt
+
+    english = {"complementaryFluid": {"active": True, "complementaryFluidType": 1}}
+    portuguese = {"fluidoComplementar": {"ativo": True, "tipoF": 1}}
+
+    assert translate(portuguese) == english
+    assert translate_en_to_pt(english) == portuguese
+
