@@ -631,7 +631,7 @@ Each cell stores one `ProFluCol` object as `fluicol`.
 | Viscosity | Arrhenius: $\mu_w = 2.414 \times 10^{-5} \cdot 10^{247.8/(T + 133.15)} \times 1000$ (cP) |
 | Cp | Polynomial in $T_K$, piecewise at 410 K |
 | Conductivity | $k = 0.565 + (1.75 \times 10^{-3} - 6.21 \times 10^{-6} T) T$ |
-| Surface tension | Fixed reference value: $0.0728\ \mathrm{N/m}$ (pure water at $20\,^\circ\mathrm{C}$) |
+| Surface tension | Defaults to $0.072\ \mathrm{N/m}$ at $25\,^\circ\mathrm{C}$ and can be overridden with `fluidoComplementar.tensup` |
 
 ### CO₂ injection mode (`injPoc == 3`)
 

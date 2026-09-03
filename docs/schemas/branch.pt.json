@@ -1045,7 +1045,8 @@
         "tensup": {
           "type": "number",
           "description": "Tensão superficial do líquido.",
-          "unit": "N/m"
+          "unit": "N/m",
+          "default": 0.072
         },
         "calorEspecifico": {
           "type": "number",
