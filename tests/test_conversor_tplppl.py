@@ -14,26 +14,42 @@ OUTPUT_HEADERS_PATH = REPO_ROOT / "marlim3" / "_output_headers.py"
 def _load_module_without_marlim3_init():
     """Import the converter module without triggering marlim3/__init__.py (avoids
     pulling in pandas/seaborn/the compiled simulator, which this test does not need)."""
+    saved_modules = {
+        name: sys.modules.get(name)
+        for name in (
+            "marlim3",
+            "marlim3._output_headers",
+            "marlim3._conversores",
+            "marlim3._conversores._conversor_marlim3_tplppl",
+        )
+    }
     package = types.ModuleType("marlim3")
     package.__version__ = "test"
     package.__path__ = [str(REPO_ROOT / "marlim3")]
-    sys.modules["marlim3"] = package
+    try:
+        sys.modules["marlim3"] = package
 
-    headers_spec = importlib.util.spec_from_file_location("marlim3._output_headers", OUTPUT_HEADERS_PATH)
-    headers_module = importlib.util.module_from_spec(headers_spec)
-    sys.modules["marlim3._output_headers"] = headers_module
-    headers_spec.loader.exec_module(headers_module)
+        headers_spec = importlib.util.spec_from_file_location("marlim3._output_headers", OUTPUT_HEADERS_PATH)
+        headers_module = importlib.util.module_from_spec(headers_spec)
+        sys.modules["marlim3._output_headers"] = headers_module
+        headers_spec.loader.exec_module(headers_module)
 
-    conversores_package = types.ModuleType("marlim3._conversores")
-    conversores_package.__path__ = [str(REPO_ROOT / "marlim3" / "_conversores")]
-    sys.modules["marlim3._conversores"] = conversores_package
+        conversores_package = types.ModuleType("marlim3._conversores")
+        conversores_package.__path__ = [str(REPO_ROOT / "marlim3" / "_conversores")]
+        sys.modules["marlim3._conversores"] = conversores_package
 
-    spec = importlib.util.spec_from_file_location(
-        "marlim3._conversores._conversor_marlim3_tplppl", CONVERSOR_PATH)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+        spec = importlib.util.spec_from_file_location(
+            "marlim3._conversores._conversor_marlim3_tplppl", CONVERSOR_PATH)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        for name, previous in saved_modules.items():
+            if previous is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
 
 
 conversor = _load_module_without_marlim3_init()
