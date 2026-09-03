@@ -383,7 +383,7 @@ JSON_entrada_configuracaoInicial::JSON_entrada_configuracaoInicial(){
 	contents["tipoModeloDrift"] = make_shared<JSON_entrada_configuracaoInicial_tipoModeloDrift>();
 	contents["modoDifus3D"] = make_shared<JSON_entrada_configuracaoInicial_modoDifus3D>();
 	contents["threadP3D"] = make_shared<JSON_entrada_configuracaoInicial_threadP3D>();
-	contents["modoDifus3DArq"] = make_shared<JSON_entrada_configuracaoInicial_modoDifus3DJson>();
+	contents["modoDifus3DJson"] = make_shared<JSON_entrada_configuracaoInicial_modoDifus3DJson>();
 }
 
 JSON_entrada_configuracaoInicial_origemGeometria& JSON_entrada_configuracaoInicial::origemGeometria(){
@@ -624,7 +624,7 @@ JSON_entrada_configuracaoInicial_threadP3D& JSON_entrada_configuracaoInicial::th
 }
 
 JSON_entrada_configuracaoInicial_modoDifus3DJson& JSON_entrada_configuracaoInicial::modoDifus3DJson(){
-	return static_cast<JSON_entrada_configuracaoInicial_modoDifus3DJson&>(*contents["modoDifus3DArq"].get());
+	return static_cast<JSON_entrada_configuracaoInicial_modoDifus3DJson&>(*contents["modoDifus3DJson"].get());
 }
 
 
@@ -673,7 +673,7 @@ JSON_entrada_parafina::JSON_entrada_parafina(){
 	contents["alteraViscFlu"] = make_shared<JSON_entrada_parafina_alteraViscFlu>();
 	contents["difus"] = make_shared<JSON_entrada_parafina_difus>();
 	contents["rugosidade"] = make_shared<JSON_entrada_parafina_rugosidade>();
-	contents["multiplicadorViscosidade"] = make_shared<JSON_entrada_parafina_multVis>();
+	contents["multVis"] = make_shared<JSON_entrada_parafina_multVis>();
 	contents["DmultipWax"] = make_shared<JSON_entrada_parafina_DmultipWax>();
 	contents["EmultipWax"] = make_shared<JSON_entrada_parafina_EmultipWax>();
 	contents["FmultipWax"] = make_shared<JSON_entrada_parafina_FmultipWax>();
@@ -721,7 +721,7 @@ JSON_entrada_parafina_rugosidade& JSON_entrada_parafina::rugosidade(){
 }
 
 JSON_entrada_parafina_multVis& JSON_entrada_parafina::multVis(){
-	return static_cast<JSON_entrada_parafina_multVis&>(*contents["multiplicadorViscosidade"].get());
+	return static_cast<JSON_entrada_parafina_multVis&>(*contents["multVis"].get());
 }
 
 JSON_entrada_parafina_DmultipWax& JSON_entrada_parafina::DmultipWax(){
@@ -857,7 +857,7 @@ JSON_entrada_fluidosProducao_Item_bswCorte& JSON_entrada_fluidosProducao_Item::b
 	return static_cast<JSON_entrada_fluidosProducao_Item_bswCorte&>(*contents["bswCorte"].get());
 }
 
-JSON_entrada_fluidosProducao_Item_coefAModeloExp& JSON_entrada_fluidosProducao_Item::PHI100(){
+JSON_entrada_fluidosProducao_Item_PHI100& JSON_entrada_fluidosProducao_Item::PHI100(){
 	return static_cast<JSON_entrada_fluidosProducao_Item_PHI100&>(*contents["PHI100"].get());
 }
 
@@ -1648,7 +1648,7 @@ JSON_entrada_dutosProducao_Item::JSON_entrada_dutosProducao_Item(){
 	contents["difusTerm2DJSON"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm2DJSON>();
 	contents["difusTerm3D"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3D>();
 	contents["difusTerm3DFE"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3DFE>();
-	contents["difusTerm3DRotulo"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3DAcop>();
+	contents["difusTerm3DAcop"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3DAcop>();
 	contents["xCoor"] = make_shared<JSON_entrada_dutosProducao_Item_xCoor>();
 	contents["yCoor"] = make_shared<JSON_entrada_dutosProducao_Item_yCoor>();
 	contents["nCelulas_XY"] = make_shared<JSON_entrada_dutosProducao_Item_nCelulas_XY>();
@@ -1768,7 +1768,7 @@ JSON_entrada_dutosProducao_Item_difusTerm3DFE& JSON_entrada_dutosProducao_Item::
 }
 
 JSON_entrada_dutosProducao_Item_difusTerm3DAcop& JSON_entrada_dutosProducao_Item::difusTerm3DAcop(){
-	return static_cast<JSON_entrada_dutosProducao_Item_difusTerm3DAcop&>(*contents["difusTerm3DRotulo"].get());
+	return static_cast<JSON_entrada_dutosProducao_Item_difusTerm3DAcop&>(*contents["difusTerm3DAcop"].get());
 }
 
 JSON_entrada_dutosServico_Item_condicoesIniciais::JSON_entrada_dutosServico_Item_condicoesIniciais(){
@@ -1949,7 +1949,7 @@ JSON_entrada_dutosServico_Item_condicoesIniciais& JSON_entrada_dutosServico_Item
 }
 
 JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente& JSON_entrada_dutosServico_Item::condicoesIniciaisEAmbiente(){
-	return static_cast<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente&>(*contents["condicoesIniciais"].get());
+	return static_cast<JSON_entrada_dutosServico_Item_condicoesIniciaisEAmbiente&>(*contents["condicoesIniciaisEAmbiente"].get());
 }
 
 JSON_entrada_dutosServico_Item_dPdLHidro& JSON_entrada_dutosServico_Item::dPdLHidro(){
@@ -2142,7 +2142,7 @@ JSON_entrada_ipr_Item_comprimentoMedido& JSON_entrada_ipr_Item::comprimentoMedid
 	return static_cast<JSON_entrada_ipr_Item_comprimentoMedido&>(*contents["comprimentoMedido"].get());
 }
 
-JSON_entrada_ipr_Item_id& JSON_entrada_ipr_Item::tipoIPR(){
+JSON_entrada_ipr_Item_tipoIPR& JSON_entrada_ipr_Item::tipoIPR(){
 	return static_cast<JSON_entrada_ipr_Item_tipoIPR&>(*contents["tipoIPR"].get());
 }
 

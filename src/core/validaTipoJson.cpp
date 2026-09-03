@@ -2667,11 +2667,11 @@ void validadorTipo::valida_parafina(Value &parafina_json, std::vector<std::strin
         }
     }
 
-    // Validar campo multiplicadorViscosidade (opcional)
-    if (parafina_json.HasMember("multiplicadorViscosidade")) {
-        if (!parafina_json["multiplicadorViscosidade"].IsNumber()) {
+    // Validar campo multVis (opcional)
+    if (parafina_json.HasMember("multVis")) {
+        if (!parafina_json["multVis"].IsNumber()) {
             sucesso = false;
-            erros.push_back("parafina/multiplicadorViscosidade: deve ser do tipo number");
+            erros.push_back("parafina/multVis: deve ser do tipo number");
         }
     }
 
