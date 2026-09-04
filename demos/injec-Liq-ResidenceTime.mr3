@@ -207,7 +207,7 @@
                                "temp2":  40.0,
                                "visc2":  0.8,
                                "salinity":  0.0,
-                               "fluidType":  2
+                               "complementaryFluidType":  2
                            },
     "gasFluid":  {
                      "id":  0,
@@ -1519,7 +1519,7 @@
                               "api":  true,
                               "bsw":  true,
                               "internalReynolds":  true,
-                              "tempoResiLiqComp":  true,
+                              "residenceTime":  true,
                               "frictionReducer":  true,
                               "time":  [
                                                    0,

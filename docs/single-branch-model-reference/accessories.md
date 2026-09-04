@@ -127,7 +127,7 @@ Fluid definition:
   - `1` = external hydrocarbon assumed equal to current tubing fluid
   - `0` = external fluid explicitly defined by `prodFluidId`
 - `prodFluidId` · `indiFluidoPro`
-- `gasAmbient` · `ambienteGas` — admit only gaseous fraction of external fluid
+- `gasAmbient` · `ambGas` — admit only gaseous fraction of external fluid
 
 Flow-direction control:
 

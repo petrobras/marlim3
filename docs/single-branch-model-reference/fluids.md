@@ -352,9 +352,14 @@ For the generic type, the following properties define the fluid:
 - **Conductivity** [W/(m·K)] *(key: `conductivity` / `condutividade`)*
 - **Viscosity** via two ASTM points *(keys: `temp1`, `visc1`, `temp2`, `visc2`)*
 
-For water-based type, provide only:
+For water-based type, the only required property is:
 
 - **Salinity** [g/(kg water)] *(key: `salinity` / `salinidade`)*
+
+All remaining properties come from internal water correlations. Surface tension
+is the one value that may still be overridden: when `surfaceTension` / `tensup`
+is omitted the engine assumes `0.072 N/m` (water at about 25 °C), and any value
+supplied by the user takes precedence.
 
 ---
 

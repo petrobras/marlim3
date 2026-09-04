@@ -1028,7 +1028,8 @@
         "surfaceTension": {
           "type": "number",
           "description": "Liquid surface tension.",
-          "unit": "N/m"
+          "unit": "N/m",
+          "default": 0.072
         },
         "specificHeat": {
           "type": "number",
@@ -2821,6 +2822,7 @@
             2,
             3
           ],
+          "default": 0,
           "description": "0: user-provided fluid (liquid) from complementaryFluid; 1: water (requires salinity); 2: CO2-rich gas via flash table (.tab Pvtsim file and production-fluid registration required); 3: CO2-rich gas via compositional model (.ctm Pvtsim file and production-fluid registration required)."
         },
         "salinity": {
