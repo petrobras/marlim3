@@ -126,6 +126,20 @@ void JSONObject::load(Value& v) {
 
 Each `JSONInstance` subclass tracks whether its value was present in the JSON via the `bIsNull` flag (set `false` after a successful `load()`), accessible through the `exists()` method.
 
+!!! warning "Key names are matched exactly"
+    Because lookup is a plain `HasMember` test, a key whose name does not match
+    the one registered in `contents` is not loaded at all: `exists()` stays
+    `false` and the field silently keeps its default. Renaming a key in
+    `JSON_entrada.cpp` is therefore a breaking change for existing input files,
+    even though nothing fails at parse time.
+
+    To keep that failure mode visible, `validaTipoJson.cpp` rejects the known
+    discontinued spellings with an explicit validation error before the typed
+    schema is populated. The list lives in `valida_chaves_descontinuadas()` and
+    is mirrored in the
+    [input migration guide](../single-branch-model-reference/migration.md).
+    Any future rename must be added to both.
+
 ---
 
 <a id="layer-2--json_entrada-typed-schema-classes"></a>
