@@ -2646,7 +2646,7 @@ JSON_entrada_fontePressao_Item::JSON_entrada_fontePressao_Item(){
 	contents["indiFluidoPro"] = make_shared<JSON_entrada_fontePressao_Item_indiFluidoPro>();
 	contents["check"] = make_shared<JSON_entrada_fontePressao_Item_check>();
 	contents["tempoChk"] = make_shared<JSON_entrada_fontePressao_Item_tempoChk>();
-	contents["ambienteGas"] = make_shared<JSON_entrada_fontePressao_Item_ambGas>();
+	contents["ambGas"] = make_shared<JSON_entrada_fontePressao_Item_ambGas>();
 }
 
 JSON_entrada_fontePressao_Item_ativo& JSON_entrada_fontePressao_Item::ativo(){
@@ -2710,7 +2710,7 @@ JSON_entrada_fontePressao_Item_tempoChk& JSON_entrada_fontePressao_Item::tempoCh
 }
 
 JSON_entrada_fontePressao_Item_ambGas& JSON_entrada_fontePressao_Item::ambGas(){
-	return static_cast<JSON_entrada_fontePressao_Item_ambGas&>(*contents["ambienteGas"].get());
+	return static_cast<JSON_entrada_fontePressao_Item_ambGas&>(*contents["ambGas"].get());
 }
 
 JSON_entrada_tendP_Item::JSON_entrada_tendP_Item(){
@@ -2770,7 +2770,7 @@ JSON_entrada_tendP_Item::JSON_entrada_tendP_Item(){
 	contents["mlFonte"] = make_shared<JSON_entrada_tendP_Item_mlFonte>();
 	contents["mgFonte"] = make_shared<JSON_entrada_tendP_Item_mgFonte>();
 	contents["mcFonte"] = make_shared<JSON_entrada_tendP_Item_mcFonte>();
-	contents["tempChokeJusante"] = make_shared<JSON_entrada_tendP_Item_tempChokeJus>();
+	contents["tempChokeJus"] = make_shared<JSON_entrada_tendP_Item_tempChokeJus>();
 	contents["deltaPBomba"] = make_shared<JSON_entrada_tendP_Item_deltaPBomba>();
 	contents["potenciaBomba"] = make_shared<JSON_entrada_tendP_Item_potenciaBomba>();
 
@@ -3017,7 +3017,7 @@ JSON_entrada_tendP_Item_mcFonte& JSON_entrada_tendP_Item::mcFonte(){
 }
 
 JSON_entrada_tendP_Item_tempChokeJus& JSON_entrada_tendP_Item::tempChokeJus(){
-	return static_cast<JSON_entrada_tendP_Item_tempChokeJus&>(*contents["tempChokeJusante"].get());
+	return static_cast<JSON_entrada_tendP_Item_tempChokeJus&>(*contents["tempChokeJus"].get());
 }
 
 JSON_entrada_tendP_Item_deltaPBomba& JSON_entrada_tendP_Item::deltaPBomba(){
@@ -3462,7 +3462,7 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["pseudoLiquido"] = make_shared<JSON_entrada_perfilProducao_pseudoLiquido>();
 	contents["pseudoGas"] = make_shared<JSON_entrada_perfilProducao_pseudoGas>();
 	contents["pseudoMist"] = make_shared<JSON_entrada_perfilProducao_pseudoMist>();
-	contents["tempoResiLiqComp"] = make_shared<JSON_entrada_perfilProducao_TResi>();
+	contents["TResi"] = make_shared<JSON_entrada_perfilProducao_TResi>();
 	contents["RedutorAtrito"] = make_shared<JSON_entrada_perfilProducao_RedutorAtrito>();
 	contents["angulo"] = make_shared<JSON_entrada_perfilProducao_angulo>();
 	contents["diametroInterno"] = make_shared<JSON_entrada_perfilProducao_diametroInterno>();
@@ -3735,7 +3735,7 @@ JSON_entrada_perfilProducao_pseudoMist& JSON_entrada_perfilProducao::pseudoMist(
 }
 
 JSON_entrada_perfilProducao_TResi& JSON_entrada_perfilProducao::TResi(){
-	return static_cast<JSON_entrada_perfilProducao_TResi&>(*contents["tempoResiLiqComp"].get());
+	return static_cast<JSON_entrada_perfilProducao_TResi&>(*contents["TResi"].get());
 }
 
 JSON_entrada_perfilProducao_RedutorAtrito& JSON_entrada_perfilProducao::RedutorAtrito(){
@@ -4198,8 +4198,8 @@ JSON_entrada::JSON_entrada(){
 	contents["fonteLiquido"] = make_shared<JSON_entrada_fonteLiquido>();
 	contents["fonteMassa"] = make_shared<JSON_entrada_fonteMassa>();
 	contents["fonteGas"] = make_shared<JSON_entrada_fonteGas>();
-	contents["poroRadial"] = make_shared<JSON_entrada_fontePoroRadial>();
-	contents["poro2D"] = make_shared<JSON_entrada_fontePoro2D>();
+	contents["fontePoroRadial"] = make_shared<JSON_entrada_fontePoroRadial>();
+	contents["fontePoro2D"] = make_shared<JSON_entrada_fontePoro2D>();
 	contents["fonteGasLift"] = make_shared<JSON_entrada_fonteGasLift>();
 	contents["material"] = make_shared<JSON_entrada_material>();
 	contents["secaoTransversal"] = make_shared<JSON_entrada_secaoTransversal>();
@@ -4286,11 +4286,11 @@ JSON_entrada_fonteGas& JSON_entrada::fonteGas(){
 }
 
 JSON_entrada_fontePoroRadial& JSON_entrada::fontePoroRadial(){
-	return static_cast<JSON_entrada_fontePoroRadial&>(*contents["poroRadial"].get());
+	return static_cast<JSON_entrada_fontePoroRadial&>(*contents["fontePoroRadial"].get());
 }
 
 JSON_entrada_fontePoro2D& JSON_entrada::fontePoro2D(){
-	return static_cast<JSON_entrada_fontePoro2D&>(*contents["poro2D"].get());
+	return static_cast<JSON_entrada_fontePoro2D&>(*contents["fontePoro2D"].get());
 }
 
 JSON_entrada_fonteGasLift& JSON_entrada::fonteGasLift(){
