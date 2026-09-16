@@ -1648,11 +1648,11 @@ void validadorTipo::valida_fluido_complementar(Value &fluido_complementar_json, 
         }
     }
 
-    // Validar campo tipoFluido (opcional)
-    if (fluido_complementar_json.HasMember("tipoFluido")) {
-        if (!fluido_complementar_json["tipoFluido"].IsInt()) {
+    // Validar campo tipoF (opcional)
+    if (fluido_complementar_json.HasMember("tipoF")) {
+        if (!fluido_complementar_json["tipoF"].IsInt()) {
             sucesso = false;
-            erros.push_back("fluidoComplementar/tipoFluido: deve ser do tipo inteiro");
+            erros.push_back("fluidoComplementar/tipoF: deve ser do tipo inteiro");
         }
     }
 }
@@ -2667,11 +2667,11 @@ void validadorTipo::valida_parafina(Value &parafina_json, std::vector<std::strin
         }
     }
 
-    // Validar campo multiplicadorViscosidade (opcional)
-    if (parafina_json.HasMember("multiplicadorViscosidade")) {
-        if (!parafina_json["multiplicadorViscosidade"].IsNumber()) {
+    // Validar campo multVis (opcional)
+    if (parafina_json.HasMember("multVis")) {
+        if (!parafina_json["multVis"].IsNumber()) {
             sucesso = false;
-            erros.push_back("parafina/multiplicadorViscosidade: deve ser do tipo number");
+            erros.push_back("parafina/multVis: deve ser do tipo number");
         }
     }
 
@@ -5749,9 +5749,124 @@ void validadorTipo::valida_tendencia_servico(Value &tendS_json, std::vector<std:
     }
 }
 
+namespace {
+
+/*!
+ * Grafia de entrada descontinuada e a chave que deve substitui-la.
+ *
+ * Mantida em sincronia com docs/single-branch-model-reference/migration.md.
+ */
+struct ChaveDescontinuada {
+    const char *antiga;
+    const char *nova;
+};
+
+/*!
+ * Registrar erro para cada grafia descontinuada presente no objeto.
+ */
+void checar_objeto(Value &obj, const std::string &caminho,
+                   const ChaveDescontinuada *lista, int n,
+                   std::vector<std::string> &erros, bool &sucesso) {
+    if (!obj.IsObject())
+        return;
+    for (int i = 0; i < n; i++) {
+        if (obj.HasMember(lista[i].antiga)) {
+            sucesso = false;
+            erros.push_back(caminho + "/" + lista[i].antiga +
+                            ": chave descontinuada, utilize '" + lista[i].nova + "'");
+        }
+    }
+}
+
+/*!
+ * Aplicar a checagem a cada item de um array.
+ */
+void checar_array(Value &arr, const std::string &caminho,
+                  const ChaveDescontinuada *lista, int n,
+                  std::vector<std::string> &erros, bool &sucesso) {
+    if (!arr.IsArray())
+        return;
+    int nele = arr.Size();
+    for (int i = 0; i < nele; i++)
+        checar_objeto(arr[i], caminho + "/" + std::to_string(i), lista, n, erros,
+                      sucesso);
+}
+
+/*!
+ * Rejeitar grafias de entrada descontinuadas com erro explicito.
+ *
+ * O parser resolve as chaves por HasMember, de modo que uma grafia antiga
+ * seria simplesmente ignorada e o campo assumiria o valor padrao sem qualquer
+ * aviso. A checagem abaixo torna essa situacao um erro de validacao.
+ */
+void valida_chaves_descontinuadas(Document &jsonDoc,
+                                  std::vector<std::string> &erros, bool &sucesso) {
+    static const ChaveDescontinuada raiz[] = {
+        {"poroRadial", "fontePoroRadial"},
+        {"poro2D", "fontePoro2D"},
+    };
+    static const ChaveDescontinuada configuracaoInicial[] = {
+        {"modoDifus3DArq", "modoDifus3DJson"},
+    };
+    static const ChaveDescontinuada condicaoVazPres[] = {
+        {"Vazao Massica", "VazMass"},
+    };
+    static const ChaveDescontinuada fluidoComplementar[] = {
+        {"tipoFluido", "tipoF"},
+    };
+    static const ChaveDescontinuada parafina[] = {
+        {"multiplicadorViscosidade", "multVis"},
+    };
+    static const ChaveDescontinuada perfilProducao[] = {
+        {"tempoResiLiqComp", "TResi"},
+    };
+    static const ChaveDescontinuada dutosProducao[] = {
+        {"difusTerm3DRotulo", "difusTerm3DAcop"},
+    };
+    static const ChaveDescontinuada fontePressao[] = {
+        {"ambienteGas", "ambGas"},
+    };
+    static const ChaveDescontinuada tendP[] = {
+        {"tempChokeJusante", "tempChokeJus"},
+    };
+
+    checar_objeto(jsonDoc, "#", raiz, 2, erros, sucesso);
+
+    if (jsonDoc.HasMember("configuracaoInicial")) {
+        Value &ci = jsonDoc["configuracaoInicial"];
+        checar_objeto(ci, "#/configuracaoInicial", configuracaoInicial, 1, erros,
+                      sucesso);
+        if (ci.IsObject() && ci.HasMember("condicaoVazPres"))
+            checar_objeto(ci["condicaoVazPres"],
+                          "#/configuracaoInicial/condicaoVazPres", condicaoVazPres, 1,
+                          erros, sucesso);
+    }
+    if (jsonDoc.HasMember("fluidoComplementar"))
+        checar_objeto(jsonDoc["fluidoComplementar"], "#/fluidoComplementar",
+                      fluidoComplementar, 1, erros, sucesso);
+    if (jsonDoc.HasMember("parafina"))
+        checar_objeto(jsonDoc["parafina"], "#/parafina", parafina, 1, erros, sucesso);
+    if (jsonDoc.HasMember("perfilProducao"))
+        checar_objeto(jsonDoc["perfilProducao"], "#/perfilProducao", perfilProducao, 1,
+                      erros, sucesso);
+    if (jsonDoc.HasMember("dutosProducao"))
+        checar_array(jsonDoc["dutosProducao"], "#/dutosProducao", dutosProducao, 1,
+                     erros, sucesso);
+    if (jsonDoc.HasMember("fontePressao"))
+        checar_array(jsonDoc["fontePressao"], "#/fontePressao", fontePressao, 1, erros,
+                     sucesso);
+    if (jsonDoc.HasMember("tendP"))
+        checar_array(jsonDoc["tendP"], "#/tendP", tendP, 1, erros, sucesso);
+}
+
+} // namespace
+
 void validadorTipo::validaGeral(Document &jsonDoc) {
     std::vector<std::string> erros;
     bool sucesso = true;
+
+    // Rejeitar grafias de entrada descontinuadas antes das demais validacoes
+    valida_chaves_descontinuadas(jsonDoc, erros, sucesso);
 
     // Valida configuracaoInicial
     if (jsonDoc.HasMember("configuracaoInicial")) {

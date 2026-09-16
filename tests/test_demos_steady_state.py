@@ -48,6 +48,7 @@ DEMOS = {
     "pt-br/injec-Liq-TempoResidencia.mr3":           [],
     "pt-br/parada-longo-Combinado-BCS-GLC-PIG-completo.mr3": ["PVTSIM-MARLIM.tab"],
     "pt-br/producaoSimplificado.mr3":                [],
+    "pt-br/atritoTuboLiso.mr3":                      [],
 
     # Renamed EN demos at demos/
     "2zones-2GLVs-2-Check-correcThermProf.mr3": ["PVTSIM-MARLIM.tab"],
@@ -55,6 +56,7 @@ DEMOS = {
     "injec-Liq-ResidenceTime.mr3":               [],
     "extended-shutdown-combined-ESP-CGL-PIG-complete.mr3": ["PVTSIM-MARLIM.tab"],
     "simplifiedProduction.mr3":                  [],
+    "smoothPipeFriction.mr3":                    [],
 }
 
 # ============================================================================

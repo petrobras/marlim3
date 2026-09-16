@@ -1045,7 +1045,8 @@
         "tensup": {
           "type": "number",
           "description": "Tensão superficial do líquido.",
-          "unit": "N/m"
+          "unit": "N/m",
+          "default": 0.072
         },
         "calorEspecifico": {
           "type": "number",
@@ -2876,6 +2877,7 @@
             2,
             3
           ],
+          "default": 0,
           "description": "0: fluido (líquido) dado pelo usuário (informado no campo fluidoComplementar); 1: água (é preciso informar a salinidade); 2: gás rico em CO2 via tabela flash (arquivo Pvtsim .tab requerido, cadastro de fluido de produção requerido; 3: gás rico em CO2 via composicional (arquivo Pvtsim .ctm requerido, cadastro de fluido de produção requerido)."
         },
         "salinidade": {

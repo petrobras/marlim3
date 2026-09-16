@@ -38,6 +38,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Getting Started: getting-started.md
   - Tutorials:
     - Overview: tutorials/index.md
     - Horizontal vs Vertical: tutorials/1-horizontal_vertical_comparison.ipynb
@@ -58,6 +59,7 @@ nav:
     - General: single-branch-model-reference/general.md
     - Results: single-branch-model-reference/results.md
     - JSON Schema: single-branch-model-reference/json-schema.md
+    - Input Migration: single-branch-model-reference/migration.md
   - Theory:
     - Overview: theoretical-reference/index.md
     - Drift-Flux vs. Two-Fluid: theoretical-reference/two-fluids_vs_drift-flux.md

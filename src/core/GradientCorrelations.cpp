@@ -42,60 +42,45 @@ Variable dictionary:
 */
 
 void frictionFactor(double reynolds, double roughness, double& frictionFactorValue) {
-    
+
     // Flow Regime Constants
     static constexpr double LAMINAR_TRANSITION_REYNOLDS = 2100.0;  // Laminar-turbulent transition
     static constexpr double LAMINAR_FRICTION_COEFFICIENT = 64.0;   // Hagen-Poiseuille coefficient
-    
-    // Colebrook-White Equation Constants
-    static constexpr double COLEBROOK_ROUGHNESS_FACTOR = 3.7;      // Roughness normalization factor
-    static constexpr double COLEBROOK_CONSTANT_A = 12.0;           // First iteration constant
-    static constexpr double COLEBROOK_CONSTANT_B = 5.02;           // Second iteration constant
-    static constexpr double FRICTION_MULTIPLIER = 0.25;            // Friction factor multiplier (1/4)
-    
-    // Convergence Criteria
-    static constexpr double CONVERGENCE_TOLERANCE = 1.0E-06;       // Iteration convergence threshold
-    
-    // Laminar Flow Regime (Re ≤ 2100)
-    // Direct analytical solution: f = 64/Re
+
+    // Colebrook-White / Serghides constants
+    static constexpr double COLEBROOK_ROUGHNESS_FACTOR = 3.7;      // eps/D normalization factor
+    static constexpr double SERGHIDES_A_COEFFICIENT = 12.0;        // Reynolds term, first estimate
+    static constexpr double SERGHIDES_BC_COEFFICIENT = 2.51;       // Colebrook Reynolds constant
+
+    // Laminar Flow Regime (Re <= 2100): f = 64/Re (Hagen-Poiseuille)
     if (reynolds <= LAMINAR_TRANSITION_REYNOLDS) {
         frictionFactorValue = LAMINAR_FRICTION_COEFFICIENT / reynolds;
         return;
     }
-    
+
     // Turbulent Flow Regime (Re > 2100)
-    // Serghides approximation for Colebrook-White implicit equation:
-    // 1/√f = -2.0 * log10(ε/D/3.7 + 2.51/(Re*√f))
-    // Iterative solution using successive substitution with Aitken acceleration
-    
-    // Step 1: Normalize roughness
-    const double normalizedRoughness = roughness / COLEBROOK_ROUGHNESS_FACTOR;
-    const double reynoldsProduct = reynolds * normalizedRoughness;
-    const double logRoughness = log10(normalizedRoughness);
-    
-    // Step 2: First approximation (termA)
-    const double termA = log10(1.0 + COLEBROOK_CONSTANT_A / reynoldsProduct);
-    
-    // Step 3: Second approximation (termB)
-    const double termB = log10(1.0 - COLEBROOK_CONSTANT_B * (termA + logRoughness) / reynoldsProduct);
-    
-    // Step 4: Third approximation (termC)
-    const double termC = log10(1.0 - COLEBROOK_CONSTANT_B * (termB + logRoughness) / reynoldsProduct);
-    
-    // Step 5: Aitken acceleration for convergence
-    const double termDifference = termA - termB;
-    
-    // Note: Original algorithm checks (a - b) > tolerance WITHOUT absolute value
-    // This is intentional - negative differences use the simpler approximation
-    if (termDifference > CONVERGENCE_TOLERANCE) {
-        // Aitken's Δ² method: extrapolate for faster convergence
-        const double acceleratedTerm = pow(termDifference, 2) / (termA - 2.0 * termB + termC) - termA - logRoughness;
-        frictionFactorValue = FRICTION_MULTIPLIER / pow(acceleratedTerm, 2);
-    } else {
-        // Terms converged or negative difference: use direct approximation
-        const double simpleTerm = termA + logRoughness;
-        frictionFactorValue = FRICTION_MULTIPLIER / pow(simpleTerm, 2);
-    }
+    // Serghides' explicit three-point approximation to the Colebrook-White
+    // implicit equation  1/sqrt(f) = -2 log10(eps/D/3.7 + 2.51/(Re*sqrt(f))):
+    //     A = -2 log10(eps/D/3.7 + 12/Re)
+    //     B = -2 log10(eps/D/3.7 + 2.51*A/Re)
+    //     C = -2 log10(eps/D/3.7 + 2.51*B/Re)
+    //     1/sqrt(f) = A - (B - A)^2 / (C - 2B + A)
+    // Ref: Serghides, T.K. (1984), "Estimate friction factor accurately,"
+    //   Chemical Engineering 91(5):63-64.
+    // Explicit (no iteration); max deviation ~0.0025% from the Colebrook root
+    // across the Moody chart. Returns the Moody-Darcy friction factor.
+    //
+    // NOTE: this replaces a prior custom reformulation whose accuracy degraded
+    // badly for SMOOTH pipes at high Reynolds (up to ~10% error at eps/D~1e-5,
+    // Re~1e5-1e6), which feeds the single-phase Darcy-Weisbach pressure
+    // gradient directly. The standard Serghides form below is accurate across
+    // the full smooth-to-rough range and is also marginally faster.
+    const double relRoughness = roughness / COLEBROOK_ROUGHNESS_FACTOR;
+    const double termA = -2.0 * log10(relRoughness + SERGHIDES_A_COEFFICIENT / reynolds);
+    const double termB = -2.0 * log10(relRoughness + SERGHIDES_BC_COEFFICIENT * termA / reynolds);
+    const double termC = -2.0 * log10(relRoughness + SERGHIDES_BC_COEFFICIENT * termB / reynolds);
+    const double invSqrtF = termA - (termB - termA) * (termB - termA) / (termC - 2.0 * termB + termA);
+    frictionFactorValue = 1.0 / (invSqrtF * invSqrtF);
 }
 
 /*
