@@ -262,3 +262,52 @@ add_custom_command(TARGET Marlim3 POST_BUILD
 )
 
 install(TARGETS Marlim3 DESTINATION bin)
+
+# ------------------------------------------------------------------------------
+# Optional C++ unit tests
+#
+# Disabled by default so the engine build and the release workflow are
+# unaffected. Enable explicitly:
+#     cmake -S . -B build -DMARLIM_BUILD_TESTS=ON
+#     cmake --build build --target test_friction_factor
+#     ctest --test-dir build --output-on-failure
+# ------------------------------------------------------------------------------
+option(MARLIM_BUILD_TESTS "Build the C++ unit tests" OFF)
+
+if(MARLIM_BUILD_TESTS)
+    enable_testing()
+
+    # Reuse the engine sources without the entry point, so the test binary can
+    # define its own main().
+    set(MARLIM_TEST_CXX_SOURCES ${CXX_SOURCES})
+    list(REMOVE_ITEM MARLIM_TEST_CXX_SOURCES ${SRCDIR}/Num4Main.cpp)
+
+    add_executable(test_friction_factor
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_friction_factor.cpp
+        ${MARLIM_TEST_CXX_SOURCES}
+        ${F90_SOURCES}
+    )
+
+    target_include_directories(test_friction_factor PRIVATE
+        ${INCDIR}
+        ${LIBDIR}
+        ${MODDIR}
+    )
+
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(test_friction_factor PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+
+    if(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+        target_link_libraries(test_friction_factor PRIVATE gfortran quadmath)
+    endif()
+
+    if(MARLIM_FORTRAN_LIBS)
+        target_link_libraries(test_friction_factor PRIVATE ${MARLIM_FORTRAN_LIBS})
+    endif()
+
+    set_target_properties(test_friction_factor PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    add_test(NAME friction_factor COMMAND test_friction_factor)
+endif()

@@ -363,7 +363,8 @@ class Branch:
                  simulation_id=None,
                  websocket_handler=None,
                  tracker=None,
-                 sanitized=False):
+                 sanitized=False,
+                 language='en'):
         if label != 'marlim3_model':
             self.label = label
 
@@ -399,7 +400,7 @@ class Branch:
                         self.time['snapshotFile'] = _sanitize_filename(
                             str(self.time['snapshotFile']))
 
-            self.to_json(label)
+            self.to_json(label, language=language)
 
             cmd = [str(executavel), "-d", directory, "-i", filename]
             if self.system == 'INJETOR':
