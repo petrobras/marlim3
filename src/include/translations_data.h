@@ -503,37 +503,7 @@ static const char TRANSLATIONS_JSON_RAW[] = R"TJSON(
       "PROD": "MULTIFASICO",
       "INJ": "INJETOR"
     }
-  },
-  "razCompGasReves": "reserveGasCompressibility",
-  "origemGeometria": "geometryOrigin",
-  "correlacoesEscorregamento": "slipCorrelations",
-  "indFluido": "fluidIndicator",
-  "ponderaCond": "conductivityWeighting",
-  "alteraViscFlu": "alterFluidVisc",
-  "DmultipWax": "waxMultipD",
-  "EmultipWax": "waxMultipE",
-  "FmultipWax": "waxMultipF",
-  "curvaDinamic": "dynamicCurve",
-  "frecupera": "recoveryFactor",
-  "frecuperaLiq": "liquidRecoveryFactor",
-  "fracTermMotorEfic": "motorThermalFrac",
-  "folgaArea": "gapArea",
-  "deltaPressao": "deltaPressure",
-  "cdPig": "pigCD",
-  "rhoo": "waterPhaseOutputDensity",
-  "rhoa": "waterPhaseOutputDensity",
-  "QOstd": "oilFlowStd",
-  "QOWstd": "stdOilWaterFlowRate",
-  "correlacaoBB": "beggsBrill",
-  "inventarioGas": "gasInventory",
-  "inventarioLiq": "liquidInventory",
-  "tempParede": "wallTemperature",
-  "subResfria": "subcooling",
-  "dadosParafina": "waxData",
-  "multibcs": "multiESP",
-  "fonteCalor": "heatSource",
-  "fonteChoke": "chokeSource",
-  "detalheCelulaUnitaria": "unitCellDetail"
+  }
 }
 )TJSON";
 
