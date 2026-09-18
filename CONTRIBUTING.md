@@ -306,9 +306,10 @@ flowchart TB
 1. **Update your local repository**: `git pull origin dev`
 2. **Create a feature branch**: `git switch -c feature/feature-name`
 3. **Develop and commit** on your branch (keeping atomicity)
-4. **Test locally**: `uv run pytest tests/ -v`
-5. **When ready, push**: `git push origin feature/...`
-6. **Integrate into `dev`** via one of two paths:
+4. **Update documentation** if the change affects behaviour or the input format (see [Updating documentation](#updating-documentation) below)
+5. **Test locally**: `uv run pytest tests/ -v`
+6. **When ready, push**: `git push origin feature/...`
+7. **Integrate into `dev`** via one of two paths:
    - **Via Pull Request** *(recommended for larger changes or those requiring review)*:
      1. Open a Pull Request from `feature/...` to `dev`
      2. Wait for review and approval from peers
@@ -317,7 +318,72 @@ flowchart TB
      1. `git switch dev`
      2. `git merge feature/feature-name`
      3. `git push origin dev`
-7. **Periodically**, `dev` is merged into `main` after validation
+8. **Periodically**, `dev` is merged into `main` after validation
+
+### Updating documentation
+
+Documentation is part of the feature, not an afterthought. A pull request that adds or changes behaviour without updating the relevant docs will be asked to include those updates before merging.
+
+#### What to update
+
+| Change | Documentation to update |
+|---|---|
+| New input key | Schema files, `marlim3/translations.json`, model reference page |
+| Renamed or removed input key | Schema files, translations, migration guide |
+| New correlation or model element | Model reference page, citation in code |
+| Changed default value or unit | Model reference page, relevant demo comments |
+| New command-line option or Python API | `docs/` page covering that interface |
+| New demo file | Entry in `tests/test_demos_steady_state.py` and a short description in `demos/README.md` |
+
+#### Updating schemas when adding or renaming input keys
+
+When you add, rename, or remove an input key, update **all** of the following in the same commit (or the same PR, clearly grouped):
+
+1. **`src/core/JSON_entrada.cpp`** — the string literal registered with the parser.
+2. **`src/core/Leitura.cpp`** — where the value is read into the data structures.
+3. **`src/core/validaTipoJson.cpp`** — type and business-rule validation; if renaming, add the old spelling to the discontinued list so users get an explicit error message pointing to the replacement.
+4. **`docs/schemas/branch.pt.json`** and **`docs/schemas/branch.en.json`** — the published JSON Schema files used by tooling and documentation.
+5. **`marlim3/translations.json`** — the PT ↔ EN map shared with the C++ translator.
+6. **`docs/single-branch-model-reference/`** — the relevant reference page describing the key, its type, default, unit, and allowed values.
+7. **`docs/single-branch-model-reference/migration.md`** — if the key is renamed or removed, document the old name, the new name (or removal), and the version in which it changed.
+8. Any **demo file** (`demos/`) that uses the key.
+
+> **Why all at once?** The schema is consumed by the documentation site, by IDE schema validation (e.g. VS Code JSON language server), and by validation scripts. Updating the C++ code without updating the schema leaves users with correct code but incorrect documentation and broken IDE hints — or vice-versa.
+
+#### Schema format quick reference
+
+The schema files follow [JSON Schema draft-07](https://json-schema.org/draft-07/json-schema-validation.html). A typical property entry looks like:
+
+```json
+"new_key": {
+    "type": "number",
+    "description": "Short description in English (branch.en.json) or Portuguese (branch.pt.json).",
+    "default": 0.0,
+    "minimum": 0.0
+}
+```
+
+For enumerated values, use `"enum"`:
+
+```json
+"layerMeasurementType": {
+    "type": "string",
+    "enum": [
+    "THICKNESS",
+    "DIAMETER"
+    ],
+    "default": "DIAMETER",
+    "description": "Layer added-length measurement type (by radial thickness or by diameter from pipe center to the layer outer circumference)."
+}
+```
+
+#### Building the documentation locally
+
+```bash
+uv run mkdocs serve
+```
+
+Open `http://127.0.0.1:8000` and navigate to the changed pages to verify rendering before pushing.
 
 ### Note on forks
 
