@@ -30,7 +30,7 @@ class acessorio {
     // 4 -> ESP, 5 -> Choke, 6 -> Diameter change, 7 -> Pressure drop,
     // 8 -> Positive displacement pump, 9 -> Choke source, 10 -> Multiple source,
     // 11 -> Vapor IPR, 12 -> Vapor mass flow source, 14 -> Vapor positive displacement pump,
-    // 15 -> Radial porous medium, 16 -> 2D porous medium, 17 -> Multiple ESPs.
+    // 15 -> Radial porous medium, 16 -> 2D porous medium, 17 -> Multiple ESPs. 18->RecirculaMon, 19->RecirculaJus
     int tipo;
 
     BomCentSub bcs;
@@ -49,10 +49,16 @@ class acessorio {
     solverPoro poroso2D;
     ProFlu fluido;
     double delp;
+    double dpB;
+    double potB;
+    double potBT;
+    double potTermo;
     int tipoCompGas;
     double fatPoli;
     double eficLiq;
     double eficGas;
+    int indJusRecic;
+    int indMonRecic;
     acessorio(const int vtipo = 0);                // construtor
     acessorio(const acessorio &antigo);            // construtor de copia
     acessorio &operator=(const acessorio &antigo); // sobrecarga do operador =

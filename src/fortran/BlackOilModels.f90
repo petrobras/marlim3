@@ -13,6 +13,389 @@ module BlackOilModels
     contains
 
     ! =============================================================
+    !           ROTINA PARA CÁLCULOS DE Bo
+    ! =============================================================
+    subroutine CalculateFVFOfOilByCorrelations(iBoCorrelation, pres, temp, varPb, &
+                                               dGivenRs, iRsCorrelation, iRsCorrelationForPSat, &
+                                               dPSEP_VB, dTSEP_VB, API, RGO, Deng, &
+                                               pbtemp, BoResult, iIER)
+
+        ! OBJETIVO: Calcular "Bo" (fator volume de formação do óleo) usando correlações black-oil.
+        !
+        ! IMPORTANTE (consistência): esta rotina pode usar Rs e PB oriundos de modelos diferentes,
+        !    dependendo dos valores de dGivenRs / iRsCorrelation / varPb / iRsCorrelationForPSat.
+        !
+        ! REFERÊNCIA BIBLIOGRÁFICA 1: "Multiphase Flow in Wells", James P. Brill e Hemanta Mukherjee, 1999
+        implicit none
+
+        ! ------------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+        integer(c_int), intent(in) :: iBoCorrelation          ! Índice da correlação escolhida para "Bo" (ver constantes abaixo)
+        real(c_double), intent(in) :: pres                    ! Pressão (kgf/cm2)
+        real(c_double), intent(in) :: temp                    ! Temperatura (°C)
+        real(c_double), intent(in) :: varPb                   ! Pressão de bolha em psia (negativa para cálculo automático)
+
+        real(c_double), intent(in) :: dGivenRs                ! Rs fornecido (m3/m3); se <0, calcular via correlação de Rs
+        integer(c_int), intent(in) :: iRsCorrelation          ! Correlação de Rs para calcular Rs se dGivenRs<0; se <0, usar a mesma de Bo quando aplicável
+        integer(c_int), intent(in) :: iRsCorrelationForPSat   ! Correlação de Rs para calcular PB se varPb<0; se <0, usar a mesma de Bo quando aplicável (exceto Bacia de Campos -> erro)
+
+        real(c_double), intent(in) :: dPSEP_VB                ! Pressão do separador (kgf/cm2) (usada p/ SG100 e/ou Rs/PB)
+        real(c_double), intent(in) :: dTSEP_VB                ! Temperatura do separador (°C)  (usada p/ SG100 e/ou Rs/PB)
+        real(c_double), intent(in) :: API                     ! Grau API do óleo
+        real(c_double), intent(in) :: RGO                     ! RGO (Sm3/Sm3)
+        real(c_double), intent(in) :: Deng                    ! gammaG (ar=1), adimensional (densidade relativa do gás produzido)
+
+        real(c_double), intent(out) :: pbtemp                 ! Pressão de bolha usada (psia)
+        real(c_double), intent(out) :: BoResult               ! Resultado de Bo (adimensional, m3/m3)
+        integer(c_int), intent(out) :: iIER                   ! Código de erro, conforme convenção
+
+        ! ------------------ DECLARAÇÃO E DESCRIÇÃO DE VARIÁVEIS LOCAIS:
+
+        ! Conversões / constantes auxiliares:
+        real(c_double), parameter :: KGFCM2_TO_PSIA = 14.2233426d0
+        real(c_double), parameter :: ATM_TOPSI      = 14.6959488d0
+        real(c_double), parameter :: SM3SM3_TO_SCFSTB = 35.31467d0 / 6.29d0  ! ~5.61458 (consistente com rotina de Rs)
+        real(c_double), parameter :: EPS = 1.0d-15
+
+        ! Variáveis internas em unidades do equacionamento original:
+        real(c_double) :: P_psia, T_F
+        real(c_double) :: PB_psia
+        real(c_double) :: R_scfstb
+        real(c_double) :: RS_scfstb
+
+        ! Variáveis auxiliares das correlações (mesmos símbolos do código original):
+        real(c_double) :: A, B, C, D, BOB, CO, SGO
+        real(c_double) :: F1, RHOS, PD, FBO
+
+        ! SG100 (densidade do gás a 100 psig e T): no Pascal vem pronto; aqui estimamos conforme lógica VB.
+        real(c_double) :: pSep_psia, tSep_F
+        real(c_double) :: SG100             ! Referência 1, pág 104: gas specific gravity [at] separator pressure of 100 psig
+
+        ! Controle de chamadas da rotina de Rs:
+        integer(c_int) :: iCorrRS, iCorrPB
+        real(c_double) :: dPbFromRs, dRsFromCorr
+        integer(c_int) :: iIER_Rs
+
+        ! ------------------ CÁLCULOS:
+
+        ! 1) ---> CONVERSÕES E INICIALIZAÇÕES:
+
+        ! Inicializações:
+        iIER = ERROR_EverythingOK
+        BoResult = -1.0d0               ! Inicializando com valor inválido
+
+        ! Converter pressões e temperaturas para unidades internas:
+        P_psia = pres * KGFCM2_TO_PSIA      ! de kgf/cm2 para psia
+        T_F    = 1.8d0 * temp + 32.0d0      ! de oC para oF 
+
+        pSep_psia = dPSEP_VB * KGFCM2_TO_PSIA   ! de kgf/cm2 para psia
+        tSep_F    = 1.8d0 * dTSEP_VB + 32.0d0   ! de oC para oF
+
+        ! "d60": Referência 1, pág 103, Equação B-5
+        SGO = 141.5d0 / (131.5d0 + API)
+
+        ! Converter RGO de Sm3/Sm3 para scft/bbl:
+        R_scfstb = RGO * SM3SM3_TO_SCFSTB
+
+        ! 2) ---> CORRELAÇÃO PARA PSAT (caso necessário):
+
+        ! Determinar correlação para cálculo automático da pressão de bolha (se varPb < 0):
+        iCorrPB = iRsCorrelationForPSat
+
+        chkBoCorrForPSat: if ((iCorrPB.lt.0).AND.(varPb.lt.(0.0d0))) then
+
+            ! Usar a mesma correlação de Bo quando aplicável.
+            atribBoCorrToPSat: select case (iBoCorrelation)
+                    
+                case (BOCORRELATION_VAZQUEZBEGGS) atribBoCorrToPSat
+                    iCorrPB = RSCORRELATION_VAZQUEZBEGGS
+                case (BOCORRELATION_STANDING) atribBoCorrToPSat
+                    iCorrPB = RSCORRELATION_STANDING
+                case (BOCORRELATION_GLASO) atribBoCorrToPSat
+                    iCorrPB = RSCORRELATION_GLASO
+                case (BOCORRELATION_BACIACAMPOS) atribBoCorrToPSat
+
+                    ! Esta correlação de "Bo" não calcula pressão de bolha.
+                    iIER = ERROR_MissingRsCorrelationForPSat
+                    return
+
+                case default atribBoCorrToPSat
+
+                    ! Correlação inválida para "Bo"!
+                    iIER = ERROR_InvalidBoCorrelation
+                    return
+
+            end select atribBoCorrToPSat
+
+        end if chkBoCorrForPSat
+
+        ! 3) ---> CORRELAÇÃO PARA RS (caso necessário):
+
+        ! Determinar correlação para "Rs" (a ser usada quando dGivenRs < 0 e "Rs" for necessário):
+        iCorrRS = iRsCorrelation
+
+        chkBoCorrForRs: if((iCorrRS.lt.0).AND.(dGivenRs.lt.(0.0d0))) then
+
+            ! Usar a mesma correlação de "Bo" quando aplicável.
+            atribBoCorrToRs: select case (iBoCorrelation)
+
+                case (BOCORRELATION_VAZQUEZBEGGS) atribBoCorrToRs
+                    iCorrRS = RSCORRELATION_VAZQUEZBEGGS
+                case (BOCORRELATION_STANDING) atribBoCorrToRs
+                    iCorrRS = RSCORRELATION_STANDING
+                case (BOCORRELATION_GLASO) atribBoCorrToRs
+                    iCorrRS = RSCORRELATION_GLASO
+                case (BOCORRELATION_BACIACAMPOS) atribBoCorrToRs
+
+                    ! Para "Bo" por Bacia de Campos, "Rs" não é necessário. Não é erro.
+                    iCorrRS = -1
+
+                case default atribBoCorrToRs 
+
+                    ! Correlação inválida para "Bo"!
+                    iIER = ERROR_InvalidBoCorrelation
+                    return
+
+            end select atribBoCorrToRs
+
+        end if chkBoCorrForRs
+
+        ! 4) ---> DETERMINAÇÃO DA PSAT:
+
+        ! Determinando a pressão de saturação:
+        PB_psia = varPb
+
+        dirPbCalc: if(PB_psia.lt.(0.0d0)) then
+
+            ! Calcular a pressão de bolha usando a correlação especificada / determinada:
+            call CalculateBlackOilSolutionGasOilRatio(iCorrPB, pres, temp, varPb, dPSEP_VB, dTSEP_VB, &
+                                                        API, RGO, Deng, dPbFromRs, dRsFromCorr, iIER)
+
+            if(iIER.NE.ERROR_EverythingOK) return
+
+            PB_psia = dPbFromRs
+            RS_scfstb = dRsFromCorr     ! Armazenar "provisoriamente", para o caso de as correlações de Rs e Pb coincidirem!
+
+        end if dirPbCalc
+
+        pbtemp = PB_psia    ! Argumento de saída
+
+        ! 5) ---> DETERMINAÇÃO DE RS:
+
+        ! Determinar "Rs" para uso nas situações necessárias:
+        dirRsCalc: if (iBoCorrelation.EQ.BOCORRELATION_BACIACAMPOS) then
+
+            ! "Bo" por "Bacia de Campos": "Rs" não é necessário; podemos ignorar "dGivenRs" / "iRsCorrelation" para "Bo".
+            RS_scfstb = 0.0d0
+
+        else dirRsCalc
+
+            ! Vai precisar de "Rs"!
+
+            chkGaveRs: if (dGivenRs.ge.(0.0d0)) then
+
+                ! Adotar o "Rs" fornecido
+                RS_scfstb = dGivenRs * SM3SM3_TO_SCFSTB
+
+            else chkGaveRs
+
+                ! Calcular "Rs" por correlação.
+                calcPBAndRs: if ((varPb.lt.(0.0d0)).AND.(iCorrPB.eq.iCorrRS)) then
+
+                    ! Cálculo de Pb já realizado, e pela mesma correlação de Rs.
+                    ! "Rs" já foi determinado, nada mais a fazer aqui!
+
+                else calcPBAndRs
+
+                    ! Pressão de bolha já conhecida, ou calculada por outra correlação que não a de "Rs".
+                    ! Em ambos os casos, calcular agora "Rs" pela devida correlação.
+                    call CalculateBlackOilSolutionGasOilRatio(iCorrRS, pres, temp, PB_psia, dPSEP_VB, &
+                            dTSEP_VB, API, RGO, Deng, dPbFromRs, dRsFromCorr, iIER)
+
+                    if(iIER.NE.ERROR_EverythingOK) return
+
+                    RS_scfstb = dRsFromCorr
+
+                end if calcPBAndRs
+
+            end if chkGaveRs
+
+        end if dirRsCalc
+
+        ! 6) ---> CÁLCULO DO BO DE ACORDO COM A CORRELAÇÃO SELECIONADA:
+
+        ! Calcular SG100 antes (aqui,pois afeta mais de uma correlação).
+
+            ! Equação B-9 da pág 104 da Referência 1:
+        SG100 = 5.912d-5 * API * tSep_F * log10(pSep_psia / 114.7d0)
+        SG100 = Deng * (1.0d0 + SG100)
+        if (SG100.lt.(0.5538d0)) SG100 = 0.5538d0   ! Metano (de acordo com o código-fonte do MARLIM 2).
+        
+            ! Proceder de acordo com a correlação selecionada:
+        calcBoByCorr: select case (iBoCorrelation)
+
+            case (BOCORRELATION_VAZQUEZBEGGS) calcBoByCorr
+                ! --- CALFVF, JCODE=0 (Vazquez & Beggs)
+
+                    ! Ver Referência 1, pág 105, Equação B-18
+                D = (T_F - 60.0d0) * API / SG100
+
+                    ! Referência 1, pág 106, Tabela B-3:
+                VBCtes: if ((API > 30.0d0).or.(R_scfstb > 750.0d0)) then
+                    A = 4.670d-04
+                    B = 1.100d-05
+                    C = 1.337d-09
+                else VBCtes
+                    A = 4.677d-04
+                    B = 1.751d-05
+                    C = -1.811d-08
+                end if VBCtes
+
+                    ! Proceder de acordo com a pressão de bolha:
+                vbBoCorr: if (P_psia >= PB_psia) then
+
+                        ! Referência 1, pág 105, Equação B-18:
+                    BOB = 1.0d0 + A*R_scfstb + D*(B + C*R_scfstb)
+
+                        ! Referência 1, pág 106, Equação B-19:
+                    CO  = (-1433.0d0 + 5.0d0*R_scfstb + 17.2d0*T_F - 1180.0d0*SG100 + 12.61d0*API) / (P_psia*1.0d5)
+
+                        ! TODO: Verificar, no 2o termo acima, faz entido estar usando RGO em vez do Rs
+                        ! por estar acima de PB? MARLIM 2 também faz assim?
+                    
+                        ! Referência 1, pág 105, Equação B-16:
+                    BoResult = BOB * exp(CO * (PB_psia - P_psia))
+
+                else vbBoCorr
+
+                        ! Referência 1, pág 105, Equação B-18:
+                    BoResult = 1.0d0 + A*RS_scfstb + D*(B + C*RS_scfstb)
+
+                end if vbBoCorr
+
+        
+            case (BOCORRELATION_STANDING) calcBoByCorr
+                ! --- CALFVF, JCODE=1 (Standing)
+
+                    ! Proceder de acordo com a pressão de bolha:
+                stBoCorr: if (P_psia >= PB_psia) then
+
+                        ! Referência 1, pág 105, Equação B-15
+                    BOB = 0.972d0 + 1.47d-4 * ( (R_scfstb * sqrt(Deng/SGO) + 1.25d0*T_F) ** 1.175d0 )
+
+                        ! Referência 1, pág 106, Equação B-19:
+                    CO  = (-1433.0d0 + 5.0d0*R_scfstb + 17.2d0*T_F - 1180.0d0*SG100 + 12.61d0*API) / (P_psia*1.0d5)
+                    
+                        ! Referência 1, pág 105, Equação B-16:
+                    BoResult = BOB * exp(CO * (PB_psia - P_psia))
+
+                else stBoCorr
+
+                        ! Referência 1, pág 105, Equação B-15:
+                    A = sqrt(Deng/SGO)
+                    B = RS_scfstb*A + 1.25d0*T_F
+                    BoResult = 0.972d0 + 1.47d-4 * (B ** 1.175d0)
+
+                    ! TODO: Equação B-15 mesmo? Coeficientes um pouco diferentes nesta última
+                    !   linha, e na primeira do bloco anterior. 
+                    !   MARLIM 2 usa assim? Algum livro confirma?
+
+                    ! UPDATE: em primeiro check, coeficientes conferem com MARLIM 2.
+                    ! Coeficientes também conferem com os da rotina CALFVF do livro de Beggs e Brill!
+                    ! Esse livro vai precisar figurar nas referências desta rotina como Referência 2!
+
+                end if stBoCorr
+
+                
+            case (BOCORRELATION_GLASO) calcBoByCorr
+                ! --- CALFVF, JCODE=2 (Glaso)
+
+                    ! Proceder de acordo com a pressão de bolha:
+                glasoBoCorr: if (P_psia >= PB_psia) then
+
+                        ! Referência 1, pág 106, Equação B-21c: 
+                    A = R_scfstb * ( (Deng/SGO) ** 0.526d0 ) + 0.968d0*T_F
+
+                        ! Referência 1, pág 106, Equação B-21b:
+                    B = log10(A)
+                    C = -6.58511d0 + 2.91329d0*B - 0.27683d0*(B*B)
+
+                        ! Referência 1, pág 106, Equação B-21a:
+                    BOB = (10.0d0 ** C) + 1.0d0
+
+                        ! Referência 1, pág 106, Equação B-19:
+                    CO  = (-1433.0d0 + 5.0d0*R_scfstb + 17.2d0*T_F - 1180.0d0*SG100 + 12.61d0*API) / (P_psia*1.0d5)
+                    
+                        ! Referência 1, pág 105, Equação B-16:
+                    BoResult = BOB * exp(CO * (PB_psia - P_psia))
+
+                else glasoBoCorr
+
+                        ! Referência 1, pág 106, Equação B-21c:
+                    A = (Deng/SGO) ** 0.526d0
+                    A = RS_scfstb*A + 0.968d0*T_F
+
+                        ! Referência 1, pág 106, Equação B-21b:
+                    B = log10(A)
+                    C = -6.58511d0 + 2.91329d0*B - 0.27683d0*(B*B)
+
+                        ! Referência 1, pág 106, Equação B-21a:
+                    BoResult = (10.0d0 ** C) + 1.0d0
+
+                end if glasoBoCorr
+
+
+            case (BOCORRELATION_BACIACAMPOS) calcBoByCorr
+                ! "Bacia de Campos e Espírito Santo"
+                ! (conforme "procedure FVFO" no arquivo "PVT.pas" do código original)
+
+                F1  = (Deng/SGO) ** 0.76d0
+                BOB = 1.0d0 + 1.328865d-4 * ( (F1*R_scfstb + 1.35d0*T_F) ** 1.170318d0 )
+                RHOS = (SGO + 2.178d-4 * Deng * R_scfstb) / BOB
+                CO = (13.81083d0 - 1032.687d0*log10(RHOS)) / 14.22d6
+
+                    ! Proceder de acordo com a pressão de bolha:
+                bCESPb: if (P_psia.ge.PB_psia) then
+
+                    BoResult = BOB * (10.0d0 ** (CO*(PB_psia - P_psia)/2.3025851d0))
+
+                else bCESPb
+
+                    PD = (P_psia - ATM_TOPSI) / (PB_psia - ATM_TOPSI)
+
+                    if (PD <= 0.05d0) PD = 0.05d0
+
+                    bCESPd: if (PD <= 0.32d0) then
+                        FBO = 0.8587983d0 * (PD ** 0.2493832d0)
+                    else bCESPd
+                        FBO = 0.5195096d0 * PD + 0.4806904d0
+                    end if bCESPd
+
+                    BoResult = FBO*(BOB - 1.0d0) + 1.0d0
+
+                end if bCESPb
+
+
+            case default calcBoByCorr
+
+                ! Correlação inválida para "Bo"!
+                BoResult = -1.0d0
+                iIER = ERROR_InvalidBoCorrelation
+                return
+
+        end select calcBoByCorr
+
+        ! Proteção do Pascal: BO >= 1.0
+        if (BoResult < 1.0d0) BoResult = 1.0d0
+
+        ! PRIMEIRA CONFERÊNCIA ATÉ AQUI CONCLUÍDA EM 14-AGO-2026!
+
+        ! Bo é adimensional: bbl/stb == m3/m3 (mesma razão de volumes)
+        ! Então, não há conversão numérica adicional aqui.
+
+    end subroutine CalculateFVFOfOilByCorrelations
+
+
+    ! =============================================================
     !           ROTINAS PARA CÁLCULOS DE Rs
     ! =============================================================
     subroutine CalculateBlackOilSolutionGasOilRatio(corrSat, pres, temp, varPb, dPSEP_VB, dTSEP_VB, API, RGO, Deng, pbtemp, RsResult, iIER)

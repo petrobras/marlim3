@@ -33,6 +33,7 @@
 #include "criterioIntermiSevera.h"
 #include "dados1Poisson.h"
 #include "multiBCS.h"
+//#include "solverPoissonAxiSim.h"
 #include "rapidjson/document.h"
 #include "rapidjson/error/pt_BR.h"
 #include "rapidjson/filereadstream.h"
@@ -45,6 +46,7 @@
 #include "validaTipoJson.h"
 #include "variaveisGlobais1D.h"
 #include "SlugFlow_TaitelBarnea.h"
+#include "caixaValvula.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -56,6 +58,7 @@
 #include <time.h>
 #include <utility> // Provides std::pair
 #include <vector>
+#include <set>
 
 #ifdef linux
 // Directory separator used on Linux systems
@@ -234,6 +237,8 @@ struct detcelp {
     double difusTerm3DFE;
     string difusTerm3DAcop;
 
+    int difusAxiSim;
+
     int correlacaoMR2;
 };
 
@@ -291,6 +296,79 @@ struct detcelg {
     int inddPdLHidro;
     int inddPdLFric;
     int inddTdL;
+
+    int difusAxiSim;
+};
+
+struct caixaV{
+	int posic;
+	double lCaixa;
+	int ambiente;
+	double velAmb;
+	double tamb;
+	int formac;
+	int lito;
+	int secaoTrans;
+	int nMon;
+	double* serieAberturaMon;
+	double* tempMon;
+	int nJus;
+	double* serieAberturaJus;
+	double* tempJus;
+	int indFlu;
+	double temperaturaFonte;
+	int nfonte;
+	double* massLiqP;
+	double* massGas;
+	double* massLiqC;
+	double* tempoFonte;
+	caixaV(){
+		posic=-1;
+		lCaixa=0;
+		secaoTrans=-1;
+		formac=0;
+		lito=-1;
+		ambiente=0;
+		velAmb=0.;
+		tamb=0.;
+		nMon=0;
+		serieAberturaMon=0;
+		tempMon=0;
+		nJus=0;
+		serieAberturaJus=0;
+		tempJus=0;
+		indFlu=-1;
+		temperaturaFonte=0.;
+		nfonte=0;
+		massLiqP=0;
+		massGas=0;
+		massLiqC=0;
+		tempoFonte=0;
+	}
+	 ~caixaV() {
+		 if(nMon>0){
+			 delete [] serieAberturaMon;
+			 delete [] tempMon;
+		 }
+		 if(nJus>0){
+			 delete [] serieAberturaJus;
+			 delete [] tempJus;
+		 }
+		 if(nfonte>0){
+			 delete [] massLiqP;
+			 delete [] massGas;
+			 delete [] massLiqC;
+			 delete [] tempoFonte;
+		 }
+	 }
+};
+
+// Defines CV-curve data
+struct detCV {
+    double x1;
+    double x2;
+    double cv1;
+    double cv2;
 };
 
 // Contains the IPR data required for JSON parsing
@@ -314,6 +392,15 @@ struct detIPR {
     double *qMax;  // Maximum-flow-rate series in stdm3/d
     double *tqMax; // Times associated with the maximum-flow-rate series
     int indfluP;   // Production-fluid index used by the IPR
+	/////////////////////////////////////////////////////////////////
+	int ICV;
+    int serieICV;     // Number of elements in the time series
+    double *abertura; // Valve-opening values relative to the pipe area
+    double *tempoICV;    // Time-series values
+    double cd;        // Valve discharge coefficient
+    int curvaCV;
+    int ncv;
+    detCV *cvCurv;
 };
 
 // Defines gas-lift injection through the service line
@@ -394,14 +481,6 @@ struct detPoro2D {
     string nomeArquivoEntrada;
 };
 
-// Defines CV-curve data
-struct detCV {
-    double x1;
-    double x2;
-    double cv1;
-    double cv2;
-};
-
 // Defines a valve
 struct detValv {
     int posicP;       // Cell index where the valve is located in the production system
@@ -415,6 +494,8 @@ struct detValv {
     int ncv;
     double xini;
     detCV *cvCurv;
+    int cxvVerifica;
+    caixaV cxv;
 };
 
 // Defines a liquid source
@@ -464,6 +545,10 @@ struct detFURO {
     double *tempoChk;
     int parserieChk;
     int ambGas;
+    int recircula;
+    double compR;
+    int indJus;
+    int indMon;
 };
 
 // Defines an ESP
@@ -581,7 +666,10 @@ struct detMASTER1 {
     double razareaativ; // Relative area at which Master1 begins to operate as a choke
     int curvaCV;
     int ncv;
+    double cd;
     detCV *cvCurv;
+    int cxvVerifica;
+    caixaV cxv;
 };
 
 // Defines the downstream line pressure, corresponding to the separator pressure
@@ -647,6 +735,7 @@ struct detIntermi {
 struct detPROFP {
     int n;     // Number of profiles to be recorded
     int pres;  // Indicates whether the pressure profile must be recorded
+    int presFront;
     int temp;  // Indicates whether the temperature profile must be recorded
     int hol;   // Indicates whether the holdup profile must be recorded
     int FVH;   // Indicates whether the hydrate volume-fraction profile must be recorded by the hydrate solver
@@ -658,6 +747,7 @@ struct detPROFP {
     int arra;  // Indicates whether the flow-pattern profile must be recorded
     int yco2;  // Indicates whether the CO2-fraction profile must be recorded
     int viscl; // Indicates whether the liquid-viscosity profile must be recorded
+    int viscom;
     int viscg; // Indicates whether the gas-viscosity profile must be recorded
     int rhog;  // Indicates whether the gas-density profile must be recorded
     int rhol;  // Indicates whether the liquid-density profile must be recorded
@@ -681,6 +771,7 @@ struct detPROFP {
     int cpl;       // Indicates whether the liquid-specific-heat profile must be recorded
     int condg;     // Indicates whether the gas-thermal conductivity profile must be recorded
     int condl;     // Indicates whether the liquid-thermal conductivity profile must be recorded
+    int condo;     // Indicates whether the Oil-thermal conductivity profile must be recorded
     int api;       // Indicates whether the API-gravity profile must be recorded
     int bsw;       // Indicates whether the BSW profile must be recorded
     int hidro;     // Indicates whether the hydrostatic-term profile must be recorded
@@ -849,6 +940,8 @@ struct detTRENDP {
     int inventarioGas;
     int inventarioLiq;
     int subResfria;
+    int presAnulICV;
+    int caixaValvula;
     string rotulo; // Label
 };
 
@@ -992,6 +1085,8 @@ struct tabelaFlash {
     double **sigWGF;
     double **viscO;
     double **viscG;
+    double **condO;
+    double **condG;
     double *PBF;
     double *TBF;
 };
@@ -1038,10 +1133,14 @@ struct dadosParafina {
     int poroRey;
     double valRey;
     int C2C3;
+    int TIACusuarioAtiva;
+    int boolC3;
+    int boolC2;
     double valC2;
     double valC3;
     int difus;
     int alteraViscFlu;
+    double TIACusuario;
     double multDifus;
     double rug;
     double multVis;
@@ -1439,6 +1538,22 @@ class Ler {
     int nCelUnit;
     detCelUnit* celUnit;
 
+    int pocoTermAxiSim;
+    int anulAxiSim;
+    int nAxiSim;
+    vector<int> indAxiSim;
+    vector<double> geoTermAxiSim;
+    vector<double> dxAxiSim;
+    vector<double> diamAxiSim;
+    double* resGlobAxiSim;
+    string pocoAxiSimJson;
+
+    int imprimeInventario;
+    int tipoFatorFric;
+
+    std::vector<caixaValv> vecCaixa;
+
+
     /*
      * Default Constructor
      */
@@ -1544,6 +1659,14 @@ class Ler {
                 }
                 delete[] IPRS[i].jp;
                 delete[] IPRS[i].tjp;
+                ////////////////////////////////////////////////////////////
+  			  if(IPRS[i].ICV==1){
+  				  if(IPRS[i].serieICV>0){
+  					  delete [] IPRS[i].abertura;
+  					  delete [] IPRS[i].tempoICV;
+  				  }
+  				  if(IPRS[i].ncv>0)delete [] IPRS[i].cvCurv;
+  			  }
             }
             delete[] IPRS;
         }
@@ -1834,6 +1957,12 @@ class Ler {
                 for (int j = 0; j < tabent.npont + 1; j++)
                     delete[] flash[i].viscG[j];
                 delete[] flash[i].viscG;
+                for (int j = 0; j < tabent.npont + 1; j++)
+                    delete[] flash[i].condO[j];
+                delete[] flash[i].condO;
+                for (int j = 0; j < tabent.npont + 1; j++)
+                    delete[] flash[i].condG[j];
+                delete[] flash[i].condG;
 
                 delete[] flash[i].PBF;
                 delete[] flash[i].TBF;
@@ -1936,6 +2065,10 @@ class Ler {
                 delete[] celUnit[i].tempo;
             }
             delete[] celUnit;
+        }
+
+        if(nAxiSim>0){
+        	delete [] resGlobAxiSim;
         }
     }
 

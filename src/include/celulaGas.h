@@ -128,6 +128,8 @@ class CelG {
     double termoHidro; // Hydrostatic pressure variation between the current and right control volumes.
     double termoFric;  // Frictional pressure variation between the current and right control volumes.
 
+    int tipoFatorFric;
+
     CelG(const DadosGeo vdutoL = DadosGeo(),
          const DadosGeo vduto = DadosGeo(),
          const DadosGeo vdutoR = DadosGeo(),
@@ -139,7 +141,7 @@ class CelG {
          const double vu1L = 0., const double vu1R = 0., const double vu1LL = 0.,
          const double vdx0 = 0., const double vdx1 = 0., const double vdxL = 0.,
          const double vdt = -1., const int vposic = -1, const int vfecham = 0, const int vtipoCC = 0,
-         const TransCal vcalor = TransCal()); // Default constructor.
+         const TransCal vcalor = TransCal(), int fatFric=0); // Default constructor.
     CelG(const CelG &);                       // Copy constructor.
     CelG &operator=(const CelG &);
 

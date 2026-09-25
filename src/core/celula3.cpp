@@ -11,11 +11,11 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
          const double vMliqiniL, const double vMliqini, const double vMliqiniR,
          const double valfL, const double valf, const double valfR,
          const double vbetL, const double vbet, const double vbetR,
-         const double vdxL, const double vdx, const double vdxR,
+         const double vdxL, const double vdx, const double vdxR, const double vdxLL,
          const double vdt, const int vposic,
          const TransCal vcalor,
          const acessorio vacsr,
-         acessorio *vacsrL) : TL(2), local(2, 6) { // construtor default
+         acessorio *vacsrL,acessorio *vacsrR, int fatFric) : TL(2), local(2, 6) { // construtor default
 
     // Solver de Hidratos
 
@@ -74,6 +74,7 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     fluicol = vfluicol;
     acsr = vacsr;
     acsrL = vacsrL;
+    acsrR = vacsrR;
     calor = vcalor;
     tempR = vtempR;
     temp = vtemp;
@@ -86,9 +87,12 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     dpresaux = 0.;
     presauxR = vpresR;
     presR = vpresR;
+    presLL = vpresR;
+    presRR = vpresR;
     dxL = vdxL;
     dx = vdx;
     dxR = vdxR;
+    dxLL = vdxLL;
     razdxTM = 0.;
     razdxTM0 = 0.;
     dt = vdt;
@@ -101,10 +105,14 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     ML = vML;
     MC = vMC;
     MR = vMR;
+    MLL = vMR;
+    MRR = vMR;
     MRini = MR;
     alfL = valfL;
     alfIter = alf = valf;
     alfR = valfR;
+    alfI=alf;
+    alfRI=alfR;
     betL = vbetL;
     bet = vbet;
     betR = vbetR;
@@ -114,6 +122,7 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     MliqiniL = vMliqiniL;
     Mliqini = vMliqini;
     MliqiniR = vMliqiniR;
+    MliqiniRR = vMliqiniR;
     MliqiniR0 = vMliqiniR;
     MComp = 0.;
     presRini = presR;
@@ -135,6 +144,8 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     massfonteCH = 0;
     c0 = 1.;
     ud = 0.;
+    c0R = 1.;
+    udR = 0.;
     c0ini = c0;
     udini = ud;
     c0Spare = c0;
@@ -392,6 +403,42 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
 
     fonteCal = 0.;
     detParCel = detalhaParafina();
+
+    tipoFatorFric=fatFric;
+
+    velMixSemiH=0.;
+    cg2=0.;
+    cl2=0.;
+    ch2=0.;
+    cg2M=0.;
+    cl2M=0.;
+    ch2M=0.;
+    cg2J=0.;
+    cl2J=0.;
+    ch2J=0.;
+    autval1=0.;
+    autval2=0.;
+    autval1M=0.;
+    autval2M=0.;
+    autval1J=0.;
+    autval2J=0.;
+    dF2dM=0.;
+    dF2dU1=0.;
+    dF2dMM=0.;
+    dF2dU1M=0.;
+    dF2dMJ=0.;
+    dF2dU1J=0.;
+    coefAutVal1=0.;
+    coefAutVal2=0.;
+    coefAutVal1M=0.;
+    coefAutVal2M=0.;
+    coefAutVal1J=0.;
+    coefAutVal2J=0.;
+    denDeriTempo=0.;
+    coefDeridT=0.;
+    coefDeridalf=0.;
+    pExpli=pres;
+    MCExpli=MR;
 }
 
 Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
@@ -449,6 +496,7 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     fluicol = vcel.fluicol;
     acsr = vcel.acsr;
     acsrL = vcel.acsrL;
+    acsrR = vcel.acsrR;
     calor = vcel.calor;
     tempR = vcel.tempR;
     temp = vcel.temp;
@@ -463,9 +511,12 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     dpresaux = vcel.dpresaux;
     presauxR = vcel.presauxR;
     presR = vcel.presR;
+    presLL = vcel.presLL;
+    presRR = vcel.presRR;
     dxL = vcel.dxL;
     dx = vcel.dx;
     dxR = vcel.dxR;
+    dxLL = vcel.dxLL;
     razdxTM = vcel.razdxTM;
     razdxTM0 = vcel.razdxTM0;
     dt = vcel.dt;
@@ -478,6 +529,8 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     ML = vcel.ML;
     MC = vcel.MC;
     MR = vcel.MR;
+    MLL = vcel.MLL;
+    MRR = vcel.MRR;
     MRini = vcel.MRini;
     presRini = vcel.presRini;
     MCini = vcel.MCini;
@@ -493,6 +546,8 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     alf = vcel.alf;
     alfIter = vcel.alfIter;
     alfR = vcel.alfR;
+    alfI=vcel.alfI;
+    alfRI=vcel.alfRI;
     betL = vcel.betL;
     bet = vcel.bet;
     betR = vcel.betR;
@@ -502,6 +557,7 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     MliqiniL = vcel.MliqiniL;
     Mliqini = vcel.Mliqini;
     MliqiniR = vcel.MliqiniR;
+    MliqiniRR = vcel.MliqiniRR;
     MliqiniR0 = vcel.MliqiniR0;
     alfLini = vcel.alfLini;
     alfini = vcel.alfini;
@@ -516,6 +572,8 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     massfonteCH = vcel.massfonteCH;
     c0 = vcel.c0;
     ud = vcel.ud;
+    c0R = vcel.c0R;
+    udR = vcel.udR;
     c0ini = vcel.c0ini;
     udini = vcel.udini;
     c0Spare = vcel.c0Spare;
@@ -748,6 +806,43 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     resAcopRedeP = vcel.resAcopRedeP;
 
     fonteCal = vcel.fonteCal;
+    detParCel = vcel.detParCel;
+
+    tipoFatorFric=vcel.tipoFatorFric;
+
+    velMixSemiH=vcel.velMixSemiH;
+    cg2=vcel.cg2;
+    cl2=vcel.cl2;
+    ch2=vcel.ch2;
+    cg2M=vcel.cg2M;
+    cl2M=vcel.cl2M;
+    ch2M=vcel.ch2M;
+    cg2J=vcel.cg2J;
+    cl2J=vcel.cl2J;
+    ch2J=vcel.ch2J;
+    autval1=vcel.autval1;
+    autval2=vcel.autval2;
+    autval1M=vcel.autval1M;
+    autval2M=vcel.autval2M;
+    autval1J=vcel.autval1J;
+    autval2J=vcel.autval2J;
+    dF2dM=vcel.dF2dM;
+    dF2dU1=vcel.dF2dU1;
+    dF2dMM=vcel.dF2dMM;
+    dF2dU1M=vcel.dF2dU1M;
+    dF2dMJ=vcel.dF2dMJ;
+    dF2dU1J=vcel.dF2dU1J;
+    coefAutVal1=vcel.coefAutVal1;
+    coefAutVal2=vcel.coefAutVal2;
+    coefAutVal1M=vcel.coefAutVal1M;
+    coefAutVal2M=vcel.coefAutVal2M;
+    coefAutVal1J=vcel.coefAutVal1J;
+    coefAutVal2J=vcel.coefAutVal2J;
+    denDeriTempo=vcel.denDeriTempo;
+    coefDeridT=vcel.coefDeridT;
+    coefDeridalf=vcel.coefDeridalf;
+    pExpli=vcel.pres;
+    MCExpli=vcel.MCExpli;
 }
 
 Cel &Cel::operator=(const Cel &vcel) {
@@ -805,6 +900,7 @@ Cel &Cel::operator=(const Cel &vcel) {
         fluicol = vcel.fluicol;
         acsr = vcel.acsr;
         acsrL = vcel.acsrL;
+        acsrR = vcel.acsrR;
         calor = vcel.calor;
         tempR = vcel.tempR;
         temp = vcel.temp;
@@ -819,9 +915,12 @@ Cel &Cel::operator=(const Cel &vcel) {
         dpresaux = vcel.dpresaux;
         presauxR = vcel.presauxR;
         presR = vcel.presR;
+        presRR = vcel.presRR;
+        presLL = vcel.presLL;
         dxL = vcel.dxL;
         dx = vcel.dx;
         dxR = vcel.dxR;
+        dxLL = vcel.dxLL;
         razdxTM = vcel.razdxTM;
         razdxTM0 = vcel.razdxTM0;
         dt = vcel.dt;
@@ -834,11 +933,15 @@ Cel &Cel::operator=(const Cel &vcel) {
         ML = vcel.ML;
         MC = vcel.MC;
         MR = vcel.MR;
+        MRR = vcel.MRR;
+        MLL = vcel.MLL;
         MRini = vcel.MRini;
         alfL = vcel.alfL;
         alf = vcel.alf;
         alfIter = vcel.alfIter;
         alfR = vcel.alfR;
+        alfI=vcel.alfI;
+        alfRI=vcel.alfRI;
         betL = vcel.betL;
         bet = vcel.bet;
         betR = vcel.betR;
@@ -850,6 +953,7 @@ Cel &Cel::operator=(const Cel &vcel) {
         MliqiniL = vcel.MliqiniL;
         Mliqini = vcel.Mliqini;
         MliqiniR = vcel.MliqiniR;
+        MliqiniRR = vcel.MliqiniRR;
         MliqiniR0 = vcel.MliqiniR0;
         presRini = vcel.presRini;
         MCini = vcel.MCini;
@@ -1105,6 +1209,23 @@ Cel &Cel::operator=(const Cel &vcel) {
         resAcopRedeP = vcel.resAcopRedeP;
 
         fonteCal = vcel.fonteCal;
+        detParCel = vcel.detParCel;
+
+        tipoFatorFric=vcel.tipoFatorFric;
+
+        velMixSemiH=vcel.velMixSemiH;
+        cg2=vcel.cg2;
+        cl2=vcel.cl2;
+        ch2=vcel.ch2;
+        autval1=vcel.autval1;
+        autval2=vcel.autval2;
+        dF2dM=vcel.dF2dM;
+        dF2dU1=vcel.dF2dU1;
+        coefAutVal1=vcel.coefAutVal1;
+        coefAutVal2=vcel.coefAutVal2;
+        denDeriTempo=vcel.denDeriTempo;
+        coefDeridT=vcel.coefDeridT;
+        coefDeridalf=vcel.coefDeridalf;
     }
     return *this;
 }
@@ -1113,7 +1234,7 @@ double Cel::Rey(double dia, double vel,
                 double rho, double vis) {
     return dia * fabs(vel) * rho / (vis * 1e-3);
 }
-double Cel::fric(double re, double eps, int tipo) {
+/*double Cel::fric(double re, double eps, int tipo) {
 
     double val;
     if (fabs(re) > 1e-5) {
@@ -1130,6 +1251,44 @@ double Cel::fric(double re, double eps, int tipo) {
                 val *= val;
                 val = 1. / val;
             }
+            val /= 4.;
+        } else
+            val = 16. / fabs(re);
+    } else
+        val = 0.;
+    return val;
+}*/
+
+double Cel::fric(double re, double eps, int tipo) {
+
+    double val;
+    if (fabs(re) > 1e-5) {
+        if (re > 2400) {
+        	switch (tipoFatorFric) {
+        	case 0:
+        		if (tipo == -1)
+        			val = 6.9 / fabs(re) + pow(eps / 3.7, 1.11);
+        		else
+        			val = 6.9 / fabs(re) + termRug;
+        		val = -1.8 * (log(val) / 2.30259);
+        		val *= val;
+        		val = 1 / val;
+        		for (int konta = 0; konta < 2; konta++) {
+        			val = -2. * log(2.51 / fabs(re * sqrt(val)) + eps / 3.7) / 2.30259;
+        			val *= val;
+        			val = 1. / val;
+        		}
+        		break;
+        	case 1:
+            	double relRoughness = eps / 3.7;
+            	const double termA = -2.0 * log10(relRoughness + 12.0 / re);
+            	const double termB = -2.0 * log10(relRoughness + 2.51 * termA / re);
+            	const double termC = -2.0 * log10(relRoughness + 2.51 * termB / re);
+            	const double invSqrtF = termA - (termB - termA) * (termB - termA) /
+            			(termC - 2.0 * termB + termA);
+            	val = 1.0 / (invSqrtF * invSqrtF);
+            	break;
+        	}
             val /= 4.;
         } else
             val = 16. / fabs(re);
@@ -1327,7 +1486,8 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
     double deriPres = 1. * mudaDT;
     if (modelo == 0)
         deriPres = 0.;
-    double deriMas = vexpi;
+    double deriMas = 0*vexpi;
+    vexpi=0;
     if (posic != 0 && posic != ncel) {
 
         double AL = dutoL.area;
@@ -1370,9 +1530,22 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
         }
 
         int master = 1;
+        int masterJ = 1;
+        int masterM = 1;
+        int masterJJ = 1;
         if (acsrL != 0) {
             if (((*acsrL).tipo == 5 && (*acsrL).chk.AreaGarg < (1e-3 + razareativa) * AL) || ((*acsrL).tipo == 8 && fabs((*acsrL).bvol.freq) > 1))
                 master = 0;
+        }
+        if (acsr.tipo == 5|| acsr.tipo == 8)
+             masterJ = 0;
+        if (acsrL != 0) {
+            if (((*acsrL).tipo == 5) || ((*acsrL).tipo == 8))
+                masterM = 0;
+        }
+        if (acsrR != 0) {
+            if (((*acsrR).tipo == 5) || ((*acsrR).tipo == 8))
+                masterJJ = 0;
         }
         if (master == 1) {
             if (ciclo == 0) {
@@ -1468,34 +1641,100 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             else
                 Amed = AR;
 
-            double ugL = vexpi * ((MC - Mliqini) / (rhogC)) / AC;
-            if (alf > (*vg1dSP).localtiny)
-                ugL /= alf;
+            ///////////////////////////////////////////////////////////////////////////////////////////////////
+            double alfM=alfL;
+            double rhogM=rhogL;
+            double rholM=rholL;
+
+            double alfJ=alf;
+            double rhogJ=rhogC;
+            double rholJ=rholC;
+
+            double ugL = vexpi * ((MC - Mliqini)) / AC;
+            if(ugL<0.){
+            	alfM=alf;
+            	rhogM=rhogC;
+            }
+            if (alfM > (*vg1dSP).localtiny)
+                ugL /= (alfM*rhogM);
             else
                 ugL = 0.;
-            double ugR = vexpi * ((MR - MliqiniR) / (rhogR)) / AR;
-            if (alfR > (*vg1dSP).localtiny)
-                ugR /= alfR;
+
+            double ugR = vexpi * ((MR - MliqiniR)) / AR;
+            if(ugR<0.){
+            	alfJ=alfR;
+            	rhogJ=rhogR;
+            }
+            if (alfJ > (*vg1dSP).localtiny)
+                ugR /= (alfJ*rhogJ);
             else
                 ugR = 0.;
-            double ulL = vexpi * ((Mliqini) / (rholC)) / AC;
+
+
+            double ulL = vexpi * ((Mliqini)) / AC;
+            if(ulL<0.){
+            	rholM=rholC;
+            }
             if ((1. - alf) > (*vg1dSP).localtiny)
-                ulL /= (1. - alf);
+                ulL /= ((1. - alfM)*rholM);
             else
                 ulL = 0.;
-            double ulR = vexpi * ((MliqiniR) / (rholR)) / AR;
-            if ((1. - alfR) > (*vg1dSP).localtiny)
-                ulR /= (1. - alfR);
+
+            double ulR = vexpi * ((MliqiniR)) / AR;
+            if(ulR<0.){
+            	rholJ=rholR;
+            }
+            if ((1. - alfJ) > (*vg1dSP).localtiny)
+                ulR /= ((1. - alfJ)*rholJ);
             else
                 ulR = 0.;
+
+            ugL=ugR=ulL=ulR=0.;
+
+            double termoDinExpli=0;
+            double multTermoDinM=0.;
+            double multTermoDinJ=0.;
+            double multTermoDin=1.;
+            if(vexpi==1 && ((masterM==0 || masterJ==0 || masterJJ==0) || posic >= ncel-1))deriMas=0;
+            if(vexpi==1 && ((masterM==1 && masterJ==1 && masterJJ==1) && posic < ncel-1)){
+            	relacoesSonicas();
+            	double dMdxM;
+
+            	multTermoDinM=duto.area*autval1M*autval1M*autval2M/((autval2M-autval1M)*dF2dU1);
+            	multTermoDinJ=-dutoR.area*autval1J*autval2J*autval2J/((autval2J-autval1J)*dF2dU1);
+            	multTermoDin=multTermoDinM+multTermoDinJ;
+
+            	if(autval1<0){
+            		dMdxM=(MRR-MR)/dxR;
+            	}
+            	else{
+            		dMdxM=(MR-MC)/dx;
+            	}
+            	double dMdxJ;
+            	double termoDinJ;
+            	if(autval2>0){
+            		dMdxJ=(MR-MC)/dx;
+            	}
+            	else{
+            		dMdxJ=(MRR-MR)/dxR;
+            	}
+            	termoDinExpli=-(autval1M*autval1M/(autval2M-autval1M))*dMdxM+
+            			(autval2J*autval2J/(autval2J-autval1J))*dMdxJ;
+            	//termoDinExpli=termoDinM+termoDinJ;
+            	//if(fabsl(termoDinExpli)<1e-10)deriMas=0;
+            	//termoDinExpli=velMixSemiH*(MRR-MC)/(dx+dxR);
+            }
+            /////////////////////////////////////////////////////////////////////////////////////////////////////
+
             local[1][1] = 0.;
             local[1][2] = -ugL * (1 - term1) / dx - ulL * term1 / dx;
-            local[1][3] = -Amed * 98066.5 / dxmed;
-            local[1][4] = (1 - (1. - corDRholC * deriMas) * term1R) / dt + ugR * (1 - term1R) / dx + ulR * term1R / dx;
-            local[1][5] = Amed * 98066.5 / dxmed;
+            local[1][3] = -Amed*multTermoDin * 98066.5 / dxmed;
+            local[1][4] = (1 - (1. - corDRholC * deriMas) * term1R) / dt +
+            		ugR * (1 - term1R) / dx + ulR * term1R / dx;
+            local[1][5] = Amed*multTermoDin * 98066.5 / dxmed;
 
             TL[1] = (MR - (1. - corDRholC * deriMas) * MliqiniR) / dt + (1. - corDRholC * deriMas) * term2R / dt + (ugR * term2R - ugL * term2) / dx -
-                    (ulR * term2R - ulL * term2) / dx;
+                    (ulR * term2R - ulL * term2) / dx-termoDinExpli;
 
             double j1;
             double j2;
@@ -1555,18 +1794,18 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             dpfric += coefTensR * coef2R;
             double dphidro = dPdLHidro * 9.82 * sin(duto.teta) * AC * rhomix1 * razdx;
             termoHidro = dphidro / AC;
-            termoHidro += 9.82 * sin(dutoR.teta) * rhomix2 * (1. - razdx);
+            termoHidro += dPdLHidro *9.82 * sin(dutoR.teta) * rhomix2 * (1. - razdx);
             termoFric = coefTensC * j1 / AC + coefTensR * j2 / AR;
-            dphidro += 9.82 * sin(dutoR.teta) * AR * rhomix2 * (1. - razdx);
+            dphidro += dPdLHidro *9.82 * sin(dutoR.teta) * AR * rhomix2 * (1. - razdx);
             double estrat1 = perdaEstratL * term1R * fabs(MliqiniR) + perdaEstratG * (1 - term1R) * fabs(MR - MliqiniR);
             double estrat2 = (perdaEstratL * fabs(MliqiniR) - perdaEstratG * fabs(MR - MliqiniR)) * term2R;
 
             estrat1 = 0.;
             estrat2 = 0.;
 
-            dpB = 0.;
-            potB = 0.;
-            potBT = 0.;
+            acsr.dpB=dpB = 0.;
+            acsr.potB=potB = 0.;
+            acsr.potBT=potBT = 0.;
             double coefDpB = 0.;
             double perdArea = 0.;
             if ((duto.area != dutoR.area && re1 > 2400 && re2 > 2400) && (mudaArea == 1 && (fabs(j1) >= 0.1 && fabs(j2) >= 0.1))) {
@@ -1578,7 +1817,6 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 if (duto.area > dutoR.area) {
                     areaMenor = dutoR.area;
                     areaMaior = duto.area;
-                    ;
                     if (MR > 0.) {
                         perdLoc = 0.42 * 0.5 * (MR / (duto.area * duto.area * rhomix1)) * (1. - pow(duto.area / dutoR.area, 2.));
                     } else {
@@ -1601,21 +1839,22 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 double vazmix = j1 * AC;
                 vazmix *= (86400 / 0.1589876);
                 acsr.bcs.NovaVis(viscmix1, rhomix1, vazmix);
-                dpB = 0.3048 * acsr.bcs.Hvis * rhomix1 * 9.82;
-                potB = acsr.bcs.Pvis * 745.7;
-                potTermo = (1. - acsr.bcs.Evis / 100.) * potB;
+                acsr.dpB=dpB = 0.3048 * acsr.bcs.Hvis * rhomix1 * 9.82;
+                acsr.potB=potB = acsr.bcs.Pvis * 745.7;
+                acsr.potTermo=potTermo = (1. - acsr.bcs.Evis / 100.) * potB;
                 if (acsr.bcs.eficM > 0.)
-                    potBT = (1. + 100. * (1. - acsr.bcs.eficM / 100.) / acsr.bcs.eficM) * potB;
+                	acsr.potBT=potBT = (1. + 100. * (1. - acsr.bcs.eficM / 100.) / acsr.bcs.eficM) * potB;
                 else
-                    potBT = 0.;
+                	acsr.potBT=potBT = 0.;
                 potTermo += potBT * (1. - acsr.bcs.eficM / 100.) * acsr.bcs.fracTermMotorEfic;
+                acsr.potTermo=potTermo;
                 double Cdpb = AC * (86400 / 0.1589876);
                 double djdm = (term1R / rholC + (1 - term1R) / rhogC) / AC;
                 acsr.bcs.NovaVis(viscmix1, rhomix1, vazmix * 1.001);
                 double dpdvaz = (0.3048 * acsr.bcs.Hvis * rhomix1 * 9.82 - dpB) / (0.001 * vazmix);
                 coefDpB = Cdpb * djdm * dpdvaz;
             } else if (acsr.tipo == 7) {
-                dpB = acsr.delp * 98066.5;
+            	acsr.dpB=dpB = acsr.delp * 98066.5;
                 double qgMon = (MR - MliqiniR) / rhogC;
                 double qlmon = MliqiniR / rholC;
                 double npoli = 1.;
@@ -1634,21 +1873,21 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 else
                     Wcomp = presauxR * 98066.5 * qgMon * log(1 + acsr.delp / presauxR);
                 Wcomp *= (100. / acsr.eficGas);
-                potB = Wcomp + Wbomb;
-                potTermo = ((1. - acsr.eficLiq / 100.) * Wbomb + (1. - acsr.eficGas / 100.) * Wcomp);
-                potBT = Wcomp + Wbomb;
+                acsr.potB=potB = Wcomp + Wbomb;
+                acsr.potTermo=potTermo = ((1. - acsr.eficLiq / 100.) * Wbomb + (1. - acsr.eficGas / 100.) * Wcomp);
+                acsr.potBT=potBT = Wcomp + Wbomb;
             } else if (acsr.tipo == 17 && acsr.multibcs.freqnova > 1. && j1 >= 0.) {
                 double alf0 = alf;
                 double bet0 = bet;
                 acsr.multibcs.flui = flui;
                 acsr.multibcs.fluicol = fluicol;
                 acsr.multibcs.marchaMultiBcs((MR - MliqiniR) / rhogC, MliqiniR / rholC, presauxR, temp, alf0, bet0);
-                dpB = acsr.multibcs.dpB * 98066.52;
-                potB = acsr.multibcs.potB;
-                potBT = acsr.multibcs.potBT;
-                potTermo = acsr.multibcs.potTermo;
+                acsr.dpB=dpB = acsr.multibcs.dpB * 98066.52;
+                acsr.potB=potB = acsr.multibcs.potB;
+                acsr.potBT=potBT = acsr.multibcs.potBT;
+                acsr.potTermo=potTermo = acsr.multibcs.potTermo;
                 potTermo += potBT * (1. - acsr.multibcs.eficM / 100.) * acsr.multibcs.fracTermMotorEfic;
-
+                acsr.potTermo=potTermo;
                 double Cdpb = AC * (86400 / 0.1589876);
                 double djdm = (term1R / rholC + (1 - term1R) / rhogC) / AC;
                 double vazmix = (MR - MliqiniR) / rhogC + MliqiniR / rholC;
@@ -2458,6 +2697,856 @@ double Cel::zriddrRhop(double x1, double x2, double rp) {
     }
 }
 
+void Cel::relacoesSonicas() {
+	    double val;
+
+        double area = dutoR.area;
+        if ((MR-MliqiniR) >= 0)
+            area = duto.area;
+	    //double area;
+	   // if (duto.area < dutoR.area)
+            //area = duto.area;
+        //else
+            //area = dutoR.area;
+
+	    double alfI=alfRI;
+	    double betI;
+	    if (QL > 0)
+	        betI = bet;
+	    else
+	        betI = bet;
+
+	    double tempMed;
+	    double raz;
+	    if (posic == 0)
+	        tempMed = temp;
+	    else {
+	        raz = dxR / (dx + dxR);
+	        tempMed = (1. - raz) * temp + raz * tempR;
+	    }
+	    double kad = flui.ConstAdG(presauxR, tempMed, rgRi);
+	    double rlmix = rpRi * (1. - betI) + rcRi * betI;
+	    cg2 = kad / flui.drhodp(presauxR, tempMed);
+	    cl2=1000.*1000;
+
+	    kad = flui.ConstAdG(pres, temp, rgC);
+	    double rlmixM = rpC * (1. - bet) + rcC * bet;
+	    cg2M = kad / flui.drhodp(pres, temp);
+	    cl2M=1000.*1000;
+	    kad = flui.ConstAdG(presR, tempR, rgR);
+	    double rlmixJ = rpR * (1. - betR) + rcR * betR;
+	    cg2J = kad / flui.drhodp(presR, tempR);
+	    cl2J=1000.*1000;
+
+	    double dAlfdp=alfI*(1.-alfI)*(1/(rlmix*cl2)-1/(rgRi*cg2));
+	    double dU1dp=alfI/cg2+(1.-alfI)/cl2+dAlfdp*(rgRi-rlmix);
+	    ch2=1/dU1dp;
+	    double drldU1=ch2/cl2;
+	    double drgddU1=ch2/cg2;
+	    double dAlfdU1=dAlfdp*ch2;
+
+	    dAlfdp=alf*(1.-alf)*(1/(rlmixM*cl2M)-1/(rgC*cg2M));
+	    dU1dp=alf/cg2M+(1.-alf)/cl2M+dAlfdp*(rgC-rlmixM);
+	    ch2M=1/dU1dp;
+
+	    dAlfdp=alfR*(1.-alfR)*(1/(rlmixJ*cl2J)-1/(rgR*cg2J));
+	    dU1dp=alfR/cg2J+(1.-alfR)/cl2J+dAlfdp*(rgR-rlmixJ);
+	    ch2J=1/dU1dp;
+
+	    double den=1.-alfI*c0R*(1-rgRi/rlmix);
+	    double dT1dU1=(-c0R/den+c0R*(1-rgRi/rlmix)*(1.-alfI*c0R)/(den*den))*alfI*(1.-alfI)*cg2*(1./(rlmix*cl2)-1./(rgRi*cg2))-
+	    		(1.-alfI*c0R)*(alfI*c0R/(rlmix*den*den))*ch2/cg2+
+				(1.-alfI*c0R)*(alfI*c0R*rgRi/(rlmix*rlmix*den*den))*ch2/cl2;
+	    double dT2dU1=(-area*udR*rgRi/den-c0R*(1-rgRi/rlmix)*area*udR*rgRi*alfI/(den*den))*alfI*(1.-alfI)*ch2*(1./(rlmix*cl2)-1./(rgRi*cg2))-
+	    		(alfI*area*udR/den-alfI*alfI*c0R*area*udR*rgRi/(rlmix*den*den))*ch2/cg2-
+				(alfI*alfI*area*udR*rgRi*rgRi*c0R/(rlmix*rlmix*den*den))*ch2/cl2;
+
+	    if(alfI>1e-10 && alfI<1.-1e-10)
+	    dF2dM=2.*((1.-term1R)*MR-term2R)*(1.-term1R)/(rgRi*area*alfI)+
+	    		2.*(term1R*MR+term2R)*term1R/(rlmix*area*(1.-alfI));
+	    else if(alfI>=1.-1e-10)dF2dM=2.*((1.-term1R)*MR-term2R)*(1.-term1R)/(rgRi*area*alfI);
+	    else dF2dM=2.*(term1R*MR+term2R)*term1R/(rlmix*area*(1.-alfI));
+	    dF2dU1=area*ch2;
+
+	    if(alf>1e-10 && alf<1.-1e-10)
+	    dF2dMM=2.*((1.-term1R)*MR-term2R)*(1.-term1R)/(rgC*duto.area*alf)+
+	    		2.*(term1R*MR+term2R)*term1R/(rlmixM*duto.area*(1.-alf));
+	    else if(alf>=1.-1e-10)dF2dMM=2.*((1.-term1R)*MR-term2R)*(1.-term1R)/(rgC*duto.area*alf);
+	    else dF2dMM=2.*(term1R*MR+term2R)*term1R/(rlmixM*duto.area*(1.-alf));
+	    dF2dU1M=duto.area*ch2M;
+
+	    if(alfR>1e-10 && alfR<1.-1e-10)
+	    dF2dMJ=2.*((1.-term1R)*MR-term2R)*(1.-term1R)/(rgR*dutoR.area*alfR)+
+	    		2.*(term1R*MR+term2R)*term1R/(rlmixJ*dutoR.area*(1.-alfR));
+	    else if(alfR>=1.-1e-10)dF2dMJ=2.*((1.-term1R)*MR-term2R)*(1.-term1R)/(rgR*dutoR.area*alfR);
+	    else dF2dMJ=2.*(term1R*MR+term2R)*term1R/(rlmixJ*dutoR.area*(1.-alfR));
+	    dF2dU1J=dutoR.area*ch2J;
+
+	    double deltaS=sqrt(dF2dM*dF2dM+4.*dF2dU1/area);
+	    double deltaSM=sqrt(dF2dM*dF2dM+4.*dF2dU1M/duto.area);
+	    double deltaSJ=sqrt(dF2dM*dF2dM+4.*dF2dU1J/dutoR.area);
+	    velMixSemiH=0.5*dF2dM;
+	    autval1=velMixSemiH+0.5*deltaS;
+	    autval2=velMixSemiH-0.5*deltaS;
+	    autval1M=0.5*dF2dMM+0.5*deltaSM;
+	    autval2M=0.5*dF2dMM-0.5*deltaSM;
+	    autval1J=0.5*dF2dMJ+0.5*deltaSJ;
+	    autval2J=0.5*dF2dMJ-0.5*deltaSJ;
+	    coefAutVal1=-(1./(area*(autval2-autval1)))*autval1*autval1*area;
+	    coefAutVal2=(1./(area*(autval2-autval1)))*autval2*autval2*area;
+	    coefAutVal1M=-(1./(duto.area*(autval2M-autval1M)))*autval1M*autval1M*duto.area;
+	    coefAutVal2M=(1./(duto.area*(autval2M-autval1M)))*autval2M*autval2M*duto.area;
+	    coefAutVal1J=-(1./(dutoR.area*(autval2J-autval1J)))*autval1J*autval1J*dutoR.area;
+	    coefAutVal2J=(1./(dutoR.area*(autval2J-autval1J)))*autval2J*autval2J*dutoR.area;
+
+	    double drholgdt=flui.drhodt(pres, temp);
+	    denDeriTempo=alf/cg2M+(1.-alf)/cl2M+(rgC-rlmixM)*alf*(1.-alf)*(1/(rgC*cg2M)-1/(rlmixM*cl2M));
+	    coefDeridT=-alf*drholgdt;
+	    coefDeridalf=-(rgC-rlmixM);
+}
+
+/*void Cel::relacoesSonicas() {
+	    double val;
+
+        double area = duto.area;
+        if((MC-Mliqini) >= 0)
+            area = dutoL.area;
+
+	    double tempMed;
+	    double raz;
+	    if (posic == 0)
+	        tempMed = temp;
+	    else {
+	        raz = dx / (dxL + dx);
+	        tempMed = (1. - raz) * tempL + raz * temp;
+	    }
+	    double kad = flui.ConstAdG(presaux, tempMed, rgCi);
+	    double rlmix = rpCi * (1. - betI) + rcCi * betI;
+	    cg2 = kad / flui.drhodp(presaux, tempMed);
+	    cl2=1500.*1500;
+
+	    kad = flui.ConstAdG(presL, tempL, rgL);
+	    double rlmixM = rpL * (1. - betL) + rcL * betL;
+	    cg2M = kad / flui.drhodp(presL, tempL);
+	    cl2M=1500.*1500;
+	    kad = flui.ConstAdG(pres, temp, rgC);
+	    double rlmixJ = rpC * (1. - bet) + rcC * bet;
+	    cg2J = kad / flui.drhodp(pres, temp);
+	    cl2J=1500.*1500;
+
+	    double dAlfdp=alfI*(1.-alfI)*(1/(rlmix*cl2)-1/(rgRi*cg2));
+	    double dU1dp=alfI/cg2+(1.-alfI)/cl2+dAlfdp*(rgCi-rlmix);
+	    ch2=1/dU1dp;
+	    double drldU1=ch2/cl2;
+	    double drgddU1=ch2/cg2;
+	    double dAlfdU1=dAlfdp*ch2;
+
+	    dAlfdp=alfL*(1.-alfL)*(1/(rlmixM*cl2M)-1/(rgL*cg2M));
+	    dU1dp=alfL/cg2M+(1.-alfL)/cl2M+dAlfdp*(rgL-rlmixM);
+	    ch2M=1/dU1dp;
+
+	    dAlfdp=alf*(1.-alf)*(1/(rlmixJ*cl2J)-1/(rgC*cg2J));
+	    dU1dp=alf/cg2J+(1.-alf)/cl2J+dAlfdp*(rgC-rlmixJ);
+	    ch2J=1/dU1dp;
+
+	    double den=1.-alfI*c0*(1-rgCi/rlmix);
+	    double dT1dU1=(-c0/den+c0*(1-rgCi/rlmix)*(1.-alfI*c0)/(den*den))*alfI*(1.-alfI)*cg2*(1./(rlmix*cl2)-1./(rgCi*cg2))-
+	    		(1.-alfI*c0)*(alfI*c0/(rlmix*den*den))*ch2/cg2+
+				(1.-alfI*c0)*(alfI*c0*rgCi/(rlmix*rlmix*den*den))*ch2/cl2;
+	    double dT2dU1=(-area*ud*rgCi/den-c0*(1-rgCi/rlmix)*area*ud*rgCi*alfI/(den*den))*alfI*(1.-alfI)*ch2*(1./(rlmix*cl2)-1./(rgCi*cg2))-
+	    		(alfI*area*ud/den-alfI*alfI*c0*area*ud*rgCi/(rlmix*den*den))*ch2/cg2-
+				(alfI*alfI*area*ud*rgCi*rgCi*c0/(rlmix*rlmix*den*den))*ch2/cl2;
+
+	    if(alfI>1e-10 && alfI<1.-1e-10)
+	    dF2dM=2.*((1.-term1)*MC-term2)*(1.-term1)/(rgCi*area*alfI)+
+	    		2.*(term1*MC+term2)*term1/(rlmix*area*(1.-alfI));
+	    else if(alfI>=1.-1e-10)dF2dM=2.*((1.-term1)*MC-term2)*(1.-term1)/(rgCi*area*alfI);
+	    else dF2dM=2.*(term1*MC+term2)*term1/(rlmix*area*(1.-alfI));
+	    dF2dU1=
+				area*ch2;
+
+	    if(alfL>1e-10 && alfL<1.-1e-10)
+	    dF2dMM=2.*((1.-term1)*MC-term2)*(1.-term1)/(rgL*dutoL.area*alfL)+
+	    		2.*(term1*MC+term2)*term1/(rlmixM*dutoL.area*(1.-alfL));
+	    else if(alfL>=1.-1e-10)dF2dMM=2.*((1.-term1)*MC-term2)*(1.-term1)/(rgL*dutoL.area*alfL);
+	    else dF2dMM=2.*(term1*MC+term2)*term1/(rlmixM*dutoL.area*(1.-alfL));
+	    dF2dU1M=dutoL.area*ch2M;
+
+	    if(alf>1e-10 && alf<1.-1e-10)
+	    dF2dMJ=2.*((1.-term1)*MC-term2)*(1.-term1)/(rgC*duto.area*alf)+
+	    		2.*(term1*MC+term2)*term1/(rlmixJ*duto.area*(1.-alf));
+	    else if(alf>=1.-1e-10)dF2dMJ=2.*((1.-term1)*MC-term2)*(1.-term1)/(rgC*duto.area*alf);
+	    else dF2dMJ=2.*(term1*MC+term2)*term1/(rlmixJ*duto.area*(1.-alf));
+	    dF2dU1J=duto.area*ch2J;
+
+	    double deltaS=sqrt(dF2dM*dF2dM+4.*dF2dU1/area);
+	    double deltaSM=sqrt(dF2dM*dF2dM+4.*dF2dU1M/duto.area);
+	    double deltaSJ=sqrt(dF2dM*dF2dM+4.*dF2dU1J/dutoR.area);
+	    velMixSemiH=0.5*dF2dM;
+	    autval1=velMixSemiH+0.5*deltaS;
+	    autval2=velMixSemiH-0.5*deltaS;
+	    autval1M=0.5*dF2dMM+0.5*deltaSM;
+	    autval2M=0.5*dF2dMM-0.5*deltaSM;
+	    //autval1J=0.5*dF2dMJ+0.5*deltaSJ;
+	    //autval2J=0.5*dF2dMJ-0.5*deltaSJ;
+	    autval1J=velMixSemiH+0.5*deltaSJ;
+	    autval2J=velMixSemiH-0.5*deltaSJ;
+	    coefAutVal1=-(1./(area*(autval2-autval1)))*autval1*autval1*area;
+	    coefAutVal2=(1./(area*(autval2-autval1)))*autval2*autval2*area;
+	    coefAutVal1M=-(1./(duto.area*(autval2M-autval1M)))*autval1M*autval1M*duto.area;
+	    coefAutVal2M=(1./(duto.area*(autval2M-autval1M)))*autval2M*autval2M*duto.area;
+	    coefAutVal1J=-(1./(dutoR.area*(autval2J-autval1J)))*autval1J*autval1J*dutoR.area;
+	    coefAutVal2J=(1./(dutoR.area*(autval2J-autval1J)))*autval2J*autval2J*dutoR.area;
+
+	    double drholgdt=flui.drhodt(pres, temp);
+	    denDeriTempo=alf/cg2M+(1.-alf)/cl2M+(rgC-rlmixM)*alf*(1.-alf)*(1/(rgC*cg2M)-1/(rlmixM*cl2M));
+	    coefDeridT=-alf*drholgdt;
+	    coefDeridalf=-(rgC-rlmixM);
+}*/
+
+void Cel::GeraLocalExplicito(double presfim, int masChkSup, int ncel, double razareativa,
+                    double presE, double tempE, double titE, double betE, int ciclo,
+                    int modelo, int noextremo, int corrigeContSep, double areaChoke, int vexpi) {
+
+    double deriPres = 1. * mudaDT;
+    if (modelo == 0)
+        deriPres = 0.;
+    double deriMas = vexpi;
+    if (posic != 0 && posic != ncel) {
+
+        double AL = dutoL.area;
+        double AC = AL;
+        double AR = AL;
+        double siL = duto.peri;
+        double siC = siL;
+        double siR = siL;
+        double rhogC = 1.;
+        double rholC = 1000.;
+        double rholL = 1000.;
+        double rhogR;
+        double rhogL;
+        double rholR = 1000.;
+        double compres;
+        double dzdp;
+        double dpdrho = 0.;
+        double drhoLdp = 0.;
+        double corDRholC = 1. - 0 * mudaDT;
+
+
+        AC = duto.area;
+        AR = dutoR.area;
+        siL = dutoL.peri;
+        siC = duto.peri;
+        siR = dutoR.peri;
+        rhogC = rgC;
+        rholC = rpC * (1 - bet) + rcC * bet;
+        rholL = rpL * (1 - betL) + rcL * betL;
+        rhogR = rgR;
+        rhogL = rgL;
+        rholR = rpR * (1 - betR) + rcR * betR;
+
+        int master = 1;
+        if (acsrL != 0) {
+            if (((*acsrL).tipo == 5 && (*acsrL).chk.AreaGarg < (1e-3 + razareativa) * AL) || ((*acsrL).tipo == 8 && fabs((*acsrL).bvol.freq) > 1))
+                master = 0;
+        }
+        pExpli=(pres*98066.5+
+        		dt*(-(MR-MC)/(AC*dx)+ (fontemassGR + fontemassLR + fontemassCR)/(AC*dx)+0*coefDeridalf*(alf-alfini)/dt+0*coefDeridT*dTdt * mudaDT)/denDeriTempo)/98066.5;
+
+        double dxmed = 0.5 * (dxL + dx);
+        double Amed;
+        if (AL < AC)
+            Amed = AL;
+        else
+            Amed = AC;
+
+        double ugL = vexpi * ((ML - MliqiniL) / (rhogL)) / AL;
+        if (alfL > (*vg1dSP).localtiny)
+                ugL /= alfL;
+        else
+                ugL = 0.;
+        double ugR = vexpi * ((MR - MliqiniR) / (rhogR)) / AR;
+        if (alfR > (*vg1dSP).localtiny)
+                ugR /= alfR;
+        else
+                ugR = 0.;
+        double ulL = vexpi * ((Mliqini) / (rholC)) / AC;
+        if ((1. - alf) > (*vg1dSP).localtiny)
+                ulL /= (1. - alf);
+        else
+                ulL = 0.;
+        double ulR = vexpi * ((MliqiniR) / (rholR)) / AR;
+        if ((1. - alfR) > (*vg1dSP).localtiny)
+                ulR /= (1. - alfR);
+        else
+                ulR = 0.;
+
+        double j1;
+        double j2;
+
+        j1 = (Mliqini / rholL + (MC - Mliqini) / rhogL) / AL;
+        j2 = (Mliqini / rholC + (MC - Mliqini) / rhogC) / AC;
+
+        double coef1C = ((1 / rhogL) + term1 * (rhogL - rholL) / (rhogL * rholL)) / AL;
+        double coef2C = (term2 * (rhogL - rholL) / (rhogL * rholL)) / AL;
+        double coef1R = ((1 / rhogC) + term1 * (rhogC - rholC) / (rhogC * rholC)) / AC;
+        double coef2R = (term2 * (rhogC - rholC) / (rhogC * rholC)) / AC;
+
+        double rhomix1;
+        double rhomix2;
+
+        rhomix1 = alfL * rhogL + (1 - alfL) * rholL;
+        rhomix2 = alf * rhogC + (1 - alf) * rholC;
+
+        double viscmix1;
+        double viscmix2;
+
+        double CorrViscG = 1.;
+        double CorrViscL = 1.;
+
+        viscmix1 = alfL * (*fluiL).ViscGas(presL, tempL) * CorrViscG +
+        		(1 - alfL) * ((1 - betL) * (*fluiL).ViscGas(presL, tempL) + betL * fluicol.VisFlu(presL, tempL)) * CorrViscL;
+
+        CorrViscG = 1.;
+        CorrViscL = 1.;
+        viscmix2 = alf * migC * CorrViscG +
+                       (1 - alf) * ((1 - bet) * mipC + bet * micC) * CorrViscL;
+
+        double re1;
+        double re2;
+
+        if (dutoL.revest == 0)
+                re1 = Rey(dutoL.a, j1, rhomix1, viscmix1);
+        else {
+                double dhid = 4 * dutoL.area / dutoL.peri;
+                re1 = Rey(dhid, j1, rhomix1, viscmix1);
+        }
+        if (duto.revest == 0)
+                re2 = Rey(duto.a, j2, rhomix2, viscmix2);
+        else {
+                double dhid = 4 * duto.area / duto.peri;
+                re2 = Rey(dhid, j2, rhomix2, viscmix2);
+        }
+        double f1 = fric(re1, dutoL.rug / dutoL.a);
+        double f2 = fric(re2, duto.rug / duto.a, -1);
+        if (dutoL.teta < 0.1) {
+                f1 *= 1.;
+                f2 *= 1.;
+        }
+        double razdx = dxL / (dxL + dx);
+        double coefTensC = dPdLFric * 0.5 * f1 * rhomix1 * (fabs(j1)) * siL * razdx;
+        double dpfric = coefTensC * coef2C;
+        double coefTensR = dPdLFric * 0.5 * f2 * rhomix2 * (fabs(j2)) * siC * (1. - razdx);
+        dpfric += coefTensR * coef2R;
+        double dphidro = dPdLHidro * 9.82 * sin(dutoL.teta) * AL * rhomix1 * razdx;
+        termoHidro = dphidro / AL;
+        termoHidro += dPdLHidro *9.82 * sin(duto.teta) * rhomix2 * (1. - razdx);
+        termoFric = coefTensC * j1 / AL + coefTensR * j2 / AC;
+        dphidro += dPdLHidro *9.82 * sin(duto.teta) * AC * rhomix2 * (1. - razdx);
+        double TensC = dPdLFric * 0.5 * f1 * rhomix1 * (fabs(j1)*j1) * siL * razdx;
+        double TensR = dPdLFric * 0.5 * f2 * rhomix2 * (fabs(j2)*j2) * siC * (1. - razdx);
+        double hidroC = dPdLHidro * 9.82 * sin(dutoL.teta) * AL * rhomix1 * razdx;
+        double hidroR= dPdLHidro * 9.82 * sin(duto.teta)* AC * rhomix2 * (1. - razdx);
+
+
+        cinematico = 0;
+        int saltoPres=0;
+        if(acsrL!=0 && ((*acsrL).tipo == 4 || (*acsrL).tipo == 5 || (*acsrL).tipo == 7 || (*acsrL).tipo == 8 || (*acsrL).tipo == 17)) saltoPres=1;
+        if ((saltoPres==0 || acsrL==0 || (acsrL!=0 && (*acsrL).tipo == 5 && (*acsrL).chk.AreaGarg > (1e-3 + razareativa) * dutoL.area)) && duto.area == dutoL.area){
+           double contribui1;
+           double contribui2;
+	   	   double U1L=alf*rgL+(1.-alf)*rholL;
+	   	   double U1R=alf*rgC+(1.-alf)*rholC;
+           double contribuiPres=-autval1*autval2*((presR-pres)*98066.5/ch2)*duto.area/(0.5*(dx+dxL));
+           if(autval1>0){
+        	   if(posic>1 || presE>=0.)
+            		contribui1=coefAutVal1*(MC-ML)/dxL;
+        	   else contribui1=0.;
+           }
+           else{
+            		contribui1=coefAutVal1*(MR-MC)/dx;
+           }
+           if(autval2>0){
+        	   if(posic>1 || presE>=0.)
+            		contribui2=coefAutVal2*(MC-ML)/dxL;
+        	   else contribui2=0.;
+           }
+           else{
+            		contribui2=coefAutVal2*(MR-MC)/dx;
+           }
+           if(acsrL!=0 || acsr.tipo==1 || acsr.tipo==2 || acsr.tipo==3)MCExpli=MC-dt*(contribuiPres+TensC+TensR+hidroC+hidroR);
+           else if(master==1)
+           MCExpli=MC-dt*(contribuiPres+contribui1+contribui2+TensC+TensR+hidroC+hidroR);
+           else MCExpli=0.;
+        }
+        else{
+        	double dpBLocal=0.;
+        	double perdArea = 0.;
+        	if(acsrL!=0){
+        		(*acsrL).dpB=dpBL = 0.;
+        		(*acsrL).potB=potBL = 0.;
+        		(*acsrL).potBT=potBTL = 0.;
+        		if ((duto.area != dutoL.area && re1 > 2400 && re2 > 2400) && (mudaArea == 1 && (fabs(j1) >= 0.1 && fabs(j2) >= 0.1))) {
+                    double areaMenor;
+                    double areaMaior;
+                    double bernou;
+                    double perdLoc;
+                    bernou = 0.5 * (MC / (dutoL.area * dutoL.area * rhomix1)) * (1. - pow(dutoL.area / duto.area, 2.));
+                    if (dutoL.area > duto.area) {
+                        areaMenor = duto.area;
+                        areaMaior = dutoL.area;
+                        if (MC > 0.) {
+                            perdLoc = 0.42 * 0.5 * (MC / (dutoL.area * dutoL.area * rhomix1)) * (1. - pow(dutoL.area / duto.area, 2.));
+                        } else {
+                            double expanse = (1. - pow(areaMenor / areaMaior, 2.));
+                            perdLoc = 0.5 * (MC / (areaMenor * areaMenor * rhomix1)) * expanse * expanse;
+                        }
+                    } else {
+                        areaMenor = dutoL.area;
+                        areaMaior = duto.area;
+                        if (MC < 0.) {
+                            perdLoc = 0.42 * 0.5 * (MC / (dutoL.area * dutoL.area * rhomix1)) * (1. - pow(dutoL.area / duto.area, 2.));
+                        } else {
+                            double expanse = (1. - pow(areaMenor / areaMaior, 2.));
+                            perdLoc = -0.5 * (MC / (areaMenor * areaMenor * rhomix1)) * expanse * expanse;
+                        }
+                    }
+                    perdArea = -(bernou + perdLoc)*MC * Amed / dxmed;
+        		}
+        		if ((*acsrL).tipo == 4 && (*acsrL).bcs.freqnova > 1. && j1 >= 0.) {
+                    double vazmix = j1 * AL;
+                    vazmix *= (86400 / 0.1589876);
+                    (*acsrL).bcs.NovaVis(viscmix1, rhomix1, vazmix);
+                    (*acsrL).dpB=dpBL = 0.3048 * (*acsrL).bcs.Hvis * rhomix1 * 9.82;
+                    (*acsrL).potB=potBL = (*acsrL).bcs.Pvis * 745.7;
+                    (*acsrL).potTermo = (1. - (*acsrL).bcs.Evis / 100.) * potBL;
+                    if ((*acsrL).bcs.eficM > 0.)
+                    	(*acsrL).potBT= potBTL = (1. + 100. * (1. - (*acsrL).bcs.eficM / 100.) / (*acsrL).bcs.eficM) * potBL;
+                    else
+                    	(*acsrL).potBT=potBTL = 0.;
+                    (*acsrL).potTermo += potBTL * (1. - (*acsrL).bcs.eficM / 100.) * (*acsrL).bcs.fracTermMotorEfic;
+        		} else if ((*acsrL).tipo == 7) {
+        	        (*acsrL).dpB=dpBL = (*acsrL).delp * 98066.5;
+                    double qgMon = (MC - Mliqini) / rhogL;
+                    double qlmon = Mliqini / rholL;
+                    double npoli = 1.;
+                    if ((*acsrL).tipoCompGas == 0) {
+                        npoli = flui.ConstAdG(presL, tempL);
+                        if ((npoli - 1.05) < 1e-2)
+                            npoli = 1.05;
+                    } else if ((*acsrL).tipoCompGas == 1)
+                        npoli = (*acsrL).fatPoli;
+                    double Wcomp;
+                    double Wbomb;
+                    Wbomb = (100. / (*acsrL).eficLiq) * dpBL * qlmon;
+                    if ((*acsrL).tipoCompGas != 2)
+                        Wcomp = -(presaux * 98066.5 * qgMon / (1. - npoli)) *
+                                (pow(1 + (*acsrL).delp / presaux, (npoli - 1.) / npoli) - 1.);
+                    else
+                        Wcomp = presaux * 98066.5 * qgMon * log(1 + (*acsrL).delp / presaux);
+                    Wcomp *= (100. / (*acsrL).eficGas);
+                    (*acsrL).potB=potBL = Wcomp + Wbomb;
+                    (*acsrL).potTermo = ((1. - (*acsrL).eficLiq / 100.) * Wbomb + (1. - (*acsrL).eficGas / 100.) * Wcomp);
+                    (*acsrL).potBT=potBTL = Wcomp + Wbomb;
+        		} else if ((*acsrL).tipo == 17 && (*acsrL).multibcs.freqnova > 1. && j1 >= 0.) {
+        			double alf0 = alfL;
+                    double bet0 = betL;
+                    (*acsrL).multibcs.flui = (*fluiL);
+                    (*acsrL).multibcs.fluicol = fluicol;
+                    (*acsrL).multibcs.marchaMultiBcs((MC - Mliqini) / rhogL, Mliqini / rholL, presaux, tempL, alf0, bet0);
+                    (*acsrL).dpB=dpBL = (*acsrL).multibcs.dpB * 98066.52;
+                    (*acsrL).potB=potBL = (*acsrL).multibcs.potB;
+                    (*acsrL).potBT=potBTL = (*acsrL).multibcs.potBT;
+                    (*acsrL).potTermo = (*acsrL).multibcs.potTermo;
+                    (*acsrL).potTermo += potBTL * (1. - (*acsrL).multibcs.eficM / 100.) * (*acsrL).multibcs.fracTermMotorEfic;
+        		}
+        		dpBLocal=(*acsrL).dpB;
+        }
+
+           double contribui1;
+           double contribui2;
+           double contribuiPres1;
+           double contribuiPres2;
+           if(autval1>0){
+        	   	   	double U1L;
+        	   	   	double U1R;
+        	   	    if(posic>1 || presE>=0.)
+        	   	    	contribui1=coefAutVal1M*(MC-ML)/dxL;
+        	   	    else contribui1=0.;
+            		contribuiPres1=(autval1M*autval1M*autval2M/(autval2M-autval1M))*((presL-presLL)*98066.5/ch2M)*duto.area/(0.5*(dxL+dxLL));
+           }
+           else{
+        	   	    double U1L;
+        	   	   	double U1R;
+            		contribui1=coefAutVal1J*(MR-MC)/dx;
+            		contribuiPres1=(autval1J*autval1J*autval2J/(autval2J-autval1J))*((presR-pres)*98066.5/ch2J)*dutoR.area/(0.5*(dx+dxR));
+           }
+           if(autval2>0){
+        	   	   	double U1L;
+        	   	   	double U1R;
+        	   	    if(posic>1 || presE>=0.)
+        	   	    	contribui2=coefAutVal2M*(MC-ML)/dx;
+        	   	    else contribui2=0.;
+            		contribuiPres2=-(autval1M*autval2M*autval2M/(autval2M-autval1M))*((presL-presLL)*98066.5/ch2M)*duto.area/(0.5*(dxL+dxLL));
+           }
+           else{
+        	   	    double U1L;
+        	   	   	double U1R;
+            		contribui2=coefAutVal2J*(MR-MC)/dx;
+            		contribuiPres2=-(autval1J*autval2J*autval2J/(autval2J-autval1J))*((presR-pres)*98066.5/ch2J)*duto.area/(0.5*(dx+dxR));
+           }
+           if(master==1)
+        	   MCExpli=MC-dt*(contribuiPres1+contribuiPres2+contribui1+contribui2+TensC+TensR+hidroC+hidroR-(dpBLocal-perdArea)* Amed / dxmed);
+           else MCExpli=0.;
+        }
+    } else if (posic == ncel) {
+        double corDRhol = 1. - 0 * mudaDTL;
+        double corDRholC = 1. - 0 * mudaDT;
+        if (masChkSup == 0) {
+            double AL = dutoL.area;
+            double rhogL = (*fluiL).MasEspGas(presL, tempL);
+            if (ciclo == 0) {
+                double rholL = rpL * (1 - betL) + rcL * betL;
+                double compres = (*fluiL).Zdran(presL, tempL);
+                double dzdp = (*fluiL).DZDP(presL, tempL);
+                double dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = 1. / dpdrho;
+                double drhoLdp;
+                if ((*fluiL).flashCompleto != 2 || miniTabAtraso > 0)
+                    drhoLdp = (rpL - (*fluiL).MasEspLiq(presL * 0.999, tempL)) / (0.001 * presL);
+                else {
+                    ProFlu flud = (*fluiL);
+                    flud.atualizaPropComp(presL * 0.999, tempL, flud.dCalculatedBeta, flud.oCalculatedLiqComposition,
+                                          flud.oCalculatedVapComposition, 0);
+                    drhoLdp = (rpL - flud.MasEspLiq(presL * 0.999, tempL)) / (0.001 * presL);
+                }
+                double multL = ((1 / rpL) * (1 - betLI) * rpLi + (1 / rcL) * betLI * rcLi) / ((1 - betLI) * rpLi + betLI * rcLi);
+                double multR = ((1 / rpL) * (1 - betI) * rpCi + (1 / rcL) * betI * rcCi) / ((1 - betI) * rpCi + betI * rcCi);
+                // QUESTION: Shouldn't this be rcCi instead of rcRi?
+
+                double coluna = 1.;
+                if (duto.teta < 0.8 * M_PI / 2.)
+                    coluna = 1.;
+
+                local[0][1] = -((1. / rhogL) * (1. - term1L) + multL * term1L);
+                local[0][2] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt;
+                local[0][3] = (1. / rhogL) * (1 - term1) + multR * term1;
+                local[0][4] = 0.;
+                local[0][5] = 0.;
+
+                TL[0] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * presL * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
+                        (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
+                        (fontemassGL / rhogL + (fontemassLL / rpL + fontemassCL / rcL) / rholL) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
+            }
+            double drhodt = (*fluiL).drhodt(presL, tempL);
+            double drhoLdt = (rpL - (*fluiL).MasEspLiq(presL, tempL - 0.01)) / 0.01;
+
+            TL[0] -= dxL * AL * ((alfL / rhogL) * drhodt + (1 - alfL) * (1 - betL) * drhoLdt / rpL + (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtTL) * dTdtL * mudaDT;
+
+            MCExpli=(TL[0]-(local[0][1]*ML-local[0][2]*presL))/local[0][3];
+
+            if (ciclo == 0) {
+                local[1][1] = 0.;
+                local[1][2] = 0.;
+                local[1][3] = 1.;
+                local[1][4] = 0.;
+                local[1][5] = 0.;
+                if (((*vg1dSP).chaveredeT == 0 || noextremo == 1) && corrigeContSep == 1) {
+                    double dxmed = 0.5 * dx;
+                    double j1;
+
+                    double AC = duto.area;
+                    double siC = duto.peri;
+                    double rhogC = rgC;
+                    double rholC = rpC * (1 - bet) + rcC * bet;
+
+                    j1 = (MliqiniR / rholC + (MR - MliqiniR) / rhogC) / AC;
+
+                    double coef1C = ((1 / rhogC) + term1 * (rhogC - rholC) / (rhogC * rholC)) / AC;
+                    double coef2C = (term2 * (rhogC - rholC) / (rhogC * rholC)) / AC;
+                    double rhomix1;
+
+                    rhomix1 = alf * rhogC + (1 - alf) * rholC;
+
+                    double viscmix1;
+                    double CorrViscG = 1.;
+                    double CorrViscL = 1.;
+
+                    viscmix1 = alf * migC * CorrViscG + (1 - alf) * ((1 - bet) * mipC + bet * micC) * CorrViscL;
+                    CorrViscG = 1.;
+                    CorrViscL = 1.;
+
+                    double re1;
+
+                    if (duto.revest == 0)
+                        re1 = Rey(duto.a, j1, rhomix1, viscmix1);
+                    else {
+                        double dhid = 4 * duto.area / duto.peri;
+                        re1 = Rey(dhid, j1, rhomix1, viscmix1);
+                    }
+                    double f1 = fric(re1, duto.rug / duto.a);
+                    if (duto.teta < 0.1) {
+                        f1 *= 1.;
+                    }
+
+                    double coefTensC = 0.5 * f1 * rhomix1 * (fabs(j1)) * siC / AC;
+                    double dpfric = coefTensC * coef2C;
+                    double dphidro = 9.82 * sin(duto.teta) * rhomix1;
+                    termoHidro = dphidro;
+                    termoFric = coefTensC * j1;
+
+                    local[1][2] -= (coefTensC * coef1C) * dxmed / 98066.5;
+                    TL[1] = presfim + (dpfric + dphidro) * dxmed / 98066.5;
+                } else
+                    TL[1] = presfim;
+                pExpli=TL[1];
+
+            }
+        } else {
+            double AL = dutoL.area;
+            double rhogL = rgL;
+            double compres;
+            double dzdp;
+            double dpdrho;
+            double coluna = 1.;
+            double multL;
+            double multR;
+            if (ciclo == 0) {
+
+                compres = (*fluiL).Zdran(presL, tempL);
+                dzdp = (*fluiL).DZDP(presL, tempL);
+                dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = 1. / dpdrho;
+                double drhoLdp;
+                if ((*fluiL).flashCompleto != 2 || miniTabAtraso > 0)
+                    drhoLdp = (rpL - (*fluiL).MasEspLiq(presL * 0.999, tempL)) / (0.001 * presL);
+                else {
+                    ProFlu flud = (*fluiL);
+                    flud.atualizaPropComp(presL * 0.999, tempL, flud.dCalculatedBeta, flud.oCalculatedLiqComposition,
+                                          flud.oCalculatedVapComposition, 0);
+                    drhoLdp = (rpL - flud.MasEspLiq(presL * 0.999, tempL)) / (0.001 * presL);
+                }
+                multL = ((1 / rpL) * (1 - betLI) * rpLi + (1 / rcL) * betLI * rcLi) / ((1 - betLI) * rpLi + betLI * rcLi);
+                multR = ((1 / rpL) * (1 - betI) * rpCi + (1 / rcL) * betI * rcRi) / ((1 - betI) * rpCi + betI * rcCi);
+
+                if (duto.teta < 0.8 * M_PI / 2.)
+                    coluna = 1.;
+
+                local[0][0] = 0.;
+                local[0][1] = -((1. / rhogL) * (1. - term1L) + multL * term1L);
+                local[0][2] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt;
+                local[0][3] = (1. / rhogL) * (1 - term1) + multR * term1;
+                local[0][4] = 0.;
+                local[0][5] = 0.;
+
+                TL[0] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * presL * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
+                        (fontemassGL / rhogL + (fontemassLL / rpL + fontemassCL / rcL)) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
+            }
+            double drhodt = (*fluiL).drhodt(presL, tempL);
+            double drhoLdt = (rpL - (*fluiL).MasEspLiq(presL, tempL - 0.01)) / 0.01;
+
+            TL[0] -= dxL * AL * ((alfL / rhogL) * drhodt + (1 - alfL) * (1 - betL) * drhoLdt / rpL + (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtTL) * dTdtL * mudaDT;
+            MCExpli=(TL[0]-(local[0][1]*ML+local[0][2]*presL))/local[0][3];
+
+
+            double dxncel = 1. * dx;
+            double AC = dutoR.area;
+            double rhog = rgC;
+            if (ciclo == 0) {
+                AC = dutoR.area;
+                rhog = flui.MasEspGas(pres, temp);
+                compres = flui.Zdran(pres, temp);
+                dzdp = flui.DZDP(pres, temp);
+                dpdrho = rhog * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = 1. / dpdrho;
+                double drhoLdp;
+                if (flui.flashCompleto != 2 || miniTabAtraso > 0)
+                    drhoLdp = (rpC - flui.MasEspLiq(pres * 0.999, temp)) / (0.001 * pres);
+                else {
+                    ProFlu flud = flui;
+                    flud.atualizaPropComp(pres * 0.999, temp, flud.dCalculatedBeta, flud.oCalculatedLiqComposition,
+                                          flud.oCalculatedVapComposition, 0);
+                    drhoLdp = (rpC - flud.MasEspLiq(pres * 0.999, temp)) / (0.001 * pres);
+                }
+                coluna = 1.;
+                if (duto.teta < 0.8 * M_PI / 2.)
+                    coluna = 1.;
+
+                multL = ((1 / rpL) * (1 - betI) * rpCi + (1 / rcL) * betI * rcRi) / ((1 - betI) * rpCi + betI * rcCi);
+
+                if (alf < 1e-3 && drhoLdp < 0.1)
+                    drhoLdp = 0.1;
+
+                local[1][0] = 0.;
+                local[1][1] = 0.;
+                local[1][2] = -((1. / rhog) * (1. - term1) + multL * term1);
+                local[1][3] = coluna * dxncel * AC * (((alf / rhog) / dpdrho) * 98066.5 + corDRholC * (deriPres * (1. - alf) * (1 - bet) * drhoLdp / rpC + deriPres * (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtp)) / dt -
+                              (DmasschokeG / rhog + DmasschokeL / rpC + DmasschokeC / rcC);
+                local[1][4] = 0.;
+                local[1][5] = 0.;
+
+                TL[1] = coluna * dxncel * AC * (((alf / rhog) / dpdrho) * pres * 98066.5 + corDRholC * (deriPres * (1. - alf) * (1 - bet) * drhoLdp * pres / rpC + deriPres * (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtp * pres)) / dt - (1 / rhog - multL) * term2 +
+                        ((fontemassGR - DmasschokeG * pres) / rhog + (fontemassLR - DmasschokeL * pres) / rpC +
+                         (fontemassCR - DmasschokeC * pres) / rcC);
+            }
+            drhodt = flui.drhodt(presini, tempini);
+            if (flui.flashCompleto != 2 || miniTabAtraso > 0)
+                drhoLdt = (rpC - flui.MasEspLiq(pres, temp - 0.01)) / 0.01;
+            else {
+                ProFlu flud = flui;
+                flud.atualizaPropComp(pres, temp - 0.01, flud.dCalculatedBeta, flud.oCalculatedLiqComposition,
+                                      flud.oCalculatedVapComposition, 0);
+                drhoLdt = (rpC - flud.MasEspLiq(pres, temp - 0.01)) / 0.01;
+            }
+
+            TL[1] -= dxncel * AC * ((alf / rhog) * drhodt + (1 - alf) * (1 - bet) * drhoLdt / rpC + (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtT) * dTdtL * mudaDT;
+            pExpli=(TL[1]-(local[1][2]*MC))/local[1][3];
+        }
+    } else if (posic == 0 && ciclo == 0) {
+
+        double corDRholC = 1. - 0 * mudaDT;
+        if (presE < 0) {
+            local[0][1] = 0.;
+            local[0][2] = 0.;
+            local[0][3] = 1.;
+            local[0][4] = 0.;
+            local[0][5] = 0;
+
+            TL[0] = 0.;
+            MCExpli=0.;
+        } else {
+            double AC = duto.area;
+            double AR = dutoR.area;
+            double Amed = 0.5 * (AC + AR);
+            double siC = duto.peri;
+            double rhogC;
+            double rholC;
+            if (flui.flashCompleto != 2 || miniTabAtraso > 0) {
+                rhogC = flui.MasEspGas(0.5 * (presE + pres), tempE);
+                rholC = flui.MasEspLiq(0.5 * (presE + pres), tempE) * (1 - betE) +
+                        fluicol.MasEspFlu(0.5 * (presE + pres), tempE) * betE;
+            } else {
+                ProFlu flud = flui;
+                flud.atualizaPropComp(0.5 * (presE + pres), tempE, flud.dCalculatedBeta, flud.oCalculatedLiqComposition,
+                                      flud.oCalculatedVapComposition, 0);
+                rhogC = flud.MasEspGas(0.5 * (presE + pres), tempE);
+                rholC = flud.MasEspLiq(0.5 * (presE + pres), tempE) * (1 - betE) +
+                        fluicol.MasEspFlu(0.5 * (presE + pres), tempE) * betE;
+            }
+
+            double j1 = (Mliqini / rholC + (MC - Mliqini) / rhogC) / AC;
+            double coef1C = ((1 / rhogC) + term1 * (rhogC - rholC) / (rhogC * rholC)) / AC;
+            double coef2C = (term2 * (rhogC - rholC) / (rhogC * rholC)) / AC;
+            double rhomix1 = titE * rhogC + (1 - titE) * rholC;
+            double viscmix1 = titE * flui.ViscGas(0.5 * (presE + pres), tempE) +
+                              (1 - titE) * ((1 - betE) * flui.ViscOleo(0.5 * (presE + pres), tempE) +
+                                            betE * fluicol.VisFlu(0.5 * (presE + pres), tempE));
+            double re1;
+            if (duto.revest == 0)
+                re1 = Rey(duto.a, j1, rhomix1, viscmix1);
+            else {
+                double dhid = 4 * duto.area / duto.peri;
+                re1 = Rey(dhid, j1, rhomix1, viscmix1);
+            }
+            double f1 = fric(re1, duto.rug / duto.a);
+            double coefTensC = dPdLFric * 0.5 * f1 * rhomix1 * (fabs(j1)) * siC;
+            double dpfric = coefTensC * coef2C;
+            double dphidro = dPdLHidro * 9.82 * sin(duto.teta) * AC * rhomix1;
+            termoHidro = dphidro / AC;
+            termoFric = coefTensC * j1 / AC;
+
+            local[0][1] = 0.;
+            local[0][2] = 0.;
+            local[0][3] = coefTensC * coef1C + (1. - (1. - corDRholC * deriMas)) * term1 / dt;
+            local[0][4] = Amed * 98066.5 / (dx);
+            local[0][5] = 0;
+
+            TL[0] = (MC - (1. - corDRholC * deriMas) * Mliqini) / dt + (1. - corDRholC * deriMas) * term2 / dt;
+            TL[0] += (Amed * 98066.5 * presE / (dx) - (dpfric + dphidro));
+            MCExpli=(TL[0]-local[0][4]*pres)/local[0][3];
+        }
+
+        double AC = duto.area;
+        double AR = dutoR.area;
+        double siC = duto.peri;
+        double siR = dutoR.peri;
+        double rhogC = flui.MasEspGas(pres, temp);
+        double rholC = rpC * (1 - bet) + rcC * bet;
+        double rhogR = (*fluiR).MasEspGas(presR, tempR);
+        double rholR = rpR * (1 - betR) + rcR * betR;
+
+        double dxmed = 0.5 * (dx + dxR);
+        double Amed = 0.5 * (AC + AR);
+
+        local[1][1] = 0.;
+        local[1][2] = 0.;
+        local[1][3] = -Amed * 98066.5 / dxmed;
+        local[1][4] = (1 - (1. - corDRholC * deriMas) * term1R) / dt;
+        local[1][5] = Amed * 98066.5 / dxmed;
+
+        TL[1] = (MR - (1. - corDRholC * deriMas) * MliqiniR) / dt + (1. - corDRholC * deriMas) * term2R / dt;
+
+        double j1;
+        double j2;
+
+        j1 = (MliqiniR / rholC + (MR - MliqiniR) / rhogC) / AC;
+        j2 = (MliqiniR / rholR + (MR - MliqiniR) / rhogR) / AR;
+
+        double coef1C = ((1 / rhogC) + term1R * (rhogC - rholC) / (rhogC * rholC)) / AC;
+        double coef2C = (term2R * (rhogC - rholC) / (rhogC * rholC)) / AC;
+        double coef1R = ((1 / rhogR) + term1R * (rhogR - rholR) / (rhogR * rholR)) / AR;
+        double coef2R = (term2R * (rhogR - rholR) / (rhogR * rholR)) / AR;
+
+        double rhomix1;
+        double rhomix2;
+
+        rhomix1 = alf * rhogC + (1 - alf) * rholC;
+        rhomix2 = alfR * rhogR + (1 - alfR) * rholR;
+
+        double viscmix1;
+        double viscmix2;
+
+        viscmix1 = alf * migC + (1 - alf) * ((1 - bet) * mipC + bet * micC);
+        viscmix2 = alfR * migR + (1 - alfR) * ((1 - betR) * mipR + betR * micR);
+
+        double re1;
+        double re2;
+
+        if (duto.revest == 0)
+            re1 = Rey(duto.a, j1, rhomix1, viscmix1);
+        else {
+            double dhid = 4 * duto.area / duto.peri;
+            re1 = Rey(dhid, j1, rhomix1, viscmix1);
+        }
+        if (dutoR.revest == 0)
+            re2 = Rey(dutoR.a, j2, rhomix2, viscmix2);
+        else {
+            double dhid = 4 * duto.area / duto.peri;
+            re2 = Rey(dhid, j2, rhomix2, viscmix2);
+        }
+        double f1 = fric(re1, duto.rug / duto.a);
+        double f2 = fric(re2, dutoR.rug / dutoR.a, -1);
+        double razdx = dx / (dxR + dx);
+        double coefTensC = dPdLFric * 0.5 * f1 * rhomix1 * (fabs(j1)) * siC * razdx;
+        double dpfric = coefTensC * coef2C;
+        double coefTensR = dPdLFric * 0.5 * f2 * rhomix2 * (fabs(j2)) * siR * (1. - razdx);
+        dpfric += coefTensR * coef2R;
+        double dphidro = dPdLHidro * 9.82 * sin(duto.teta) * AC * rhomix1 * razdx;
+        termoHidro = dphidro / AC;
+        termoHidro += 9.82 * sin(dutoR.teta) * rhomix2 * (1. - razdx);
+        termoFric = coefTensC * j1 + coefTensR * j2;
+        dphidro += 9.82 * sin(dutoR.teta) * AR * rhomix2 * (1. - razdx);
+
+        local[1][4] += (coefTensC * coef1C + coefTensR * coef1R);
+        TL[1] -= (dpfric + dphidro);
+
+        pExpli=(TL[1]-(local[1][4]*MR+local[1][5]*presR))/local[1][3];
+
+        termoHidro = dphidro;
+        termoFric = dpfric;
+    }
+}
+
 double Cel::somVel() {
     double val;
     double alfI;
@@ -2543,7 +3632,7 @@ double Cel::termAdSomVel() {
     return val;
 }
 
-void Cel::WaxDeposition(dadosParafina &detalParafina, int ncel) {
+/*void Cel::WaxDeposition(dadosParafina &detalParafina, int ncel) {
 
     double BooleanPi = detalParafina.C2C3;
     double C2_star = detalParafina.valC2;
@@ -2622,7 +3711,7 @@ void Cel::WaxDeposition(dadosParafina &detalParafina, int ncel) {
         if (fabs(1. - alfUp) > 1e-15)
             velOilUp = velSupLiqUp / (1. - alfUp);
         if (fabs(1. - alfDn) > 1e-15)
-            velOilDn = velSupLiqUp / (1. - alfDn);
+            velOilDn = velSupLiqDn / (1. - alfDn);
 
         double velOil = (velOilUp + velOilDn) / 2.0;
         if (posic == 0)
@@ -2752,6 +3841,241 @@ void Cel::WaxDeposition(dadosParafina &detalParafina, int ncel) {
                           (2 * flui.dInterpolatedThermCondOutput + kOil - 2 * (flui.dInterpolatedThermCondOutput - kOil) * (1.0 - Fi))) * kOil; // Comentado; Samuel - 29/06/2026
         else if(detalParafina.ponderaCond==0)
         	detParCel.kDep = ((2.0 * kOil + flui.dInterpolatedThermCondOutput - 2.0 * (kOil - flui.dInterpolatedThermCondOutput) * (1.0 - Fi)) /
+                          (2.0 * kOil + flui.dInterpolatedThermCondOutput + (kOil - flui.dInterpolatedThermCondOutput) * (1.0 - Fi))) * kOil; // Samuel - 29/06/2026
+
+        if (parafinado == 0 && delta > 0.) {
+            duto.atualizaCamada(delta, rug, cpDep, detParCel.kDep, rhoDep);
+            calor.atualiza(duto, 1);
+            parafinado = 1;
+        } else if (delta > 0) {
+            duto.atualizaCamada2(delta, cpDep, detParCel.kDep, rhoDep);
+            calor.atualiza2(duto);
+        }
+    }
+}*/
+
+void Cel::WaxDeposition(dadosParafina &detalParafina, int ncel) {
+
+    double BooleanPi = detalParafina.C2C3;
+    double C2_star = detalParafina.valC2;
+    double C3_star = detalParafina.valC3;
+    double BooleanFi = detalParafina.poroRey;
+    double ConstFi = detalParafina.valRey;
+    double MultipDwax = detalParafina.multDifus;
+    double rug = detalParafina.rug;
+    double MultipVisc = detalParafina.multVis;
+    double alteraViscFlu = detalParafina.alteraViscFlu;
+    double DVisc = detalParafina.DViscWax;
+    double EVisc = detalParafina.EViscWax;
+    double FVisc = detalParafina.FViscWax;
+    double D_multip = detalParafina.DmultipWax;
+    double E_multip = detalParafina.EmultipWax;
+    double F_multip = detalParafina.FmultipWax;
+    detParCel.tempInterDeposito = calor.Tcamada[0][0];
+
+    // A fração molar dos componentes parafínicos na fase líquida vecZwaxLiq[i] vem da tabela termodinâmica do PVTsim
+    flui.atualizaPropParafina(pres, calor.Tcamada[0][0]);
+    double fracOil = (1 - alf) * (1. - bet) * (1 - FW);
+    double valTIACteste=flui.dCloudPointTOutput;
+    if(detalParafina.TIACusuarioAtiva==1)valTIACteste=detalParafina.TIACusuario;
+    if (calor.Tcamada[0][0] < valTIACteste && fracOil > 1.0E-2 && calor.fluxIni < 0.) {
+        int comp = flui.npseudoWax;
+        detParCel.comp=comp;
+        MW_wax = 0.0;
+        rhoWaxLiq = 0.0;
+        double SumZwaxLiq = 0.0;
+        double SumCwaxLiq = 0.0;
+        double sumDen = 0.0;
+        double vecCwaxLiq[comp];
+        for (int i = 0; i < comp; i++) {
+            MW_wax = MW_wax + flui.oInterpolatedWaxConcs[i] * flui.oMolecularWeightsOfWaxComponentsOut[i];
+            SumZwaxLiq = SumZwaxLiq + flui.oInterpolatedWaxConcs[i];
+            vecCwaxLiq[i] = flui.oInterpolatedWaxConcs[i] * flui.oMolecularWeightsOfWaxComponentsOut[i];
+            SumCwaxLiq = SumCwaxLiq + vecCwaxLiq[i];
+            sumDen = sumDen + vecCwaxLiq[i] / flui.oLiquidDensitiesOfWaxComponents[i];
+        }
+        MW_wax = MW_wax / SumZwaxLiq;
+        rhoWaxLiq = SumCwaxLiq / sumDen;
+        detParCel.Vwax = 1.0E+3 * MW_wax / rhoWaxLiq; // Imprimir e comparar com o Olga - Samuel - 30/07/2026
+
+        double Re_f = 0., Re_delta = 0.;
+        double Fi;
+        double velOilUp = 0.;
+        double velSupLiqUp;
+        double alfDn;
+        double areaDn;
+        double velOilDn = 0.;
+        double velSupLiqDn;
+        double alfUp;
+        double areaUp;
+
+        if (QL > 0. && posic > 0) {
+            areaDn = dutoL.area;
+        } else {
+            areaDn = duto.area;
+        }
+        if (QG > 0. && posic > 0) {
+            alfDn = alfL;
+        } else {
+            alfDn = alf;
+        }
+        if (QLR < 0. && posic < ncel) {
+            areaUp = dutoR.area;
+        } else {
+            areaUp = duto.area;
+        }
+        if (MR < 0. && posic < ncel) {
+            alfUp = alfR;
+        } else {
+            alfUp = alf;
+        }
+
+        velSupLiqUp = QLR / areaUp;
+        velSupLiqDn = QL / areaDn;
+        if (fabs(1. - alfUp) > 1e-15)
+            velOilUp = velSupLiqUp / (1. - alfUp);
+        if (fabs(1. - alfDn) > 1e-15)
+            velOilDn = velSupLiqUp / (1. - alfDn);
+
+        double velOil = (velOilUp + velOilDn) / 2.0;
+        if (posic == 0)
+            velOil = velOilUp;
+        double velSupLiq = (velSupLiqUp + velSupLiqDn) / 2.0;
+        if (posic == 0)
+            velSupLiq = velSupLiqUp;
+
+        double rhoOil = flui.MasEspoleo(pres, temp);
+        double alphaLiq = (1 - bet) * (1 - alf) * (1 - FW);
+        double Dwax_old = duto.dia;
+
+        int flowPattern = arranjo;
+        double delta_old;
+        if (parafinado == 0)
+            delta_old = 0.;
+        else
+            delta_old = duto.espessuR[0];
+        double rhoLiq = (1. - bet) * rpC + bet * rcC;
+        double viscLiq = (1. - bet) * mipC + bet * micC;
+        double rhoMix = alf * rgC + (1 - alf) * rhoLiq;
+
+        double Dparaffin;
+        double AssocParam = 1.0;
+        Sum_dCwaxdT = 0.0;
+        double muOil = flui.ViscOleo(pres, temp, 1);
+        detParCel.muOilf = flui.ViscOleo(pres, calor.Tcamada[0][0], 1);
+        Re_f = (rhoOil * velOil * Dwax_old) / (1.0E-3 * detParCel.muOilf);
+        Fi = ConstFi * BooleanFi + (1 - BooleanFi) * (1.0 - pow(Re_f, 0.15) / 8.0);
+		if (Fi < 0.0) { // Samuel - 30/07/2026
+		   //std::cerr << "Erro: porosidade negativa. Fi = " << Fi << ", Re_f = " << Re_f << std::endl;
+		   Fi = 0.0;
+		}
+        porosoPar = Fi;
+        flui.coefViscWax = 1.;
+        if (alteraViscFlu == 1) {
+            double re1;
+            double velSupGasUp = ((MR - MliqiniR) / rgRi) / areaUp;
+            double velSupGasDn = QG / areaDn;
+            double velSupGas = (velSupGasUp + velSupGasDn) / 2.0;
+            if (posic == 0)
+                velSupGas = velSupGasUp;
+            double j1 = velSupGas + velSupLiq;
+            double viscmix1 = alf * migC + (1 - alf) * viscLiq;
+            if (duto.revest == 0)
+                re1 = Rey(duto.a, j1, rhoMix, viscmix1);
+            else {
+                double dhid = 4 * duto.area / duto.peri;
+                re1 = Rey(dhid, j1, rhoMix, viscmix1);
+            }
+            double f1 = fric(re1, duto.rug / duto.a);
+            double tau_int = f1 * rhoMix * j1 * j1 / 2.;
+            double dudr_int;
+            dudr_int = tau_int / (1.0E-3 * detParCel.muOilf);
+            double coefPedRon;
+            // Os multiplicadores D_multip, E_multip e F_multip são passados como 1 se o usuário do Marlim desejar usar os valores default de DVisc, EVisc e FVisc // Samuel - 10/10/25
+            DVisc = D_multip * DVisc;
+            EVisc = E_multip * EVisc;
+            FVisc = F_multip * FVisc;
+            flui.coefViscWax = coefPedRon = exp(DVisc * Fi) + EVisc * Fi / pow(dudr_int, 0.5) + FVisc * pow(Fi, 4.0) / dudr_int;
+            if (dudr_int >= 10.0 && coefPedRon > 1.0) { // Obs: a correção ocorre somente na viscosidade do óleo e não é utilizada na viscosidade da fase líquida (viscLiq)
+                muOil = coefPedRon * muOil;             // Viscosity in Pa s, and shear rate in s^-1
+                detParCel.muOilf = coefPedRon * detParCel.muOilf;
+            }
+        }
+        muOil = MultipVisc * muOil;
+        detParCel.muOilf = MultipVisc * detParCel.muOilf; // Imprimir e comparar com o Olga
+
+        double Tint = calor.Tcamada[0][0] + 273.15;
+        double MwOil = flui.dInterpolatedLiqMWOutput;
+        detParCel.difusividadeParafina = Dparaffin = MultipDwax * 7.4E-12 * Tint * pow(AssocParam * MwOil, 0.5) / (detParCel.muOilf * pow(detParCel.Vwax, 0.6)); // imprimir nova saida
+		double auxSum_dXwldT = 0.0; // Samuel - 30/07/2026
+        for (int i = 0; i < comp; i++) {
+            Sum_dCwaxdT = Sum_dCwaxdT + flui.oInterpolatedMassWaxConcsTDerivOutput[i];
+			auxSum_dXwldT = auxSum_dXwldT + flui.oInterpolatedWaxConcsTDerivOutput[i]; // Samuel - 30/07/2026
+        }
+
+        if (flowPattern == 0 || flowPattern == -1) {
+            Re_delta = rhoLiq * velOil * delta_old / (1.0E-3 * viscLiq);
+        } // rhoLiq está em kg/m^3? A dimensão deve ser kg/m^3.
+        else if (flowPattern == 1 || flowPattern == 2) {
+            Re_delta = rhoMix * velSupLiq * delta_old / (alphaLiq * (1.0E-3 * viscLiq));
+        } else if (flowPattern == -2) {
+            Re_delta = pow(rhoMix * rhoLiq, 0.5) * velSupLiq * delta_old / (alphaLiq * (1.0E-3 * viscLiq));
+        }
+
+        double pi1, pi2;
+        double C1; //, C2, C3;
+        C1 = 15.0;
+        C2 = detalParafina.boolC2 * C2_star + (1 - detalParafina.boolC2) * 0.055;
+        C3 = detalParafina.boolC3 * C3_star + (1 - detalParafina.boolC3) * 1.4;
+        pi1 = C1;
+        pi2 = C2 * pow(Re_delta, C3);
+
+        // Obtain the deposit thickness, free flow diameter, specific mass of the solid phase and deposit, specific heat and conductivity of the deposit
+
+        double rhoWaxSolid = 1.1 * rhoWaxLiq;
+        double ddeltadt;
+        double heatFluxInt = -calor.fluxIni;
+        double kMix;
+        double condliq = (1. - bet) * flui.CondLiq(pres, temp) + bet * fluicol.CondLiq(pres, temp);
+        double kOil = flui.CondOleo(pres, temp);
+        kMix = condliq * (1 - alf) + flui.CondGas(pres, temp) * alf;
+
+        // QUESTION: If a small liquid fraction is still present in the cell, the deposition
+        // entry condition may allow the calculation to reach this point. If the oil fraction
+        // is very small, could the calculated deposited mass exceed the amount of oil
+        // available in the cell?
+        //
+        // TODO: Consider adding a validation to prevent the deposited mass from exceeding
+        // the available oil mass.
+        //
+        // TODO: Evaluate this behavior under production shutdown, fluid segregation,
+        // reverse flow, paraffin fraction reduction, and other similar scenarios.
+
+        // FIXME: Temporarily using the absolute value for testing purposes.
+        // A negative thickness indicates that something may be incorrect in the calculation.
+        double dCwaxdTemp = Sum_dCwaxdT;
+		for(int icomp=0; icomp<comp; icomp++)detParCel.auxGradMolarConcentration_Component.push_back(0.);
+        if (Sum_dCwaxdT < 0)
+            dCwaxdTemp = 0.;
+       // detParCel.auxRatioHeatFluxMixtureThermalConductivity = heatFluxInt / kMix; // Imprimir e comparar com o Olga - Obs: imprimir e comparar o fluxo de calor na interface do depósito também - Samuel - 30/07/2026
+        detParCel.auxRatioHeatFluxMixtureThermalConductivity = heatFluxInt / (2*M_PI*duto.a*kMix);
+        detParCel.gradienteConcentracao = detParCel.auxRatioHeatFluxMixtureThermalConductivity * dCwaxdTemp; // Já está sendo imprimida - Aqui eu só usei a variável auxiliar criada - Samuel - 30/07/2026
+		for (int i = 0; i < comp; i++) {
+			detParCel.auxGradMolarConcentration_Component[i] = detParCel.auxRatioHeatFluxMixtureThermalConductivity * flui.oInterpolatedWaxConcsTDerivOutput[i]; // Imprimir para cada pseudocomponente parafínico e comparar com o Olga - Samuel - 30/07/2026
+		}
+		double auxGradMolarConcentration_Total = detParCel.auxRatioHeatFluxMixtureThermalConductivity * auxSum_dXwldT; // Samuel - 30/07/2026
+        detParCel.fluxMassParafina2 = (pi1)*rhoLiq * Fi * Dparaffin * detParCel.gradienteConcentracao;
+        detParCel.fluxMassParafina1 = detParCel.fluxMassParafina2 / (1.0 + pi2);
+        ddeltadt = (pi1 / (1.0 + pi2)) * ((rhoLiq * Fi) / (rhoWaxSolid * (1.0 - Fi))) * Dparaffin * detParCel.gradienteConcentracao;
+        double delta = ddeltadt * dt;
+        deltaPar = delta;
+
+        double rhoDep = Fi * rhoOil + (1.0 - Fi) * rhoWaxSolid;
+        double cpDep = flui.dInterpolatedCPWaxOutput;
+
+        //detParCel.kDep = ((2 * flui.dInterpolatedThermCondOutput + kOil + (flui.dInterpolatedThermCondOutput - kOil) * (1.0 - Fi)) /
+                          //(2 * flui.dInterpolatedThermCondOutput + kOil - 2 * (flui.dInterpolatedThermCondOutput - kOil) * (1.0 - Fi))) * kOil; // Comentado; Samuel - 29/06/2026
+		detParCel.kDep = ((2.0 * kOil + flui.dInterpolatedThermCondOutput - 2.0 * (kOil - flui.dInterpolatedThermCondOutput) * (1.0 - Fi)) /
                           (2.0 * kOil + flui.dInterpolatedThermCondOutput + (kOil - flui.dInterpolatedThermCondOutput) * (1.0 - Fi))) * kOil; // Samuel - 29/06/2026
 
         if (parafinado == 0 && delta > 0.) {

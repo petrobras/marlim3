@@ -8,14 +8,15 @@
 
 
 malha2dVF::malha2dVF(double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int neleV, int nno,double vdt, int vperm, int vtrans,
-		varGlob1D* Vvg1dSP,ProFluColVF vflucVF):
+		varGlob1D* Vvg1dSP,ProFluColVF vflucVF,int vacopD):
 	vecSolv(neleV){
 	nele=neleV;
 	vg1dSP=Vvg1dSP;
 	flucVF=vflucVF;
+	acopD=vacopD;
 	if(nele>0){
 	    for(int i=0; i<neleV;i++){
-	    	elem2d temp(vg1dSP,xcoor, noEle, tipo, atributo, nVert, nele, nno, i,vdt,vperm, vtrans,flucVF);
+	    	elem2d temp(vg1dSP,xcoor, noEle, tipo, atributo, nVert, nele, nno, i,vdt,vperm, vtrans,flucVF,acopD);
 	    	mlh2d.push_back(temp);
 	    }
 	    for(int i=0; i<nele;i++){
@@ -64,6 +65,7 @@ malha2dVF::malha2dVF(const malha2dVF& vmalha):vecSolv(vmalha.nele){
 	nele=vmalha.nele;
 	vg1dSP=vmalha.vg1dSP;
 	flucVF=vmalha.flucVF;
+	acopD=vmalha.acopD;
 	if(nele>0){
 		vecSolv=vmalha.vecSolv;
 	    for(int i=0; i<nele;i++){
@@ -118,6 +120,7 @@ malha2dVF& malha2dVF::operator =(const malha2dVF& vmalha) {
 		nele=vmalha.nele;
 		vg1dSP=vmalha.vg1dSP;
 		flucVF=vmalha.flucVF;
+		acopD=vmalha.acopD;
 		if(nele>0){
 			vecSolv=vmalha.vecSolv;
 		    for(int i=0; i<nele;i++){

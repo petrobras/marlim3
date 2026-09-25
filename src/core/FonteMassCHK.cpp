@@ -34,6 +34,8 @@ fontemaschk::fontemaschk(double vmasP, double vmasC, double vmasG, double vtitT,
     chk.cdchk = cd;
     check = vcheck;
     ambGas = vambGas;
+    indMon=-1;
+    indJus=-1;
 }
 
 fontemaschk::fontemaschk() {
@@ -59,6 +61,8 @@ fontemaschk::fontemaschk() {
     chk = choke(1., 1.);
     check = 0;
     ambGas = 0;
+    indMon=-1;
+    indJus=-1;
 }
 
 fontemaschk::fontemaschk(const fontemaschk &vinj) { // construtor de c�pia
@@ -83,6 +87,8 @@ fontemaschk::fontemaschk(const fontemaschk &vinj) { // construtor de c�pia
     chk = vinj.chk;
     check = vinj.check;
     ambGas = vinj.ambGas;
+    indMon=vinj.indMon;
+    indJus=vinj.indJus;
 }
 
 fontemaschk &fontemaschk::operator=(const fontemaschk &vinj) {

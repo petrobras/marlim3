@@ -9,11 +9,13 @@
 #include "TrocaCalor.h"
 #include "Vetor.h"
 #include "acessorios.h"
+#include "caixaValvula.h"
 #include "variaveisGlobais1D.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
 #include <math.h>
+#include <vector>
 
 using namespace std;
 
@@ -23,36 +25,55 @@ struct dadosParafina;
  * Stores intermediate quantities used by the wax-deposition model.
  */
 struct detalhaParafina {
+	int comp;
     double tempInterDeposito;
     double difusividadeParafina;
     double gradienteConcentracao;
     double fluxMassParafina1;
     double fluxMassParafina2;
     double kDep;
+    double Vwax;
+    double muOilf;
+    double auxRatioHeatFluxMixtureThermalConductivity;
+    vector<double> auxGradMolarConcentration_Component;
     detalhaParafina() {
+    	comp=0;
         tempInterDeposito = 0.;
         difusividadeParafina = 0.;
         gradienteConcentracao = 0.;
         fluxMassParafina1 = 0.;
         fluxMassParafina2 = 0.;
         kDep = 0.;
+        Vwax=0.;
+        muOilf=0.;
+        auxRatioHeatFluxMixtureThermalConductivity=0.;
     }
     detalhaParafina(const detalhaParafina &temp) {
+    	comp=temp.comp;
         tempInterDeposito = temp.tempInterDeposito;
         difusividadeParafina = temp.difusividadeParafina;
         gradienteConcentracao = temp.gradienteConcentracao;
         fluxMassParafina1 = temp.fluxMassParafina1;
         fluxMassParafina2 = temp.fluxMassParafina2;
         kDep = temp.kDep;
+        Vwax=temp.Vwax;
+        muOilf=temp.muOilf;
+        auxRatioHeatFluxMixtureThermalConductivity=temp.auxRatioHeatFluxMixtureThermalConductivity;
+        for(int icomp=0; icomp<comp; icomp++)auxGradMolarConcentration_Component.push_back(temp.auxGradMolarConcentration_Component[icomp]);
     }
     detalhaParafina &operator=(const detalhaParafina &temp) {
         if (this != &temp) {
+        	comp=temp.comp;
             tempInterDeposito = temp.tempInterDeposito;
             difusividadeParafina = temp.difusividadeParafina;
             gradienteConcentracao = temp.gradienteConcentracao;
             fluxMassParafina1 = temp.fluxMassParafina1;
             fluxMassParafina2 = temp.fluxMassParafina2;
             kDep = temp.kDep;
+            Vwax=temp.Vwax;
+            muOilf=temp.muOilf;
+            auxRatioHeatFluxMixtureThermalConductivity=temp.auxRatioHeatFluxMixtureThermalConductivity;
+            for(int icomp=0; icomp<comp; icomp++)auxGradMolarConcentration_Component.push_back(temp.auxGradMolarConcentration_Component[icomp]);
         }
         return *this;
     }
@@ -107,6 +128,7 @@ class Cel {
     DadosGeo dutoR;    // Geometry data for the right control volume.
     acessorio acsr;    // Accessory associated with the control volume, such as a source, ESP, positive displacement pump, or valve.
     acessorio *acsrL;  // Pointer to the accessory associated with the left control volume.
+    acessorio *acsrR;
     ProFlu flui;       // Fluid properties for the current control volume.
     ProFlu *fluiL;     // Pointer to the fluid properties of the left control volume.
     ProFlu *fluiR;     // Pointer to the fluid properties of the right control volume.
@@ -153,6 +175,8 @@ class Cel {
     double presauxRini; // Pressure at the left boundary of the right control volume
     // at the previous time level.
     double presR;    // Pressure in the right control volume.
+    double presLL;
+    double presRR;
     double presRini; // Pressure in the right control volume at the previous time level.
     double ML;       // Mixture mass flow rate at the left boundary of the left control volume.
     double MLini;    // Mixture mass flow rate at the left boundary of the left control volume
@@ -161,9 +185,12 @@ class Cel {
     double MCini; // Mixture mass flow rate at the left boundary of the current control volume
     // at the previous time level.
     double MR;    // Mixture mass flow rate at the left boundary of the right control volume.
+    double MLL;
+    double MRR;
     double MRini; // Mixture mass flow rate at the left boundary of the right control volume
     // at the previous time level.
     double MliqiniR;  // Liquid mass flow rate at the left boundary of the right control volume.
+    double MliqiniRR;
     double MliqiniR0; // Liquid mass flow rate at the left boundary of the right control volume
     // at the previous time level.
     double Mliqini;  // Liquid mass flow rate at the left boundary of the current control volume.
@@ -201,6 +228,8 @@ class Cel {
     double alfR;    // Void fraction in the right control volume.
     double alfRini; // Void fraction in the right control volume at the previous time level.
     double alf;     // Void fraction in the current control volume.
+    double alfI;     // Void fraction at the left boundary of the current control volume.
+    double alfRI;     // Void fraction at the left boundary of the right control volume.
     double alfIter;
     double alfini;  // Void fraction in the current control volume at the previous time level.
     double betL;    // Beta fraction in the left control volume.
@@ -219,7 +248,8 @@ class Cel {
     double FWini;       // In-situ BSW of the current control volume at the previous time level.
     double dxL;         // Length of the left control volume.
     double dx;          // Length of the current control volume.
-    double dxR;         // Length of the right control volume.
+    double dxR;     // Length of the right control volume.
+    double dxLL;
     double razdxTM;     // Currently unused.
     double razdxTM0;    // Currently unused.
     double massfonteCH; // Currently unused.
@@ -232,6 +262,8 @@ class Cel {
     double term2R; // T2 at the left boundary of the right control volume.
     double c0;     // Distribution parameter at the left boundary of the current control volume.
     double ud;     // Drift velocity at the left boundary of the current control volume.
+    double c0R;     // Distribution parameter at the right boundary of the current control volume.
+    double udR;     // Drift velocity at the right boundary of the current control volume.
     double c0ini;
     double udini;
     double c0Spare; // Auxiliary distribution parameter used when the flow regime or inclination changes between
@@ -463,6 +495,46 @@ class Cel {
 
     detalhaParafina detParCel;
 
+    int tipoFatorFric;
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////Variaveis do modelo dinamico///////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    double velMixSemiH;
+    double cg2;
+    double cl2;
+    double ch2;
+    double cg2M;
+    double cl2M;
+    double ch2M;
+    double cg2J;
+    double cl2J;
+    double ch2J;
+    double autval1;
+    double autval2;
+    double autval1M;
+    double autval2M;
+    double autval1J;
+    double autval2J;
+    double dF2dM;
+    double dF2dU1;
+    double dF2dMM;
+    double dF2dU1M;
+    double dF2dMJ;
+    double dF2dU1J;
+    double coefAutVal1;
+    double coefAutVal2;
+    double coefAutVal1M;
+    double coefAutVal2M;
+    double coefAutVal1J;
+    double coefAutVal2J;
+    double denDeriTempo;
+    double coefDeridT;
+    double coefDeridalf;
+    double pExpli;
+    double MCExpli;
+
     Cel(varGlob1D *Vvg1dSP = 0, const DadosGeo vdutoL = DadosGeo(),
         const DadosGeo vduto = DadosGeo(),
         const DadosGeo vdutoR = DadosGeo(),
@@ -475,12 +547,12 @@ class Cel {
         const double vMliqiniL = 0., const double vMliqini = 0., const double vMliqiniR = 0.,
         const double valfL = 1., const double valf = 1., const double valfR = 1.,
         const double vbetL = 1., const double vbet = 1., const double vbetR = 1.,
-        const double vdxL = 1., const double vdx = 1., const double vdxR = 1.,
+        const double vdxL = 1., const double vdx = 1., const double vdxR = 1., const double vdxRR = 1.,
         const double vdt = -1.,
         const int vposic = -1,
         const TransCal vcalor = TransCal(),
         const acessorio vacsr = acessorio(),
-        acessorio *vacsrL = 0); // Default constructor.
+        acessorio *vacsrL = 0,acessorio *vacsrR = 0, int fatFric=0); // Default constructor.
     Cel(const Cel &);           // Copy constructor.
     Cel &operator=(const Cel &);
 
@@ -538,6 +610,23 @@ class Cel {
                       double titE = -1,
                       double betE = -1,
                       int noextremo = 0, double areaChoke = 1.);
+    void relacoesSonicas();
+    void GeraLocalExplicito(double presfim /* separator pressure */,
+                   int masChkSup,
+                   int ncel /* number of cells in the system */,
+                   double razareativa /* indicates that master1 is partially open and its resistance
+                     must therefore be included in the model */
+                   ,
+                   double presE /* inlet pressure boundary-condition value;
+                    presE < 0 represents a closed boundary */
+                   ,
+                   double tempE /* inlet temperature for the pressure boundary condition */,
+                   double titE = -1 /* inlet quality for the pressure boundary condition */,
+                   double betE = -1 /* inlet beta value for the pressure boundary condition */,
+                   int ciclo = 0 /* iteration counter controlling inclusion of dTdtL in mixture mass conservation;
+                      at cycle 0 the term is omitted and is included from cycle 1 onward
+                      when iterative correction is enabled */,
+                   int modelo = 1, int noextremo = 0, int corrigeContSep = 1, double areaChoke = 1., int vexpi = 0);
     double somVel();
     double termAdSomVel();
     void WaxDeposition(dadosParafina &detalParafina, int ncel);

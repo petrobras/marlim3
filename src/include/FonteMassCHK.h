@@ -44,6 +44,8 @@ class fontemaschk{ //classe para fonte do tipo injecao de liquido, herda a inter
         double pamb;
         int check;
         int ambGas;
+        int indJus;
+        int indMon;
         fontemaschk(double vmasP,double vmasC,double vmasG,double vtitT,double vtitamb,
         	   double vcd, double vabertura, double varea, double vbet,
 			   double vbetIS,double vbetISamb, double vtempT, double vpresT,

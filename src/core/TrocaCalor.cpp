@@ -50,6 +50,7 @@ TransCal::TransCal(varGlob1D *Vvg1dSP, const DadosGeo vgeom, const int vpermanen
     fluxIni = 0.;
     fluxFim = 0.;
     resGlob = 0.;
+    resGlobAxiSim = 0.;
     resFim = 0.000001;
 
     condiTparede = 0;
@@ -288,6 +289,7 @@ TransCal::TransCal(const TransCal &vTransCal) : localvet(2),
         fluxIni = vTransCal.fluxIni;
         fluxFim = vTransCal.fluxFim;
         resGlob = vTransCal.resGlob;
+        resGlobAxiSim = vTransCal.resGlobAxiSim;
 
     } else {
         lenth = 0;
@@ -327,6 +329,7 @@ TransCal::TransCal(const TransCal &vTransCal) : localvet(2),
         fluxIni = 0.;
         fluxFim = 0.;
         resGlob = 0.;
+        resGlobAxiSim = 0.;
     }
 }
 
@@ -516,6 +519,7 @@ TransCal &TransCal::operator=(const TransCal &vTransCal) {
                 fluxIni = vTransCal.fluxIni;
                 fluxFim = vTransCal.fluxFim;
                 resGlob = vTransCal.resGlob;
+                resGlobAxiSim = vTransCal.resGlobAxiSim;
             } else {
                 lenth = 0;
                 ncamada = 0;
@@ -557,6 +561,7 @@ TransCal &TransCal::operator=(const TransCal &vTransCal) {
                 fluxIni = 0.;
                 fluxFim = 0.;
                 resGlob = 0.;
+                resGlobAxiSim = 0.;
             }
         }
     }
@@ -1267,6 +1272,174 @@ double TransCal::condParedeLocal(double resanul) {
     return 1 / condParedeLoc;
 }
 
+
+void TransCal::calcResGlobAxiSim(double resanul) {
+
+        double lconv = 1000.;
+        double graA;
+        double raA;
+        double Nu1;
+        double Nu2;
+        double Nu3 = 0.;
+        double h1;
+        double h2;
+        double h3;
+        double cal;
+
+        double reyE = 0.;
+        double prE = 0.;
+        double reyI;
+        double rug = geom.rug / geom.dia;
+
+        int nflui = 2;
+        for (int i = 0; i < geom.ncamadas; i++)
+            if (geom.tipomat[i] != 0)
+                nflui++;
+        Vcr<double> prT(nflui);
+
+        if (ambext == 1 && formacPoc == 0) {
+            double tmed = 0.5 * (Textern1 + Tcamada[geom.ncamadas - 1][ncamada[geom.ncamadas - 1]]);
+            viscextern1 = VisLiq(tmed) * 1e-3;
+            rhoextern1 = MasEspLiq(tmed);
+            kextern1 = CondLiq(tmed);
+            cpextern1 = CalorLiq(tmed);
+            betext = beta(tmed, 1);
+        } else if (ambext == 2 && formacPoc == 0) {
+            double tmed = 0.5 * (Textern1 + Tcamada[geom.ncamadas - 1][ncamada[geom.ncamadas - 1]]);
+            viscextern1 = VisAr(tmed) * 1e-3;
+            rhoextern1 = MasEspAr(tmed);
+            kextern1 = CondAr(tmed);
+            cpextern1 = CalorAr(tmed);
+            betext = beta(tmed, 3);
+        }
+
+        if (condiTparede == 0) {
+            prT[0] = Pr(viscint / rhoint, kint / (rhoint * cpint));
+            if (formacPoc == 0)
+                prT[nflui - 1] = Pr(viscextern1 / rhoextern1, kextern1 / (rhoextern1 * cpextern1));
+            else
+                prT[nflui - 1] = 0;
+            if (nflui > 2) {
+                int j = 1;
+                for (int i = 0; i < geom.ncamadas; i++) {
+                    if (geom.tipomat[i] != 0) {
+                        if (geom.tipomat[i] == 2) {
+                            double tmed = 0.5 * (Tcamada[i][0] + Tcamada[i][1]);
+                            geom.visc[i] = VisLiq(tmed) * 1e-3;
+                            geom.rhoC[i] = MasEspLiq(tmed);
+                            geom.cond[i] = CondLiq(tmed);
+                            geom.cp[i] = CalorLiq(tmed);
+                            geom.beta[i] = beta(tmed, 1);
+                        } else if (geom.tipomat[i] == 3) {
+                            double tmed = 0.5 * (Tcamada[i][0] + Tcamada[i][1]);
+                            geom.visc[i] = ViscGas(tmed) * 1e-3;
+                            geom.rhoC[i] = MasEspGas(tmed);
+                            geom.cond[i] = CondGas(tmed);
+                            geom.cp[i] = CalorGas(tmed);
+                            geom.beta[i] = beta(tmed, 2);
+                        }
+                        prT[j] = Pr(geom.visc[i] / geom.rhoC[i], geom.cond[i] / (geom.rhoC[i] * geom.cp[i]));
+                        j++;
+                    }
+                }
+            }
+
+            definePet(Tint, Textern1);
+            reyi = reyI = ReyIn(Vint, viscint, rhoint, geom.dia);
+            pri = prT[0];
+
+            if (reyI > 2400)
+                Nu1 = nussPet(reyI, prT[0], rug, viscint, 1. / 1e3);
+            else {
+                double difus = kint / (cpint * rhoint);
+                double viscinem = viscint / rhoint;
+                double pr = viscinem / difus;
+                double rai = RaInt(fabs(Tint - Tini[0][0]), betint, viscinem, difus);
+
+                grashi = rai / pr;
+
+                if (rai < 1000. || (reyI > 1e-15 && (rai * difus / viscinem) / (reyI * reyI) < 1.))
+                    Nu1 = 3.6;
+                else {
+                    Nu1 = 0.22 * pow(pr * rai / (0.2 * pr), 0.28) * pow(3.5, -0.25);
+                    Nu1 *= (geom.a / (0.2854 * geom.a));
+                }
+            }
+
+            nusi = Nu1;
+            h1 = Nu1 * kint / geom.a;
+            hi = h1;
+        } else
+            hi = h1 = 10000000. * kint / geom.a;
+        if (formacPoc == 0) {
+            reyE = ReyIn(Vextern1, rhoextern1 * viscextern1 / rhoextern1, rhoextern1, geom.diamC[geom.ncamadas - 1]);
+            prE = prT[nflui - 1];
+            if (dirconvExt == 0)
+                Nu3 = nussChuBer(reyE, prT[nflui - 1]);
+            else
+                Nu3 = nussPet(reyE, prT[nflui - 1], rug, viscextern1, 1. / 1e3);
+            h3 = Nu3 * kextern1 / geom.diamC[geom.ncamadas - 1];
+
+            nuse = Nu3;
+            reye = reyE;
+            he = h3;
+            pre = prT[nflui - 1];
+        } else {
+            h3 =0.;
+        }
+
+        int limiter = 1;
+        if (dirconvExt == 0 && formacPoc == 0 && reyE <= 5000)
+            limiter = 5;
+        if (nflui > 2)
+            limiter = 5;
+        Vcr<double> tec(geom.ncamadas + 2);
+        tec[0] = M_PI * geom.a * h1;
+        if (dirconvExt == 1 || formacPoc == 1 || reyE > 5000)
+            tec[geom.ncamadas + 1] = M_PI * geom.diamC[geom.ncamadas - 1] * h3;
+
+        for (int i = 0; i < limiter; i++) {
+            int kontaflu = 0;
+            if (dirconvExt == 0 && formacPoc == 0 && reyE <= 5000)
+                tec[geom.ncamadas + 1] = M_PI * geom.diamC[geom.ncamadas - 1] * h3;
+            for (int j = 0; j < geom.ncamadas; j++) {
+                if (geom.tipomat[j] != 0 && fabs(Vconf) < 1e-3) {
+                    kontaflu++;
+                    graA = Grash(Tcamada[j][0] - Tcamada[j][ncamada[j]], geom.beta[j],
+                                 geom.visc[j] / geom.rhoC[j], 0.5 * (geom.diamC[j] - geom.diamC[j - 1]));
+                    raA = Ra(graA, prT[kontaflu]);
+                    defineConf(prT[kontaflu], raA);
+                    Nu2 = NussConf2(raA, lconv, 0.5 * (geom.diamC[j] - geom.diamC[j - 1]), geom.teta);
+                    h2 = Nu2 * geom.cond[j] / (0.5 * (geom.diamC[j] - geom.diamC[j - 1]));
+                    tec[j + 1] = M_PI * (geom.diamC[j] - geom.diamC[j - 1]) * h2 / log(geom.diamC[j] / geom.diamC[j - 1]);
+                } else if (geom.tipomat[j] != 0 && fabs(Vconf) > 1e-3) {
+
+                    double a = geom.diamC[j];
+                    double b = geom.diamC[j - 1];
+                    double area = M_PI * (a * a - b * b) / 4.;
+                    double peri = M_PI * (a + b);
+                    double dia = 4. * area / peri;
+                    double reyConf = ReyIn(Vconf, geom.visc[j], geom.rhoC[j], dia);
+                    Nu2 = nussPet(reyConf, prT[kontaflu], rug, geom.visc[j], 1. / 1e3);
+                    double h2a = Nu2 * geom.cond[j] / a;
+                    double h2b = Nu2 * geom.cond[j] / b;
+                    h2 = 1. / ((b / a) * (1 / h2a) + (1 / h2b));
+                    tec[j + 1] = M_PI * b * h2;
+                } else {
+                    if (j > 0)
+                        tec[j + 1] = 2 * M_PI * geom.cond[j] / log(geom.diamC[j] / geom.diamC[j - 1]);
+                    else
+                        tec[j + 1] = 2 * M_PI * geom.cond[j] / log(geom.diamC[j] / geom.a);
+                }
+            }
+
+            resGlobAxiSim = 1 / tec[0];
+            for (int k = 0; k < geom.ncamadas; k++)
+                resGlobAxiSim += 1 / tec[k + 1];
+        }
+}
+
+
 double TransCal::transperm(double resanul) {
 
     if (difus2D == 0) {
@@ -1459,7 +1632,7 @@ double TransCal::transperm(double resanul) {
             if (ncamada[i] > 1) {
                 for (int j = 1; j < ncamada[i]; j++) {
                     Tini[i][j] = Tcamada[i][j];
-                    Tcamada[i][j] = Tcamada[i][0] + (j / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
+                    Tcamada[i][j] = Tcamada[i][0] + (1.0*j / (ncamada[i]*1.0)) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
                 }
             }
         }
@@ -1480,7 +1653,7 @@ double TransCal::transperm(double resanul) {
     }
 }
 
-void TransCal::transcel(int icam, int idisc) {
+void TransCal::transcel(int icam, int idisc,int newman, double qcal) {
     double lconv = 12.19;
     const int lastLayer = geom.ncamadas - 1;
     const int layerDiscCount = ncamada[icam];
@@ -1718,27 +1891,48 @@ void TransCal::transcel(int icam, int idisc) {
         localvet[0] = Tcamada[icam][idisc] * (rho * cp) / dt;
         if (icam < lastLayer || (icam == lastLayer && idisc < layerDiscCount)) {
             double ciL;
-            ciL = (tec1 / (2. * M_PI) + 0.5 * k1 * (r1 + r2) / (r2 - r1));
+            ///?????????????/////////////////////////////////////////////
+            //ciL = (tec1 / (2. * M_PI) + 0.5 * k1 * (r1 + r2) / (r2 - r1));
+            /////???????????????????????////////////////////////////////
+            ciL = (tec1 / (2. * M_PI) +  k1 *  r2 / (r2 - r1));
             localmat[1][0] = 0;
             localmat[1][2] = ciL;
             localmat[1][3] = 1.;
             localmat[1][4] = -ciL;
         } else {
-            localmat[1][2] = h1 * r1;
-            localmat[1][3] = 1.;
-            localvet[1] = h1 * r1 * Textern1;
+        	if(newman!=1){
+        		localmat[1][2] = h1 * r1;
+        		localmat[1][3] = 1.;
+        		localvet[1] = h1 * r1 * Textern1;
+        	}
+        	else {
+        		localmat[1][2] = 0;
+        		localmat[1][3] = 1.;
+        		localvet[1] = qcal/(2. * M_PI);
+        	}
         }
     } else {
-        localmat[0][2] = -(h1 * (geom.a / 2.) + geom.cond[0] * (geom.a / 2.) / drcamada[0]);
-        localmat[0][4] = geom.cond[0] * (geom.a / 2.) / drcamada[0];
-        localmat[1][2] = -h1 * geom.a / 2.;
-        localmat[1][3] = 1.;
-        localvet[0] = -h1 * (geom.a / 2.) * Tint;
-        localvet[1] = -h1 * (geom.a / 2.) * Tint;
+    	if(newman!=-1){
+    		localmat[0][2] = -(h1 * (geom.a / 2.) + geom.cond[0] * (geom.a / 2.) / drcamada[0]);
+    		localmat[0][4] = geom.cond[0] * (geom.a / 2.) / drcamada[0];
+    		localmat[1][2] = -h1 * geom.a / 2.;
+    		localmat[1][3] = 1.;
+    		localvet[0] = -h1 * (geom.a / 2.) * Tint;
+    		localvet[1] = -h1 * (geom.a / 2.) * Tint;
+    	}
+    	else{
+    		//localmat[0][1]=-1.;
+    		localmat[0][2] = -(geom.cond[0] * (geom.a / 2.) / drcamada[0]);
+    		localmat[0][4] = geom.cond[0] * (geom.a / 2.) / drcamada[0];
+    		localmat[1][2] = 1;
+    		localmat[1][3] = 0;
+    		localvet[0] = qcal/(2. * M_PI);
+    		localvet[1] = qcal/(2. * M_PI);
+    	}
     }
 }
 
-double TransCal::transtrans() {
+double TransCal::transtrans(int newman, double qcal) {
     if (difus2D == 0) {
         const int totalLayers = geom.ncamadas;
         const double twoPi = 2. * M_PI;
@@ -1753,7 +1947,7 @@ double TransCal::transtrans() {
         nglob = 2 * (nglob + 1);
         Vcr<double> vetliv(nglob);
         BandMtx<double> matglob(nglob, 3, 2);
-        transcel(0, 0);
+        transcel(0, 0,newman,qcal);
         vetliv[0] = localvet[0];
         vetliv[1] = localvet[1];
         matglob[0][0] = localmat[0][2];
@@ -1763,7 +1957,7 @@ double TransCal::transtrans() {
         int konta = 2;
         for (int i = 0; i < totalLayers; i++) {
             for (int j = 1; j <= ncamada[i]; j++) {
-                transcel(i, j);
+                transcel(i, j,newman,qcal);
                 vetliv[konta] = localvet[0];
                 vetliv[konta + 1] = localvet[1];
                 matglob[konta][-1] = localmat[0][1];
@@ -2092,6 +2286,118 @@ double TransCal::transtrans2D() {
     fluxFim = cal;
     return cal;
 }
+
+void TransCal::transtransAxiSim(double cal) {
+
+    double lconv = 1000.;
+    double graA;
+    double raA;
+    double h2;
+    double Nu2;
+    double rug = geom.rug / geom.dia;
+
+    int nflui = 2;
+    for (int i = 0; i < geom.ncamadas; i++)
+        if (geom.tipomat[i] != 0)
+            nflui++;
+    Vcr<double> prT(nflui);
+    prT[0] = Pr(viscint / rhoint, kint / (rhoint * cpint));
+    if (formacPoc == 0)
+        prT[nflui - 1] = Pr(viscextern1 / rhoextern1, kextern1 / (rhoextern1 * cpextern1));
+    else
+        prT[nflui - 1] = 0;
+    if (nflui > 2) {
+        int j = 1;
+        for (int i = 0; i < geom.ncamadas; i++) {
+            if (geom.tipomat[i] != 0) {
+                if (geom.tipomat[i] == 2) {
+                    double tmed = 0.5 * (Tcamada[i][0] + Tcamada[i][1]);
+                    geom.visc[i] = VisLiq(tmed) * 1e-3;
+                    geom.rhoC[i] = MasEspLiq(tmed);
+                    geom.cond[i] = CondLiq(tmed);
+                    geom.cp[i] = CalorLiq(tmed);
+                    geom.beta[i] = beta(tmed, 1);
+
+                } else if (geom.tipomat[i] == 3) {
+                    double tmed = 0.5 * (Tcamada[i][0] + Tcamada[i][1]);
+                    geom.visc[i] = ViscGas(tmed) * 1e-3;
+                    geom.rhoC[i] = MasEspGas(tmed);
+                    geom.cond[i] = CondGas(tmed);
+                    geom.cp[i] = CalorGas(tmed);
+                    geom.beta[i] = beta(tmed, 2);
+                }
+                prT[j] = Pr(geom.visc[i] / geom.rhoC[i], geom.cond[i] / (geom.rhoC[i] * geom.cp[i]));
+                j++;
+            }
+        }
+    }
+
+    hi = hInt();
+
+    int limiter = 1;
+    Vcr<double> tec(geom.ncamadas + 2);
+    tec[0] = M_PI * geom.a * hi;
+
+    for (int i = 0; i < limiter; i++) {
+        int kontaflu = 0;
+        for (int j = 0; j < geom.ncamadas; j++) {
+            if (geom.tipomat[j] != 0 && fabs(Vconf) < 1e-3) {
+                kontaflu++;
+                graA = Grash(Tcamada[j][0] - Tcamada[j][ncamada[j]], geom.beta[j],
+                             geom.visc[j] / geom.rhoC[j], 0.5 * (geom.diamC[j] - geom.diamC[j - 1]));
+                raA = Ra(graA, prT[kontaflu]);
+                defineConf(prT[kontaflu], raA);
+                Nu2 = NussConf2(raA, lconv, 0.5 * (geom.diamC[j] - geom.diamC[j - 1]), geom.teta);
+                h2 = Nu2 * geom.cond[j] / (0.5 * (geom.diamC[j] - geom.diamC[j - 1]));
+                tec[j + 1] = M_PI * (geom.diamC[j] - geom.diamC[j - 1]) * h2 / log(geom.diamC[j] / geom.diamC[j - 1]);
+            } else if (geom.tipomat[j] != 0 && fabs(Vconf) > 1e-3) {
+
+                double a = geom.diamC[j];
+                double b = geom.diamC[j - 1];
+                double area = M_PI * (a * a - b * b) / 4.;
+                double peri = M_PI * (a + b);
+                double dia = 4. * area / peri;
+                double reyConf = ReyIn(Vconf, geom.visc[j], geom.rhoC[j], dia);
+                Nu2 = nussPet(reyConf, prT[kontaflu], rug, geom.visc[j], 1. / 1e3);
+                double h2a = Nu2 * geom.cond[j] / a;
+                double h2b = Nu2 * geom.cond[j] / b;
+                h2 = 1. / ((b / a) * (1 / h2a) + (1 / h2b));
+                tec[j + 1] = M_PI * b * h2;
+            } else {
+                if (j > 0)
+                    tec[j + 1] = 2 * M_PI * geom.cond[j] / log(geom.diamC[j] / geom.diamC[j - 1]);
+                else
+                    tec[j + 1] = 2 * M_PI * geom.cond[j] / log(geom.diamC[j] / geom.a);
+            }
+        }
+
+        resGlob = 1 / tec[0];
+        for (int k = 0; k < geom.ncamadas; k++)
+            resGlob += 1 / tec[k + 1];
+        Tini[0][0] = Tcamada[0][0];
+        Tcamada[0][0] = Tint + cal / tec[0];
+        for (int k = 1; k < geom.ncamadas; k++) {
+            Tini[k][0] = Tcamada[k][0];
+            Tcamada[k][0] = Tcamada[k - 1][0] + cal / tec[k];
+            Tini[k - 1][ncamada[k - 1]] = Tcamada[k - 1][ncamada[k - 1]];
+            Tcamada[k - 1][ncamada[k - 1]] = Tcamada[k][0];
+        }
+        Tini[geom.ncamadas - 1][ncamada[geom.ncamadas - 1]] = Tcamada[geom.ncamadas - 1][ncamada[geom.ncamadas - 1]];
+        Tcamada[geom.ncamadas - 1][ncamada[geom.ncamadas - 1]] = Tcamada[geom.ncamadas - 1][0] + cal / tec[geom.ncamadas];
+    }
+    for (int i = 0; i < geom.ncamadas; i++) {
+        if (ncamada[i] > 1) {
+            for (int j = 1; j < ncamada[i]; j++) {
+                Tini[i][j] = Tcamada[i][j];
+                Tcamada[i][j] = Tcamada[i][0] + (j / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
+            }
+        }
+    }
+    fluxIni = cal;
+    fluxFim = cal;
+}
+
+
 
 void TransCal::FeiticoDoTempo() {
     Tcamada[0][0] = Tini[0][0];

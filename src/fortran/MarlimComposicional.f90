@@ -268,6 +268,7 @@ module MarlimComposicional
                     ! Chamada sem componentes zerados:
                     call CalculateMixtureThermodynamicCondition_V3(dFlashPressure, dFlashTemperature, iNComp_Fixed, oMW_Fixed, &
                         oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqModel, iVapModel, &
+                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                         (dGivenInitialBeta.GE.(0.0d0)), oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, &
                         dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
@@ -276,6 +277,7 @@ module MarlimComposicional
                     ! Chamada original:
                     call CalculateMixtureThermodynamicCondition_V3(dFlashPressure, dFlashTemperature, iNComp, temp_oMW, &
                         temp_oZ, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, iLiqModel, iVapModel, &
+                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                         (dGivenInitialBeta.GE.(0.0d0)), temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
                         dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
@@ -883,6 +885,7 @@ end subroutine ReadWaxCalculationParametersFromExternalFile
 ! ===========================================================================================================
 subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashTemperature, iNComp, oMW, oZ, oTc, oPc, oW, &
                     oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
+                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                     dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
                     dCalculatedBubbleT, iIER_BubbleT, dCalculatedDewT, &
                     iIER_DewT, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash, dCalculatedBubbleP, &
@@ -905,6 +908,8 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
     type(c_ptr), value, intent(in) :: oLij                               ! Matriz dos parâmetros "lij".
     integer(c_int), value, intent(in) :: iLiqPhaseModel                  ! Modelo da fase líquida, conforme convenção.
     integer(c_int), value, intent(in) :: iVapPhaseModel                  ! Modelo da fase vapor, conforme convenção.
+    integer(c_int), value, intent(in) :: iLiqDensityCalculationMethod  ! Índice do método de cálculo da massa específica do líquido, conforme convenção.
+    integer(c_int), value, intent(in) :: iVapDensityCalculationMethod  ! Índice do método de cálculo da massa específica do vapor, conforme convenção.
     real(c_double), value, intent(in) :: dGivenInitialBeta               ! Estimativa inicial de fração molar vaporizada para o "flash" (dar negativo caso indisponível).
     type(c_ptr), value, intent(in) :: oGivenInitialLiqComposition        ! Estimativa inicial de composição da fase líquida para o "flash".
     type(c_ptr), value, intent(in) :: oGivenInitialVapComposition        ! Estimativa inicial de composição da fase vapor para o "flash".
@@ -1044,6 +1049,7 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
             else deactivateV2
                 call CalculateMixtureThermodynamicCondition_V3(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp_Fixed, oMW_Fixed, &
                     oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqPhaseModel, iVapPhaseModel, &
+                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                     (dGivenInitialBeta.GE.(0.0d0)), oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, &
                     dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
             end if deactivateV2
@@ -1767,6 +1773,48 @@ subroutine Marlim_CalculateOilFormationVolumeFactor(dPressure, dTemperature, iNC
                     dCompositionalOilFormationVolumeFactor)
 
 end subroutine Marlim_CalculateOilFormationVolumeFactor
+
+! ===========================================================================================================
+!  ROTINA A SER CHAMADA PELO MARLIM 3 DURANTE AS SIMULAÇÕES PARA CORRIGIR OS Rs CALCULADOS POR CORRELAÇÕES
+! ===========================================================================================================
+subroutine Marlim_CorrectBlackOilRsWithPVTAnalysisRegression(iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+                dRsCalculated_Arg, dSaturationPressure, dRGO_RsUpperLimit, dLocalPressure, &
+                dRsCorrected) bind(C, name = "Marlim_CorrectBlackOilRsWithPVTAnalysisRegression")
+
+    ! OBJETIVO: Habilitar o MARLIM 3 a usar dados experimentais de uma Análise PVT para corrigir, DURANTE uma simulação,
+    !           valores que correlações black-oil prevêem para "Rs".
+                
+    implicit none
+
+    ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+    integer(c_int), value, intent(in) :: iRsRegressionModelType     ! Tipo do modelo de regressão: 1=linear, 0=potencial
+    real(c_double), value, intent(in) :: dRsRegressionA             ! Coeficiente angular do modelo de regressão
+    real(c_double), value, intent(in) :: dRsRegressionB             ! Coeficiente linear do modelo de regressão
+    real(c_double), value, intent(in) :: dRsCalculated_Arg          ! Rs calculado pela correlação, em "scft/bbl"
+    real(c_double), value, intent(in) :: dSaturationPressure        ! Pressão de saturação (kgf/cm2)
+    real(c_double), value, intent(in) :: dRGO_RsUpperLimit          ! Limite superior de Rs (em Sm3/Sm3)
+    real(c_double), value, intent(in) :: dLocalPressure             ! Pressão local (kgf/cm2)
+
+    real(c_double), intent(out) :: dRsCorrected                     ! Rs corrigido (resultado final), em "scft/bbl"           
+
+    ! ------------ DECLARAÇÃO E DESCRIÇÃO DAS VARIÁVEIS LOCAIS:
+    real(c_double) :: dRsCalculated              ! Rs calculado pela correlação, em m3/m3
+
+    ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
+
+    ! CONVERSÃO DE UNIDADES:
+
+        ! Converter "dRsCalculated" de "scft/bbl" para "m3/m3".
+    dRsCalculated = dRsCalculated_Arg / 1.589873d-1 * 2.831685d-2
+
+    ! CHAMADA PRINCIPAL:
+    call CorrectBlackOilRsWithPVTAnalysisRegression(iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+            dRsCalculated, dSaturationPressure, dRGO_RsUpperLimit, dLocalPressure, dRsCorrected)
+
+        ! Resultado está em "m3/m3"; retornar em "scft/bbl":
+    dRsCorrected = dRsCorrected * 1.589873d-1 / 2.831685d-2     
+
+end subroutine Marlim_CorrectBlackOilRsWithPVTAnalysisRegression
 
 ! ===========================================================================================================
 !  ROTINA A SER CHAMADA PELO MARLIM 3 NO INÍCIO DE SIMULAÇÕES PARA AJUSTAR MODELOS BLACK-OIL CONTRA ANÁLISES PVT

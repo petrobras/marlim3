@@ -79,6 +79,11 @@
 #define JSON_entrada_configuracaoInicial_modoDifus3DJson JSONString
 #define JSON_entrada_configuracaoInicial_modoParafina JSONBoolean
 #define JSON_entrada_configuracaoInicial_tipoModeloDrift JSONBoolean
+#define JSON_entrada_configuracaoInicial_pocoTermAxiSim JSONBoolean
+#define JSON_entrada_configuracaoInicial_pocoAxiSimJson JSONString
+#define JSON_entrada_configuracaoInicial_anulAxiSim JSONBoolean
+#define JSON_entrada_configuracaoInicial_imprimeInventario JSONBoolean
+#define JSON_entrada_configuracaoInicial_fatorFric JSONInteger
 
 /*!
  * Store discharge-control limits, working conditions, temperature, and latency.
@@ -361,6 +366,11 @@ class JSON_entrada_configuracaoInicial : public JSONObject {
     JSON_entrada_configuracaoInicial_modoDifus3D &modoDifus3D();
     JSON_entrada_configuracaoInicial_threadP3D &threadP3D();
     JSON_entrada_configuracaoInicial_modoDifus3DJson &modoDifus3DJson();
+    JSON_entrada_configuracaoInicial_pocoTermAxiSim &pocoTermAxiSim();
+    JSON_entrada_configuracaoInicial_pocoAxiSimJson &pocoAxiSimJson();
+    JSON_entrada_configuracaoInicial_anulAxiSim &anulAxiSim();
+    JSON_entrada_configuracaoInicial_imprimeInventario &imprimeInventario();
+    JSON_entrada_configuracaoInicial_fatorFric &fatorFric();
 };
 
 // ==============================================================================
@@ -395,6 +405,8 @@ class JSON_entrada_tabela : public JSONObject {
 #define JSON_entrada_parafina_usuarioPorosidade JSONBoolean
 #define JSON_entrada_parafina_porosidade JSONNumber
 #define JSON_entrada_parafina_usuarioC2C3 JSONBoolean
+#define JSON_entrada_parafina_TIACusuarioAtiva JSONBoolean
+#define JSON_entrada_parafina_TIACusuario JSONNumber
 #define JSON_entrada_parafina_c2 JSONNumber
 #define JSON_entrada_parafina_c3 JSONNumber
 #define JSON_entrada_parafina_usuarioDifus JSONBoolean
@@ -420,6 +432,8 @@ class JSON_entrada_parafina : public JSONObject {
     JSON_entrada_parafina_usuarioPorosidade &usuarioPorosidade();
     JSON_entrada_parafina_porosidade &porosidade();
     JSON_entrada_parafina_usuarioC2C3 &usuarioC2C3();
+    JSON_entrada_parafina_TIACusuarioAtiva &TIACusuarioAtiva();
+    JSON_entrada_parafina_TIACusuario &TIACusuario();
     JSON_entrada_parafina_c2 &c2();
     JSON_entrada_parafina_c3 &c3();
     JSON_entrada_parafina_usuarioDifus &usuarioDifus();
@@ -438,6 +452,7 @@ class JSON_entrada_parafina : public JSONObject {
 // ==============================================================================
 
 #define JSON_entrada_fluidoGas_ativo JSONBoolean
+#define JSON_entrada_fluidoGas_linhaServComposicional JSONBoolean
 #define JSON_entrada_fluidoGas_usaTabelaFlash JSONBoolean
 #define JSON_entrada_fluidoGas_densidadeGas JSONNumber
 #define JSON_entrada_fluidoGas_fracCO2 JSONNumber
@@ -456,6 +471,7 @@ class JSON_entrada_fluidoGas : public JSONObject {
   public:
     JSON_entrada_fluidoGas();
     JSON_entrada_fluidoGas_ativo &ativo();
+    JSON_entrada_fluidoGas_linhaServComposicional &linhaServComposicional();
     JSON_entrada_fluidoGas_usaTabelaFlash &usaTabelaFlash();
     JSON_entrada_fluidoGas_densidadeGas &densidadeGas();
     JSON_entrada_fluidoGas_fracCO2 &fracCO2();
@@ -496,6 +512,7 @@ class JSON_entrada_fluidoGas : public JSONObject {
 #define JSON_entrada_fluidosProducao_Item_modeloOleoSubSaturado JSONInteger
 #define JSON_entrada_fluidosProducao_Item_modeloViscBlackOil JSONInteger
 #define JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil JSONInteger
+#define JSON_entrada_fluidosProducao_Item_modeloCondBlackOil JSONInteger
 #define JSON_entrada_fluidosProducao_Item_fracMolarUsuario JSONBoolean
 #define JSON_entrada_fluidosProducao_Item_fracMolar_Item JSONNumber
 #define JSON_entrada_fluidosProducao_Item_fracMolar JSONArray<JSON_entrada_fluidosProducao_Item_fracMolar_Item>
@@ -538,6 +555,7 @@ class JSON_entrada_fluidosProducao_Item : public JSONObject {
     JSON_entrada_fluidosProducao_Item_modeloOleoSubSaturado &modeloOleoSubSaturado();
     JSON_entrada_fluidosProducao_Item_modeloViscBlackOil &modeloViscBlackOil();
     JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil &modeloAguaBlackOil();
+    JSON_entrada_fluidosProducao_Item_modeloCondBlackOil &modeloCondBlackOil();
     JSON_entrada_fluidosProducao_Item_fracMolarUsuario &fracMolarUsuario();
     JSON_entrada_fluidosProducao_Item_fracMolar &fracMolar();
     JSON_entrada_fluidosProducao_Item_RGOCompUsuario &RGOCompUsuario();
@@ -600,6 +618,32 @@ class JSON_entrada_fluidoComplementar : public JSONObject {
 #define JSON_entrada_valvula_Item_x1 JSONArray<JSON_entrada_valvula_Item_x1_Item>
 #define JSON_entrada_valvula_Item_cv1_Item JSONNumber
 #define JSON_entrada_valvula_Item_cv1 JSONArray<JSON_entrada_valvula_Item_cv1_Item>
+#define JSON_entrada_valvula_Item_caixaValvula JSONBoolean
+#define JSON_entrada_valvula_Item_compCaixa JSONNumber
+#define JSON_entrada_valvula_Item_indSecTrans JSONInteger
+#define JSON_entrada_valvula_Item_formac JSONInteger
+#define JSON_entrada_valvula_Item_lito JSONInteger
+#define JSON_entrada_valvula_Item_ambiente JSONInteger
+#define JSON_entrada_valvula_Item_velAmbiente JSONNumber
+#define JSON_entrada_valvula_Item_tempAmbiente JSONNumber
+#define JSON_entrada_valvula_Item_indFluido JSONInteger
+#define JSON_entrada_valvula_Item_aberturaMon_Item JSONNumber
+#define JSON_entrada_valvula_Item_aberturaMon JSONArray<JSON_entrada_valvula_Item_aberturaMon_Item>
+#define JSON_entrada_valvula_Item_tempoAberturaMon_Item JSONNumber
+#define JSON_entrada_valvula_Item_tempoAberturaMon JSONArray<JSON_entrada_valvula_Item_tempoAberturaMon_Item>
+#define JSON_entrada_valvula_Item_aberturaJus_Item JSONNumber
+#define JSON_entrada_valvula_Item_aberturaJus JSONArray<JSON_entrada_valvula_Item_aberturaJus_Item>
+#define JSON_entrada_valvula_Item_tempoAberturaJus_Item JSONNumber
+#define JSON_entrada_valvula_Item_tempoAberturaJus JSONArray<JSON_entrada_valvula_Item_tempoAberturaJus_Item>
+#define JSON_entrada_valvula_Item_temperaturaFonte JSONNumber
+#define JSON_entrada_valvula_Item_massLiqP_Item JSONNumber
+#define JSON_entrada_valvula_Item_massLiqP JSONArray<JSON_entrada_valvula_Item_massLiqP_Item>
+#define JSON_entrada_valvula_Item_massGas_Item JSONNumber
+#define JSON_entrada_valvula_Item_massGas JSONArray<JSON_entrada_valvula_Item_massGas_Item>
+#define JSON_entrada_valvula_Item_massLiqC_Item JSONNumber
+#define JSON_entrada_valvula_Item_massLiqC JSONArray<JSON_entrada_valvula_Item_massLiqC_Item>
+#define JSON_entrada_valvula_Item_tempoFonte_Item JSONNumber
+#define JSON_entrada_valvula_Item_tempoFonte JSONArray<JSON_entrada_valvula_Item_tempoFonte_Item>
 
 /*!
  * Store one valve definition and its opening or Cv curves.
@@ -620,6 +664,24 @@ class JSON_entrada_valvula_Item : public JSONObject {
     JSON_entrada_valvula_Item_cd &cd();
     JSON_entrada_valvula_Item_x1 &x1();
     JSON_entrada_valvula_Item_cv1 &cv1();
+    JSON_entrada_valvula_Item_caixaValvula &caixaValvula();
+    JSON_entrada_valvula_Item_compCaixa &compCaixa();
+    JSON_entrada_valvula_Item_indSecTrans &indSecTrans();
+    JSON_entrada_valvula_Item_formac &formac();
+    JSON_entrada_valvula_Item_lito &lito();
+    JSON_entrada_valvula_Item_ambiente &ambiente();
+    JSON_entrada_valvula_Item_velAmbiente &velAmbiente();
+    JSON_entrada_valvula_Item_tempAmbiente &tempAmbiente();
+    JSON_entrada_valvula_Item_indFluido &indFluido();
+    JSON_entrada_valvula_Item_aberturaMon &aberturaMon();
+    JSON_entrada_valvula_Item_tempoAberturaMon &tempoAberturaMon();
+    JSON_entrada_valvula_Item_aberturaJus &aberturaJus();
+    JSON_entrada_valvula_Item_tempoAberturaJus &tempoAberturaJus();
+    JSON_entrada_valvula_Item_temperaturaFonte &temperaturaFonte();
+    JSON_entrada_valvula_Item_massLiqP &massLiqP();
+    JSON_entrada_valvula_Item_massGas &massGas();
+    JSON_entrada_valvula_Item_massLiqC &massLiqC();
+    JSON_entrada_valvula_Item_tempoFonte &tempoFonte();
 };
 
 #define JSON_entrada_valvula JSONArray<JSON_entrada_valvula_Item>
@@ -1400,6 +1462,18 @@ class JSON_entrada_hidrato : public JSONObject {
 #define JSON_entrada_ipr_Item_tempoii JSONArray<JSON_entrada_ipr_Item_tempoii_Item>
 #define JSON_entrada_ipr_Item_indFluidoPro JSONInteger
 #define JSON_entrada_ipr_Item_indiFluidoPro JSONInteger
+//////////////////////////////////////////////////////////////////////
+#define JSON_entrada_ipr_Item_ICV JSONBoolean
+#define JSON_entrada_ipr_Item_curvaCV JSONInteger
+#define JSON_entrada_ipr_Item_tempoICV_Item JSONNumber
+#define JSON_entrada_ipr_Item_tempoICV JSONArray<JSON_entrada_ipr_Item_tempoICV_Item>
+#define JSON_entrada_ipr_Item_abertura_Item JSONNumber
+#define JSON_entrada_ipr_Item_abertura JSONArray<JSON_entrada_ipr_Item_abertura_Item>
+#define JSON_entrada_ipr_Item_cd JSONNumber
+#define JSON_entrada_ipr_Item_x1_Item JSONNumber
+#define JSON_entrada_ipr_Item_x1 JSONArray<JSON_entrada_valvula_Item_x1_Item>
+#define JSON_entrada_ipr_Item_cv1_Item JSONNumber
+#define JSON_entrada_ipr_Item_cv1 JSONArray<JSON_entrada_ipr_Item_cv1_Item>
 
 /*!
  * Store one time-dependent inflow-performance relationship.
@@ -1426,6 +1500,14 @@ class JSON_entrada_ipr_Item : public JSONObject {
     JSON_entrada_ipr_Item_tempoii &tempoii();
     JSON_entrada_ipr_Item_indFluidoPro &indFluidoPro();
     JSON_entrada_ipr_Item_indiFluidoPro &indiFluidoPro();
+    /////////////////////////////////////////////////////////////////
+	JSON_entrada_ipr_Item_ICV& ICV();
+    JSON_entrada_ipr_Item_curvaCV &curvaCV();
+    JSON_entrada_ipr_Item_tempoICV &tempoICV();
+    JSON_entrada_ipr_Item_abertura &abertura();
+    JSON_entrada_ipr_Item_cd &cd();
+    JSON_entrada_ipr_Item_x1 &x1();
+    JSON_entrada_ipr_Item_cv1 &cv1();
 };
 
 #define JSON_entrada_ipr JSONArray<JSON_entrada_ipr_Item>
@@ -1660,6 +1742,7 @@ class JSON_entrada_fonteCalor_Item : public JSONObject {
 #define JSON_entrada_master1_ativo JSONBoolean
 #define JSON_entrada_master1_curvaCV JSONInteger
 #define JSON_entrada_master1_razaoAreaAtiva JSONNumber
+#define JSON_entrada_master1_cd JSONNumber
 #define JSON_entrada_master1_comprimentoMedido JSONNumber
 #define JSON_entrada_master1_tempo_Item JSONNumber
 #define JSON_entrada_master1_tempo JSONArray<JSON_entrada_master1_tempo_Item>
@@ -1669,6 +1752,32 @@ class JSON_entrada_fonteCalor_Item : public JSONObject {
 #define JSON_entrada_master1_x1 JSONArray<JSON_entrada_master1_x1_Item>
 #define JSON_entrada_master1_cv1_Item JSONNumber
 #define JSON_entrada_master1_cv1 JSONArray<JSON_entrada_master1_cv1_Item>
+#define JSON_entrada_master1_caixaValvula JSONBoolean
+#define JSON_entrada_master1_compCaixa JSONNumber
+#define JSON_entrada_master1_indSecTrans JSONInteger
+#define JSON_entrada_master1_formac JSONInteger
+#define JSON_entrada_master1_lito JSONInteger
+#define JSON_entrada_master1_ambiente JSONInteger
+#define JSON_entrada_master1_velAmbiente JSONNumber
+#define JSON_entrada_master1_tempAmbiente JSONNumber
+#define JSON_entrada_master1_indFluido JSONInteger
+#define JSON_entrada_master1_aberturaMon_Item JSONNumber
+#define JSON_entrada_master1_aberturaMon JSONArray<JSON_entrada_master1_aberturaMon_Item>
+#define JSON_entrada_master1_tempoAberturaMon_Item JSONNumber
+#define JSON_entrada_master1_tempoAberturaMon JSONArray<JSON_entrada_master1_tempoAberturaMon_Item>
+#define JSON_entrada_master1_aberturaJus_Item JSONNumber
+#define JSON_entrada_master1_aberturaJus JSONArray<JSON_entrada_master1_aberturaJus_Item>
+#define JSON_entrada_master1_tempoAberturaJus_Item JSONNumber
+#define JSON_entrada_master1_tempoAberturaJus JSONArray<JSON_entrada_master1_tempoAberturaJus_Item>
+#define JSON_entrada_master1_temperaturaFonte JSONNumber
+#define JSON_entrada_master1_massLiqP_Item JSONNumber
+#define JSON_entrada_master1_massLiqP JSONArray<JSON_entrada_master1_massLiqP_Item>
+#define JSON_entrada_master1_massGas_Item JSONNumber
+#define JSON_entrada_master1_massGas JSONArray<JSON_entrada_master1_massGas_Item>
+#define JSON_entrada_master1_massLiqC_Item JSONNumber
+#define JSON_entrada_master1_massLiqC JSONArray<JSON_entrada_master1_massLiqC_Item>
+#define JSON_entrada_master1_tempoFonte_Item JSONNumber
+#define JSON_entrada_master1_tempoFonte JSONArray<JSON_entrada_master1_tempoFonte_Item>
 
 /*!
  * Store the Master 1 valve operating schedule and Cv curve.
@@ -1682,11 +1791,30 @@ class JSON_entrada_master1 : public JSONObject {
     JSON_entrada_master1_ativo &ativo();
     JSON_entrada_master1_curvaCV &curvaCV();
     JSON_entrada_master1_razaoAreaAtiva &razaoAreaAtiva();
+    JSON_entrada_master1_cd &cd();
     JSON_entrada_master1_comprimentoMedido &comprimentoMedido();
     JSON_entrada_master1_tempo &tempo();
     JSON_entrada_master1_abertura &abertura();
     JSON_entrada_master1_x1 &x1();
     JSON_entrada_master1_cv1 &cv1();
+    JSON_entrada_master1_caixaValvula &caixaValvula();
+    JSON_entrada_master1_compCaixa &compCaixa();
+    JSON_entrada_master1_indSecTrans &indSecTrans();
+    JSON_entrada_master1_formac &formac();
+    JSON_entrada_master1_lito &lito();
+    JSON_entrada_master1_ambiente &ambiente();
+    JSON_entrada_master1_velAmbiente &velAmbiente();
+    JSON_entrada_master1_tempAmbiente &tempAmbiente();
+    JSON_entrada_master1_indFluido &indFluido();
+    JSON_entrada_master1_aberturaMon &aberturaMon();
+    JSON_entrada_master1_tempoAberturaMon &tempoAberturaMon();
+    JSON_entrada_master1_aberturaJus &aberturaJus();
+    JSON_entrada_master1_tempoAberturaJus &tempoAberturaJus();
+    JSON_entrada_master1_temperaturaFonte &temperaturaFonte();
+    JSON_entrada_master1_massLiqP &massLiqP();
+    JSON_entrada_master1_massGas &massGas();
+    JSON_entrada_master1_massLiqC &massLiqC();
+    JSON_entrada_master1_tempoFonte &tempoFonte();
 };
 
 #define JSON_entrada_master2_ativo JSONBoolean
@@ -1695,6 +1823,23 @@ class JSON_entrada_master1 : public JSONObject {
 #define JSON_entrada_master2_tempo JSONArray<JSON_entrada_master2_tempo_Item>
 #define JSON_entrada_master2_abertura_Item JSONNumber
 #define JSON_entrada_master2_abertura JSONArray<JSON_entrada_master2_abertura_Item>
+#define JSON_entrada_master2_caixaValvula JSONBoolean
+#define JSON_entrada_master2_compCaixa JSONNumber
+#define JSON_entrada_master2_indSecTrans JSONInteger
+#define JSON_entrada_master2_formac JSONInteger
+#define JSON_entrada_master2_lito JSONInteger
+#define JSON_entrada_master2_ambiente JSONInteger
+#define JSON_entrada_master2_velAmbiente JSONNumber
+#define JSON_entrada_master2_tempAmbiente JSONNumber
+#define JSON_entrada_master2_indFluido JSONInteger
+#define JSON_entrada_master2_aberturaMon_Item JSONNumber
+#define JSON_entrada_master2_aberturaMon JSONArray<JSON_entrada_master2_aberturaMon_Item>
+#define JSON_entrada_master2_tempoAberturaMon_Item JSONNumber
+#define JSON_entrada_master2_tempoAberturaMon JSONArray<JSON_entrada_master2_tempoAberturaMon_Item>
+#define JSON_entrada_master2_aberturaJus_Item JSONNumber
+#define JSON_entrada_master2_aberturaJus JSONArray<JSON_entrada_master2_aberturaJus_Item>
+#define JSON_entrada_master2_tempoAberturaJus_Item JSONNumber
+#define JSON_entrada_master2_tempoAberturaJus JSONArray<JSON_entrada_master2_tempoAberturaJus_Item>
 
 /*!
  * Store the Master 2 valve operating schedule.
@@ -1709,6 +1854,19 @@ class JSON_entrada_master2 : public JSONObject {
     JSON_entrada_master2_comprimentoMedido &comprimentoMedido();
     JSON_entrada_master2_tempo &tempo();
     JSON_entrada_master2_abertura &abertura();
+    JSON_entrada_master2_caixaValvula &caixaValvula();
+    JSON_entrada_master2_compCaixa &compCaixa();
+    JSON_entrada_master2_indSecTrans &indSecTrans();
+    JSON_entrada_master2_formac &formac();
+    JSON_entrada_master2_lito &lito();
+    JSON_entrada_master2_ambiente &ambiente();
+    JSON_entrada_master2_velAmbiente &velAmbiente();
+    JSON_entrada_master2_tempAmbiente &tempAmbiente();
+    JSON_entrada_master2_indFluido &indFluido();
+    JSON_entrada_master2_aberturaMon &aberturaMon();
+    JSON_entrada_master2_tempoAberturaMon &tempoAberturaMon();
+    JSON_entrada_master2_aberturaJus &aberturaJus();
+    JSON_entrada_master2_tempoAberturaJus &tempoAberturaJus();
 };
 
 #define JSON_entrada_pig_Item_ativo JSONBoolean
@@ -1741,9 +1899,11 @@ class JSON_entrada_pig_Item : public JSONObject {
 
 #define JSON_entrada_pig JSONArray<JSON_entrada_pig_Item>
 #define JSON_entrada_fontePressao_Item_ativo JSONBoolean
+#define JSON_entrada_fontePressao_Item_recircula JSONBoolean
 #define JSON_entrada_fontePressao_Item_id JSONInteger
 #define JSON_entrada_fontePressao_Item_TipoAbertura JSONInteger
 #define JSON_entrada_fontePressao_Item_comprimentoMedido JSONNumber
+#define JSON_entrada_fontePressao_Item_comprimentoMedidoRecircula JSONNumber
 #define JSON_entrada_fontePressao_Item_beta JSONNumber
 #define JSON_entrada_fontePressao_Item_titAmb JSONNumber
 #define JSON_entrada_fontePressao_Item_cd JSONNumber
@@ -1771,9 +1931,11 @@ class JSON_entrada_fontePressao_Item : public JSONObject {
   public:
     JSON_entrada_fontePressao_Item();
     JSON_entrada_fontePressao_Item_ativo &ativo();
+    JSON_entrada_fontePressao_Item_recircula &recircula();
     JSON_entrada_fontePressao_Item_id &id();
     JSON_entrada_fontePressao_Item_TipoAbertura &TipoAbertura();
     JSON_entrada_fontePressao_Item_comprimentoMedido &comprimentoMedido();
+    JSON_entrada_fontePressao_Item_comprimentoMedidoRecircula &comprimentoMedidoRecircula();
     JSON_entrada_fontePressao_Item_beta &beta();
     JSON_entrada_fontePressao_Item_titAmb &titAmb();
     JSON_entrada_fontePressao_Item_cd &cd();
@@ -1865,6 +2027,8 @@ class JSON_entrada_fontePressao_Item : public JSONObject {
 #define JSON_entrada_tendP_Item_inventarioGas JSONBoolean
 #define JSON_entrada_tendP_Item_inventarioLiq JSONBoolean
 #define JSON_entrada_tendP_Item_subResfria JSONBoolean
+#define JSON_entrada_tendP_Item_presAnulICV JSONBoolean
+#define JSON_entrada_tendP_Item_caixaValvula JSONBoolean
 
 /*!
  * Select production-line variables recorded in one trend output.
@@ -1947,6 +2111,8 @@ class JSON_entrada_tendP_Item : public JSONObject {
     JSON_entrada_tendP_Item_inventarioGas &inventarioGas();
     JSON_entrada_tendP_Item_inventarioLiq &inventarioLiq();
     JSON_entrada_tendP_Item_subResfria &subResfria();
+    JSON_entrada_tendP_Item_presAnulICV &presAnulICV();
+    JSON_entrada_tendP_Item_caixaValvula &caixaValvula();
 };
 
 #define JSON_entrada_tendP JSONArray<JSON_entrada_tendP_Item>
@@ -2150,6 +2316,7 @@ class JSON_entrada_gasInj : public JSONObject {
 #define JSON_entrada_perfilProducao_tempo_Item JSONNumber
 #define JSON_entrada_perfilProducao_tempo JSONArray<JSON_entrada_perfilProducao_tempo_Item>
 #define JSON_entrada_perfilProducao_pressao JSONBoolean
+#define JSON_entrada_perfilProducao_pressaoFront JSONBoolean
 #define JSON_entrada_perfilProducao_temperatura JSONBoolean
 #define JSON_entrada_perfilProducao_holdup JSONBoolean
 #define JSON_entrada_perfilProducao_FVH JSONBoolean
@@ -2160,6 +2327,7 @@ class JSON_entrada_gasInj : public JSONObject {
 #define JSON_entrada_perfilProducao_ul JSONBoolean
 #define JSON_entrada_perfilProducao_arra JSONBoolean
 #define JSON_entrada_perfilProducao_viscosidadeLiquido JSONBoolean
+#define JSON_entrada_perfilProducao_viscosidadeOleoMorto JSONBoolean
 #define JSON_entrada_perfilProducao_viscosidadeGas JSONBoolean
 #define JSON_entrada_perfilProducao_rhog JSONBoolean
 #define JSON_entrada_perfilProducao_rhol JSONBoolean
@@ -2180,6 +2348,7 @@ class JSON_entrada_gasInj : public JSONObject {
 #define JSON_entrada_perfilProducao_cpliq JSONBoolean
 #define JSON_entrada_perfilProducao_condgas JSONBoolean
 #define JSON_entrada_perfilProducao_condliq JSONBoolean
+#define JSON_entrada_perfilProducao_condoleo JSONBoolean
 #define JSON_entrada_perfilProducao_QLstd JSONBoolean
 #define JSON_entrada_perfilProducao_QOstd JSONBoolean
 #define JSON_entrada_perfilProducao_QLWstd JSONBoolean
@@ -2234,6 +2403,7 @@ class JSON_entrada_perfilProducao : public JSONObject {
     JSON_entrada_perfilProducao_ativo &ativo();
     JSON_entrada_perfilProducao_tempo &tempo();
     JSON_entrada_perfilProducao_pressao &pressao();
+    JSON_entrada_perfilProducao_pressaoFront &pressaoFront();
     JSON_entrada_perfilProducao_temperatura &temperatura();
     JSON_entrada_perfilProducao_holdup &holdup();
     JSON_entrada_perfilProducao_FVH &FVH();
@@ -2244,6 +2414,7 @@ class JSON_entrada_perfilProducao : public JSONObject {
     JSON_entrada_perfilProducao_ul &ul();
     JSON_entrada_perfilProducao_arra &arra();
     JSON_entrada_perfilProducao_viscosidadeLiquido &viscosidadeLiquido();
+    JSON_entrada_perfilProducao_viscosidadeOleoMorto &viscosidadeOleoMorto();
     JSON_entrada_perfilProducao_viscosidadeGas &viscosidadeGas();
     JSON_entrada_perfilProducao_rhog &rhog();
     JSON_entrada_perfilProducao_rhol &rhol();
@@ -2264,6 +2435,7 @@ class JSON_entrada_perfilProducao : public JSONObject {
     JSON_entrada_perfilProducao_cpliq &cpliq();
     JSON_entrada_perfilProducao_condgas &condgas();
     JSON_entrada_perfilProducao_condliq &condliq();
+    JSON_entrada_perfilProducao_condoleo &condoleo();
     JSON_entrada_perfilProducao_QLstd &QLstd();
     JSON_entrada_perfilProducao_QOstd &QOstd();
     JSON_entrada_perfilProducao_QLWstd &QLWstd();

@@ -7,7 +7,8 @@ CelG::CelG(const DadosGeo vdutoL, const DadosGeo vduto,
            const double vpresL, const double vpres, const double vpresR,
            const double vVGasL, const double vVGasR, const double vVGasRR,
            const double vu1L, const double vu1R, const double vu1LL, const double vdx0,
-           const double vdx1, const double vdxL, const double vdt, const int vposic, const int vfecham, const int vtipoCC, const TransCal vcalor) : TL(3), local(3, 9) { // construtor default
+           const double vdx1, const double vdxL, const double vdt, const int vposic, const int vfecham,
+		   const int vtipoCC, const TransCal vcalor, int fatFric) : TL(3), local(3, 9) { // construtor default
 
     // Solver de Hidratos
 
@@ -101,6 +102,8 @@ CelG::CelG(const DadosGeo vdutoL, const DadosGeo vduto,
 
     termoHidro = 0.;
     termoFric = 0.;
+
+    tipoFatorFric=fatFric;
 }
 
 CelG::CelG(const CelG &vcel) : TL(3), local(3, 9) { // construtor por c�pia
@@ -192,6 +195,8 @@ CelG::CelG(const CelG &vcel) : TL(3), local(3, 9) { // construtor por c�pia
 
     termoHidro = vcel.termoHidro;
     termoFric = vcel.termoFric;
+
+    tipoFatorFric=vcel.tipoFatorFric;
 }
 
 CelG &CelG::operator=(const CelG &vcel) {
@@ -284,6 +289,8 @@ CelG &CelG::operator=(const CelG &vcel) {
 
         termoHidro = vcel.termoHidro;
         termoFric = vcel.termoFric;
+
+        tipoFatorFric=vcel.tipoFatorFric;
     }
     return *this;
 }
@@ -292,7 +299,7 @@ double CelG::Rey(double dia, double vel,
                  double rho, double vis) {
     return dia * fabs(vel) * rho / (vis * 1e-3);
 }
-double CelG::fric(double re, double eps) {
+/*double CelG::fric(double re, double eps) {
     double val;
     if (fabs(re) > 1e-5) {
         if (re > 2400) {
@@ -303,6 +310,36 @@ double CelG::fric(double re, double eps) {
                 val = pow(-2. * log(2.51 / fabs(re * sqrt(val)) + eps / 3.7) / log(10.), 2.);
                 val = 1. / val;
             }
+            val /= 4.;
+        } else
+            val = 16. / fabs(re);
+    } else
+        val = 0.;
+    return val;
+}*/
+double CelG::fric(double re, double eps) {
+    double val;
+    if (fabs(re) > 1e-5) {
+        if (re > 2400) {
+        	switch (tipoFatorFric) {
+        	case 0:
+            	val = 6.9 / fabs(re) + pow(eps / 3.7, 1.11);
+            	val = -1.8 * (log(val) / log(10.));
+            	val = pow(1 / val, 2.);
+            	for (int konta = 0; konta < 2; konta++) {
+            		val = pow(-2. * log(2.51 / fabs(re * sqrt(val)) + eps / 3.7) / log(10.), 2.);
+            		val = 1. / val;
+            	}
+            	break;
+        	case 1:
+            	double relRoughness = eps / 3.7;
+            	const double termA = -2.0 * log10(relRoughness + 12.0 / re);
+            	const double termB = -2.0 * log10(relRoughness + 2.51 * termA / re);
+            	const double termC = -2.0 * log10(relRoughness + 2.51 * termB / re);
+            	const double invSqrtF = termA - (termB - termA) * (termB - termA) / (termC - 2.0 * termB + termA);
+            	val = 1.0 / (invSqrtF * invSqrtF);
+            	break;
+        	}
             val /= 4.;
         } else
             val = 16. / fabs(re);

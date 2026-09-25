@@ -36,6 +36,8 @@
 #include "multiBCS.h"
 #include "solver3DPoisson.h"
 #include "variaveisGlobais1D.h"
+#include "dados1PoissonAxiSim.h"
+#include "solverPoissonAxiSim.h"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -999,6 +1001,8 @@ class SProd {
      */
     int redeParalelaS;
 
+    solverPAxiSim pocoAxiSim;
+
     vector<int> kontaTempoCelUni;
 
     const char *saidaTextoSis[16] = {"                          Post Coitum Omine Animal Triste Est                   ",
@@ -1321,7 +1325,7 @@ class SProd {
     /// Applies the alternate compositional molar-fraction transport update.
     void renovaFracMol2(ProFlu fluiRev = ProFlu());
     /// Computes T1 and T2 used to split mixture mass flow into liquid and gas flows.
-    void renovaterm(int aflu = 0);
+    void renovaterm(int aflu = 0, int vexpl=0);
     /// Computes T1 and T2 at the outlet of an internal network section.
     void renovatermAfluFim();
     /// Computes T1 and T2 at the inlet of an internal network section.

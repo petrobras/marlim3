@@ -116,8 +116,12 @@ void dadosP::iniciaVariaveis() {
 void dadosP::lerPoisson(string nomeArquivoEntrada, double vCondGlob, double vCondLoc, double vhE, double vhInt,
                         double vTint, double vTamb, double vdiamI, double vdiamE) {
 
-    entrada = nomeArquivoEntrada;
-    FILE *fp = fopen(nomeArquivoEntrada.c_str(), "r");
+	ostringstream arquivotemp;
+	arquivotemp<<pathArqEntrada<<nomeArquivoEntrada;
+	//entrada = nomeArquivoEntrada;
+    //FILE *fp = fopen(nomeArquivoEntrada.c_str(), "r");
+	entrada = arquivotemp.str();
+    FILE *fp = fopen(entrada.c_str(), "r");
     char readBuffer[125536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));
     Document elementoPoissonRaiz;

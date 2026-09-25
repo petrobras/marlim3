@@ -93,6 +93,7 @@ module BlackOilFromCompositional
         ! PASSO 1: Calcular a condição termodinâmica da mistura nas condições "stock-tank":
         call CalculateMixtureThermodynamicCondition_V3(dStockTankPressure, dStockTankTemperature, iNComp, oMW, &
            oZ, oTc, oPc, oW, oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, &
+           iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
            bHasInitialFlashEstimates, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
            dCalculatedStockTankBeta, oCalculatedStockTankLiqComposition, oCalculatedStockTankVapComposition, &
            iCalculatedStockTankThermodynamicCondition, iIER_Flash, iIER)

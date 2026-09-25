@@ -20,6 +20,10 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         freqMinima=vfreqMinima;
         correcHI=vcorrecHI;
         fracTermMotorEfic=vfracTermMotorEfic;
+        dpB=0.;
+        potB=0.;
+        potBT=0.;
+        potTermo=0.;
 
 	for (int i=0; i<lenth; i++){
          vaz[i]= *(Vvaz+i);//copiando de uma �rea apontada por um ponteiro
@@ -118,6 +122,11 @@ BomCentSub::BomCentSub(const BomCentSub& bombaantiga){
         d2power= new double [n];
         d2efic = new double [n];
 
+        dpB=bombaantiga.dpB;
+        potB=bombaantiga.potB;
+        potBT=bombaantiga.potBT;
+        potTermo=bombaantiga.potTermo;
+
 	for (int i=0; i<lenth; i++){
          vaz[i]= bombaantiga.vaz[i];
          head[i]= bombaantiga.head[i];
@@ -171,6 +180,11 @@ BomCentSub& BomCentSub::operator =(const BomCentSub& bombaantiga){
         	freqMinima=bombaantiga.freqMinima;
         	correcHI=bombaantiga.correcHI;
         	fracTermMotorEfic=bombaantiga.fracTermMotorEfic;
+
+            dpB=bombaantiga.dpB;
+            potB=bombaantiga.potB;
+            potBT=bombaantiga.potBT;
+            potTermo=bombaantiga.potTermo;
 
         	for (int i=0; i<lenth; i++){
         		vaz[i]= bombaantiga.vaz[i];

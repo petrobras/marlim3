@@ -215,6 +215,7 @@ class ProFlu {
     int multbcs;
     int viscBlackOil; // For PVTSim tables, indicates whether viscosity values should still be obtained from
     // a Black Oil model
+    int condBlackOil;
     int indiceFlash; // Unused
 
     // Property tables loaded from a PVTSim file
@@ -235,6 +236,8 @@ class ProFlu {
     double **sigWGF;
     double **viscO;
     double **viscG;
+    double **condO;
+    double **condG;
 
     int *itempAnt;
     int *ipresAnt;
@@ -721,7 +724,7 @@ class ProFlu {
 
             Marlim_CalculateMixtureThermodynamicCondition(pres, temp, npseudo,
                                                           masMol, fracMol, tempCrit, presCrit, fatAcent, TIndepPeneloux, kij, lij, liqModel,
-                                                          liqModel, GivenInitialBeta, GivenInitialLiqComposition, GivenInitialVapComposition,
+                                                          liqModel,liqModel,liqModel, GivenInitialBeta, GivenInitialLiqComposition, GivenInitialVapComposition,
                                                           &dCalculatedBubbleT, &iIER_BubbleT, &dCalculatedDewT, &iIER_DewT,
                                                           &dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &iIER_Flash,
                                                           &dCalculatedBubbleP, &iIER_BubbleP, &iCalculatedThermodynamicCondition, &dLiquidPhaseMW,

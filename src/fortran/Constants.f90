@@ -55,6 +55,8 @@ module Constants
     integer(c_int), parameter :: ERROR_InvalidRsCorrelation = 35
     integer(c_int), parameter :: ERROR_SatPressureNotFoundWithinPVTAnalysisBounds = 36
     integer(c_int), parameter :: ERROR_CouldNotDetermineGORFromPVTAnalysis = 37
+    integer(c_int), parameter :: ERROR_MissingRsCorrelationForPSat = 38
+    integer(c_int), parameter :: ERROR_InvalidBoCorrelation = 39
 
     ! Códigos de possíveis tipos de cálculo:
     integer(c_int), parameter :: CALCTYPE_BubblePoint = 0
@@ -83,5 +85,12 @@ module Constants
     integer(c_int), parameter :: RSCORRELATION_STANDING = 2
     integer(c_int), parameter :: RSCORRELATION_GLASO = 3
     integer(c_int), parameter :: RSCORRELATION_COUNT = 4    ! Contagem de correlações de Rs disponíveis!
+
+    ! Código de possíveis correlações "black-oil" para cálculo de "Bo":
+    integer(c_int), parameter :: BOCORRELATION_VAZQUEZBEGGS = 0
+    integer(c_int), parameter :: BOCORRELATION_STANDING     = 1
+    integer(c_int), parameter :: BOCORRELATION_GLASO        = 2
+    integer(c_int), parameter :: BOCORRELATION_BACIACAMPOS  = 3
+    integer(c_int), parameter :: BOCORRELATION_COUNT = 4    ! Contagem de correlações de Bo disponíveis!
 
 end module Constants

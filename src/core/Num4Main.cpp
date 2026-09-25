@@ -8015,6 +8015,8 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
             saida = permanenteSimples(sistem1, chute);
         }
     }
+    if ((*sistem1.vg1dSP).chaverede == 0 && sistem1.arq.transiente == 1 && sistem1.arq.AP == 0)
+    sistem1.arq.resumoPermanente(sistem1.celula, sistem1.celulaG, sistem1.pGSup, sistem1.presiniG, sistem1.indTramo);
     // impressão de perfis apos a obtencao de solucao permanente
     if ((*sistem1.vg1dSP).chaverede == 0 && sistem1.arq.transiente == 0 && sistem1.arq.AP == 0) { // impŕessao de perfis e tendencias, quando a opcao transiente
         // nao esta ativa
@@ -10826,7 +10828,7 @@ void TransAnel(int narq, int nfontes, int *indfonte, int *indtramo, int *posicfo
                 if (malha[i].celula[celpos[i]].alf < 0.05 && razMast[i] <= malha[i].arq.master1.razareaativ)
                     malha[i].celula[celpos[i]].alf = 0.05;
                 if (i != indAnel)
-                    malha[i].renovaterm();
+                    malha[i].renovaterm(0);
                 malha[i].SolveAcopPV();
                 if (kontaAcop == 1 * modeloCompletoGlob)
                     malha[i].renova();
@@ -11321,7 +11323,7 @@ void SolveRedeParalelaTrans(SProd *malha, Rede &arqRede, int nrede) {
                 }
 
                 malha[i].calcCCpres();
-                malha[i].renovaterm();
+                malha[i].renovaterm(0);
                 if (malha[i].celula[malha[i].ncel].alf < 0.05 && malha[i].masChkSup == 1)
                     malha[i].celula[malha[i].ncel].alf = 0.05;
                 // caso varias valvulas
@@ -13304,7 +13306,7 @@ int main(int argc, char **argv) {
                 cout << saidaTexto[frase] << endl;
                 cout << saidaSubTexto[frase] << endl;
                 cout << "*******************************************************************************" << endl;
-            } else if (sistem1.arq.saidaTela == 1)
+            } else
                 cout << "                                  FIM                                  " << endl;
 
             nowGlobFim = time(0);

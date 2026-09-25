@@ -35,8 +35,9 @@ public:
 	varGlob1D* vg1dSP;
 	Vcr<double> vecSolv;
 	vector<elem2d> mlh2d;
+	int acopD;
 	malha2dVF(double** xcoor=0, int** noEle=0, int* tipo=0,double* atributo=0,int nVert=0, int neleV=0, int nno=0,
-			double vdt=0.,int vperm=1, int vtrans=0,varGlob1D* Vvg1dSP=0,ProFluColVF vflucVF=ProFluColVF());
+			double vdt=0.,int vperm=1, int vtrans=0,varGlob1D* Vvg1dSP=0,ProFluColVF vflucVF=ProFluColVF(),int vacopD=0);
 	malha2dVF(const malha2dVF&);
 	malha2dVF& operator=(const malha2dVF&);
 

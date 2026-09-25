@@ -265,5 +265,7 @@ double ProFluCol::calcDR(double reL) {
         dR0 = 0.;
         fatB = 0.;
     }
-    return dR0 * exp(fatB * TR / 60);
+    double val=dR0 * exp(fatB * TR / 60);
+    if(val>1.)val=1.;
+    return val;
 }

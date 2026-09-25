@@ -422,7 +422,7 @@ double choke::vazmaxSachd(double presE, double tempE,double alf, double bet,doub
        	 double y;
        	 double xi=xmin;
          y = razpresSachdZ(0.8,0.2,presE,tempE,alf,bet,xi,fluido,fluidocol);
-         razpres=1.;
+         razpres=0.;
          double rhog=fluido.MasEspGas(presE, tempE);
          double rhol=(1.-bet)*fluido.MasEspLiq(presE, tempE)+bet*fluidocol.MasEspFlu(presE, tempE);
          double Vg=1./rhog;

@@ -8,6 +8,7 @@
 #include <complex>
 #include <fstream>
 #include <math.h>
+#include "Acidentes2.h"
 
 using namespace std;
 
@@ -49,10 +50,14 @@ class IPR : public AbsFonte {
     double deriG;     // Gas-related derivative.
     double deriC;     // Additional model derivative or coefficient.
     int tipoIPR;      // IPR model type.
+    int ICV;
+    choke chokeICV;
     ProFlu FluidoPro; // Production-fluid properties.
+    ProFluCol fluidocol;
+    double presAnul;
 
     //! Construct an IPR source using explicit fluid properties.
-    IPR(double, double, double, double, double, ProFlu, int tipoip = 1);
+    IPR(double, double, double, double, double, ProFlu, int tipoip = 1, int vICV=0,int vncv=0, choke vchoke=choke());
 
     //! Construct an IPR source using default fluid properties.
     IPR(double = 0, double = 0, double = 0, double = 0, double = 0, int tipoip = 1);
@@ -62,6 +67,7 @@ class IPR : public AbsFonte {
 
     //! Copy-assignment operator.
     IPR &operator=(const IPR &);
+
 
     /*!
      * Replace the source-fluid properties and update the saturation pressure.
@@ -93,6 +99,14 @@ class IPR : public AbsFonte {
      * \return Gas mass flow rate in kg/s.
      */
     double MasG(const double &, const double &);
+
+    double preparaChoke(double presM, double presJ, double tempJ, double alfa, double beta, double& massG, double& massL);
+    double SIGN(double a, double b);
+    double buscaRaiz(double pfundo, double tfundo, double alfa, double beta,
+    		double& massG, double& massL, double& massTot, double vpresAnul=-1.);
+    double zriddr(double xNeg, double xPos,double pfundo, double tfundo, double alfa, double beta,double rhomix, double& massG, double& massL);
+    double VMasICV(double pfundo, double tfundo, double alfa, double beta,ProFlu fluidoJ,
+    		double& massG, double& massL, double vpresAnul=-1.);
 };
 
 /*!
