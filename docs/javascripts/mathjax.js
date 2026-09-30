@@ -1,7 +1,8 @@
 window.MathJax = {
   tex: {
-    inlineMath: [["\\(", "\\)"]],
-    displayMath: [["\\[", "\\]"]],
+    // "$"/"$$" needed for notebook cells (mkdocs-jupyter/nbconvert output bypasses pymdownx.arithmatex)
+    inlineMath: [["\\(", "\\)"], ["$", "$"]],
+    displayMath: [["\\[", "\\]"], ["$$", "$$"]],
     processEscapes: true,
     tags: "all"
   }

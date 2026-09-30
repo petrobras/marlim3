@@ -220,12 +220,9 @@ Compilation is only necessary if you need to rebuild the executable from source.
 
 ### Requirements
 
-- GCC/G++ >= 9.0
-- GFortran >= 9.0
+- GCC/G++ >= 10.0 (the sources are built as C++20)
+- GFortran >= 10.0
 - CMake >= 3.16
-
-> The `develop` branch compiles the sources as C++20 and requires **GCC 10 or
-> newer**. Once that reaches `main`, this minimum applies here too.
 
 ### Presets
 

@@ -52,7 +52,7 @@
         },
         "pvtsimArq": {
           "type": "string",
-          "description": "Nome do arquivo .tab ou .ctm da tabela PVT, caso seja utilizada. Válido para poços produtores (no caso de poços injetores, o arquivo é definido em 'CondicaoContPocInjec')."
+          "description": "Nome do arquivo de fluido (extensões válidas: .tab ou .ctm, para tabela PVT ou cálculo composicional, respectivamente). Válido para poços produtores (no caso de poços injetores, o arquivo é definido em 'CondicaoContPocInjec')."
         },
         "modeloFluidoTabelaFlash": {
           "type": "boolean",
@@ -67,7 +67,7 @@
         "modeloTabelaDinamica": {
           "type": "boolean",
           "default": false,
-          "description": "Se true, calcula uma tabela montada a posteriori da simulação black oil usando o modelo composicional, para os vários trechos de composição distintas, aproveitando o mapeamento de P e T oferecido pelo resultado inicial da simulação BO. Válido apenas quando se usa modelos composicionais em regime permanente. Pode acelerar significativamente o tempo computacional, em particular no caso de redes, por evitar o cálculo repetitivo de flashs a cada iteração."
+          "description": "Se true, calcula uma tabela montada a posteriori da simulação black oil inicial usando o modelo composicional, para os vários trechos de composição distintas, aproveitando o mapeamento de P e T oferecido pelo resultado inicial da simulação BO. Válido apenas quando se usa modelos composicionais em regime permanente. Pode acelerar significativamente o tempo computacional, em particular no caso de redes, por evitar o cálculo repetitivo de flashs a cada iteração."
         },
         "modeloCp": {
           "type": "integer",
@@ -154,7 +154,7 @@
         "mapaArranjo": {
           "type": "integer",
           "default": 0,
-          "description": "Tipo de mapa de arranjo. 0: Barnea simplificado; 1: Barnea completo."
+          "description": "Tipo de mapa de regimes de escoamento. 0: Barnea simplificado; 1: Barnea completo."
         },
         "condicaoInicial": {
           "type": "integer",
@@ -304,7 +304,7 @@
         "modoXY": {
           "type": "boolean",
           "default": false,
-          "description": "Se true, as inclinações são inferidas com base nas coordenadas XY do final de cada duto. Nesse caso, é necessário preencher as posições iniciais nas variáveis xProdInicio e yProdInicio (e se configuracaoInicial: {linhaGas: true}, também é necessário preencher xServInicio e yServInicio). Caso contrário, as inclinações são informadas diretamente por meio de ângulos no campo dutosProducao e dutosServico."
+          "description": "Se true, o ângulo de inclinação de cada duto é determinado com base nas coordenadas (X, Y) de sua extremidade final. Nesse caso, é necessário preencher as posições iniciais nas variáveis xProdInicio e yProdInicio (e se configuracaoInicial: {linhaGas: true}, também é necessário preencher xServInicio e yServInicio). Caso contrário, as inclinações são informadas diretamente por meio de ângulos no campo dutosProducao e dutosServico."
         },
         "xProdInicio": {
           "type": "number",
@@ -314,19 +314,19 @@
         },
         "yProdInicio": {
           "type": "number",
-          "description": "Coordenada y do início da linha de produção, usada para inferência da inclinação no caso modoXY = true.",
+          "description": "Coordenada y do início da linha de produção, usada para inferência da inclinação no caso configuracaoInicial: {modoXY: true}.",
           "unit": "m",
           "default": 0
         },
         "xServInicio": {
           "type": "number",
-          "description": "Coordenada x do início da linha de serviço, usada para inferência da inclinação no caso modoXY = true. Válido para linhaGas = true.",
+          "description": "Coordenada x do início da linha de serviço, usada para inferência da inclinação no caso configuracaoInicial: {modoXY: true}. Válido para linhaGas = true.",
           "unit": "m",
           "default": 0
         },
         "yServInicio": {
           "type": "number",
-          "description": "Coordenada y do início da linha de serviço, usada para inferência da inclinação no caso modoXY = true. Válido para linhaGas = true.",
+          "description": "Coordenada y do início da linha de serviço, usada para inferência da inclinação no caso configuracaoInicial: {modoXY: true}. Válido para linhaGas = true.",
           "unit": "m",
           "default": 0
         },
@@ -357,7 +357,7 @@
         "tipoModeloDrift": {
           "type": "boolean",
           "default": true,
-          "description": "Se true, usa o modelo do tipo drift. Se false, usa alguma das correlações caixa-preta. Válido para simulações permanentes (em simulações transientes, o modelo é sempre do tipo drift)."
+          "description": "Se true, usa o modelo do tipo Drift-Flux 1D. Se false, usa em cada duto a correlação empírica indicada. Válido para simulações permanentes (em simulações transientes, o modelo é sempre do tipo drift)."
         },
         "Avancado": {
           "type": "object",
@@ -366,7 +366,7 @@
             "CriterioMonofasico": {
               "type": "number",
               "default": 0.0001,
-              "description": "Menor valor de fração de vazio em que se considera um sistema monofásico. Frações de vazio muito pequenas podem dar origem a problemas numéricos, por isso é útil estabelecer um valor partir do qual o sistema é considerado monofásico. Atentar para não usar valores de truncamentos muito altos, pois pode-se retirar massa artificialmente do sistema. Válido para simulações transientes."
+              "description": "Menor valor de fração de vazio em que se considera um sistema bifásico (ou multifásico). Frações de vazio muito pequenas podem dar origem a problemas numéricos, por isso é útil estabelecer um valor abaixo do qual o sistema é considerado monofásico. Atentar para não usar valores de truncamentos muito altos, pois pode-se retirar massa artificialmente do sistema. Válido para simulações transientes."
             },
             "CriterioCondensacao": {
               "type": "number",
