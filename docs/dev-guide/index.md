@@ -2,6 +2,8 @@
 
 Internal architecture of `Marlim3` core engine.
 
+> Note: Because `Marlim3` internals are undergoing major refactoring, this developer documentation is increasingly out of date and is therefore hidden from navigation in the published documentation. Once the refactoring is complete, updated developer documentation will be published.
+
 ## Contents
 
 | Page | Description |
