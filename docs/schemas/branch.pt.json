@@ -794,7 +794,7 @@
         },
         "fracCO2": {
           "type": "number",
-          "description": "Fração de CO2.",
+          "description": "Fração molar de CO2.",
           "default": 0
         },
         "correlacaoCritica": {
@@ -812,11 +812,11 @@
         },
         "fracMolarUsuario": {
           "type": "boolean",
-          "description": "Indica se o usuário informa a composição do presente gás na variável fracMolar. Se for false, procura-se a informação na tabela .ctm fornecida em configuracaoInicial: {pvtsimArq}. Válido apenas para simulações composicionais."
+          "description": "True indica que o usuário informa a composição do presente gás na variável fracMolar. Se for false, adota-se a composição do fluido representado pelo arquivo .ctm especificado em configuracaoInicial: {pvtsimArq}. Válido apenas para simulações composicionais."
         },
         "fracMolar": {
           "type": "array",
-          "description": "Frações molares dos pseudocomponentes (mesma sequência informado no arquivo .ctm fornecido na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais.",
+          "description": "Composição molar do gás, em termos das frações molares das espécies químicas (mesma sequência de componentes do arquivo .ctm especificado na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais.",
           "items": {
             "type": "number"
           }
@@ -825,7 +825,7 @@
     },
     "fluidosProducao": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a um possível fluido a ser usado no sistema de produção. São três tipos possíveis: black oil, tabela e composicional.",
+      "description": "Cada objeto dentro desta array corresponde a um possível fluido a ser usado no sistema de produção. São três tipos possíveis: black oil, tabela e composicional.",
       "items": {
         "type": "object",
         "properties": {
@@ -1028,11 +1028,11 @@
           "fracMolarUsuario": {
             "type": "boolean",
             "default": false,
-            "description": "Indica se o usuário informa a composição do presente fluido na variável fluidosProducao: {items: {fracMolar}}. Se for false, procura-se a informação na tabela .ctm fornecida na variável pvtsimArq do objeto configuracaoInicial. Válido apenas para simulações composicionais."
+            "description": "Indica se o usuário informa a composição do presente fluido na variável fluidosProducao: {items: {fracMolar}}. Se for false, procura-se a informação no arquivo .ctm especificado na variável pvtsimArq do objeto configuracaoInicial. Válido apenas para simulações composicionais."
           },
           "fracMolar": {
             "type": "array",
-            "description": "Frações molares dos pseudocomponentes (mesma sequência informado no arquivo .ctm fornecido na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais.",
+            "description": "Composição do fluido, em termos das frações molares das espécies químicas (mesma sequência de componentes do arquivo .ctm especificado na variável configuracaoInicial: {pvtsimArq}). Válido apenas para simulações composicionais.",
             "items": {
               "type": "number"
             }
@@ -1047,7 +1047,7 @@
     },
     "fluidoComplementar": {
       "type": "object",
-      "description": "Objeto contendo informações sobre o fluido complementar, que é o terceiro fluido em fase líquida além dos hidrocarbonetos e da água. Este fluido é inerte, não possui capacidade de se dissolver no gás e não escorrega em relação à mistura de hidrocarbonetos. Exemplos incluem colchão de glicol ou etanol (utilizado para prevenir a formação de hidratos antes da abertura da master 1), inibidor químico e fluido de completação (como água salgada).",
+      "description": "Objeto contendo informações sobre o fluido complementar, que é o terceiro fluido em fase líquida (os outros dois sendo hidrocarbonetos e a água). Este fluido é inerte (i.e., sem capacidade de dissolver gás) e não escorrega em relação à mistura de hidrocarbonetos. Exemplos incluem colchão de glicol ou etanol (utilizado para prevenir a formação de hidratos antes da abertura da master 1), inibidor químico e fluido de completação (como água salgada).",
       "properties": {
         "ativo": {
           "type": "boolean",
@@ -1055,58 +1055,58 @@
         },
         "massaEspecifica": {
           "type": "number",
-          "description": "Massa específica do líquido nas condições standard.",
+          "description": "Massa específica do líquido complementar nas condições standard.",
           "unit": "kg/m3"
         },
         "compP": {
           "type": "number",
-          "description": "Compressibilidade do líquido.",
+          "description": "Compressibilidade do líquido complementar.",
           "unit": "1/Pa"
         },
         "compT": {
           "type": "number",
-          "description": "Expansividade termica do líquido.",
+          "description": "Expansividade termica do líquido complementar.",
           "unit": "1/K"
         },
         "tensup": {
           "type": "number",
-          "description": "Tensão superficial do líquido.",
+          "description": "Tensão superficial do líquido complementar.",
           "unit": "N/m",
           "default": 0.072
         },
         "calorEspecifico": {
           "type": "number",
-          "description": "Calor específico do liquido.",
+          "description": "Calor específico do liquido complementar.",
           "unit": "J/kg.K"
         },
         "condutividade": {
           "type": "number",
-          "description": "Condutividade do líquido.",
+          "description": "Condutividade do líquido complementar.",
           "unit": " W/m.K"
         },
         "temp1": {
           "type": "number",
-          "description": "Temperatura do ponto 1 do ASTM.",
+          "description": "Método ASTM para cálculo da viscosidade: Temperatura do ponto 1.",
           "unit": "degC"
         },
         "visc1": {
           "type": "number",
-          "description": "Viscosidade do ponto 1 do ASTM.",
+          "description": "Método ASTM para cálculo da viscosidade: Viscosidade do ponto 1.",
           "unit": "cP"
         },
         "temp2": {
           "type": "number",
-          "description": "Temperatura do ponto 2 do ASTM.",
+          "description": "Método ASTM para cálculo da viscosidade: Temperatura do ponto 2.",
           "unit": "degC"
         },
         "visc2": {
           "type": "number",
-          "description": "Viscosidade do ponto 2 do ASTM.",
+          "description": "Método ASTM para cálculo da viscosidade: Viscosidade do ponto 2.",
           "unit": "cP"
         },
         "salinidade": {
           "type": "number",
-          "description": "Salinidade da água quando o fluido complementar é água ou fluido de completação.",
+          "description": "Salinidade da água, quando o fluido complementar é água ou fluido de completação.",
           "unit": "g/(kg água)"
         },
         "tipoF": {
@@ -1221,7 +1221,7 @@
           },
           "formac": {
             "type": "integer",
-            "description": "Caso tenha contato com formação."
+            "description": "Caso tenha contato com formação (0 = sem contato com formação, troca térmica com ambiente externo; 1 = contato com formação, não exige ambiente externo)."
           },
           "aberturaMon": {
             "type": "array",
@@ -1273,7 +1273,7 @@
     },
     "fonteLiquido": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de líquido a ser usada no sistema.",
+      "description": "Cada objeto dentro desta array corresponde a uma possível fonte de líquido a ser usada no sistema.",
       "items": {
         "type": "object",
         "properties": {
@@ -1355,11 +1355,11 @@
           "tipoTermo": {
             "type": "integer",
             "default": 0,
-            "description": "Se 0, a vazão de gás é calculada a partir de equilíbrio termodinâmico nas condições in situ baseado na vazão de hidrocarbonetos (diferença entre vazaoMassT e vazaoMassC); ou seja, à maneira como é calculada no objeto 'fonteLiquido'. Se 1, deve-se definir a vazão de gás livre entrando no sistema por meio da variável 'vazaoMassG'."
+            "description": "Se 0, a vazão de gás é calculada a partir do equilíbrio termodinâmico nas condições in situ baseado na vazão de hidrocarbonetos (diferença entre vazaoMassT e vazaoMassC); ou seja, à maneira como é calculada no objeto 'fonteLiquido'. Se 1, deve-se definir a vazão de gás livre entrando no sistema por meio da variável 'vazaoMassG'."
           },
           "tempo": {
             "type": "array",
-            "description": "Instantes de tempo em que são informados os eventos de fonte de massa nos demais vetores deste objeto.",
+            "description": "Instantes de tempo em que são informados os eventos desta fonte de massa nos demais vetores deste objeto.",
             "items": {
               "type": "number",
               "unit": "s"
@@ -1431,7 +1431,7 @@
           },
           "tempo": {
             "type": "array",
-            "description": "Instantes de tempo em que são informados os eventos de fonte de gás nos demais vetores deste objeto.",
+            "description": "Instantes de tempo em que são informados os eventos desta fonte de gás nos demais vetores deste objeto.",
             "items": {
               "type": "number",
               "unit": "s"
@@ -1455,7 +1455,7 @@
           },
           "vazaoFluidoComplementar": {
             "type": "array",
-            "description": "Fração de impurezas da vazão da fonte de gás ao longo do tempo (tratada como fluido complementar).",
+            "description": "Fração volumétrica de impurezas na vazão da fonte de gás ao longo do tempo (tratada como fluido complementar). Válido para o caso fonteGas: {seco: false}.",
             "items": {
               "type": "number",
               "default": 0,
@@ -1467,7 +1467,7 @@
     },
     "fontePoroRadial": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de poro radial a ser usada no sistema.",
+      "description": "Cada objeto dentro desta array corresponde a uma possível fonte de meio poroso radial a ser usada no sistema.",
       "items": {
         "type": "object",
         "properties": {
@@ -1493,7 +1493,7 @@
     },
     "fontePoro2D": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de poro 2D a ser usada no sistema.",
+      "description": "Cada objeto dentro desta array corresponde a uma possível fonte de meio poroso 2D a ser usada no sistema.",
       "items": {
         "type": "object",
         "properties": {
@@ -1519,7 +1519,7 @@
     },
     "fonteGasLift": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a uma possível fonte de gas-lift (válvula de gas-lift, VGL) a ser usada no sistema.",
+      "description": "Cada objeto dentro desta array corresponde a uma possível fonte de gas-lift (válvula de gas-lift, VGL) a ser usada no sistema.",
       "items": {
         "type": "object",
         "properties": {
@@ -1568,42 +1568,34 @@
           },
           "cdvLiq": {
             "type": "number",
-            "description": "Coeficiente de descarga da válvula (modelo monofásico) para o caso em que esteja escoando liquido (descarga de gás-lift).",
+            "description": "Coeficiente de descarga da válvula (modelo monofásico) para o caso em que esteja escoando líquido (descarga de gás-lift).",
             "default": 0.9
           },
           "razaoArea": {
             "type": "number",
-            "description": "Razão entre a área da porta e a área do diafragma (para válvula de pressão (calibradas), tipoValvula 1), com base no modelo de VGL do Marlim 2."
+            "description": "Razão entre a área da porta e a área do diafragma [para válvula de pressão (calibradas), tipoValvula 1], com base no modelo de VGL do Marlim 2."
           },
           "pressaoCalibracao": {
             "type": "number",
-            "description": "Pressão de calibração do interior do fole da válvula (para válvula de pressão (calibradas), tipoValvula 1).",
+            "description": "Pressão de calibração do interior do fole da válvula [para válvula de pressão (calibradas), tipoValvula 1].",
             "unit": "psi"
           },
           "temperaturaCalibracao": {
             "type": "number",
-            "description": "Temperatura de calibração do fole da válvula (para válvula de pressão (calibradas), tipoValvula 1).",
+            "description": "Temperatura de calibração do fole da válvula [para válvula de pressão (calibradas), tipoValvula 1].",
             "unit": "degF"
           },
           "diametroExterno": {
             "type": "number",
-            "description": "Diâmetro da porta (para válvula de pressão (calibradas), tipoValvula 1).",
+            "description": "Diâmetro da porta [para válvula de pressão (calibradas), tipoValvula 1].",
             "unit": "m"
-          },
-          "frecupera": {
-            "type": "number",
-            "description": ""
-          },
-          "frecuperaLiq": {
-            "type": "number",
-            "description": ""
           }
         }
       }
     },
     "material": {
       "type": "array",
-      "description": "Cada objeto dessa array corresponde a um possível material a ser usado no sistema de produção.",
+      "description": "Cada objeto desta array corresponde a um possível material a ser usado no sistema de produção.",
       "items": {
         "type": "object",
         "properties": {
@@ -1628,17 +1620,17 @@
           },
           "condutividade": {
             "type": "number",
-            "description": "Condutividade do material. Necessário em 0 ou 1.",
+            "description": "Condutividade do material. Necessário nos tipos 0 ou 1.",
             "unit": "W/m.K"
           },
           "calorEspecifico": {
             "type": "number",
-            "description": "Calor específico do material. Necessário em 0 ou 1.",
+            "description": "Calor específico do material. Necessário nos tipos 0 ou 1.",
             "unit": "J/kg.K"
           },
           "rho": {
             "type": "number",
-            "description": "Massa específica do material.  Necessário em 0 ou 1.",
+            "description": "Massa específica do material.  Necessário nos tipos 0 ou 1.",
             "unit": "kg/m3"
           },
           "visc": {
@@ -1656,7 +1648,7 @@
     },
     "secaoTransversal": {
       "type": "array",
-      "description": "Cada objeto dessa array corresponde a uma possível seção transversal a compor a tubulação.",
+      "description": "Cada objeto desta array corresponde a uma possível seção transversal a compor a tubulação.",
       "items": {
         "type": "object",
         "properties": {
@@ -1688,7 +1680,7 @@
           },
           "camadas": {
             "type": "array",
-            "description": "Cada objeto dessa array corresponde a uma camada na seção transversal. As camadas são montadas na seção da mais interna para a mais externa de acordo com a ordem de preenchimento no JSON.",
+            "description": "Cada objeto desta array corresponde a uma camada na seção transversal. As camadas são montadas na seção da mais interna para a mais externa de acordo com a ordem de preenchimento no JSON.",
             "items": {
               "type": "object",
               "properties": {
@@ -1778,7 +1770,7 @@
         },
         "gravaMomento": {
           "type": "array",
-          "description": "Instantes de tempo para gravação dos arquivos snapshot (.snt).",
+          "description": "Instantes de tempo para gravação dos arquivos snapshot (.snp).",
           "items": {
             "type": "number",
             "unit": "s"
@@ -1788,7 +1780,7 @@
     },
     "dutosProducao": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a um duto de produção. Mudanças de duto geralmente são motivadas por mudanças de diâmetro, propriedade da tubulação, seção transversal ou inclinação.",
+      "description": "Cada objeto dentro desta array corresponde a um duto de produção. Mudanças de duto geralmente são motivadas por mudanças de diâmetro, propriedade da tubulação, seção transversal ou inclinação.",
       "items": {
         "type": "object",
         "properties": {
@@ -1807,21 +1799,21 @@
           },
           "xCoor": {
             "type": "number",
-            "description": "Coordenada X da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+            "description": "Coordenada X da posição final do duto em questão, usada para inferência do comprimento e inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
             "unit": "m"
           },
           "yCoor": {
             "type": "number",
-            "description": "Coordenada Y da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+            "description": "Coordenada Y da posição final do duto em questão, usada para inferência do comprimento e inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
             "unit": "m"
           },
           "idCorte": {
             "type": "integer",
-            "description": "ID da seção transversal da qual o duto é composta."
+            "description": "ID da seção transversal do duto."
           },
           "idFormacao": {
             "type": "integer",
-            "description": "ID da formação com o qual o duto troca calor. Se não estiver informado, não há formação; ou seja, o duto troca calor com fluido termicamente acoplado a ele ou com o ambiente marítimo ou aéreo."
+            "description": "ID da formação rochosa com o qual o duto troca calor. Se não estiver informado, não há formação; ou seja, o duto troca calor com fluido termicamente acoplado a ele ou com o ambiente externo, marítimo ou aéreo."
           },
           "ambienteExterno": {
             "type": "integer",
@@ -1858,7 +1850,7 @@
           },
           "discretizacao": {
             "type": "array",
-            "description": "Os objetos dessa array especificam a lógica de discretização aplicada no duto (quantidade e comprimento das células). Válido para agrupamento = true e configuracaoInicial.modoXY = false.",
+            "description": "Os objetos desta array especificam a lógica de discretização aplicada no duto (quantidade e comprimento das células). Válido para agrupamento = true e configuracaoInicial.modoXY = false.",
             "items": {
               "type": "object",
               "properties": {
@@ -1915,7 +1907,7 @@
               },
               "holdup": {
                 "type": "array",
-                "description": "Holdup da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes,somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
+                "description": "Holdup da condição inicial nas posições relativas do duto definidas na variável 'compInter'. Válido  para simulações transientes, somente para inicialização via condições iniciais ativa, ou seja, se configuracaoInicial: {condicaoInicial: 0}.",
                 "items": {
                   "type": "number"
                 }
