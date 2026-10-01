@@ -53,14 +53,13 @@ Broader contributions will be accepted once the refactoring settles. See
 | [Python package](marlim3/README.md) | Python API, bilingual interface, scripting |
 | [Model reference](docs/single-branch-model-reference/index.md) | Every input section, key and unit |
 | [Theory](docs/theoretical-reference/index.md) | Governing equations and discretization |
-| [Developer guide](docs/dev-guide/index.md) | Engine internals |
 | [Tutorials](docs/tutorials) | Step-by-step notebooks |
 | [Desktop application](marlim3_desktop/README.md) | Platform notes and diagnostics |
 | [Regression tool](regression_tool/README.md) | Model registration and native coverage |
 | [Tests](tests/README.md) | Test suite and regression references |
 
 The full documentation is published at
-[petrobras.github.io/marlim3](https://petrobras.github.io/marlim3/).
+[marlim3.readthedocs.io](https://marlim3.readthedocs.io/).
 
 ## Contributing
 
