@@ -31,6 +31,18 @@ endif()
 
 project(Marlim3 VERSION ${MARLIM3_VERSION} LANGUAGES CXX Fortran)
 
+if(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(MARLIM_GNU_FORTRAN_RUNTIME_LIBS gfortran)
+    execute_process(
+        COMMAND "${CMAKE_Fortran_COMPILER}" "-print-file-name=libquadmath.a"
+        OUTPUT_VARIABLE MARLIM_QUADMATH_STATIC
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(IS_ABSOLUTE "${MARLIM_QUADMATH_STATIC}" AND EXISTS "${MARLIM_QUADMATH_STATIC}")
+        list(APPEND MARLIM_GNU_FORTRAN_RUNTIME_LIBS quadmath)
+    endif()
+endif()
+
 option(MARLIM_STATIC_GNU_RUNTIMES "Prefer static GNU runtimes where supported" ON)
 option(MARLIM_MINGW_STATIC "Build a fully static executable with MinGW" ON)
 set(MARLIM_FORTRAN_LIBS "" CACHE STRING "Additional Fortran runtime libraries to link explicitly")
@@ -160,7 +172,7 @@ if(MARLIM_LINUX_STATIC_RUNTIMES)
     # Link GNU runtimes statically; keep pthread/dl dynamic for static libgomp dependencies.
     target_link_options(Marlim3 PRIVATE -static-libgcc -static-libstdc++)
     target_link_libraries(Marlim3 PRIVATE
-        -Wl,-Bstatic gfortran quadmath gomp -Wl,-Bdynamic
+        -Wl,-Bstatic ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS} gomp -Wl,-Bdynamic
         -Wl,--push-state,-Bdynamic pthread dl -Wl,--pop-state)
 
 elseif(MARLIM_MACOS_STATIC_RUNTIMES)
@@ -228,7 +240,7 @@ elseif(MARLIM_STATIC_GNU_RUNTIMES AND MINGW
     endif()
 
 elseif(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(Marlim3 PRIVATE gfortran quadmath)
+    target_link_libraries(Marlim3 PRIVATE ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS})
 endif()
 
 if(MARLIM_FORTRAN_LIBS)
@@ -299,7 +311,7 @@ if(MARLIM_BUILD_TESTS)
     endif()
 
     if(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-        target_link_libraries(test_friction_factor PRIVATE gfortran quadmath)
+        target_link_libraries(test_friction_factor PRIVATE ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS})
     endif()
 
     if(MARLIM_FORTRAN_LIBS)
