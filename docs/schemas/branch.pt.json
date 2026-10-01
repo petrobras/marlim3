@@ -393,7 +393,7 @@
               "type": "number",
               "default": 10,
               "unit": "kg/(s.m)",
-              "description": "Desliga  o calor latente em processos de transferência de massa (condensação ou evaporação) na equação de energia na mistura para pontos em que a transferência de massa entre fases é maior que o valor definido neste parâmetro. Assim como a variável configuracaoInicial: {condLatente}, é útil em casos extremos e pouco comuns de condensação retrógrada (óleos de comportamento exótico, principalmente em modelos composicionais)."
+              "description": "Desliga  o calor latente em processos de transferência de massa (condensação ou evaporação) na equação de energia da mistura para pontos em que a transferência de massa entre fases é maior que o valor definido neste parâmetro. Assim como a variável configuracaoInicial: {condLatente}, é útil em casos extremos e pouco comuns de condensação retrógrada (óleos de comportamento exótico, principalmente em modelos composicionais)."
             },
             "RelaxaDTChoke": {
               "type": "boolean",
@@ -483,7 +483,7 @@
             },
             "Tsonico": {
               "type": "array",
-              "description": "Instantes de tempo que, em combinação com o array 'sonico', serão utilizados para determinar quando o simulador utilizará passos de tempo pequenos o suficiente (de acordo com a condição CFL sônica) para capturar fenômenos sônicos, relacionados a ondas de pressão. Atentar para o fato de que o Marlim 3, por trabalhar com modelos de primeira ordem, não tem uma boa resolução para esse tipo de fenômeno este parâmetro proporciona meramente um mecanismo de mitigação para minimizar os potenciais erros na representação desses eventos.",
+              "description": "Instantes de tempo que, em combinação com o array 'sonico', serão utilizados para determinar quando o simulador utilizará passos de tempo pequenos o suficiente (de acordo com a condição CFL sônica) para capturar fenômenos sônicos, relacionados a ondas de pressão. Atentar para o fato de que o Marlim 3, por trabalhar com modelos de primeira ordem, não tem uma boa resolução para esse tipo de fenômeno. Este parâmetro proporciona meramente um mecanismo de mitigação para minimizar os potenciais erros na representação desses eventos.",
               "items": {
                 "type": "number",
                 "unit": "s"
@@ -491,7 +491,7 @@
             },
             "sonico": {
               "type": "array",
-              "description": "Indicam, nos instantes de tempo especificados pelo array 'Tsonico', se o simulador utilizará passos de tempo pequenos o suficiente (de acordo com a condição CFL sônica) para capturar fenômenos sônicos, relacionados a ondas de pressão. Atentar para o fato de que o Marlim 3, por trabalhar com modelos de primeira ordem, não tem uma boa resolução para esse tipo de fenômeno este parâmetro proporciona meramente um mecanismo de mitigação para minimizar os potenciais erros na representação desses eventos.",
+              "description": "Indicam, nos instantes de tempo especificados pelo array 'Tsonico', se o simulador utilizará passos de tempo pequenos o suficiente (de acordo com a condição CFL sônica) para capturar fenômenos sônicos, relacionados a ondas de pressão. Atentar para o fato de que o Marlim 3, por trabalhar com modelos de primeira ordem, não tem uma boa resolução para esse tipo de fenômeno. Este parâmetro proporciona meramente um mecanismo de mitigação para minimizar os potenciais erros na representação desses eventos.",
               "items": {
                 "type": "integer"
               }
@@ -742,7 +742,7 @@
         "fatorFric": {
       	   "type": "integer",
            "default": 0,
-           "description": "Opção de se usar a aproximação de Serghides que calcula o fator de fricção sem a necessidade de processos iterativos, se zero, utiliza-se o fator de fricção usual com iterações, se 1, utiliza-se Serghides, o default é zero.."
+           "description": "Opção de se usar a aproximação de Serghides que calcula o fator de fricção sem a necessidade de processos iterativos. Se zero, utiliza-se o fator de fricção usual com iterações; se 1, utiliza-se Serghides. O default é zero."
          }
       }
     },
@@ -786,7 +786,7 @@
       "properties": {
         "ativo": {
           "type": "boolean",
-          "description": "Indica se o gás está ou não ativo."
+          "description": "Indica se o gás está ou não ativo. Estando inativo, o simulador usa um gás default com a densidade do metano, instanciado internamente."
         },
         "densidadeGas": {
           "type": "number",
