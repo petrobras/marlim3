@@ -48,7 +48,7 @@
         "condlatente": {
           "type": "boolean",
           "default": true,
-          "description": "Se false, desliga o calor latente em processos de transferência de massa de condensação na equação de energia na mistura, o que é útil em casos extremos e pouco comuns de condensação retrógrada (óleos de comportamento exótico, principalmente em modelos composicionais)."
+          "description": "Se FALSE, desliga o calor latente em processos de transferência de massa de condensação na equação de energia na mistura, o que é útil em casos extremos e pouco comuns de condensação retrógrada (óleos de comportamento exótico, principalmente em modelos composicionais)."
         },
         "pvtsimArq": {
           "type": "string",
