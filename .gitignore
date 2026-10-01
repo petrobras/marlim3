@@ -110,7 +110,6 @@ output/
 docs/_build/
 docs/build/
 site/
-llm-context/
 
 # IDEs e editores
 .vscode/
