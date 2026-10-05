@@ -290,6 +290,9 @@ class FloweditConversion:
             # Obter referência ao "configuracaoInicial" do json:
             initialConfigNode = json_data.get("configuracaoInicial", {})
 
+            # Aproveitando para garantir:
+            initialConfigNode["sentidoGeometriaSegueEscoamento"] = True
+
             # Verificar se existe linha de serviço e ligar o "linhaGas", se for o caso:
             if (sJsonFileNodeToWriteUnder == "dutosServico"):
                 initialConfigNode["linhaGas"] = not bPipeObjectListIsNone
