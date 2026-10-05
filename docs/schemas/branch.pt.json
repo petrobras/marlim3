@@ -2059,7 +2059,7 @@
           },
           "correlacaoMR2": {
             "type": "integer",
-            "description": "Correlação caixa-preta utilizada no duto, quando o modelo de drift está desabilitado (configuracaoInicial: tipoModeloDrift = false). Válida para o regime permanente. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill com correção de Palmer; 13 = Dukler, Eaton e Flanigan;  14 = Dukler e Minami I; 15 = Dukler e Minami II; 16 = Gomez."
+            "description": "Correlação empírica de gradiente de pressão utilizada no duto, quando o modelo Drift-Flux 1D está desabilitado (configuracaoInicial: tipoModeloDrift = false). Válida para o regime permanente. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill com correção de Palmer; 13 = Dukler, Eaton e Flanigan;  14 = Dukler e Minami I; 15 = Dukler e Minami II; 16 = Gomez."
           },
           "acoplamentoTermicoRedeParalela": {
             "type": "integer",
@@ -2092,7 +2092,7 @@
     },
     "dutosServico": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a um duto de serviço. Mudanças de duto geralmente são motivadas por mudanças de diâmetro, propriedade da tubulação, seção transversal ou inclinação.",
+      "description": "Cada objeto dentro desta array corresponde a um duto de serviço. Mudanças de duto geralmente são motivadas por mudanças de diâmetro, propriedade da tubulação, seção transversal ou inclinação.",
       "items": {
         "type": "object",
         "properties": {
@@ -2111,21 +2111,21 @@
           },
           "xCoor": {
             "type": "number",
-            "description": "Coordenada X da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+            "description": "Coordenada X da posição final do duto em questão, usada para inferência do comprimento e inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
             "unit": "m"
           },
           "yCoor": {
             "type": "number",
-            "description": "Coordenada Y da posição final do duto em questão, usada para inferência da inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
+            "description": "Coordenada Y da posição final do duto em questão, usada para inferência do comprimento e inclinação do duto. Válido para configuracaoInicial: {modoXY: true} (caso contrário, a inclinação do duto é obtida diretamente da variável 'angulo').",
             "unit": "m"
           },
           "idCorte": {
             "type": "integer",
-            "description": "ID da seção transversal da qual o duto é composta."
+            "description": "ID da seção transversal do duto."
           },
           "idFormacao": {
             "type": "integer",
-            "description": "ID da formação com o qual o duto troca calor. Se não estiver informado, não há formação; ou seja, o duto troca calor apenas com fluido termicamente acoplado a ele ou com o ambiente marítimo ou aéreo."
+            "description": "ID da formação rochosa com a qual o duto troca calor. Se não estiver informado, não há formação; ou seja, o duto troca calor apenas com fluido termicamente acoplado a ele ou com o ambiente marítimo ou aéreo."
           },
           "ambienteExterno": {
             "type": "integer",
@@ -2448,7 +2448,7 @@
     },
     "bcs": {
       "type": "array",
-      "description": "Cada objeto dentro dessa array corresponde a uma bomba centrífuga submersa (BCS).",
+      "description": "Cada objeto dentro desta array corresponde a uma bomba centrífuga submersa (BCS).",
       "items": {
         "type": "object",
         "properties": {
@@ -2548,7 +2548,7 @@
     },
     "multibcs": {
   	"type": "array",
-  	"description": "Cada objeto dentro dessa array corresponde a uma bomba centrífuga submersa (BCS) modelada com marcha estágio a estágio (multibcs). Diferentemente do objeto 'bcs', no qual o cálculo de incremento de pressão e potência é feito de forma direta (multiplicando-se os valores de um estágio pelo número de estágios), no multibcs faz-se uma marcha interna, estágio a estágio, percorrendo todo o conjunto da BCS. Isso permite corrigir, a cada estágio, variáveis como título de gás livre e temperatura do fluido, com eventual impacto na viscosidade e na degradação do head indicado pela curva de bomba (geralmente obtida com água). Permite também definir curvas distintas dentro do conjunto (array 'curva'), o que é útil para BCS com estágios iniciais mais axiais (para manipular altas frações de gás na sucção) seguidos de estágios mais radiais. Ao longo da marcha, é possível calcular o ganho de temperatura devido às ineficiências de cada estágio. Para correntes bifásicas óleo-gás, pode-se desligar o equilíbrio termodinâmico (equilTerm = false), evitando a dissolução do gás no óleo a cada estágio e considerando-a apenas após a marcha.",
+  	"description": "Cada objeto dentro desta array corresponde a uma bomba centrífuga submersa (BCS) modelada com marcha estágio a estágio (multibcs). Diferentemente do objeto 'bcs', no qual o cálculo de incremento de pressão e potência é feito de forma direta (multiplicando-se os valores de um estágio pelo número de estágios), no multibcs faz-se uma marcha interna, estágio a estágio, percorrendo todo o conjunto da BCS. Isso permite corrigir, a cada estágio, variáveis como título de gás livre e temperatura do fluido, com eventual impacto na viscosidade e na degradação do head indicado pela curva de bomba (geralmente obtida com água). Permite também definir curvas distintas dentro do conjunto (array 'curva'), o que é útil para BCS com estágios iniciais mais axiais (para manipular altas frações de gás na sucção) seguidos de estágios mais radiais. Ao longo da marcha, é possível calcular o ganho de temperatura devido às ineficiências de cada estágio. Para correntes bifásicas óleo-gás, pode-se desligar o equilíbrio termodinâmico (equilTerm = false), evitando a dissolução do gás no óleo a cada estágio e considerando-a apenas após a marcha.",
   	"items": {
     	   "type": "object",
     	   "properties": {
@@ -3292,7 +3292,7 @@
     },
     "separador": {
       "type": "object",
-      "description": "Detalhamento da dinâmica da pressão à jusante da linha (separador).",
+      "description": "Detalhamento da dinâmica da pressão a jusante da linha (separador).",
       "properties": {
         "ativo": {
           "type": "boolean",
