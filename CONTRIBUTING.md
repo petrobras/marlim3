@@ -225,20 +225,18 @@ git switch branch-name            # switches branch
 git switch -c branch-name         # creates and switches to a new branch
 ```
 
-### Branches: `main` and `dev`
+### Branches
 
-The project uses two permanent branches:
+The project uses a single permanent branch:
 
-- `main`: contains only stable, tested code. **Never commit directly to it**.
-- `dev`: continuous integration branch. All development is merged here before going to `main`.
+- `main`: contains stable, tested code. All changes are integrated directly into `main` via pull requests from short-lived feature branches. **Never commit directly to `main`.**
 
 ### Workflow Diagram
-
 
 ```mermaid
 flowchart TB
     subgraph Start[Start]
-        A[Update your local repository<br/>git pull origin dev]
+        A[Update your local repository<br/>git pull origin main]
     end
 
     subgraph Feature[Feature Branch]
@@ -249,76 +247,54 @@ flowchart TB
 
     subgraph PR[Pull Request]
         E[git push origin feature/...]
-        F[Open Pull Request<br/>to dev]
+        F[Open Pull Request<br/>to main]
         G[Code review<br/>by peers]
         H{Approved?}
         I[Resolve conflicts<br/>and address feedback]
     end
 
-    subgraph MergeLocal[Local Merge]
-        ML1[git switch dev]
-        ML2[git merge feature/...]
-        ML3[git push origin dev]
-    end
-
-    subgraph Merge[Merge into dev]
-        J[Code integrated in dev]
+    subgraph Merge[Merge into main]
+        J[Code integrated in main]
     end
 
     subgraph Release[Release]
-        K[Periodically<br/>dev → main]
-        L[Stable<br/>code]
-        M[Tag v* created<br/>git tag vX.Y.Z]
-        N[CI/CD: build + tests<br/>on all 3 operating systems]
-        O[GitHub Release<br/>with published executables]
+        K[Tag v* created<br/>git tag vX.Y.Z]
+        L[CI/CD: build + tests<br/>on all 3 operating systems]
+        M[GitHub Release<br/>with published executables]
     end
 
     A --> B
     B --> C
     C --> D
     D --> E
-    D --> ML1
     E --> F
     F --> G
     G --> H
     H -->|No| I
     I --> C
     H -->|Yes| J
-    ML1 --> ML2
-    ML2 --> ML3
-    ML3 --> J
     J --> K
     K --> L
     L --> M
-    M --> N
-    N --> O
 
     style Start fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
     style Feature fill:#f1f8e9,stroke:#558b2f,stroke-width:2px
     style PR fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    style MergeLocal fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
     style Merge fill:#fce4ec,stroke:#c2185b,stroke-width:2px
     style Release fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 ```
 
 ### Step-by-step workflow
 
-1. **Update your local repository**: `git pull origin dev`
+1. **Update your local repository**: `git pull origin main`
 2. **Create a feature branch**: `git switch -c feature/feature-name`
 3. **Develop and commit** on your branch (keeping atomicity)
 4. **Update documentation** if the change affects behaviour or the input format (see [Updating documentation](#updating-documentation) below)
 5. **Test locally**: `uv run pytest tests/ -v`
 6. **When ready, push**: `git push origin feature/...`
-7. **Integrate into `dev`** via one of two paths:
-   - **Via Pull Request** *(recommended for larger changes or those requiring review)*:
-     1. Open a Pull Request from `feature/...` to `dev`
-     2. Wait for review and approval from peers
-     3. After approval, the branch is merged into `dev`
-   - **Via local merge** *(for smaller, already validated changes)*:
-     1. `git switch dev`
-     2. `git merge feature/feature-name`
-     3. `git push origin dev`
-8. **Periodically**, `dev` is merged into `main` after validation
+7. **Open a Pull Request** from `feature/...` to `main`
+8. **Wait for review and approval** from peers
+9. **After approval**, the branch is merged into `main`
 
 ### Updating documentation
 
@@ -387,7 +363,7 @@ Open `http://127.0.0.1:8000` and navigate to the changed pages to verify renderi
 
 ### Note on forks
 
-Ideally, feature branches would be created in personal fork repositories, merged into dev, and then pull requests opened to the Petrobras repository. However, this is only possible on personal computers, since Petrobras has blocked pushes to personal repositories. Therefore, on work computers, changes are made directly in the official repository.
+Ideally, feature branches would be created in personal fork repositories and pull requests opened from there to the Petrobras repository. However, this is only possible on personal computers, since Petrobras has blocked pushes to personal repositories. Therefore, on work computers, changes are made directly in the official repository.
 
 ### Resolving conflicts
 
@@ -406,7 +382,7 @@ Conflicts occur when two people modify the same lines of a file. Git marks these
 6. `git commit` (no additional message needed)
 
 **Tips for avoiding conflicts**:
-- Sync frequently with `dev`: `git pull origin dev`
+- Sync frequently with `main`: `git pull origin main`
 - Break large tasks into smaller ones
 - Communicate with the team about areas of code under development
 - Keep feature branches short-lived
@@ -458,7 +434,7 @@ test(motor): add test case for satellite well with gas lift
 
 ### Pull Requests
 
-All code incorporated into Marlim3 must arrive via a Pull Request to the `dev` branch. The PR is the moment for collaborative review.
+All code incorporated into Marlim3 must arrive via a Pull Request to the `main` branch. The PR is the moment for collaborative review.
 
 **Before opening a PR**:
 - Make sure tests pass locally (`uv run pytest tests/ -v`)
@@ -490,9 +466,8 @@ The `.github/workflows/build-test-release.yml` file defines the **Build, Test & 
 
 | Trigger | What it runs |
 |---|---|
-| Pull Request to `develop` or `main` | Python checks + build + tests |
-| Push to `develop` | Python checks + build + tests |
-| Push of tag `v*` | Everything above + desktop app builds + GitHub release + PyPI publication |
+| Pull Request to `main` | Python checks + build + tests |
+| Push to `main` | Python checks + build + tests |
 
 ### Pipeline stages
 
@@ -570,4 +545,4 @@ Each executable comes with a `.sha256` file for integrity verification. The Pyth
 
 ### Optimisation: skip duplicates
 
-The pipeline uses [`skip-duplicate-actions`](https://github.com/step-security/skip-duplicate-actions) to avoid re-running a workflow when a push to `develop` has identical content to a PR that already passed successfully. Tag pushes are never skipped.
+The pipeline uses [`skip-duplicate-actions`](https://github.com/step-security/skip-duplicate-actions) to avoid re-running a workflow when a push to `main` has identical content to a PR that already passed successfully. Tag pushes are never skipped.
