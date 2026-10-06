@@ -1,0 +1,979 @@
+{
+  "sistema": "MULTIFASICO",
+  "versao": "1.0",
+  "versaoJson": "1.3.9",
+  "configuracaoInicial": {
+    "AP": true,
+    "arquivoAP": "VFP.json",
+    "paralelizaAP": true,
+    "saidaClassica": true,
+    "sentidoGeometriaSegueEscoamento": true,
+    "linhaGas": false,
+    "saidaTela": false,
+    "equilibrioTermico": false,
+    "latente": false,
+    "condlatente": true,
+    "pvtsimArq": "fluidoPOH.tab",
+    "modoParafina": false,
+    "modeloFluidoTabelaFlash": false,
+    "modeloFluidoComposicional": false,
+    "modeloTabelaDinamica": false,
+    "modeloCp": 0,
+    "modeloJTL": 0,
+    "tabP": false,
+    "AS": false,
+    "trackRgo": false,
+    "trackDensidadeGas": false,
+    "correcaoDenGasLivreBlackOil": false,
+    "tabelaRSPB": false,
+    "propFluido": 0,
+    "iniFluidoP": 0,
+    "tabG": false,
+    "escorregamentoPermanente": true,
+    "escorregamentoTransiente": true,
+    "mapaArranjo": 0,
+    "condicaoInicial": 1,
+    "ordemperm": 1,
+    "modoXY": true,
+    "HISEP": 0,
+    "SalinidadeFluido": 0,
+    "controleDescarga": false,
+    "tipoFluido": 0,
+    "chutePerm": -1,
+    "transiente": false,
+    "transferenciaMassa": 0,
+    "CheckValve": 0,
+    "Avancado": {
+      "CriterioMonofasico": 0.00001,
+      "CriterioCondensacao": 0.001,
+      "CriterioBuscaFalsaCorda": 0.1,
+      "taxaDespre": 0.01,
+      "MedSimpPresFront": true,
+      "limTransMass": 10,
+      "RelaxaDTChoke": false,
+      "CriterioConvergPerm": 0.001,
+      "AceleraConvergPerm": true,
+      "escorregamentoCelulaContorno": true,
+      "correcaoContracorPerm": false,
+      "estabCol": false,
+      "corrigeContSep": true,
+      "acopColAnulPermForte": 0,
+      "mudaArea": 0,
+      "nthrd": 1,
+      "miniTabDinAtraso": 0,
+      "miniTabDinDp": 0,
+      "miniTabDinDt": 0,
+      "nthrdMatriz": 1,
+      "JTLiquidoSimple": 0
+    },
+    "condicaoPressao": {
+      "ativo": false,
+      "tempo": [
+        0
+      ]
+    },
+    "condicaoVazPres": {
+      "ativo": false,
+      "tempo": [
+        0
+      ]
+    },
+    "correlacoesPorArranjo": {
+      "estratificado": 1,
+      "bolhaGolfada": 1,
+      "anularChurn": 1
+    },
+    "Formacao": {
+      "Propriedades": [
+        {
+          "id": 0,
+          "rotulo": "Rocha típica",
+          "ativo": true,
+          "condutividade": 2.5,
+          "calorEspecifico": 1250,
+          "massaEspecifica": 2000
+        }
+      ],
+      "TempoProducao": 365
+    },
+    "tipoModeloDrift": true,
+    "xProdInicio": 0,
+    "yProdInicio": 0
+  },
+  "tempo": {
+    "tempos": [
+      0
+    ],
+    "dtmax": [
+      1
+    ]
+  },
+  "material": [
+    {
+      "id": 0,
+      "rotulo": "ACO",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 45,
+      "calorEspecifico": 500,
+      "rho": 7850
+    },
+    {
+      "id": 1,
+      "rotulo": "AISI-304",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 70,
+      "calorEspecifico": 460,
+      "rho": 4499.4
+    },
+    {
+      "id": 2,
+      "rotulo": "FABRIC",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 1,
+      "calorEspecifico": 2500,
+      "rho": 906.2
+    },
+    {
+      "id": 3,
+      "rotulo": "FIRST-ARMOUR",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 45,
+      "calorEspecifico": 460,
+      "rho": 7031
+    },
+    {
+      "id": 4,
+      "rotulo": "HDPE-YELLOW",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 0.259,
+      "calorEspecifico": 2300,
+      "rho": 936
+    },
+    {
+      "id": 5,
+      "rotulo": "HS-GLASS-FILAMENT",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 0.289,
+      "calorEspecifico": 2000,
+      "rho": 1018
+    },
+    {
+      "id": 6,
+      "rotulo": "PA11-NATURAL",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 0.195,
+      "calorEspecifico": 1700,
+      "rho": 1083.3
+    },
+    {
+      "id": 7,
+      "rotulo": "POLIPROPILENO-SOL",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 0.19,
+      "calorEspecifico": 2100,
+      "rho": 928
+    },
+    {
+      "id": 8,
+      "rotulo": "SECOND-ARMOUR",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 45,
+      "calorEspecifico": 460,
+      "rho": 7035
+    },
+    {
+      "id": 9,
+      "rotulo": "SYNTATIC FOAM",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 0.11,
+      "calorEspecifico": 2094,
+      "rho": 400
+    },
+    {
+      "id": 10,
+      "rotulo": "ZETAZ-WIRE",
+      "tipo": 0,
+      "ativo": true,
+      "condutividade": 45,
+      "calorEspecifico": 460,
+      "rho": 6660.4
+    }
+  ],
+  "fluidoGas": {
+    "ativo": true,
+    "fracCO2": 0,
+    "correlacaoCritica": 1,
+    "fracMolarUsuario": false,
+    "densidadeGas": 0.7,
+    "usaTabelaFlash": false
+  },
+  "fluidoComplementar": {
+    "ativo": false,
+    "tipoF": 0
+  },
+  "fluidosProducao": [
+    {
+      "id": 0,
+      "rotulo": "fluido",
+      "ativo": true,
+      "bsw": 0.5,
+      "rgo": 200,
+      "densidadeAgua": 1.03,
+      "api": 27,
+      "densidadeGas": 0.8,
+      "fracCO2": 0,
+      "correlacaoCritica": 1,
+      "modeloRsPb": 0,
+      "bswCorte": 1,
+      "tipoEmul": 0,
+      "modeloOleoVivo": 0,
+      "modeloOleoSubSaturado": 0,
+      "modeloOleoMorto": 3,
+      "modeloViscBlackOil": 0,
+      "modeloAguaBlackOil": 0
+    }
+  ],
+  "dutosProducao": [
+    {
+      "id": 0,
+      "rotulo": "poco",
+      "xCoor": 0,
+      "yCoor": 2881,
+      "idCorte": 0,
+      "ambienteExterno": 0,
+      "idFormacao": 0,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 58,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          65,
+          4
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 1,
+      "rotulo": "flow1",
+      "xCoor": 1275,
+      "yCoor": 2890.4,
+      "idCorte": 2,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 26,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          0.5,
+          0.5
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 2,
+      "rotulo": "riser1",
+      "xCoor": 2316,
+      "yCoor": 2898,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 21,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          0.5,
+          0.5
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 3,
+      "rotulo": "riser2",
+      "xCoor": 2510.5,
+      "yCoor": 2918.5,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 4,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 4,
+      "rotulo": "riser3",
+      "xCoor": 2705,
+      "yCoor": 3045.4,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 5,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 5,
+      "rotulo": "riser4",
+      "xCoor": 2899.5,
+      "yCoor": 3164.5,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 5,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 6,
+      "rotulo": "riser5",
+      "xCoor": 3093.9,
+      "yCoor": 3219.3,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 5,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 7,
+      "rotulo": "riser6",
+      "xCoor": 3288.4,
+      "yCoor": 3140,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 5,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 8,
+      "rotulo": "riser7",
+      "xCoor": 3482.9,
+      "yCoor": 3056.3,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 5,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 9,
+      "rotulo": "riser8",
+      "xCoor": 3677.4,
+      "yCoor": 3198,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 5,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 10,
+      "rotulo": "riser9",
+      "xCoor": 3871.9,
+      "yCoor": 3523,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 8,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 11,
+      "rotulo": "riser10",
+      "xCoor": 4066.4,
+      "yCoor": 4141.1,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 13,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          4
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 12,
+      "rotulo": "riser11",
+      "xCoor": 4286.2,
+      "yCoor": 5058,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 19,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          4,
+          25
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    },
+    {
+      "id": 13,
+      "rotulo": "riser12",
+      "xCoor": 4386.2,
+      "yCoor": 5056,
+      "idCorte": 1,
+      "ambienteExterno": 1,
+      "acoplamentoTermico": 0,
+      "direcaoConveccao": 0,
+      "agrupamento": true,
+      "nCelulas_XY": 3,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          25,
+          25
+        ],
+        "velExterna": [
+          1,
+          1
+        ]
+      },
+      "correlacaoMR2": 12
+    }
+  ],
+  "dutosServico": [
+    {
+      "id": 0,
+      "ambienteExterno": 0,
+      "agrupamento": true
+    }
+  ],
+  "secaoTransversal": [
+    {
+      "id": 0,
+      "rotulo": "POCO",
+      "ativo": true,
+      "anular": false,
+      "diametroInterno": 0.147092,
+      "rugosidade": 0.000178,
+      "camadas": [
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.018,
+          "discretizacao": 1,
+          "idMaterial": 1
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "rotulo": "RISER",
+      "ativo": true,
+      "anular": false,
+      "diametroInterno": 0.1651,
+      "rugosidade": 0.000178,
+      "camadas": [
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.018,
+          "discretizacao": 1,
+          "idMaterial": 0
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.047,
+          "discretizacao": 1,
+          "idMaterial": 7
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "rotulo": "LINHA",
+      "ativo": true,
+      "anular": false,
+      "diametroInterno": 0.1524,
+      "rugosidade": 0.000609601,
+      "camadas": [
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.01556,
+          "discretizacao": 1,
+          "idMaterial": 1
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.01141,
+          "discretizacao": 1,
+          "idMaterial": 6
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.01383,
+          "discretizacao": 1,
+          "idMaterial": 10
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00259,
+          "discretizacao": 1,
+          "idMaterial": 5
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00692,
+          "discretizacao": 1,
+          "idMaterial": 3
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00259,
+          "discretizacao": 1,
+          "idMaterial": 5
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00692,
+          "discretizacao": 1,
+          "idMaterial": 8
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00605,
+          "discretizacao": 1,
+          "idMaterial": 5
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.04479,
+          "discretizacao": 1,
+          "idMaterial": 4
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.01902,
+          "discretizacao": 1,
+          "idMaterial": 9
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00242,
+          "discretizacao": 1,
+          "idMaterial": 2
+        },
+        {
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.01591,
+          "discretizacao": 1,
+          "idMaterial": 4
+        }
+      ]
+    }
+  ],
+  "master1": {
+    "ativo": true,
+    "razaoAreaAtiva": 0.4,
+    "curvaCV": 0,
+    "tempo": [
+      0
+    ],
+    "abertura": [
+      1
+    ],
+    "comprimentoMedido": 2881
+  },
+  "master2": {
+    "ativo": false,
+    "tempo": [
+      0
+    ],
+    "abertura": [
+      1
+    ]
+  },
+  "chokeSup": {
+    "ativo": true,
+    "coeficienteDescarga": 0.84,
+    "curvaCV": 0,
+    "modelo": 0,
+    "tempo": [
+      0
+    ],
+    "abertura": [
+      1
+    ]
+  },
+  "chokeInj": {
+    "ativo": true,
+    "coeficienteDescarga": 0.9,
+    "tempo": [
+      0
+    ],
+    "abertura": [
+      1
+    ]
+  },
+  "fonteMassa": [
+    {
+      "id": 0,
+      "ativo": false,
+      "tipoTermo": 0,
+      "tempo": [
+        0
+      ]
+    }
+  ],
+  "fonteLiquido": [
+    {
+      "id": 0,
+      "rotulo": "res",
+      "ativo": true,
+      "indiFluidoPro": 0,
+      "comprimentoMedido": 0.1,
+      "tempo": [
+        0
+      ],
+      "temperatura": [
+        70
+      ],
+      "vazaoLiquido": [
+        3000
+      ]
+    }
+  ],
+  "fonteGas": [
+    {
+      "id": 0,
+      "rotulo": "VGL",
+      "ativo": true,
+      "comprimentoMedido": 1538,
+      "seco": true,
+      "indiFluidoPro": 0,
+      "tempo": [
+        0
+      ],
+      "temperatura": [
+        50
+      ],
+      "vazaoGas": [
+        200000
+      ],
+      "vazaoFluidoComplementar": [
+        0
+      ]
+    }
+  ],
+  "fonteGasLift": [
+    {
+      "id": 0,
+      "ativo": false,
+      "colunaEanular": true,
+      "tipoValvula": 0,
+      "cdvgl": 0.9,
+      "cdvLiq": 0.84,
+      "tempo": [
+        0
+      ]
+    }
+  ],
+  "valvula": [
+    {
+      "id": 0,
+      "ativo": false,
+      "curvaCV": 0,
+      "cd": 0.84,
+      "tempo": [
+        0
+      ]
+    }
+  ],
+  "bcs": [
+    {
+      "id": 0,
+      "ativo": false,
+      "tempo": [
+        0
+      ],
+      "correcHI": true
+    }
+  ],
+  "bombaVolumetrica": [
+    {
+      "id": 0,
+      "ativo": false,
+      "tempo": [
+        0
+      ]
+    }
+  ],
+  "deltaPressao": [
+    {
+      "id": 0,
+      "ativo": false,
+      "tipoCompGas": 0,
+      "eficLiq": 100,
+      "eficGas": 0,
+      "tempo": [
+        0
+      ]
+    }
+  ],
+  "fontePressao": [
+    {
+      "id": 0,
+      "ativo": false,
+      "tipoFluido": 1,
+      "TipoAbertura": 0,
+      "beta": 0,
+      "cd": 0.84,
+      "tempo": [
+        0
+      ]
+    }
+  ],
+  "parafina": {
+    "usuarioPorosidade": false,
+    "multVis": 1,
+    "porosidade": 0
+  },
+  "perfilProducao": {
+    "tempo": [
+      0
+    ],
+    "ativo": true,
+    "pressao": true,
+    "temperatura": true,
+    "holdup": true
+  },
+  "perfilServico": {
+    "tempo": [
+      0
+    ],
+    "ativo": true,
+    "pressao": true,
+    "temperatura": true
+  },
+  "separador": {
+    "ativo": true,
+    "tempo": [
+      0
+    ],
+    "pressao": [
+      25.5
+    ]
+  },
+  "gasInj": {
+    "ativo": true,
+    "tempo": [
+      0
+    ]
+  },
+  "CondicaoContPocInjec": {
+    "tipoFluido": 1
+  },
+  "fluidoGasLista": [
+    {
+      "id": 0,
+      "ativo": true,
+      "fracCO2": 0,
+      "correlacaoCritica": 1,
+      "fracMolarUsuario": false
+    }
+  ],
+  "tendP": [
+    {
+      "ativo": true,
+      "dt": 10
+    }
+  ],
+  "tendS": [
+    {
+      "ativo": true,
+      "dt": 10
+    }
+  ],
+  "configuracaoInicialMarlim2": {
+    "termico": true,
+    "uglobal": false,
+    "dmrcp": 0
+  }
+}
