@@ -859,7 +859,7 @@
           },
           "densidadeAgua": {
             "type": "number",
-            "description": "Densidade relativa da água em relação à água pura com rho = 1000 kg/cm^3. Válido para os três tipos de fluido.",
+            "description": "Densidade relativa da água em relação à água pura com rho = 1000 kg/m^3. Válido para os três tipos de fluido.",
             "default": 1
           },
           "tipoEmul": {
@@ -3764,7 +3764,7 @@
         },
         "temperaturaAmbiente": {
           "type": "boolean",
-          "description": "Temperatura ambiente (degC) referente ao ar atmosférico, água do mar ou formação (perfil geotérmico)."
+          "description": "Temperatura ambiente (degC) referente ao fluido no ambiente externo (ar atmosférico, água do mar, etc) ou formação (perfil geotérmico)."
         },
         "angulo": {
           "type": "boolean",
@@ -4096,7 +4096,7 @@
           },
           "comprimentoMedido": {
             "type": "number",
-            "description": "Comprimento medido do ponto na linha de produção."
+            "description": "Comprimento medido do ponto na linha de serviço."
           },
           "dt": {
             "type": "number",
