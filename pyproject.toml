@@ -76,6 +76,7 @@ docs = [
     "mkdocs-material>=9.5",
     "mkdocs-jupyter>=0.24",
     "mkdocs-markmap>=1.5",
+    "jsonschema-markdown",
 ]
 regression_tool = [
     "pytest>=8",
