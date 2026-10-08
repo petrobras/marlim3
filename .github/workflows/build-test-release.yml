@@ -80,11 +80,45 @@ jobs:
       - name: Import package
         run: uv run python -c "import marlim3; print(marlim3.__version__)"
 
+      - name: Test schema Markdown batch discovery
+        run: uv run pytest tests/test_schema_to_markdown.py
+
       - name: Lint (syntax / undefined names)
         run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Lint (full report, non-blocking)
         run: uv run flake8 . --count --exit-zero --statistics
+
+  docs-check:
+    name: Documentation / schema references
+    needs: pre_check
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          enable-cache: true
+
+      - name: Install documentation dependencies
+        run: uv sync --locked --group docs --no-install-project
+
+      - name: Generate schema references
+        run: uv run --no-sync python schema_to_markdown.py --batch
+
+      - name: Build documentation
+        run: uv run --no-sync mkdocs build
 
   # Build jobs: produce the native executable only. No tests here.
   build-linux:
@@ -92,6 +126,7 @@ jobs:
     needs:
       - pre_check
       - python-checks
+      - docs-check
     if: needs.pre_check.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
 
@@ -149,6 +184,7 @@ jobs:
     needs:
       - pre_check
       - python-checks
+      - docs-check
     if: needs.pre_check.outputs.should_skip != 'true'
     runs-on: windows-2022
 
@@ -210,6 +246,7 @@ jobs:
     needs:
       - pre_check
       - python-checks
+      - docs-check
     if: needs.pre_check.outputs.should_skip != 'true'
     runs-on: macos-15
 

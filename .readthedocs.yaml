@@ -8,7 +8,9 @@ build:
 
   jobs:
     pre_install:
-      - pip install mkdocs-material pymdown-extensions mkdocs-jupyter mkdocs-markmap==2.5.2 
+      - pip install mkdocs-material pymdown-extensions mkdocs-jupyter mkdocs-markmap==2.5.2 jsonschema-markdown==2026.8.0
+    pre_build:
+      - python schema_to_markdown.py --batch
 
 mkdocs:
   configuration: mkdocs.yml

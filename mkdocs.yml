@@ -69,12 +69,13 @@ nav:
     - Service Line: theoretical-reference/service-line.md
   - Schemas:
     - Overview: schemas/index.md
-    - Branch EN: schemas/branch.en.json
-    - Branch PT: schemas/branch.pt.json
-    - Network EN: schemas/network.en.json
-    - Network PT: schemas/network.pt.json
-    - Buried Line 2D PT: schemas/buried-line-2d.pt.json
-    - Porous Radial PT: schemas/porous-radial.pt.json
+    - Branch EN: schemas/generated/branch.en.md
+    - Branch PT: schemas/generated/branch.pt.md
+    - Network EN: schemas/generated/network.en.md
+    - Network PT: schemas/generated/network.pt.md
+    - Buried Line 2D PT: schemas/generated/buried-line-2d.pt.md
+    - Porous Radial PT: schemas/generated/porous-radial.pt.md
+    - Parametric Analysis PT: schemas/generated/leituraAP.pt.md
 
 extra:
   social:
