@@ -1,14 +1,14 @@
 # Fluids
 
-Fluid modeling is the thermodynamic foundation of the simulation. Nearly every governing equation — momentum, energy, mass transfer — depends on fluid properties: density, viscosity, enthalpy, compressibility, and phase split. If fluid data is inconsistent, pressure and temperature predictions degrade quickly.
+"Fluid modeling" regarding MARLIM 3 simulations denotes the methodology used to calculate thermophysical and transport properties of the flowing phases, such as density, viscosity, enthalpy, compressibility, and phase split, among others. These properties are explicitly or implicitly required by the governing conservation equations, i.e., continuity, momentum, and energy. The quality of predicted simulation key results such as pressure, temperature, holdup, and other quantities relies directly on the accuracy of these thermodynamic calculations.
 
 ## Thermodynamic Model Family
 
-Marlim3 supports three approaches to compute fluid properties, each with different fidelity and numerical cost:
+MARLIM 3 supports three approaches for computing fluid properties, which differ in terms of accuracy and CPU cost:
 
 ### Black-Oil Model
 
-The simplest and fastest approach. Fluid behavior is characterized by correlations that depend on API gravity, GOR, gas density, and BSW. Phase split is determined by a solution-gas-ratio (RS) correlation.
+The simplest approach, requiring little user input and no additional files. Fluid behavior is described by empirical black-oil correlations that depend on API gravity, GOR, gas density, and BSW. Phase split is determined by a solution gas/oil ratio (RS) correlation.
 
 ### Table File
 
