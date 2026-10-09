@@ -10,6 +10,7 @@ Each cross section has an integer identifier. Pipe segments reference the cross 
 
 > **JSON key:** `crossSection` (EN) · `secaoTransversal` (PT) — top-level array
 > Each element: `id` — integer identifier
+> Common field: `active` (EN) · `ativo` (PT) — boolean indicating whether the cross section is used in the simulation
 
 ---
 
@@ -32,7 +33,7 @@ All hydraulic calculations (Reynolds number, friction factor, holdup geometry) d
 
 For annular flow, the simulator needs both annulus boundaries. `outerDiameter` defines the **largest** diameter of the annular flow area.
 
-> **JSON key:** `outerDiameter` (EN) · `diametroExterno` (PT) — unit: m, valid when `annular = true`
+> **JSON key:** `outerDiameter` (EN) · `diametroExterno` (PT) — unit: m, valid only when `annular = true`
 
 ### Wall Roughness
 
@@ -42,12 +43,12 @@ Absolute roughness of the inner pipe surface, entering the Colebrook (or Moody) 
 
 ### Annular Flow Geometry
 
-Some well configurations have production occurring in the annulus between tubing and casing rather than inside the tubing. When annular geometry is indicated, hydraulic calculations use annular geometry built from:
+Some well configurations have flow occurring in the annulus between tubing and casing. When annular geometry is indicated, hydraulic calculations use annular geometry built from:
 
 - `innerDiameter` = smallest annulus-flow diameter
 - `outerDiameter` = largest annulus-flow diameter
 
-> **JSON key:** `annular` (EN) · `anular` (PT) — default `false`
+> **JSON key:** `annular` (EN) · `anular` (PT) — default: `false`
 
 ---
 
@@ -78,8 +79,9 @@ Two ways to specify layer size:
 
 > **JSON key:** `layerMeasurementType` (EN) · `tipoMedicaoCamada` (PT)
 > Values: `"THICKNESS"` (EN) / `"ESPESSURA"` (PT) or `"DIAMETER"` (EN) / `"DIAMETRO"` (PT)
+> **Default:** `"DIAMETRO"` (diameter mode)
 >
-> Thickness: `thickness` (EN) · `espessura` (PT) — unit: m
+> Thickness mode key: `thickness` (EN) · `espessura` (PT) — unit: m
 > Diameter mode key: `diameter` (EN) · `diametro` (PT) — unit: m
 
 If `layerMeasurementType` is omitted, default is diameter mode.
@@ -122,7 +124,7 @@ Practical implications:
 
 - **Layer consistency:** Layers nest concentrically. When using thickness mode, the outer radius of each layer is computed cumulatively from the inner diameter outward.
 - **Annular consistency:** For annular sections, ensure `outerDiameter > innerDiameter` and both represent annulus-flow boundaries (not wall-layer diameters).
-- **Roughness calibration:** If pressure-drop predictions deviate from field data, roughness is often the first parameter to calibrate (especially in old or scaled pipes).
+- **Roughness calibration:** If pressure-drop predictions deviate from field data, roughness is often a good candidate parameter to calibrate (especially in old or scaled pipes).
 - **Multiple cross sections:** Use different cross-section IDs for different pipe segments (e.g., one for the riser with thick insulation, another for the subsea flowline with concrete coating).
 - **Annular wells:** When annular geometry is active, ensure the layer structure reflects the casing/tubing arrangement correctly.
 - **Coupled annulus/column cases:** Configure thermal coupling in `productionPipe`, not in the cross-section object.
@@ -203,6 +205,3 @@ Practical implications:
 ```
 
 Where material IDs map to: `0` = steel, `1` = completion fluid (type 2), `2` = cement.
-
-!!! tip
-    Start with 1 node per layer for steady-state validation, then increase to 2–3 in insulation/cement layers for transient cooldown studies where radial resolution matters.
