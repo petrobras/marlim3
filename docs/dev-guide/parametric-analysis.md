@@ -335,6 +335,33 @@ The code uses the IMEX selection/header path:
 
 The resulting table dimensions follow the active AP dimensions. `saidaBHP` is allocated as `[nVariaveis][dim + 1]`, while `saidaVazLiq` is allocated as `[nVariaveis][APFonLiq[0].parserieVL]` when table generation is enabled.
 
+### Outlet-temperature companion tables
+
+Every `tipoAP == 1` run automatically writes an outlet-temperature table alongside
+the BHP table, with no additional simulations or input options:
+
+| `vfp` | BHP output | Temperature output | Temperature designation |
+|-------|------------|--------------------|-------------------------|
+| 0 | `bhpsIMEX.imx` | `whtsIMEX.imx` | `WHT` |
+| 1 | `bhpsEclipse.ecp` | `thtsEclipse.ecp` | `THT` |
+| 2 | `bhpsIMEXnew.imx` | `whtsIMEXnew.imx` | `WHT` |
+| 3 | `bhpsEclipsenew.ecp` | `thtsEclipsenew.ecp` | `THT` |
+
+Temperature is in degrees Celsius at the outlet-pressure boundary represented
+by the `THP`/`WHP` axis (`psep`). When there is a surface-choke pressure drop,
+the existing steady-state choke correction gives the downstream temperature;
+otherwise the last-cell temperature is used. Both Eclipse modes declare
+`METRIC`, including mode 3, which previously incorrectly declared `FIELD`.
+The mode-0 temperature keyword is `*WHT`, rather than a `WHTTO` substitution
+of the legacy pressure keyword `*BHPTO`.
+
+The paired tables share axes, case indices, row grouping, and precision.
+Eclipse rows group liquid rates; IMEX rows group separator pressures. Failed
+cases retain their grid positions with `-1e10` in both tables. Serial and
+parallel AP use the same table writer. Existing BHP outputs (apart from the
+mode-3 unit-header correction), generic table columns, and AP summary
+temperature definitions are unchanged.
+
 ---
 
 ## Output Files
