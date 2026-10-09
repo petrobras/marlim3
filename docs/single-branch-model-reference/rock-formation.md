@@ -37,9 +37,9 @@ Each entry in `properties` defines one rock type used by one or more pipe segmen
 Each element contains:
 
 - `id` · `id`
-- `conductivity` · `condutividade` [W/(m.degC)]
-- `specificHeat` · `calorEspecifico` [J/(kg.degC)]
-- `density` · `massaEspecifica` [kg/m3]
+- `conductivity` · `condutividade` [W/(m·°C)]
+- `specificHeat` · `calorEspecifico` [J/(kg·°C)]
+- `density` · `massaEspecifica` [kg/m³]
 
 The volumetric thermal storage is $\rho C_p$, and thermal diffusivity is:
 
@@ -54,7 +54,6 @@ Higher $\alpha$ propagates temperature fronts faster into the formation.
 ## Practical Modeling Notes
 
 - Use different formation IDs where lithology changes materially along depth/length.
-- Avoid unrealistically low conductivity, which can over-insulate the line and overpredict retained heat.
 - Buried lines often use formation coupling; exposed subsea lines often rely on seawater environment instead.
 
 ---
