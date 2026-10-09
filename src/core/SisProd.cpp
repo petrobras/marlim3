@@ -13151,10 +13151,11 @@ void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, P
         if ((*vg1dSP).lixo5 < 1e-15) {
             for(int ic=0; ic<arq.vecCaixa.size(); ic++){
             		int posic=arq.vecCaixa[ic].posic;
-            		arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
-            			                      celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
-        									  celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
-        									  celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
+            		arq.vecCaixa[ic].estadotermo(celula[posic],celula[posic+1]);
+            		//arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
+            			                      //celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
+        									  //celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
+        									  //celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
             }
         	for(int iCelU=0;iCelU<arq.nCelUnit;iCelU++)kontaTempoCelUni[iCelU]=1;
             for (int i = 0; i < arq.ntendp; i++) {
@@ -13479,10 +13480,11 @@ void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, P
 
     for(int ic=0; ic<arq.vecCaixa.size(); ic++){
      		int posic=arq.vecCaixa[ic].posic;
-     		arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
-     			                      celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
- 									  celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
- 									  celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
+     		arq.vecCaixa[ic].estadotermo(celula[posic],celula[posic+1]);
+     		//arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
+     			                      //celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
+ 									  //celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
+ 									  //celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
      }
 
     tVet.push_back(dt);

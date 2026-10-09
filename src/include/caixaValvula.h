@@ -13,6 +13,7 @@
 #include "PropFluCol.h"
 #include "variaveisGlobais1D.h"
 #include "TrocaCalor.h"
+#include "celula3.h"
 
 class caixaValv {
   public:
@@ -81,8 +82,11 @@ class caixaValv {
     double calcAbertura();
     void atualizaAberturaCaixa();
     void atualizaFontesCaixa(double& Mass, double *serieM);
-	void estadotermo(double pmon, double tmon, double alfmon, double betmon, double massmon, double massLmon, ProFlu fluimon, ProFluCol fluiCmon,
-			double pjus, double tjus, double alfjus, double betjus, double massjus, double massLjus, ProFlu fluijus, ProFluCol fluiCjus, double dt=0.);
+	//void estadotermo(double pmon, double tmon, double alfmon, double betmon, double massmon, double massLmon, ProFlu fluimon,
+			//ProFluCol fluiCmon,
+			//double pjus, double tjus, double alfjus, double betjus, double massjus, double massLjus,
+			//ProFlu fluijus, ProFluCol fluiCjus, double dt=0.);
+	void estadotermo(Cel& celulaM,Cel& celulaJ);
 };
 
 
