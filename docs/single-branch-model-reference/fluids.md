@@ -1,10 +1,10 @@
 # Fluids
 
-"Fluid modeling" regarding MARLIM 3 simulations denotes the methodology used to calculate thermophysical and transport properties of the flowing phases, such as density, viscosity, enthalpy, compressibility, and phase split, among others. These properties are explicitly or implicitly required by the governing conservation equations, i.e., continuity, momentum, and energy. The quality of predicted simulation key results such as pressure, temperature, holdup, and other quantities relies directly on the accuracy of these thermodynamic calculations.
+"Fluid modeling" regarding `Marlim3` simulations denotes the methodology selected by the user to calculate thermophysical and transport properties of the flowing phases, such as density, viscosity, enthalpy, compressibility, and phase split, among others. These properties are explicitly or implicitly required by the governing conservation equations, i.e., continuity, momentum, and energy. The quality of predicted simulation key results such as pressure, temperature, holdup, and other quantities relies directly on the accuracy of these thermodynamic calculations.
 
-## Thermodynamic Model Family
+## Available options
 
-MARLIM 3 supports three approaches for computing fluid properties, which differ in terms of accuracy and CPU cost:
+`Marlim3` supports three approaches for computing fluid properties, which differ in terms of accuracy and CPU cost:
 
 ### Black-Oil Model
 
@@ -12,7 +12,11 @@ The simplest approach, requiring little user input and no additional files. Flui
 
 ### Table File
 
-Precomputed fluid properties from external software (PVTsim, Multiflash) stored in `.tab` files. The simulator interpolates properties at each P-T condition from this table. Accurate within the table range but depends entirely on the quality and coverage of the external data.
+Requires specification of a separate "\*.tab" file, written in `Key` standard format as exported by the most widely used thermodynamic simulation softwares (e.g., PVTSIM and MULTIFLASH).
+
+Values of the aforementioned properties for each flowing phase are provided in this "\*.tab" file in matrix form for every possible combination of predefined pressures and temperatures. `Marlim3` interpolates thermophysical and transport properties from the "\*.tab" file during simulations at required P-T conditions.
+
+While good precision is obtained within the table pressure and temperature ranges, accuracy relies entirely on the quality of the external data.
 
 ### Compositional Model
 
