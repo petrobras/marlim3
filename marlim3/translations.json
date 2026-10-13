@@ -44,7 +44,6 @@
     "productionPipe": "dutosProducao",
     "servicePipe": "dutosServico",
     "hydrate": "hidrato",
-    "chokeSource": "fonteChoke",
     "esp": "bcs",
     "multiESP": "multibcs",
     "volumetricPump": "bombaVolumetrica",
@@ -301,9 +300,7 @@
     "valveType": "tipoValvula",
     "orificeDiameter": "diametroOrificio",
     "vglDischCoef": "cdvgl",
-    "recoveryFactor": "frecupera",
     "liquidDischCoef": "cdvLiq",
-    "liquidRecoveryFactor": "frecuperaLiq",
     "areaRatio": "razaoArea",
     "calibrationPressure": "pressaoCalibracao",
     "calibrationTemperature": "temperaturaCalibracao",
@@ -486,7 +483,8 @@
     "liquidInventory": "inventarioLiq",
     "printTime": "tempoImpres",
     "unitCellDetail": "detalheCelulaUnitaria",
-    "user": "usuario"
+    "user": "usuario",
+    "icvTime": "tempoICV"
   },
   "values": {
     "layerMeasurementType": {
