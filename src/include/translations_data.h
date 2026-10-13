@@ -50,7 +50,6 @@ static const char TRANSLATIONS_JSON_RAW[] = R"TJSON(
     "productionPipe": "dutosProducao",
     "servicePipe": "dutosServico",
     "hydrate": "hidrato",
-    "chokeSource": "fonteChoke",
     "esp": "bcs",
     "multiESP": "multibcs",
     "volumetricPump": "bombaVolumetrica",
@@ -307,9 +306,7 @@ static const char TRANSLATIONS_JSON_RAW[] = R"TJSON(
     "valveType": "tipoValvula",
     "orificeDiameter": "diametroOrificio",
     "vglDischCoef": "cdvgl",
-    "recoveryFactor": "frecupera",
     "liquidDischCoef": "cdvLiq",
-    "liquidRecoveryFactor": "frecuperaLiq",
     "areaRatio": "razaoArea",
     "calibrationPressure": "pressaoCalibracao",
     "calibrationTemperature": "temperaturaCalibracao",
@@ -492,7 +489,8 @@ static const char TRANSLATIONS_JSON_RAW[] = R"TJSON(
     "liquidInventory": "inventarioLiq",
     "printTime": "tempoImpres",
     "unitCellDetail": "detalheCelulaUnitaria",
-    "user": "usuario"
+    "user": "usuario",
+    "icvTime": "tempoICV"
   },
   "values": {
     "layerMeasurementType": {
