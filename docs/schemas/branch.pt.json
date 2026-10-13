@@ -713,10 +713,6 @@
             }
           }
         },
-        "razCompGasReves": {
-          "type": "number",
-          "description": ""
-        },
         "pocoTermAxiSim": {
           "type": "boolean",
           "default": false,
