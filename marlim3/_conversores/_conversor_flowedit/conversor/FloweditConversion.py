@@ -483,6 +483,12 @@ class FloweditConversion:
 
         # Método para instanciar rochas a partir da tabela de "Rochas" da Flowedit
     def __CreateRockObjects(self, rock_lines: List[List[str]]) -> List[RockObject]:
+        if rock_lines and len(rock_lines[0]) < 5:
+            raise ValueError(
+                f"Tabela 'Rochas' da aba 'Modelo Marlim 3' com {len(rock_lines[0])} colunas; esperadas 5 "
+                "(id, Rótulo, Condutividade, Calor específico, Massa específica). "
+                "A planilha foi gerada por uma versão desatualizada da FLOWedit: "
+                "atualize-a para a versão 2026 (ou posterior) e gere novamente o modelo Marlim 3 na planilha.")
         rock_objects = []
         for i, line in enumerate(rock_lines):
             rock_object = RockObject(i, line)

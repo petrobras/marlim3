@@ -257,6 +257,8 @@ class PipeObject:
         else:
             if sThermalCoupling.strip() == "Não":
                 self.iThermalCoupling = 0
+            else:
+                raise ValueError(f"Acoplamento térmico inválido no duto '{self.sPipeLabel}' [{sLabelSuffix}]: {sThermalCoupling!r} (esperado 'Sim' ou 'Não')")
 
         # Direção da convecção:
         sConvectionDirection = oExcelLine[8]       
