@@ -46,6 +46,10 @@ pip-delete-this-directory.txt
 *.spec
 !marlim3_desktop/packaging/*.spec
 
+# Conversor FLOWedit: planilhas e logs de conversão (podem conter dados confidenciais)
+*[Ff][Ll][Oo][Ww][Ee][Dd][Ii][Tt]*.[Xx][Ll][Ss][Mm]
+Log_ConversaoFLOWedit_MARLIM3.txt
+
 # Python cache, testes e tipagem
 __pycache__/
 *.py[cod]
