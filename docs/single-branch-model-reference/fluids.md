@@ -20,7 +20,13 @@ While good precision is obtained within the table pressure and temperature range
 
 ### Compositional Model
 
-A rigorous thermodynamic model where the fluid is described by pseudocomponent molar fractions and equilibrium is computed via flash calculations. Required for rich-gas/condensate systems or when composition changes significantly along the simulation. More expensive computationally.
+A rigorous thermodynamic model in which production fluids (and also gas fluid) are described in terms of its component compositions and EOS-based characterization (e.g., critical properties, acentric factors, etc). With the exception of water (which should be specified via BSW), the pseudocomponent mixture is flashed to determine oil and vapour amounts, compositions and the aforementioned in-situ properties.
+
+Therefore, water does not appear in the vapour phase.
+
+This approach is required for rich-gas/condensate systems or when compositions change significantly as the simulation progresses. It is also the the most CPU-expensive fluid-modeling option.
+
+## JSON Input
 
 > **JSON keys (inside global config):**
 >
@@ -29,8 +35,6 @@ A rigorous thermodynamic model where the fluid is described by pseudocomponent m
 > - PVT file: `pvtFile` (EN) · `pvtsimArq` (PT)
 
 When both flags are `false`, the black-oil model is used. When both flags are `true`, the flash-table model is used.
-
-
 
 **File format convention:**
 
@@ -66,7 +70,7 @@ When both flags are `false`, the black-oil model is used. When both flags are `t
    In flash-table mode, correlation keys such as `deadOilModel`, `liveOilModel`, and `undersaturatedOilModel` are only active when `blackOilViscModel = 1`.
 
 !!! note
-    In compositional mode, black-oil correlations are used to compute gas viscosities, therefore black oil properties are needed.
+    In compositional mode, black-oil correlations are used to compute viscosities, therefore black oil properties are needed.
 
 ---
 
@@ -92,7 +96,7 @@ There is no single universal “required set” for all modes. Requirements depe
 | `deadOilModel`, `liveOilModel`, `undersaturatedOilModel` | used | conditional | used | In flash-table mode, used only with `blackOilViscModel = 1` |
 | `temp1`, `visc1`, `temp2`, `visc2`, `deadOilTemp`, `deadOilVisc` | conditional | conditional | conditional | Needed only for selected viscosity models |
 | `molarFraction`, `userMolarFraction` | not used | not used | optional | Compositional-only keys, used to input molar fractions not present in the CTM file |
-| `userGORComp` / `RGOCompUsuario` | not used | not used | optional | Corrects composition to match GOR |
+| `userGORComp` / `RGOCompUsuario` | not used | not used | optional | Corrects composition to match user-specified GOR |
 
 !!! note
   Most schema fields are optional, as they rely on preprogrammed defaults.
@@ -328,7 +332,7 @@ Required grid parameters (inside `compTable` / `tabela`):
 
 ## Complementary Fluid
 
-Some systems carry a **third liquid phase** that is inert, does not dissolve in gas, and does not slip relative to the hydrocarbon mixture. Examples include:
+Some systems carry a **third liquid phase** that is inert (i.e., does not dissolve gas) and does not slip relative to the hydrocarbon mixture. Examples include:
 
 - Glycol or ethanol cushions (hydrate prevention before master valve opening)
 - Chemical inhibitors
