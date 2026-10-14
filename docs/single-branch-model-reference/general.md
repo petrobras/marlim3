@@ -55,8 +55,9 @@ These two flags are the most fundamental controls in the entire configuration.
   If `false`, inclinations are specified explicitly via angles in pipe segment definitions.
 
   - `checkValve` · `CheckValve`:
-  `1` = a check valve is placed at the production system outlet, preventing reverse flow at the last boundary when indicated by pressure differential.
   `0` = reverse gas inflow at the system boundary is allowed (default).
+  `1` = a check valve is placed at the production system outlet, preventing reverse flow at the last boundary when indicated by pressure differential.
+  `2` = a check valve is placed at the production system outlet, preventing reverse flow at the last boundary when indicated by pressure differential.
 
 ---
 
@@ -113,6 +114,7 @@ Both control whether to enable slip (phase velocity difference) modeling in the 
 - `thermalEquilibrium` · `equilibrioTermico`
   If `true` (default), temperature is linearly interpolated between ambient and fluid across the pipe wall cross-section.
   If `false`, ambient temperature is used throughout the entire wall cross-section.
+  Used for `initialCondition: 0` (user-defined initial conditions).
 
 - `latentHeatCond` · `condlatente`
   If `false`, disables latent heat in condensation mass-transfer processes in the mixture energy equation.
@@ -125,11 +127,15 @@ Both control whether to enable slip (phase velocity difference) modeling in the 
 
 - `steadyGuess` · `chutePerm`
   Initial guess for the steady-state solver (pressure or flow rate, depending on boundary conditions).
-  If not provided or set to a negative value, the code computes an internal guess from hydrostatics (and friction when a non-IPR mass source is present).
+  **Default:** `-1` — the code computes an internal guess from hydrostatics (and friction when a non-IPR mass source is present).
 
 - `reverseTemp` · `tempReves`
   Temperature to use for reverse gas inflow at the last system boundary in transient simulations.
   If not provided, ambient temperature is assumed.
+
+- `reverseGasRatio` · `razCompGasReves`
+  For gas-pipeline simulations: volumetric fraction of liquid impurities (water or other liquid) in the gas stream that may flow back into the pipeline during reverse flow.
+  Unit: volumetric fraction.
 
 - `initialFluidId` · `iniFluidoP`
   ID of the fluid that initially fills the production system.
@@ -199,7 +205,11 @@ These keywords enable data-driven performance improvements:
 ## 8. Parametric analysis
 
 - `parametricAnalysis` · `AP`:
-  If `true`, runs steady-state parametric analysis using the `leituraAP.json` file.
+  If `true`, runs steady-state parametric analysis using the file specified by `parametricAnalysisFile`.
+
+- `parametricAnalysisFile` · `arquivoAP`:
+  Name of the JSON file for parametric analysis input (valid when `parametricAnalysis: true`).
+  **Default:** `"leituraAP.json"`.
 
 - `parallelizePA` · `paralelizaAP`:
   If `true`, parallelizes parametric analysis. Requires `parametricAnalysis: true` to be meaningful.
@@ -215,6 +225,14 @@ For simulations involving heat exchange with surrounding rock, use:
 Provide rock thermal properties (conductivity, specific heat, density — all per rock ID) and production time for heated-radius calculation.
 
 > For full field descriptions, units, and usage guidance, see [rock-formation.md](rock-formation.md).
+
+### Axisymmetric Wellbore Thermal Model
+
+- `pocoTermAxiSim` (PT only): If `true`, activates an axisymmetric thermal model for the wellbore region (formation, cement, casing). Radial discretization is defined in a companion JSON file specified by `pocoAxiSimJson`; axial discretization follows the 1D model. **Default:** `false`.
+
+- `anulAxiSim` (PT only): If `true`, thermal exchange is with the annulus region (relevant for gas-lift wells); if `false`, exchange is directly with the production column. Valid only when `pocoTermAxiSim: true`. **Default:** `false`.
+
+- `pocoAxiSimJson` (PT only): Name of the companion JSON file defining the axisymmetric thermal model (radial layers, thermal properties, radial discretization). Valid only when `pocoTermAxiSim: true`.
 
 ---
 
@@ -242,6 +260,12 @@ Populate each with relevant vectors:
 - `screenPrint` · `saidaTela`:
   If `true`, shows detailed simulation progress (time, time step, variables).
   If `false` (default), only the completion percentage is shown.
+
+- `imprimeInventario` (PT only):
+  If `true`, prints liquid and gas inventory for a given segment to `logEvento.dat` alongside other event logs. At the end of a simulation, inventories are always recorded regardless of this flag. When `true`, inventories appear more frequently but continuous integration may reduce simulator performance. **Default:** `false`.
+
+- `fatorFric` (PT only):
+  Friction factor calculation mode. `0` = standard iterative method (default); `1` = Serghides approximation (non-iterative). **Default:** `0`.
 
 ---
 
@@ -442,7 +466,8 @@ These parameters are applicable to transient simulations with compositional flui
   **Default:** `false`
 
 - `minTimestepCriterion` · `CriterioDTMin`
-  Minimum allowable time step. Leave unset unless you have a specific reason to enforce a hard lower bound.
+  **Unit:** s
+  Convergence criterion for minimum temperature variation between iterations.
 
 ---
 

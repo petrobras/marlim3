@@ -40,12 +40,13 @@ What is imposed over time:
 > - `temperature` · `temperatura`
 > - `fluidQuality` · `titulo`
 > - `betaRatio` · `razaoBeta`
+> - `fluidId` · `indFluido` (integer, fluid ID assigned to the inlet stream)
 
 ---
 
 ## Inlet: Flow-Rate + Pressure Condition
 
-This boundary fully defines the system from the inlet side by imposing inlet pressure and inlet mass flow simultaneously. It is intended for **steady-state only**; in transient mode, outlet information is still needed because wave propagation matters.
+This boundary fully defines the system from the inlet side by imposing inlet pressure and inlet mass flow simultaneously. It is intended for **steady-state only** — it determines the system entirely from the inlet and ignores any outlet boundary condition. Do not use it in transient mode.
 
 What is imposed over time:
 
@@ -100,12 +101,14 @@ The surface choke is a fixed-position outlet restriction, before the separator.
 
 Main fields:
 
-- `cvCurve` (0 = area ratio, 1 = stem displacement)
+- `active` / `ativo`
+- `cvCurve` / `curvaCV` (0 = area ratio, 1 = stem displacement)
 - `time` / `tempo`
 - `opening` / `abertura`
-- `dischargeCoefficient` / `coeficienteDescarga`
+- `dischargeCoefficient` / `coeficienteDescarga` (default: 0.84)
 - `model` / `modelo` (currently only 0 = Sachdeva)
-- `x1`, `cv1` for stem-displacement mode
+- `x1`, `cv1` for stem-displacement mode (`cvCurve` = 1)
+- `dynamicCurve` / `curvaDinamic` — array; when set to 1, emulates dynamic actuator behavior responding to line pressure, actuator pressure, and spring stiffness
 
 ---
 
@@ -126,14 +129,15 @@ When the service line exists, `gasInj` defines its inlet boundary condition.
 
 Main fields:
 
+- `active` / `ativo`
 - `bcType` / `tipoCC`
   - `0` = injection pressure
   - `1` = injection flow rate
 - `time` / `tempo`
 - `temperature` / `temperatura`
-- `gasFlowRate` / `vazaoGas`
-- `injectionPressures` / `pressaoInjecao`
-- `initialFlowRateGuess` / `chuteVazaoInjecao`
+- `gasFlowRate` / `vazaoGas` (used when `bcType` = 1)
+- `injectionPressures` / `pressaoInjecao` (used when `bcType` = 0)
+- `initialFlowRateGuess` / `chuteVazaoInjecao` — boolean (default: `false`). For pressure-type BC (`bcType` = 0), when `true`, the first element of `gasFlowRate` is used as an initial guess for the gas flow rate to aid convergence.
 
 ---
 
@@ -145,11 +149,13 @@ Injection-well simulations use a dedicated top-level boundary object with six bo
 
 Core fields:
 
+- `active` / `ativo`
 - `fluidType` / `tipoFluido`
   - `0` = user-provided liquid from complementary fluid
   - `1` = water (requires salinity)
-  - `2` = CO2-rich gas via flash table (`.tab`)
-  - `3` = CO2-rich gas via compositional model (`.ctm`)
+  - `2` = CO2-rich gas via flash table (`.tab`); also requires production-fluid registration
+  - `3` = CO2-rich gas via compositional model (`.ctm`); also requires production-fluid registration
+- `salinity` / `salinidade` — water salinity [g/(kg water)], required when `fluidType` = 1
 - `pvtsimFile` / `arquivoPvtsim`
 - `boundaryCondition` / `condContorno`
 - `injectionTemp` / `tempInj`

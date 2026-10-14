@@ -7,13 +7,14 @@ Simulation time controls how the model evolves in time — from preparation of t
 - When the simulator saves snapshot files for restart or post-processing
 - The final simulation time
 
-> **JSON key:** `time` (EN/PT) · `tempo` (PT) — top-level object
+> **JSON keys:** `time` / `tempo` (top-level object) and `initialConfig` / `configuracaoInicial` (top-level object, sibling of `time`)  
+> Both objects live at the root of the input JSON, side by side — `initialConfig` is **not** nested inside `time`.
 
 ---
 ## Simulation Mode
 Choose between steady-state or transient simulation.
 
-- `transient: false` → run only steady-state calculation and stop
+- `transient: false` → steady-state (permanent) simulation only
 - `transient: true` → start with transient simulation
 
 > **JSON key:** `initialConfig.transient` (EN) · `configuracaoInicial.transiente` (PT)  
@@ -34,9 +35,12 @@ Controls how the initial state is established:
 > Default: `1`
 
 ### Option 0: User-Defined Initial State
-Explicitly set initial fluid fields in pipe cells.
+Explicitly set initial fluid fields in pipe cells. The thermal equilibrium strategy for the pipe-wall cross section can also be configured:
 
 > **JSON key:** `initialConfig.initialFluidId` (EN) · `configuracaoInicial.iniFluidoP` (PT)
+
+> **JSON key:** `initialConfig.thermalEquilibrium` (EN) · `configuracaoInicial.equilibrioTermico` (PT)  
+> Default: `true` — when true, linearly interpolates between ambient temperature and fluid temperature across the pipe-wall cross section; when false, uses ambient temperature throughout. Used for `initialCondition: 0`.
 
 ### Option 2: Snapshot Restart
 Initialize the simulation from a snapshot state file.
@@ -49,13 +53,13 @@ Initialize the simulation from a snapshot state file.
 ### Option 3: Gas-Lift Unloading
 Specialized initialization for gas-lift operations. Requires:
 
-- `gasLineInterfaceLength` · `comprimentoMedidoInterfaceLinhaGas`
-- `prodLineInterfaceLength` · `comprimentoMedidoInterfaceLinhaProd`
-- `fluidSalinity` · `SalinidadeFluido`  
+- `gasLineInterfaceLength` · `comprimentoMedidoInterfaceLinhaGas` [m]
+- `prodLineInterfaceLength` · `comprimentoMedidoInterfaceLinhaProd` [m]
+- `fluidSalinity` · `SalinidadeFluido` [g/(kg água)] — default: `0`
 
 Optionally:  
 
-- `dischargeControl` · `controleDescarga`
+- `dischargeControl` · `controleDescarga` — default: `false`
 - `dischargeParameters` · `parametrosDescarga`
 
 ---
@@ -71,7 +75,7 @@ Core fields:
 
 The schedule allows piecewise control: between `times[i]` and `times[i+1]`, the solver will not exceed `maxDT[i]`, though it may choose smaller steps internally for stability.
 
-> **JSON key:** `time.finalTime`, `time.times`, `time.maxDT`
+> **JSON keys:** `time.finalTime` / `tempo.tempoFinal`, `time.times` / `tempo.tempos`, `time.maxDT` / `tempo.dtmax`
 
 **Parser checks:**
 
@@ -88,20 +92,22 @@ The schedule allows piecewise control: between `times[i]` and `times[i+1]`, the 
 
 Schedules time windows for special “segregation” mode, used in shutdown or fallback scenarios.
 
-- `segregationTime` (EN) · `tempoSegrega` (PT): array (s), when mode changes apply
+- `segregationTime` (EN) · `tempoSegrega` (PT): array [s], when mode changes apply
 - `segregation` (EN) · `segrega` (PT): array, mode indicator (0 = normal, 1 = segregation)
+
+> **JSON keys:** `time.segregationTime` / `tempo.tempoSegrega`, `time.segregation` / `tempo.segrega`
 
 **Behavior:**  
 
-If these are omitted, a default schedule is created at `t = 0` in segregation mode.
+Both arrays are optional. If omitted, the simulator does not apply any segregation schedule; normal mode is used throughout.
 
 ---
 ## Snapshot Save Times
 
-Controls when the simulation saves `.snp` or `.snt` snapshot files for restart or analysis.
+Controls when the simulation saves `.snp` snapshot files for restart or analysis.
 
-> **JSON key:** `saveSnapshot` (EN) · `gravaMomento` (PT)
-Each entry is a time [s] at which a snapshot is saved.
+> **JSON key:** `saveSnapshot` (EN) · `gravaMomento` (PT) — inside the `time` / `tempo` object  
+> Each entry is a time [s] at which a snapshot is saved.
 
 ---
 ## Practical Guidance

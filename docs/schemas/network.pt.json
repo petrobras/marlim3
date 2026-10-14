@@ -22,12 +22,12 @@
          "Relaxacao": {
            "type": "number",
            "default": 0.5,
-           "description": "Para pontos de convergência e divergência de tramos, especifica o parâmetro de relaxação R para atualização, de uma iteração para a próxima, da pressão compartilhada no ponto de encontro. Isto é, P_{it+1} = R*P_{it} + (1-R)*P_{it+1}. Útil para casos em que o comportamento do sistema é muito não linear, em especial no começo da simulação, quando podem ocorrer atualizações de pressão abruptas e instáveis. Casos típicos incluem os que usam condições de contorno do tipo IPR."
+           "description": "Para pontos de convergência e divergência de tramos, especifica o parâmetro de relaxação R para atualização, de uma iteração para a próxima, da pressão compartilhada nos nós em que os tramos se encontram. Isto é, P_{it+1} = R*P_{it} + (1-R)*P_{it+1}. Útil para casos em que o comportamento do sistema é muito não linear, em especial no começo da simulação, quando podem ocorrer atualizações de pressão abruptas e instáveis. Casos típicos incluem os que usam condições de contorno do tipo IPR."
          },
          "ChuteNos": {
            "type": "boolean",
            "default": false,
-           "description": "Se true, o usuário deve informar estimativas iniciais de pressões a montante e jusante de todos os tramos, com exceções dos tramos mais à jusante."
+           "description": "Se true, o usuário deve informar estimativas iniciais de pressões a montante e jusante de todos os tramos, com exceções dos tramos mais a jusante."
          },
          "Transiente": {
            "type": "boolean",
@@ -47,7 +47,7 @@
          "TempoSimulacao": {
            "type": "number",
            "unit": "s",
-           "description": "Tempo total de simulação. Válido apenas para simulações transientes."
+           "description": "Tempo total de simulação. Válido apenas para simulações transientes. Sobrepõe-se ao parâmetro tempo: {tempoFinal} dos tramos solteiros que compõem o sistema."
          },
          "threadRede": {
            "type": "integer",
@@ -57,7 +57,7 @@
          "apenasPreProc": {
            "type": "boolean",
            "default": false,
-           "description": "Executa apenas o pré-processamento para isolamento das redes internas que compõem o sistema, sem efetuar a simulação."
+           "description": "Executa apenas o pré-processamento para isolamento das redes internas que compõem o sistema, a configuração de uma rede permite trechos não conectados, como se fossem redes isoladas, ou até mesmo tramos isolados sem conexão com o resto da rede, estas redes internas definem este conjunto de sistemas isolados dentro da rede principal, sem efetuar a simulação."
          },
          "Injecao": {
            "type": "boolean",
@@ -67,7 +67,7 @@
          "AnelGL": {
            "type": "boolean",
            "default": false,
-           "description": "Indicativo de anel de gás-lift, arranjo em que uma única tubulação proveniente da plataforma pode bifurcar-se, em diversos pontos, em linhas de serviço que atenderão a diferentes poços."
+           "description": "Indicativo de anel de gas-lift, arranjo em que uma única tubulação proveniente da plataforma pode bifurcar-se, em diversos pontos, em linhas de serviço que atenderão a diferentes poços."
          },
          "tipoModeloDrift": {
            "type": "boolean",
@@ -81,7 +81,7 @@
          "fonteRedeParalela": {
            "type": "boolean",
            "default": false,
-           "description": "Indica que a rede possui fontes recíprocas (redes paralelas conectadas por nós). Quando true, o campo de mesmo nome na raiz descreve os pares de nós conectados."
+           "description": "Indica que a rede possui fontes recíprocas (2 tramos paralelos conectados por válvulas ou orifícios, as fontes são definidas pelo escoamento que atravessa estas válvulas de um tramo para o outro). Quando true, o campo de mesmo nome na raiz descreve os pares de nós conectados. Observação: as fontes nos tramos paralelos responsáveis por esta conexão são sempre do tipo fontePressao, o diferencial de pressão entre os dois tramos definirá a vazão nestas fontes do tipo fontePressao"
          }
          }
        },
@@ -102,12 +102,12 @@
              "PressaoImposta": {
                "type": "boolean",
                "default": false,
-               "description": "Impõe a utilização da pressão à jusante no JSON específico do tramo ao invés de atualizar por meio da resolução da rede."
+               "description": "Impõe a utilização da pressão à jusante no JSON específicado no json do tramo em separador->pressao ao invés de atualizar por meio da resolução da rede."
              },
              "ativo": {
                "type": "boolean",
                "default": true,
-               "description": "Indica se a conexão do tramo está ativa na montagem da rede."
+               "description": "Indica se o tramo está ativo na montagem da rede, se false, o tramo é descartado da rede após o pré-processamento."
              },
              "derivaPrincipal": {
                "type": "integer",
@@ -115,7 +115,7 @@
              },
              "tramoPrimario": {
                "type": "boolean",
-               "description": "Indica se o tramo é o primário em um par de tramos que compartilham uma conexão (por exemplo, em arranjos de fonte recíproca)."
+               "description": "Específico para o caso de redes paralelas. Indica se o tramo é o primário em um par de tramos que compartilham uma conexão (por exemplo, em arranjos de fonte recíproca)."
              },
              "permanente": {
                "type": "integer",
@@ -137,7 +137,7 @@
                "type": "integer",
                "default": 0,
                "enum": [0, 1],
-               "description": "Se 1, inverte o sentido do escoamento do tramo em relação ao informado no JSON do tramo."
+               "description": "Se 1, inverte o sentido do escoamento e geometria do tramo em relação ao informado no JSON do tramo."
              },
              "coletores": {
                "type": "array",
@@ -164,17 +164,17 @@
        },
        "fonteRedeParalela": {
          "type": "array",
-         "description": "Descreve os pares de nós conectados entre redes paralelas (fontes recíprocas). Válido quando configuracaoInicial: {fonteRedeParalela: true}.",
+         "description": "Descreve os pares de fontes conectadas em uma rede paralela (fontes recíprocas). Válido quando configuracaoInicial: {fonteRedeParalela: true}.",
          "items": {
            "type": "object",
            "properties": {
              "idNoPrimario": {
                "type": "integer",
-               "description": "Índice do nó primário da conexão recíproca."
+               "description": "Índice da fonte do tramo primário que fará a conexão recíproca."
              },
              "idNoSecundario": {
                "type": "integer",
-               "description": "Índice do nó secundário da conexão recíproca."
+               "description": "Índice da fonte do tramo secundário que fará a conexão recíproca."
              }
            }
          }

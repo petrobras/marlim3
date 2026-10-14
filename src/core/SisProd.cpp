@@ -13151,10 +13151,11 @@ void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, P
         if ((*vg1dSP).lixo5 < 1e-15) {
             for(int ic=0; ic<arq.vecCaixa.size(); ic++){
             		int posic=arq.vecCaixa[ic].posic;
-            		arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
-            			                      celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
-        									  celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
-        									  celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
+            		arq.vecCaixa[ic].estadotermo(celula[posic],celula[posic+1]);
+            		//arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
+            			                      //celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
+        									  //celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
+        									  //celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
             }
         	for(int iCelU=0;iCelU<arq.nCelUnit;iCelU++)kontaTempoCelUni[iCelU]=1;
             for (int i = 0; i < arq.ntendp; i++) {
@@ -13479,10 +13480,11 @@ void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, P
 
     for(int ic=0; ic<arq.vecCaixa.size(); ic++){
      		int posic=arq.vecCaixa[ic].posic;
-     		arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
-     			                      celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
- 									  celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
- 									  celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
+     		arq.vecCaixa[ic].estadotermo(celula[posic],celula[posic+1]);
+     		//arq.vecCaixa[ic].estadotermo(celula[posic].pres, celula[posic].temp, celula[posic].alf, celula[posic].bet,
+     			                      //celula[posic].MC, celula[posic].Mliqini, celula[posic].flui, celula[posic].fluicol,
+ 									  //celula[posic+1].pres, celula[posic+1].temp, celula[posic+1].alf, celula[posic+1].bet,
+ 									  //celula[posic+1].MC, celula[posic+1].Mliqini, celula[posic+1].flui, celula[posic].fluicol, dt);
      }
 
     tVet.push_back(dt);
@@ -15781,7 +15783,6 @@ double SProd::marchaProdPerm2(double pchute) {
         double tit;
         presfim = celula[ncel].pres;
         double rholp = celula[ncel].flui.MasEspLiq(celula[ncel].pres, celula[ncel].temp);
-        double rholc = celula[ncel].fluicol.MasEspFlu(celula[ncel].pres, celula[ncel].temp);
         tit = fabs(massgas / masentrada);
 
         double masChk;
@@ -15795,12 +15796,7 @@ double SProd::marchaProdPerm2(double pchute) {
         // maxSup Ã© a vazao total passando pelo choke
 
         if (chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && ypres < 1.) {
-            double cplM = (1. - betSup) * celula[ncel].flui.CalorLiq(presfim, tESup) -
-                          betSup * celula[ncel].fluicol.CalorLiq(presfim, tESup);
-            double jtlM = (1. - betSup) * celula[ncel].flui.JTL(presfim, tESup) - betSup / rholc;
-            double cpg = celula[ncel].flui.CalorGas(presfim, tESup);
-            double jtgM = celula[ncel].flui.JTG(presfim, tESup);
-            arq.valTempChokeJus = tESup + ((1. - tit) * jtlM / cplM + tit * jtgM / cpg) * (pGSup - presfim) * 98066.52;
+            arq.valTempChokeJus = temperaturaSaida();
         }
 
     } else {
@@ -18900,7 +18896,6 @@ double SProd::marchaProdPresPres2(double mchute) {
         double tit;
         presfim = celula[ncel].pres;
         double rholp = celula[ncel].flui.MasEspLiq(celula[ncel].pres, celula[ncel].temp);
-        double rholc = celula[ncel].fluicol.MasEspFlu(celula[ncel].pres, celula[ncel].temp);
         tit = fabs(massgas / masentrada);
 
         double masChk;
@@ -18913,12 +18908,7 @@ double SProd::marchaProdPresPres2(double mchute) {
             maxSup = masChk;
 
         if (chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && ypres < 1.) {
-            double cplM = (1. - betSup) * celula[ncel].flui.CalorLiq(presfim, tESup) -
-                          betSup * celula[ncel].fluicol.CalorLiq(presfim, tESup);
-            double jtlM = (1. - betSup) * celula[ncel].flui.JTL(presfim, tESup) - betSup / rholc;
-            double cpg = celula[ncel].flui.CalorGas(presfim, tESup);
-            double jtgM = celula[ncel].flui.JTG(presfim, tESup);
-            arq.valTempChokeJus = tESup + ((1. - tit) * jtlM / cplM + tit * jtgM / cpg) * (pGSup - presfim) * 98066.52;
+            arq.valTempChokeJus = temperaturaSaida();
         }
     } else {
         maxSup = 0.;
@@ -24505,6 +24495,23 @@ void SProd::atualizaPeriTempProd(int i) {
     if (i < ncel)
         celula[i + 1].tempL = celula[i].temp;
     celula[i].tempini = celula[i].temp;
+}
+
+double SProd::temperaturaSaida() {
+    Cel &saida = celula[ncel];
+    double vazMass = celula[ncel - 1].MR;
+    if (chokeSup.AreaGarg <= 1e-3 * celula[ncel - 1].duto.area || saida.pres <= pGSup || fabs(vazMass) <= 1e-15)
+        return saida.temp;
+
+    double tit = fabs((vazMass - celula[ncel - 1].MliqiniR) / vazMass);
+    double bet = saida.bet;
+    double rholc = saida.fluicol.MasEspFlu(saida.pres, saida.temp);
+    double cplM = (1. - bet) * saida.flui.CalorLiq(saida.pres, saida.temp) -
+                  bet * saida.fluicol.CalorLiq(saida.pres, saida.temp);
+    double jtlM = (1. - bet) * saida.flui.JTL(saida.pres, saida.temp) - bet / rholc;
+    double cpg = saida.flui.CalorGas(saida.pres, saida.temp);
+    double jtgM = saida.flui.JTG(saida.pres, saida.temp);
+    return saida.temp + ((1. - tit) * jtlM / cplM + tit * jtgM / cpg) * (pGSup - saida.pres) * 98066.52;
 }
 
 void SProd::calcTempFim() {

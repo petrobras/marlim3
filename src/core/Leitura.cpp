@@ -7782,30 +7782,68 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 						}
 					}
 				}
-				// parse do vetor de jp
-				IPRS[i].seriejp = (int) ipr_json[indAtivo].ii().size();
-				if(IPRS[i].seriejp>0){
-					IPRS[i].jp = new double[IPRS[i].seriejp];
-					IPRS[i].tjp = new double[IPRS[i].seriejp];
+				if (ipr_json[indAtivo].ii().exists()){
+					// parse do vetor de jp
+					IPRS[i].seriejp = (int) ipr_json[indAtivo].ii().size();
+					if(IPRS[i].seriejp>0){
+						IPRS[i].jp = new double[IPRS[i].seriejp];
+						IPRS[i].tjp = new double[IPRS[i].seriejp];
+						// caso os tamanhos dos vetores das chaves difiram entre si
+						if (ipr_json[indAtivo].ii().size()
+								!= ipr_json[indAtivo].tempoii().size()) {
+							// RN-073: chaves ii e tempoii com tamanhos diferentes
+							logger.log(LOGGER_FALHA,
+									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
+									chaveJson,
+									"Chaves #/ipr/ii e #/ipr/tempoii com tamanhos diferentes");
+						} else {
+							// loop para parse do vetor de jp / ii
+							for (int j = 0; j < IPRS[i].seriejp; j++) {
+								IPRS[i].jp[j] = ipr_json[indAtivo].ii()[j];
+								IPRS[i].tjp[j] =
+										ipr_json[indAtivo].tempoii()[j];
+							}
+						}
+					}
+					else{
+						if(IPRS[i].tipoIPR!=2){
+							IPRS[i].seriejp =IPRS[i].serieip;
+							IPRS[i].jp = new double[IPRS[i].seriejp];
+							IPRS[i].tjp = new double[IPRS[i].seriejp];
+							for (int j = 0; j < IPRS[i].seriejp; j++) {
+								IPRS[i].jp[j] = IPRS[i].ip[j];
+								IPRS[i].tjp[j] = IPRS[i].tip[j];
+							}
+						}
+						else{
+							IPRS[i].seriejp =1;
+							IPRS[i].jp = new double[IPRS[i].seriejp];
+							IPRS[i].tjp = new double[IPRS[i].seriejp];
+							for (int j = 0; j < IPRS[i].seriejp; j++) {
+								IPRS[i].jp[j] = 1.8*IPRS[i].qMax[0]/IPRS[i].pres[0];
+								IPRS[i].tjp[j] = 0.;
+							}
+						}
+					}
 				}
 				else{
-					IPRS[i].jp = 0;
-					IPRS[i].tjp = 0;
-				}
-				// caso os tamanhos dos vetores das chaves difiram entre si
-				if (ipr_json[indAtivo].ii().size()
-						!= ipr_json[indAtivo].tempoii().size()) {
-					// RN-073: chaves ii e tempoii com tamanhos diferentes
-					logger.log(LOGGER_FALHA,
-					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
-							chaveJson,
-							"Chaves #/ipr/ii e #/ipr/tempoii com tamanhos diferentes");
-				} else {
-					// loop para parse do vetor de jp / ii
-					for (int j = 0; j < IPRS[i].seriejp; j++) {
-						IPRS[i].jp[j] = ipr_json[indAtivo].ii()[j];
-						IPRS[i].tjp[j] =
-								ipr_json[indAtivo].tempoii()[j];
+					if(IPRS[i].tipoIPR!=2){
+						IPRS[i].seriejp =IPRS[i].serieip;
+						IPRS[i].jp = new double[IPRS[i].seriejp];
+						IPRS[i].tjp = new double[IPRS[i].seriejp];
+						for (int j = 0; j < IPRS[i].seriejp; j++) {
+							IPRS[i].jp[j] = IPRS[i].ip[j];
+							IPRS[i].tjp[j] = IPRS[i].tip[j];
+						}
+					}
+					else{
+						IPRS[i].seriejp =1;
+						IPRS[i].jp = new double[IPRS[i].seriejp];
+						IPRS[i].tjp = new double[IPRS[i].seriejp];
+						for (int j = 0; j < IPRS[i].seriejp; j++) {
+							IPRS[i].jp[j] = 1.8*IPRS[i].qMax[0]/IPRS[i].pres[0];
+							IPRS[i].tjp[j] = 0.;
+						}
 					}
 				}
 				// parse do valor
@@ -8590,7 +8628,7 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 						double aberinf = valv[i].cxv.serieAberturaMon[ind];
 						double abersup;
 						if (ind < valv[i].cxv.nMon - 1)
-							abersup = valv[i].cxv.serieAberturaMon[ind]+1;
+							abersup = valv[i].cxv.serieAberturaMon[ind+1];
 						else
 							abersup = valv[i].cxv.serieAberturaMon[ind];
 						abre0=aberinf * raz + (1 - raz) * abersup;
@@ -8598,7 +8636,7 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 						indraz(ind, raz, tempo, valv[i].cxv.nJus, valv[i].cxv.tempJus);
 						aberinf = valv[i].cxv.serieAberturaJus[ind];
 						if (ind <valv[i].cxv.nJus - 1)
-							abersup = valv[i].cxv.serieAberturaJus[ind]+1;
+							abersup = valv[i].cxv.serieAberturaJus[ind+1];
 						else
 							abersup = valv[i].cxv.serieAberturaJus[ind];
 						abre1=aberinf * raz + (1 - raz) * abersup;
@@ -10075,7 +10113,7 @@ void Ler::parse_master1(JSON_entrada_master1& master1_json) {
 				double aberinf = master1.cxv.serieAberturaMon[ind];
 				double abersup;
 				if (ind < master1.cxv.nMon - 1)
-					abersup = master1.cxv.serieAberturaMon[ind]+1;
+					abersup = master1.cxv.serieAberturaMon[ind+1];
 				else
 					abersup = master1.cxv.serieAberturaMon[ind];
 				abre0=aberinf * raz + (1 - raz) * abersup;
@@ -10083,7 +10121,7 @@ void Ler::parse_master1(JSON_entrada_master1& master1_json) {
 				indraz(ind, raz, tempo, master1.cxv.nJus, master1.cxv.tempJus);
 				aberinf = master1.cxv.serieAberturaJus[ind];
 				if (ind < master1.cxv.nJus - 1)
-					abersup = master1.cxv.serieAberturaJus[ind]+1;
+					abersup = master1.cxv.serieAberturaJus[ind+1];
 				else
 					abersup = master1.cxv.serieAberturaJus[ind];
 				abre1=aberinf * raz + (1 - raz) * abersup;

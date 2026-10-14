@@ -1540,6 +1540,7 @@ class SProd {
     double marchaTramoSecVaz(double pchute, double chutemass = -1);
 
     /// Calculates temperature downstream from the surface choke for network coupling.
+    double temperaturaSaida();
     void calcTempFim();
 };
 

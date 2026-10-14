@@ -1,6 +1,6 @@
 # JSON Schema Reference
 
-Marlim3 uses JSON input files to define simulations. Two schema variants are available, and the Python API supports **bilingual input** (English and Portuguese keys interchangeably).
+`Marlim3` uses JSON input files to define simulations. Two schema variants are available, and the Python API supports **bilingual input** (English and Portuguese keys interchangeably).
 
 ## Schema Files
 
@@ -9,12 +9,10 @@ Marlim3 uses JSON input files to define simulations. Two schema variants are ava
 | [Branch Schema (PT)](../schemas/branch.pt.json) | Portuguese keys |
 | [Branch Schema (EN)](../schemas/branch.en.json) | English keys |
 
-!!! note
-    The Branch schema is the recommended starting point for new simulations. It uses English key names and is the format produced by `branch.to_json()` in the Python API.
 
 ## Bilingual Support
 
-Marlim3 accepts both English and Portuguese keys at all levels. When the root-level key `"language": "en"` is present, the C++ engine translates English keys to Portuguese internally. The Python API always stores data in English and can export in either language via `to_json(language='pt')`.
+`Marlim3` accepts both English and Portuguese keys at all levels. When the root-level key `"language": "en"` is present, the C++ engine translates English keys to Portuguese internally. The Python API always stores data in English and can export in either language via `to_json(language='pt')`.
 
 See [Bilingual Support](../dev-guide/translations.md) for the full key-mapping reference.
 

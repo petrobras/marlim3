@@ -595,14 +595,14 @@ class APara {
                                double &presiniG, double &tempiniG, double &vazgasG, double &presE, double &tempE,
                                double &titE, double &betaE, double &vazE, int seq, int &indCHK, double *vdPdLH,
                                double *vdPdLF, double *vdTdL);
-    void tabelaGenericaCabecalho();
+    void tabelaGenericaCabecalho(bool saidaTemperatura = false);
     void tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                         detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
                         detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq,
                         double &pGSup, double &temperatura,
                         double &presiniG, double &tempiniG, double &vazgasG, double &presE, double &tempE,
                         double &titE, double &betaE, double &vazE, int seq, int &indCHK, double *vdPdLH,
-                        double *vdPdLF, double *vdTdL, double BHP);
+                        double *vdPdLF, double *vdTdL, double BHP, double tempSaida);
 };
 
 #endif /* LERAP_H_ */

@@ -9,7 +9,6 @@
 #include "TrocaCalor.h"
 #include "Vetor.h"
 #include "acessorios.h"
-#include "caixaValvula.h"
 #include "variaveisGlobais1D.h"
 #include <algorithm>
 #include <complex>

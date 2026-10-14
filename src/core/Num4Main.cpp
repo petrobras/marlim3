@@ -8195,6 +8195,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     struct varSaida {
         double presIni;
         double tempFim;
+        double tempSaida;
         int falha;
     };
     std::vector<std::pair<int, varSaida>> dadosAP;
@@ -8459,6 +8460,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         varSaida tempSaida;
         tempSaida.presIni = sistem2.celula[0].pres;
         tempSaida.tempFim = sistem2.celula[sistem2.ncel].temp;
+        tempSaida.tempSaida = analisePara.tipoAP != 0 && indfalha[iSeq] > 0 ? sistem2.temperaturaSaida() : -1e10;
         tempSaida.falha = indfalha[iSeq];
 		#pragma omp critical
 			dadosAP.emplace_back(iSeq,tempSaida);
@@ -8565,7 +8567,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 									   sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                        sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                        presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
-                                       sistem1.arq.correcao.dTdL, BHP);
+                                       sistem1.arq.correcao.dTdL, BHP, dadosAP[iSeq].second.tempSaida);
         }
 
     }
@@ -9010,7 +9012,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
 									   sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                        sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                        presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
-                                       sistem1.arq.correcao.dTdL, BHP);
+                                       sistem1.arq.correcao.dTdL, BHP, fabs(falha) < 1e9 ? sistem1.temperaturaSaida() : -1e10);
         }
         (*sistem1.vg1dSP).contaExit = 0;
     }

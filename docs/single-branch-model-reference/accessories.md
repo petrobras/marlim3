@@ -51,6 +51,24 @@ Time-series groups:
 !!! note
     `ii` is relevant for reverse-flow and injection-related cases, not only conventional production.
 
+### ICV (Interval Control Valve) on IPR
+
+When `ICV` is `true`, the IPR distinguishes between the bottomhole pressure at the ICV and the annular pressure that actually defines the drawdown. The ICV acts as a controllable choke coupled to the IPR source, enabling time-varying opening schedules.
+
+> The ICV fields live **inside the IPR object**.
+
+ICV fields:
+
+- `ICV` · `ICV` — set to `true` to activate the ICV on this IPR
+- `icvTime` · `tempoICV` — time instants for ICV opening events [s]; the EN key `icvTime` follows the convention of other time-array IPR fields but is not yet present in the EN schema
+- `opening` · `abertura` — opening values over time (area ratio or stem displacement, depending on `cvCurve`)
+- `cd` · `cd` — discharge coefficient (default 0.84)
+- `cvCurve` · `curvaCV`
+  - `0` = opening values are area ratios
+  - `1` = opening values are stem displacement
+- `x1` · `x1` — CV curve abscissa (stem displacement percentage); valid for `cvCurve = 1`
+- `cv1` · `cv1` — CV curve ordinate (valve coefficient in (gal/min)/(psi)); valid for `cvCurve = 1`
+
 ### Liquid Source
 
 Prescribed standard-condition liquid inflow. Associated free gas is inferred from the referenced production fluid and in-situ thermodynamics.
@@ -76,7 +94,7 @@ Main fields:
 
 - `prodFluidId` · `indiFluidoPro`
 - `thermType` · `tipoTermo`
-  - `0` = gas fraction computed by equilibrium at in-situ conditions
+  - `0` = gas fraction computed by equilibrium at in-situ conditions (based on the hydrocarbon-rate difference `totalMassFlowRate` − `complementaryMassFlowRate`)
   - `1` = explicit gas mass flow must be provided
 - `totalMassFlowRate` · `vazaoMassT`
 - `complementaryMassFlowRate` · `vazaoMassC`
@@ -151,6 +169,11 @@ External-medium state:
 - `temperature` · `temperatura`
 - `beta` · `beta`
 - `ambientFluidQuality` · `titAmb`
+- `chkTime` · `tempoChk` — time series for check-valve opening
+
+### Recirculation Mode
+
+When `recirculate` / `recircula` is `true`, the pressure source acts as a recirculation system. `measuredLength` indicates the downstream tap (source of recirculated fluid) and `recirculationMeasuredLength` / `comprimentoMedidoRecircula` indicates the upstream tap (destination). Flow direction is downstream-to-upstream (e.g., pump discharge to pump suction). The ambient fluid is always the fluid at the recirculation point. Reverse flow can be prevented using `check`.
 
 ---
 
@@ -181,9 +204,9 @@ Physical parameters:
 
 - `orificeDiameter` · `diametroOrificio`
 - `outerDiameter` · `diametroExterno` — port diameter for pressure-calibrated valve
-- `vglDischCoef` · `cdvgl`
-- `liquidDischCoef` · `cdvLiq`
-- `areaRatio` · `razaoArea`
+- `vglDischCoef` · `cdvgl` — discharge coefficient, single-phase model (default 0.84)
+- `liquidDischCoef` · `cdvLiq` — discharge coefficient for the liquid-flowing (gas-lift discharge) case (default 0.9)
+- `areaRatio` · `razaoArea` — port-to-diaphragm area ratio, for pressure-calibrated valves (`valveType = 1`), based on the Marlim 2 VGL model
 - `calibrationPressure` · `pressaoCalibracao` [psi]
 - `calibrationTemperature` · `temperaturaCalibracao` [degF]
 
@@ -210,6 +233,36 @@ Main fields:
 - `opening` · `abertura`
 - `cd` · `cd`
 - `x1`, `cv1` for stem-displacement calibration
+- `dynamicCurve` · `curvaDinamic` — when set to `1`, emulates dynamic actuator behavior responding to line pressure, actuator pressure, spring stiffness, and actuator mass
+
+### Valve Box (Caixa de Válvula)
+
+Both `valve` and `masterValve` support a *valve box* feature. When `valveBox` is `true`, the confined region between two hypothetical valves (upstream and downstream) is modeled with a simple integral balance when both are closed, tracking pressure, temperature, quality, and void fraction. When the valve box is active, the main valve's `time` and `opening` arrays are derived from the upstream/downstream hypothetical valves — the smaller opening of the two is used.
+
+> The valve-box fields live **inside the valve or masterValve object**.
+
+Valve-box fields:
+
+- `valveBox` · `caixaValvula` — set to `true` to activate the valve box
+- `boxLength` · `compCaixa` — length of the confined region between valves [m]
+- `crossSectionIndex` · `indSecTrans` — index of the cross-section used for the confined region
+- `environment` · `ambiente` — index of the external environment for heat exchange in the confined space
+- `ambientTemp` · `tempAmbiente` — ambient temperature for heat exchange [degC]
+- `ambientVel` · `velAmbiente` — external velocity for film coefficient [m/s]
+- `formation` · `formac` — set to `1` if the confined space contacts a formation (then use `lito`); `0` for external environment
+- `lithology` · `lito` — index into the `formation` array for formation properties (when `formac = 1`); **not present in the `masterValve` valve-box block** (see note)
+- `upstreamOpening` · `aberturaMon` — opening series of the hypothetical upstream valve
+- `upstreamOpeningTime` · `tempoAberturaMon` — time series for upstream valve [s]
+- `downstreamOpening` · `aberturaJus` — opening series of the hypothetical downstream valve
+- `downstreamOpeningTime` · `tempoAberturaJus` — time series for downstream valve [s]
+- `sourceTemperature` · `temperaturaFonte` — temperature for mass sources in the confined space [degC]
+- `sourceTime` · `tempoFonte` — time instants for mass sources [s]
+- `massProdLiquid` · `massLiqP` — mass source of produced liquid in the confined space [kg/s]
+- `massComplLiquid` · `massLiqC` — mass source of complementary liquid in the confined space [kg/s]
+- `massGas` · `massGas` — mass source of gas in the confined space [kg/s]
+
+!!! note
+    In `branch.pt.json`, the valve-box block on `master1` (`masterValve`) is a slightly reduced set: it has no `lito` (lithology) field, and it is declared **outside** `properties`. Use the full field list above for `valve`; for `masterValve`, omit `lithology`.
 
 ### Production Master Valve
 
@@ -222,7 +275,7 @@ Important details from schema:
 - In steady-state it mainly defines position.
 - In transient mode it should always be defined when WCT operation matters.
 - Uses fixed discharge coefficient 0.84.
-- Has `activeAreaRatio` · `razaoAreaAtiva` to avoid instability near fully open state.
+- Has `activeAreaRatio` · `razaoAreaAtiva` (default 0.4): an opening-ratio threshold. Below it the valve model is applied; above it the valve is treated as fully open. It is used to avoid numerical instabilities in transient mode (valid for the transient regime).
 
 Main fields:
 
@@ -237,7 +290,7 @@ Main fields:
 
 > **JSON key:** `masterValve2` (EN) · `master2` (PT)
 
-Behavior is simplified/binary compared with `masterValve`.
+Behavior is simplified/binary compared with `masterValve`: the valve is open when `opening` is below 0.5 and closed when above 0.5.
 
 ### Surface Choke
 
@@ -253,12 +306,16 @@ Main fields:
 - `dischargeCoefficient` · `coeficienteDescarga`
 - `model` · `modelo` (currently only 0 = Sachdeva)
 - `x1`, `cv1`
+- `dynamicCurve` · `curvaDinamic` — when set to `1`, emulates dynamic choke actuator behavior responding to line pressure, actuator pressure, and spring stiffness
 
 ### Injection Choke
 
 `injectionChoke` is the service-line choke for single-phase gas.
 
 > **JSON key:** `injectionChoke` (EN) · `chokeInj` (PT)
+
+!!! note
+    Unlike the surface choke, the injection choke does **not** use a CV curve (`cvCurve`) and the flow is always single-phase gas.
 
 Main fields:
 
@@ -289,9 +346,10 @@ Main fields:
 - `referenceFreq` · `freqref`
 - `stage` · `nestag`
 - `manufacturerStage` · `nestagFab`
-- `motorEfficiency` · `EficienciaMotor`
+- `motorEfficiency` · `EficienciaMotor` — default 100%
 - `minFrequency` · `FrequenciaMinima`
-- `hiCorrection` · `correcHI`
+- `hiCorrection` · `correcHI` — Hydraulic Institute head-degradation correction; default true
+- `motorHeatFraction` · `fracTermMotorEfic` — fraction of motor heat transferred to the fluid (affects thermal balance); default 0
 
 ### Volumetric Pump
 
@@ -307,9 +365,39 @@ Main fields:
 - `capacity` · `capacidade`
 - `polyFactor` · `fatorpoli`
 
+### Multi-ESP (Stage-by-Stage)
+
+`multiESP` models an ESP with internal stage-by-stage marching instead of simple multiplication by stage count. This corrects per-stage variables such as free-gas fraction, fluid temperature, viscosity effects, and head degradation. Multiple distinct curves can be defined within the assembly — useful for ESPs with axial initial stages (handling high gas fractions at suction) followed by radial stages.
+
+> **JSON key:** `multiESP` (EN) · `multibcs` (PT)
+
+Main fields:
+
+- `measuredLength` · `comprimentoMedido`
+- `time` · `tempo` — frequency schedule [s]
+- `frequency` · `frequencia` [Hz]
+- `referenceFreq` · `freqref` [Hz]
+- `motorEfficiency` · `EficienciaMotor` [%], default 100
+- `motorHeatFraction` · `fracTermMotorEfic` — motor heat to fluid; default 0
+- `minFrequency` · `FrequenciaMinima` [Hz]
+- `hiCorrection` · `correcHI` — Hydraulic Institute head-degradation correction; default true
+- `thermalEquilibrium` · `equilTerm` — if `true`, gas dissolution in oil is considered per stage; if `false`, equilibrium is deferred until after the full march (useful for two-phase oil-gas streams)
+
+The `curve` / `curva` array holds each stage group (ordered upstream to downstream):
+
+- `flowRate` · `vazao` [BPD]
+- `pumpHead` · `head` [ft]
+- `power` · `potencia` [hp]
+- `efficiency` · `eficiencia` [%]
+- `stage` · `nestag` — number of stages in this group
+- `manufacturerStage` · `nestagFab` — stages used when the manufacturer measured the curve; default 1
+
+!!! note
+    Unlike `esp` which multiplies a single-stage curve by `stage`, `multiESP` recalculates per-stage properties including free-gas title, fluid temperature, and viscosity corrections. For two-phase oil-gas streams, setting `thermalEquilibrium = false` prevents gas re-dissolution during the march, applying it only once at the outlet.
+
 ### Pressure Drop / Increment
 
-`pressureDrop` applies a localized pressure increment over time. It can also approximate pump behavior through gas-compression and phase-efficiency settings.
+`pressureDrop` applies a localized pressure increment over time. The liquid and gas efficiencies make it usable as an analogy for a volumetric pump: the total required power (defining the desired pump) is the sum of liquid pumping power and gas compression power.
 
 > **JSON key:** `pressureDrop` (EN) · `deltaPressao` (PT)
 
@@ -321,25 +409,41 @@ Main fields:
   - `1` = polytropic
   - `2` = isothermal
 - `polyFacOrAdiabConst` · `fatPoli`
-- `liquidEfficiency` · `eficLiq`
-- `gasEfficiency` · `eficGas`
+- `liquidEfficiency` · `eficLiq` — default 100%
+- `gasEfficiency` · `eficGas` — default 100%
 
 ---
 
 ## Pigging
 
-`pig` defines launch and receive positions and the launch time.
+`pig` defines launch and receive positions, launch time, and bypass parameters.
 
 > **JSON key:** `pig` (EN/PT)
 
 Main fields:
 
-- `launcher` · `lancador`
-- `receiver` · `recebedor`
-- `time` · `tempo`
+- `active` · `ativo`
+- `id` · `id`
+- `launcher` · `lancador` — launch position [m]
+- `receiver` · `recebedor` — receive position [m]
+- `time` · `tempo` — launch time [s]
+- `gapArea` · `folgaArea` — gap area for fluid bypass around the pig
+- `pigCD` · `cdPig` — discharge coefficient for flow through the pig gap
+- `pressureDrop` · `deltaPressao` — pressure difference across the pig
 
-!!! note
-    The current public schema documents launch position, receive position, and launch time. The parser contains some extra legacy/internal pig parameters, but they are not part of the public schema and are therefore intentionally not documented here.
+---
+
+## Heat Source
+
+Localized heat source (or sink) placed at the nearest cell center to the given measured length. Positive values add heat to the fluid; negative values remove it.
+
+> **JSON key:** `heatSource` (EN) · `fonteCalor` (PT)
+
+Main fields:
+
+- `measuredLength` · `comprimentoMedido`
+- `time` · `tempo` — time instants [s]
+- `heat` · `calor` — thermal power over time [kW]
 
 ---
 

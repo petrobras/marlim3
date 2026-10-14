@@ -3,7 +3,7 @@
 Materials define the thermal properties of the solid (or fluid) layers that surround the flow area. They are the bridge between geometry and temperature: they determine how fast heat moves through walls, how much energy walls can store, and ultimately how fluid temperature evolves along the system.
 
 > **JSON key:** `material` (EN) · `material` (PT) — top-level array
-> Common fields: `active` / `ativo`, `id` / `id`, `label` / `rotulo`
+> Common fields: `active` / `ativo`, `id` / `id`
 
 ---
 
@@ -13,7 +13,7 @@ Conductivity describes how easily heat flows through the material by conduction.
 
 Conductivity controls the **steady-state temperature gradient** across a layer: higher conductivity → smaller temperature difference across the layer.
 
-> **JSON key:** `conductivity` (EN) · `condutividade` (PT) — unit: W/(m·°C)
+> **JSON key:** `conductivity` (EN) · `condutividade` (PT) — unit: W/(m·K)
 
 ## Specific Heat
 
@@ -21,7 +21,7 @@ Specific heat describes how much energy is needed to raise the temperature of on
 
 In practice, specific heat (together with density) controls the **thermal inertia** — how long it takes for temperature changes to propagate through the layer during transient events (cooldown, warmup, restart).
 
-> **JSON key:** `specificHeat` (EN) · `calorEspecifico` (PT) — unit: J/(kg·°C)
+> **JSON key:** `specificHeat` (EN) · `calorEspecifico` (PT) — unit: J/(kg·K)
 
 ## Density
 
@@ -44,7 +44,7 @@ Thermal expansivity (also called the coefficient of thermal expansion, β) quant
 
 Together with viscosity, density, and specific heat, β feeds directly into the **Rayleigh number**:
 
-\$\$Ra = \frac{g \, \beta \, \Delta T \, L^3},{\nu \, \alpha}\$\$
+\$\$Ra = \frac{g  \beta  \Delta T  L^3}{\nu \alpha}\$\$
 
 where \$\nu\$ is the kinematic viscosity and \$\alpha\$ is the thermal diffusivity. A higher Rayleigh number indicates stronger buoyancy-driven convection, which increases the effective heat transfer across the fluid layer beyond pure conduction.
 
@@ -89,17 +89,18 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
 
 > **JSON key:** `type` (EN) · `tipo` (PT)
 > Values: `0` = solid, `1` = user fluid, `2` = water, `3` = air
+> **Default:** `0` (solid) — if omitted, the material is treated as a solid.
 
 > **JSON keys for type 1 extras:** `visc` (EN) · `visc` (PT), `beta` (EN) · `beta` (PT)
 
 !!! note
-    For types 2 and 3, properties are computed internally from correlations. Only `id`, `type`, and optionally `label` need to be specified.
+    For types 2 and 3, properties are computed internally from correlations. Only `id`, `type`, and `active` need to be specified.
 
 ---
 
 ## Common Material Properties
 
-| Material | Conductivity [W/(m·°C)] | Specific Heat [J/(kg·°C)] | Density [kg/m³] |
+| Material | Conductivity [W/(m·K)] | Specific Heat [J/(kg·K)] | Density [kg/m³] |
 |----------|------------------------|--------------------------|-----------------|
 | Carbon steel | 50 | 500 | 7800 |
 | Stainless steel | 15 | 500 | 8000 |
@@ -112,7 +113,6 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
 
 ## Practical Guidance
 
-- **Realistic insulation values:** Over-optimistic conductivity (< 0.02 W/(m·°C)) strongly distorts cooldown predictions. Use manufacturer-rated wet/aged values for subsea applications.
 - **Reuse material IDs:** Define materials once in the top-level array and reference them by ID across multiple cross sections. Avoids duplication and inconsistency.
 - **Reference in cross sections:** Layers reference materials by ID (`materialId` in EN JSON, `idMaterial` in PT JSON).
 - **Completion fluids:** Use `type: 2` (water) for water-based completion-fluid annuli rather than manually specifying properties.
@@ -127,7 +127,6 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
     {
       "id": 0,
       "active": true,
-      "label": "Carbon steel",
       "type": 0,
       "conductivity": 50.0,
       "specificHeat": 500.0,
@@ -136,7 +135,6 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
     {
       "id": 1,
       "active": true,
-      "label": "PU insulation",
       "type": 0,
       "conductivity": 0.03,
       "specificHeat": 1500.0,
@@ -145,7 +143,6 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
     {
       "id": 2,
       "active": true,
-      "label": "Annulus test fluid",
       "type": 1,
       "conductivity": 0.12,
       "specificHeat": 2200.0,
@@ -156,13 +153,11 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
     {
       "id": 3,
       "active": true,
-      "label": "Completion fluid",
       "type": 2
     },
     {
       "id": 4,
       "active": true,
-      "label": "Cement",
       "type": 0,
       "conductivity": 0.6,
       "specificHeat": 1000.0,
@@ -171,6 +166,3 @@ An internal air model is used by the simulator. Use this for gas-filled annuli o
   ]
 }
 ```
-
-!!! tip
-    For cooldown and restart studies, verify that insulation and cement conductivity values reflect actual field conditions (aged, wet, or damaged), not ideal laboratory values.
