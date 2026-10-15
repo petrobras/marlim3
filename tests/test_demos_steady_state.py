@@ -1,120 +1,35 @@
 """
-Testes de integração — execução dos casos JSON da pasta demos/.
+Testes de integração — execução das demos descritas em demos/manifest.json.
 
-Carrega cada JSON, instancia um Tramo, executa a simulação e verifica
-se os resultados foram gerados.
+Cada demo PT roda com o modelo gravado em português e, quando o manifesto lista
+"en", também traduzido para inglês; os perfis de produção das duas execuções
+devem coincidir. Os modos PRODUCAO, INJETOR e REDE acionam o motor com o
+"-s" correspondente (ver marlim3.testing).
 
 Execução:
-    pytest tests/test_demos.py -v -m simulacao
+    pytest tests/test_demos_steady_state.py -v -m simulacao
 """
 
-import os
-import shutil
+from pathlib import Path
 
-import pandas as pd
 import pytest
 
-import marlim3
 from marlim3._download import executable_exists
+from marlim3.testing import check_case, load_manifest, missing_files
 
-# ============================================================================
-# Verificação do executável
-# ============================================================================
-
-def _executavel_disponivel():
-    return executable_exists()
+ROOT = Path(__file__).resolve().parents[1]
+DEMOS_DIR = ROOT / "demos"
+OUTPUT_DIR = ROOT / "saida_testes"
+CASES = load_manifest(DEMOS_DIR / "manifest.json")
 
 
-skip_sem_executavel = pytest.mark.skipif(
-    not _executavel_disponivel(),
-    reason="Executável Marlim3 não encontrado",
-)
+def test_manifest_lists_existing_files():
+    assert not missing_files(CASES, DEMOS_DIR)
 
-# ============================================================================
-# Definição dos demos e seus arquivos auxiliares
-# ============================================================================
-#
-# Chave  : nome do JSON principal (demo a ser simulado)
-# Valor  : lista de arquivos auxiliares necessários (da pasta demos/)
-#
-# Apenas os JSONs listados aqui serão executados como teste.
-# Arquivos que são apenas auxiliares (ex: leituraAS.json) NÃO devem
-# ter entrada própria como chave.
 
-DEMOS = {
-    # Legacy PT demos moved under demos/pt-br
-    "pt-br/2zonas-2VGLs-2-Check-correcPerfTerm.mr3": ["PVTSIM-MARLIM.tab"],
-    "pt-br/BCS-longo-eficMotor.mr3":                 ["PVTSIM-MARLIM.tab"],
-    "pt-br/injec-Liq-TempoResidencia.mr3":           [],
-    "pt-br/parada-longo-Combinado-BCS-GLC-PIG-completo.mr3": ["PVTSIM-MARLIM.tab"],
-    "pt-br/producaoSimplificado.mr3":                [],
-    "pt-br/atritoTuboLiso.mr3":                      [],
-
-    # Renamed EN demos at demos/
-    "2zones-2GLVs-2-Check-correcThermProf.mr3": ["PVTSIM-MARLIM.tab"],
-    "extended-ESP-pumpEfic.mr3":                 ["PVTSIM-MARLIM.tab"],
-    "injec-Liq-ResidenceTime.mr3":               [],
-    "extended-shutdown-combined-ESP-CGL-PIG-complete.mr3": ["PVTSIM-MARLIM.tab"],
-    "simplifiedProduction.mr3":                  [],
-    "smoothPipeFriction.mr3":                    [],
-}
-
-# ============================================================================
-# Caminhos
-# ============================================================================
-
-DEMOS_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "demos"))
-OUTPUT_DIR = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", "saida_testes"))
-
-DEMO_FILES = sorted(DEMOS.keys())
-
-# ============================================================================
-# Testes
-# ============================================================================
-
-@skip_sem_executavel
+@pytest.mark.skipif(not executable_exists(), reason="Executável Marlim3 não encontrado")
 @pytest.mark.simulacao
-@pytest.mark.parametrize("json_file", DEMO_FILES, ids=DEMO_FILES)
-def test_demo_simula(json_file):
-    """Carrega o JSON, executa a simulação e verifica se gerou resultados."""
-    json_path = os.path.join(DEMOS_DIR, json_file)
-    label = os.path.splitext(json_file)[0].replace("/", "__").replace("\\", "__")
-
-    caso = marlim3.Branch()
-    caso.from_json(json_path)
-
-    # Passando para permanente
-    # Reduzir time de simulação para acelerar os testes
-    if "transient" in caso.initialConfig:
-        caso.initialConfig["transient"] = False
-
-    out_dir = os.path.join(OUTPUT_DIR, label)
-    os.makedirs(out_dir, exist_ok=True)
-
-    # Copia apenas os arquivos auxiliares necessários para este demo
-    for aux in DEMOS[json_file]:
-        src = os.path.join(DEMOS_DIR, aux)
-        if os.path.isfile(src):
-            shutil.copy2(src, out_dir)
-
-    # Usa caminho absoluto para o diretório de resultados, evitando
-    # problemas com caminhos relativos após troca de CWD.
-    results_dir = os.path.join(out_dir, f"resultados_{label}")
-
-    original_cwd = os.getcwd()
-    try:
-        os.chdir(out_dir)
-        caso.simulate(label=label, directory=results_dir)
-    finally:
-        os.chdir(original_cwd)
-
-    # O método simular() move simulacao.log do CWD para results_dir.
-    # Copiamos de volta para out_dir para facilitar a consulta.
-    log_in_results = os.path.join(results_dir, "simulacao.log")
-    log_in_outdir = os.path.join(out_dir, "simulacao.log")
-    if os.path.isfile(log_in_results):
-        shutil.copy2(log_in_results, log_in_outdir)
-    elif os.path.isfile(log_in_outdir):
-        pass  # já está no lugar certo
-
-    assert caso.resultados, f"Simulação de {json_file} não gerou resultados"
+@pytest.mark.parametrize("case", CASES, ids=[c.model for c in CASES])
+def test_demo_simula(case):
+    problems = check_case(case, DEMOS_DIR, OUTPUT_DIR)
+    assert not problems, f"{case.model}: {problems}"
