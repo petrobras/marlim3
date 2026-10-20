@@ -7,11 +7,11 @@
                           "latentHeat":  false,
                           "cpModel":  0,
                           "pvtFile":  "PVTSIM-MARLIM.tab",
-                          "tabP":  true,
-                          "tabG":  true,
+                          "pressureTable":  true,
+                          "gasTable":  true,
                           "trackGOR":  true,
                           "trackGasDensity":  true,
-                          "permanente":  true,
+                          "steadyStateActive":  true,
                           "steadyStateOrder":  1,
                           "transient":  false,
                           "massTransfer":  0,
@@ -195,7 +195,7 @@
                                  "visc2":  20.0,
                                  "emulsionType":  3,
                                  "bswInversion":  0.8,
-                                 "co2Fraction":  0.0,
+                                 "CO2Fraction":  0.0,
                                  "criticalCorrelation":  0,
                                  "active":  true,
                                  "deadOilModel":  0
@@ -213,7 +213,7 @@
                                  "visc2":  40.0,
                                  "emulsionType":  3,
                                  "bswInversion":  0.8,
-                                 "co2Fraction":  0.0,
+                                 "CO2Fraction":  0.0,
                                  "criticalCorrelation":  0,
                                  "active":  true,
                                  "deadOilModel":  0
@@ -237,7 +237,7 @@
     "gasFluid":  {
                      "id":  0,
                      "gasDensity":  0.55,
-                     "co2Fraction":  0.0,
+                     "CO2Fraction":  0.0,
                      "criticalCorrelation":  0,
                      "active":  true
                  },
@@ -612,7 +612,7 @@
                                 "label":  "duto0SG",
                                 "convectionDirection":  0,
                                 "thermalCoupling":  0,
-                                "formation":  true,
+                                "formacao":  true,
                                 "formationId":  0,
                                 "discretization":  [
                                                        {
@@ -1133,7 +1133,7 @@
                              "angle":  -1.570796,
                              "label":  "duto1G",
                              "thermalCoupling":  1,
-                             "formation":  true,
+                             "formacao":  true,
                              "formationId":  0,
                              "discretization":  [
                                                     {
@@ -1300,7 +1300,7 @@
                               "valveType":  0,
                               "orificeDiameter":  0.0079380,
                               "vglDischCoef":  1.0,
-                              "recoveryFactor":  0.0,
+                              "frecupera":  0.0,
                               "areaRatio":  0.1,
                               "calibrationPressure":  0.2
                           },
@@ -1311,7 +1311,7 @@
                               "valveType":  0,
                               "orificeDiameter":  0.003938,
                               "vglDischCoef":  1.0,
-                              "recoveryFactor":  0.0
+                              "frecupera":  0.0
                           }
                       ],
     "fonteGas_reserva":  [
@@ -1589,7 +1589,7 @@
                               "liquidMassFlowRate":  true,
                               "c0":  true,
                               "driftVelocity":  true,
-                              "gor":  true,
+                              "gasOilRatio":  true,
                               "gasStdDensity":  true,
                               "yCO2":  true,
                               "heat":  false,

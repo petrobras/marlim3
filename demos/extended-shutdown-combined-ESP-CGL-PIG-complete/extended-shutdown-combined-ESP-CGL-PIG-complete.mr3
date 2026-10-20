@@ -8,8 +8,8 @@
                           "latentHeat":  false,
                           "cpModel":  0,
                           "pvtFile":  "PVTSIM-MARLIM.tab",
-                          "tabP":  true,
-                          "tabG":  true,
+                          "pressureTable":  true,
+                          "gasTable":  true,
                           "trackGOR":  true,
                           "trackGasDensity":  true,
                           "initialCondition":  1,
@@ -190,7 +190,7 @@
                                  "visc2":  20.0,
                                  "emulsionType":  3,
                                  "bswInversion":  0.8,
-                                 "co2Fraction":  0.0,
+                                 "CO2Fraction":  0.0,
                                  "criticalCorrelation":  0,
                                  "deadOilModel":  0
                              }
@@ -212,7 +212,7 @@
     "gasFluid":  {
                      "id":  0,
                      "gasDensity":  0.55,
-                     "co2Fraction":  0.0,
+                     "CO2Fraction":  0.0,
                      "criticalCorrelation":  0
                  },
     "material":  [
@@ -1239,7 +1239,7 @@
                               "valveType":  0,
                               "orificeDiameter":  0.007938,
                               "vglDischCoef":  1.0,
-                              "recoveryFactor":  0,
+                              "frecupera":  0,
                               "areaRatio":  0.1,
                               "calibrationPressure":  0.2
                           }
@@ -1513,7 +1513,7 @@
                               "liquidMassFlowRate":  true,
                               "c0":  true,
                               "driftVelocity":  true,
-                              "gor":  true,
+                              "gasOilRatio":  true,
                               "gasStdDensity":  true,
                               "yCO2":  true,
                               "heat":  false,
@@ -1656,7 +1656,7 @@
                                 "liquidMassFlowRate":  false,
                                 "c0":  false,
                                 "driftVelocity":  false,
-                                "gor":  false,
+                                "gasOilRatio":  false,
                                 "gasStdDensity":  false,
                                 "yCO2":  false,
                                 "heat":  false,
@@ -1688,7 +1688,7 @@
                                 "liquidMassFlowRate":  false,
                                 "c0":  false,
                                 "driftVelocity":  false,
-                                "gor":  false,
+                                "gasOilRatio":  false,
                                 "gasStdDensity":  false,
                                 "yCO2":  false,
                                 "heat":  false,
@@ -1720,7 +1720,7 @@
                                 "liquidMassFlowRate":  false,
                                 "c0":  false,
                                 "driftVelocity":  false,
-                                "gor":  false,
+                                "gasOilRatio":  false,
                                 "gasStdDensity":  false,
                                 "yCO2":  false,
                                 "heat":  false,
