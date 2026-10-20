@@ -138,27 +138,27 @@ OUTPUT_DIR = os.path.join(PROJECT_ROOT, "regression_output")
 
 DEMOS = {
     "2zonas-2VGLs-2-Check-correcPerfTerm": {
-        "json": "pt-br/2zonas-2VGLs-2-Check-correcPerfTerm.mr3",
+        "json": "2zones-2GLVs-2-Check-correcThermProf/2zonas-2VGLs-2-Check-correcPerfTerm.mr3",
         "aux": ["PVTSIM-MARLIM.tab"],
     },
     "BCS-longo-eficMotor": {
-        "json": "pt-br/BCS-longo-eficMotor.mr3",
+        "json": "extended-ESP-pumpEfic/BCS-longo-eficMotor.mr3",
         "aux": ["PVTSIM-MARLIM.tab"],
     },
     "injec-Liq-TempoResidencia": {
-        "json": "pt-br/injec-Liq-TempoResidencia.mr3",
+        "json": "injec-Liq-ResidenceTime/injec-Liq-TempoResidencia.mr3",
         "aux": [],
     },
     # "MultiBCS": {
-    #     "json": "pt-br/MultiBCS.json",
+    #     "json": "MultiESP/MultiBCS.mr3",
     #     "aux": ["PVTSIM-MARLIM.tab"],
     # },
     "parada-longo-Combinado-BCS-GLC-PIG-completo": {
-        "json": "pt-br/parada-longo-Combinado-BCS-GLC-PIG-completo.mr3",
+        "json": "extended-shutdown-combined-ESP-CGL-PIG-complete/parada-longo-Combinado-BCS-GLC-PIG-completo.mr3",
         "aux": ["PVTSIM-MARLIM.tab"],
     },
     "producaoSimplificado": {
-        "json": "pt-br/producaoSimplificado.mr3",
+        "json": "simplifiedProduction/producaoSimplificado.mr3",
         "aux": [],
     },
 }
@@ -195,7 +195,7 @@ def _run_simulation(model_name):
 
     # Copiar arquivos auxiliares
     for aux in info["aux"]:
-        src = os.path.join(DEMOS_DIR, aux)
+        src = os.path.join(os.path.dirname(json_path), aux)
         if os.path.isfile(src):
             shutil.copy2(src, out_dir)
 

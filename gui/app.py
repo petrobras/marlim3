@@ -465,6 +465,11 @@ with st.sidebar:
                     _src = demos_dir / Path(selected_demo)
                     _loaded_name = Path(selected_demo).name
                     _dst = os.path.join(work_dir, _loaded_name)
+                    if _src.parent != demos_dir:
+                        # each demo folder holds the model and its auxiliary files
+                        for _aux in _src.parent.iterdir():
+                            if _aux.is_file():
+                                _shutil_demo.copy2(str(_aux), os.path.join(work_dir, _aux.name))
                     _shutil_demo.copy2(str(_src), _dst)
                     st.session_state["loaded_file"] = _loaded_name
                     with open(_dst, "r", encoding="utf-8") as _df:

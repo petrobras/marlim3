@@ -38,7 +38,7 @@ def run_ap(engine, directory, mode, parallel=False, rates=(1000, 2000, 3000),
            pressures=(10, 20), table=True, choke=None, threads=2,
            inlet_condition=0, series_length=1):
     directory.mkdir(parents=True, exist_ok=True)
-    model = json.loads((ROOT / "demos/pt-br/atritoTuboLiso.mr3").read_text(encoding="utf-8"))
+    model = json.loads((ROOT / "demos/smoothPipeFriction/atritoTuboLiso.mr3").read_text(encoding="utf-8"))
     model["configuracaoInicial"].update({
         "AP": True,
         "paralelizaAP": parallel,

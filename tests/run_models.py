@@ -142,7 +142,7 @@ def load_regression_models() -> list[Model]:
             name=name,
             type="TRANSIENTE",
             input_path=f"demos/{info['json']}",
-            pvt_path="demos/",
+            pvt_path=f"demos/{os.path.dirname(info['json'])}/",
             output_file=f"{name}.log",
             group="regression",
         )

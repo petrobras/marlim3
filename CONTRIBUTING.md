@@ -99,7 +99,7 @@ use a locally configured JFrog mirror through the maintenance helper. Use
 | `gui/` | Streamlit interface |
 | `regression_tool/` | regression and coverage tooling — [guide](regression_tool/README.md) |
 | `tests/` | test suite — [guide](tests/README.md) |
-| `demos/` | example models, PT under `demos/pt-br/` |
+| `demos/` | example models, one folder per case with the PT model, the EN model and auxiliary files |
 | `docs/` | MkDocs documentation source |
 
 ## Making changes

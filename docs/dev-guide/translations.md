@@ -168,7 +168,7 @@ Renaming an English key requires coordinated changes across the project:
 3. **Update Python `Branch` class** (`marlim3/_tramo/_branch.py`):
    - Rename the attribute in `__init__()` and `to_json()`. The `__getattr__`/`__setattr__` and `BilingualDict` will automatically pick up the new mapping from `translations.json` — no changes needed in those.
 
-4. **Update English demo files** (`demos/*.json` with `"language": "en"`):
+4. **Update English demo files** (`demos/<case>/*.mr3` written with English keys):
    - Replace all occurrences of the old key with the new one.
 
 5. **Update documentation**:

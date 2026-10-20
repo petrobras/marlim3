@@ -18,7 +18,6 @@ def discover_project_demos(project_root: Path) -> list[TestCase]:
     demos_root = project_root / "demos"
     if not demos_root.is_dir():
         return []
-    pvt_file = demos_root / "PVTSIM-MARLIM.tab"
     tests: list[TestCase] = []
     for path in sorted(demos_root.rglob("*")):
         if (
@@ -28,6 +27,9 @@ def discover_project_demos(project_root: Path) -> list[TestCase]:
         ):
             continue
         model_path = path.relative_to(project_root).as_posix()
+        pvt_file = path.parent / "PVTSIM-MARLIM.tab"
+        if not pvt_file.is_file():
+            pvt_file = demos_root / "PVTSIM-MARLIM.tab"
         requires_pvt = (
             path.suffix.lower() == ".mr3"
             and "PVTSIM-MARLIM.tab" in path.read_text(encoding="utf-8", errors="replace")
