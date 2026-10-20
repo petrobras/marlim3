@@ -23,7 +23,6 @@ PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 LOGO_PATH = PROJECT_ROOT / "assets" / "branding" / "logo.svg"
-MODEL_FILE_SUFFIXES = (".json", ".mr3")
 
 
 def _discover_demo_files(demos_dir):
@@ -33,7 +32,7 @@ def _discover_demo_files(demos_dir):
     demo_paths = [
         path
         for path in demos_dir.rglob("*")
-        if path.is_file() and path.suffix.lower() in MODEL_FILE_SUFFIXES
+        if path.is_file() and path.suffix.lower() == ".mr3"
     ]
     return sorted(path.relative_to(demos_dir).as_posix() for path in demo_paths)
 

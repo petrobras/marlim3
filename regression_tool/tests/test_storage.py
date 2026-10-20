@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -19,28 +20,33 @@ class StorageTests(unittest.TestCase):
             with repository.connect() as db:
                 self.assertEqual(db.execute("SELECT version FROM schema_version").fetchone()[0], 2)
 
-    def test_discovers_non_translated_demo_models_without_persisting_them(self):
+    def test_discovers_manifest_demo_models_without_persisting_them(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             demos = root / "demos"
-            (demos / "pt-br").mkdir(parents=True)
-            (demos / "english.mr3").write_text('"pvtFile": "PVTSIM-MARLIM.tab"', encoding="utf-8")
-            (demos / "legacy.json").write_text("{}", encoding="utf-8")
-            (demos / "PVTSIM-MARLIM.tab").write_text("pvt", encoding="utf-8")
-            (demos / "notes.txt").write_text("ignore", encoding="utf-8")
-            (demos / "pt-br" / "portugues.mr3").write_text("modelo", encoding="utf-8")
+            (demos / "case").mkdir(parents=True)
+            (demos / "case" / "modelo.mr3").write_text("{}", encoding="utf-8")
+            (demos / "case" / "english.mr3").write_text("{}", encoding="utf-8")
+            (demos / "case" / "PVTSIM-MARLIM.tab").write_text("pvt", encoding="utf-8")
+            (demos / "case" / "leitura.json").write_text("{}", encoding="utf-8")
+            (demos / "legacy.mr3").write_text("{}", encoding="utf-8")
+            (demos / "unlisted.mr3").write_text("{}", encoding="utf-8")
+            manifest = [
+                {"model": "case/modelo.mr3", "native": "case/english.mr3", "aux": ["PVTSIM-MARLIM.tab"]},
+                {"model": "legacy.mr3"},
+            ]
+            (demos / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             repository = StorageRepository(root / "tool.db")
             discovered = discover_project_demos(root)
 
-            self.assertEqual(len(discovered), 2)
             self.assertEqual(
-                {test.model_path for test in discovered},
-                {"demos/english.mr3", "demos/legacy.json"},
+                [test.model_path for test in discovered],
+                ["demos/case/english.mr3", "demos/legacy.mr3"],
             )
             self.assertEqual(repository.list_tests(), [])
-            english = next(test for test in discovered if test.model_path.endswith("english.mr3"))
-            self.assertEqual(english.auxiliary_files, ["demos/PVTSIM-MARLIM.tab"])
-            (demos / "added.mr3").write_text("model", encoding="utf-8")
+            self.assertEqual(discovered[0].auxiliary_files, ["demos/case/PVTSIM-MARLIM.tab"])
+            manifest.append({"model": "unlisted.mr3"})
+            (demos / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             self.assertEqual(len(discover_project_demos(root)), 3)
 
 

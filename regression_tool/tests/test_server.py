@@ -67,18 +67,20 @@ class RegressionServiceTests(unittest.TestCase):
     def test_default_models_are_read_directly_from_project_on_each_call(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            (root / "demos" / "pt-br").mkdir(parents=True)
+            (root / "demos").mkdir()
             (root / "demos" / "english.mr3").write_text("model", encoding="utf-8")
-            (root / "demos" / "pt-br" / "portugues.mr3").write_text("modelo", encoding="utf-8")
+            (root / "demos" / "new.mr3").write_text("{}", encoding="utf-8")
+            manifest = root / "demos" / "manifest.json"
+            manifest.write_text('[{"model": "english.mr3"}]', encoding="utf-8")
             service = RegressionService.__new__(RegressionService)
             service.config = SimpleNamespace(resolved_project_root=root)
             service.storage = SimpleNamespace(list_tests=lambda: [])
 
             self.assertEqual([test.model_path for test in service.visible_tests()], ["demos/english.mr3"])
-            (root / "demos" / "new.json").write_text("{}", encoding="utf-8")
+            manifest.write_text('[{"model": "english.mr3"}, {"model": "new.mr3"}]', encoding="utf-8")
             self.assertEqual(
                 {test.model_path for test in service.visible_tests()},
-                {"demos/english.mr3", "demos/new.json"},
+                {"demos/english.mr3", "demos/new.mr3"},
             )
 
     def test_upload_is_copied_under_tool_data(self):

@@ -7,7 +7,6 @@ a classe de cenários (Cenarios).
 """
 
 import copy
-import glob
 import json
 import os
 import tempfile
@@ -17,6 +16,7 @@ import pandas as pd
 import pytest
 
 import marlim3
+from marlim3.testing import load_manifest
 
 
 # ============================================================================
@@ -579,31 +579,19 @@ class TestInputValidation:
 # ============================================================================
 
 class TestDemoFiles:
-    """Testes de carregamento dos arquivos JSON de demonstração."""
+    """Testes de carregamento dos modelos listados em demos/manifest.json."""
 
     DEMO_DIR = os.path.join(os.path.dirname(__file__), "..", "demos")
-
-    def _demo_files(self):
-        if not os.path.isdir(self.DEMO_DIR):
-            pytest.skip("Diretório demos/ não encontrado")
-        return glob.glob(os.path.join(self.DEMO_DIR, "*", "*.mr3"))
+    CASES = load_manifest(os.path.join(DEMO_DIR, "manifest.json"))
 
     def test_demo_files_exist(self):
-        demos = self._demo_files()
-        assert len(demos) > 0, "Nenhum arquivo demo .mr3 encontrado"
+        assert self.CASES, "Nenhuma demo listada em demos/manifest.json"
 
-    @pytest.mark.parametrize("demo_file", [
-        "2zones-2GLVs-2-Check-correcThermProf/2zones-2GLVs-2-Check-correcThermProf.mr3",
-        "extended-ESP-pumpEfic/extended-ESP-pumpEfic.mr3",
-        "simplifiedProduction/simplifiedProduction.mr3",
-    ])
+    @pytest.mark.parametrize("demo_file", [f for c in CASES for f in (c.model, c.native) if f])
     def test_load_demo_json(self, demo_file):
         """Arquivos demo devem ser carregáveis como Tramo."""
-        filepath = os.path.join(self.DEMO_DIR, demo_file)
-        if not os.path.isfile(filepath):
-            pytest.skip(f"{demo_file} não encontrado")
         t = marlim3.Branch()
-        t.from_json(filepath)
+        t.from_json(os.path.join(self.DEMO_DIR, demo_file))
         assert t.system is not None
 
 

@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 import platform
-from pathlib import Path
 import re
 import shutil
 import subprocess
 
 from .config import ToolConfig
+from .storage import discover_project_demos
 
 
 @dataclass
@@ -76,16 +76,7 @@ class ProjectDetector:
         found = {item.name: item.available for item in tools}
         llvm_ready = found.get("clang++") and found.get("llvm-profdata") and found.get("llvm-cov")
         gcc_ready = found.get("g++") and found.get("gcov")
-        demos = []
-        demos_root = root / "demos"
-        if demos_root.exists():
-            demos = [
-                str(path.relative_to(root))
-                for path in sorted(demos_root.rglob("*"))
-                if path.is_file()
-                and path.suffix.lower() in {".mr3", ".json"}
-                and "pt-br" not in path.relative_to(demos_root).parts
-            ]
+        demos = [test.model_path for test in discover_project_demos(root)]
         risks = [
             "The original CMake generates headers and copies the executable into the source tree; a shadow copy is mandatory.",
             "The target mixes C++ and Fortran; LLVM Coverage covers the C++ side, while Fortran requires gcov or a dedicated tool.",

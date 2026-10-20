@@ -14,27 +14,26 @@ SCHEMA_VERSION = 2
 
 
 def discover_project_demos(project_root: Path) -> list[TestCase]:
-    """Read the current project demos directly without copying them into local state."""
+    """Read the demos listed in ``demos/manifest.json`` without copying them into local state.
+
+    The hand-written English model (``native``) is preferred over the Portuguese one.
+    """
     demos_root = project_root / "demos"
-    if not demos_root.is_dir():
+    manifest = demos_root / "manifest.json"
+    if not manifest.is_file():
         return []
     tests: list[TestCase] = []
-    for path in sorted(demos_root.rglob("*")):
-        if (
-            not path.is_file()
-            or path.suffix.lower() not in {".mr3", ".json"}
-            or "pt-br" in {part.lower() for part in path.relative_to(demos_root).parts}
-        ):
+    for entry in json.loads(manifest.read_text(encoding="utf-8")):
+        path = demos_root / (entry.get("native") or entry["model"])
+        if not path.is_file():
             continue
         model_path = path.relative_to(project_root).as_posix()
-        pvt_file = path.parent / "PVTSIM-MARLIM.tab"
-        if not pvt_file.is_file():
-            pvt_file = demos_root / "PVTSIM-MARLIM.tab"
-        requires_pvt = (
-            path.suffix.lower() == ".mr3"
-            and "PVTSIM-MARLIM.tab" in path.read_text(encoding="utf-8", errors="replace")
-        )
-        auxiliary = [pvt_file.relative_to(project_root).as_posix()] if requires_pvt and pvt_file.is_file() else []
+        auxiliary = []
+        for name in entry.get("aux", ()):
+            for candidate in (path.parent / name, demos_root / name):
+                if candidate.is_file():
+                    auxiliary.append(candidate.relative_to(project_root).as_posix())
+                    break
         tests.append(TestCase(
             path.stem,
             model_path,
