@@ -373,6 +373,18 @@ function RegressionApp() {
     setSelectedTests(ids => ids.includes(test.id) ? ids.filter(id => id !== test.id) : [...ids, test.id])
   }, [])
 
+  // Acts on the visible (search-filtered) tests only.
+  const allVisibleSelected = filteredTests.length > 0 && filteredTests.every(test => selectedTests.includes(test.id))
+  const toggleAllVisible = useCallback(() => {
+    setComparisonMode(false)
+    setSelectedNode(null)
+    setSource(null)
+    const visible = filteredTests.map(test => test.id)
+    setSelectedTests(ids => allVisibleSelected
+      ? ids.filter(id => !visible.includes(id))
+      : [...ids, ...visible.filter(id => !ids.includes(id))])
+  }, [allVisibleSelected, filteredTests])
+
   const runAction = async (kind: 'build' | 'run') => {
     try {
       const next = kind === 'build' ? await api.build() : await api.run(selectedTests)
@@ -463,6 +475,10 @@ function RegressionApp() {
           <input value={testSearch} onChange={event => setTestSearch(event.target.value)} placeholder={t('tests.search')} />
           <button><SlidersHorizontal size={17} /></button>
         </div>
+        {filteredTests.length > 0 && <button className="test-row select-all" onClick={toggleAllVisible}>
+          <span className={`check-box ${allVisibleSelected ? 'checked' : ''}`}>{allVisibleSelected && <Check size={14} />}</span>
+          <span className="test-name">{t(allVisibleSelected ? 'tests.deselectAll' : 'tests.selectAll', { count: filteredTests.length })}</span>
+        </button>}
         <div className="test-list">
           {filteredTests.map(test => <TestRow
             key={test.id}

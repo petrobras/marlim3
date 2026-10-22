@@ -58,6 +58,7 @@ button:disabled { opacity: .45; cursor: not-allowed !important; }
 .test-row.selected { background: linear-gradient(90deg, #0c3159, #102841); }
 .check-box { width: 17px; height: 17px; border-radius: 4px; border: 1px solid #718094; display: grid; place-items: center; }
 .check-box.checked { background: #409df6; border-color: #6eb7ff; color: white; }
+.test-row.select-all { margin: 0 14px 6px; width: auto; border-bottom: 1px solid #314052; color: #9aa9ba; }
 .test-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .test-status { width: 18px; height: 18px; border: 2px solid #647182; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0; }
 .test-status svg { display: block; flex: 0 0 auto; }

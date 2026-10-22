@@ -20,7 +20,7 @@ profile.
 - **LLVM coverage** per test plus real profile merging with `llvm-profdata`
 - **Execution flow graph** with every function found by LLVM, demangled symbols, `main` as root, recursion filter, search, scopes, zoom, pan and fit
 - **Visual comparison** between exactly two executed tests, with common and exclusive functions
-- **Live discovery** of `.mr3` and `.json` models in `../demos/`, excluding `demos/pt-br/`
+- **Demo discovery** from `../demos/manifest.json`: only listed models become tests, with their `aux` files attached and `-s INJETOR`/`-s REDE` passed for those modes
 - **Bilingual interface**: English by default, Portuguese via the toggle in the top bar
 - **CLI** for environments without a graphical interface
 

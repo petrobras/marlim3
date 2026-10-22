@@ -68,17 +68,19 @@ class RegressionServiceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             (root / "demos" / "pt-br").mkdir(parents=True)
-            (root / "demos" / "english.mr3").write_text("model", encoding="utf-8")
             (root / "demos" / "pt-br" / "portugues.mr3").write_text("modelo", encoding="utf-8")
+            (root / "demos" / "pt-br" / "novo.json").write_text("{}", encoding="utf-8")
+            manifest = root / "demos" / "manifest.json"
+            manifest.write_text('[{"model": "pt-br/portugues.mr3"}]', encoding="utf-8")
             service = RegressionService.__new__(RegressionService)
             service.config = SimpleNamespace(resolved_project_root=root)
             service.storage = SimpleNamespace(list_tests=lambda: [])
 
-            self.assertEqual([test.model_path for test in service.visible_tests()], ["demos/english.mr3"])
-            (root / "demos" / "new.json").write_text("{}", encoding="utf-8")
+            self.assertEqual([test.model_path for test in service.visible_tests()], ["demos/pt-br/portugues.mr3"])
+            manifest.write_text('[{"model": "pt-br/portugues.mr3"}, {"model": "pt-br/novo.json"}]', encoding="utf-8")
             self.assertEqual(
                 {test.model_path for test in service.visible_tests()},
-                {"demos/english.mr3", "demos/new.json"},
+                {"demos/pt-br/portugues.mr3", "demos/pt-br/novo.json"},
             )
 
     def test_upload_is_copied_under_tool_data(self):

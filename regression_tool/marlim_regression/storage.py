@@ -7,6 +7,7 @@ import sqlite3
 from typing import Iterable
 import uuid
 
+from .config import ToolConfig
 from .domain import RunRecord, TestCase
 
 
@@ -14,30 +15,32 @@ SCHEMA_VERSION = 2
 
 
 def discover_project_demos(project_root: Path) -> list[TestCase]:
-    """Read the current project demos directly without copying them into local state."""
+    """Read the demos listed in ``demos/manifest.json`` without copying them into local state.
+
+    Only manifest entries are models; their ``aux`` files (PVT tables, network
+    branches, parameter JSONs) are attached to the test instead of listed.
+    """
     demos_root = project_root / "demos"
-    if not demos_root.is_dir():
+    manifest = demos_root / "manifest.json"
+    if not manifest.is_file():
         return []
-    pvt_file = demos_root / "PVTSIM-MARLIM.tab"
     tests: list[TestCase] = []
-    for path in sorted(demos_root.rglob("*")):
-        if (
-            not path.is_file()
-            or path.suffix.lower() not in {".mr3", ".json"}
-            or "pt-br" in {part.lower() for part in path.relative_to(demos_root).parts}
-        ):
-            continue
+    for entry in json.loads(manifest.read_text(encoding="utf-8")):
+        path = demos_root / entry["model"]
+        # Same lookup as marlim3.testing: model folder first, then the manifest folder.
+        auxiliary = [
+            next((candidate for candidate in (path.parent / name, demos_root / name) if candidate.is_file()),
+                 path.parent / name).relative_to(project_root).as_posix()
+            for name in entry.get("aux", [])
+        ]
+        mode = entry.get("mode", "PRODUCAO")
         model_path = path.relative_to(project_root).as_posix()
-        requires_pvt = (
-            path.suffix.lower() == ".mr3"
-            and "PVTSIM-MARLIM.tab" in path.read_text(encoding="utf-8", errors="replace")
-        )
-        auxiliary = [pvt_file.relative_to(project_root).as_posix()] if requires_pvt and pvt_file.is_file() else []
         tests.append(TestCase(
             path.stem,
             model_path,
             id=str(uuid.uuid5(uuid.NAMESPACE_URL, f"marlim3-demo:{model_path}")),
             suite="demos",
+            arguments=[] if mode == "PRODUCAO" else [*ToolConfig().default_arguments, "-s", mode],
             auxiliary_files=auxiliary,
         ))
     return tests
