@@ -210,6 +210,7 @@ function RegressionApp() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null)
   const [source, setSource] = useState<SourceData | null>(null)
   const [testSearch, setTestSearch] = useState('')
+  const [activeSuite, setActiveSuite] = useState<string | null>(null)
   const [functionInput, setFunctionInput] = useState('')
   const [functionSearch, setFunctionSearch] = useState('')
   const [scope, setScope] = useState<Scope>('all')
@@ -350,10 +351,11 @@ function RegressionApp() {
   const deferredSearch = useDeferredValue(testSearch)
   const filteredTests = useMemo(() => {
     const term = deferredSearch.toLowerCase().trim()
-    if (!term) return bootstrap?.tests || []
-    return (bootstrap?.tests || []).filter(test =>
+    const inSuite = (bootstrap?.tests || []).filter(test => !activeSuite || test.suite === activeSuite)
+    if (!term) return inSuite
+    return inSuite.filter(test =>
       `${test.name} ${test.suite} ${test.model_path}`.toLowerCase().includes(term))
-  }, [bootstrap, deferredSearch])
+  }, [activeSuite, bootstrap, deferredSearch])
   const suites = useMemo(() => [...new Set((bootstrap?.tests || []).map(test => test.suite))], [bootstrap])
   const summary = graph?.summary
   const { passed, failed, lastRun } = useMemo(() => {
@@ -475,11 +477,11 @@ function RegressionApp() {
           <input value={testSearch} onChange={event => setTestSearch(event.target.value)} placeholder={t('tests.search')} />
           <button><SlidersHorizontal size={17} /></button>
         </div>
-        {filteredTests.length > 0 && <button className="test-row select-all" onClick={toggleAllVisible}>
-          <span className={`check-box ${allVisibleSelected ? 'checked' : ''}`}>{allVisibleSelected && <Check size={14} />}</span>
-          <span className="test-name">{t(allVisibleSelected ? 'tests.deselectAll' : 'tests.selectAll', { count: filteredTests.length })}</span>
-        </button>}
         <div className="test-list">
+          {filteredTests.length > 0 && <button className="test-row select-all" onClick={toggleAllVisible}>
+            <span className={`check-box ${allVisibleSelected ? 'checked' : ''}`}>{allVisibleSelected && <Check size={14} />}</span>
+            <span className="test-name">{t(allVisibleSelected ? 'tests.deselectAll' : 'tests.selectAll', { count: filteredTests.length })}</span>
+          </button>}
           {filteredTests.map(test => <TestRow
             key={test.id}
             test={test}
@@ -492,7 +494,12 @@ function RegressionApp() {
         </div>
         <div className="groups">
           <span>{t('tests.groups')}</span>
-          <div>{suites.map((suite, index) => <button key={suite} className={`group group-${index % 3}`}>{suite}</button>)}</div>
+          <div>{suites.map((suite, index) => <button
+            key={suite}
+            className={`group group-${index % 3} ${activeSuite === suite ? 'active' : ''}`}
+            aria-pressed={activeSuite === suite}
+            onClick={() => setActiveSuite(current => current === suite ? null : suite)}
+          >{suite}</button>)}</div>
         </div>
         <div className="left-actions">
           <button onClick={() => setShowAdd(true)}><Plus size={20} /> {t('tests.add')}</button>
