@@ -887,6 +887,7 @@ def main() -> None:
     url = f"http://127.0.0.1:{server.server_port}"
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    print(f"Regression Tool running at {url} (Ctrl+C to stop)", flush=True)
     process = _open_app(url)
     try:
         if process:
