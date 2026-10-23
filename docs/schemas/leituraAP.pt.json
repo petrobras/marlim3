@@ -28,6 +28,11 @@
       "default": true,
       "description": "Ativa/desativa a saída de perfil e tendência por caso. Só tem efeito quando tipoAP=0 (modo padrão). No modo VFP (tipoAP=1) nenhuma saída de perfil, tendência ou sumário é gravada — esta configuração é ignorada."
     },
+    "combinacao": {
+      "type": "boolean",
+      "default": true,
+      "description": "true: produto cartesiano completo (padrão). false: varredura agrupada em ordem de entrada; todas as séries fornecidas devem ter o mesmo comprimento não nulo, sem replicação de séries unitárias. VFP (tipoAP=1) requer true."
+    },
 
     "IPR": {
       "type": "array",
@@ -790,5 +795,16 @@
       "additionalProperties": false
     }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "tipoAP": { "const": 1 } },
+        "required": ["tipoAP"]
+      },
+      "then": {
+        "properties": { "combinacao": { "const": true } }
+      }
+    }
+  ],
   "additionalProperties": false
 }

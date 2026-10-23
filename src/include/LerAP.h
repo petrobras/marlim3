@@ -370,6 +370,7 @@ struct genericoVEC {
 class APara {
   public:
     int tipoAP;
+    bool combinacao = true;
     string entrada;
     int dim;
     int nVariaveis;
@@ -413,14 +414,14 @@ class APara {
     detBSWAP APBSW;
     detCHOKESUPAP APCHK;
     detCondConInjecAP APPInj;
-    casoVEC *sequenciaAP;
-    genericoVEC *genericoAP;
+    casoVEC *sequenciaAP = nullptr;
+    genericoVEC *genericoAP = nullptr;
 
     double resultadosVec[22 + 1];
-    double **saidaBHP;
-    double **saidaVazLiq;
+    double **saidaBHP = nullptr;
+    double **saidaVazLiq = nullptr;
     int nthrdAP;
-    int *vecParSerie;
+    int *vecParSerie = nullptr;
     int varSeq[23];
     int vfp;
     varGlob1D *vg1dSP;
@@ -499,20 +500,7 @@ class APara {
             delete[] APCondEquiv;
         }
 
-        if (nVariaveis > 1) {
-            delete[] sequenciaAP;
-            delete[] genericoAP;
-            delete[] vecParSerie;
-        }
-
-        if (nVariaveis > 1 && dim > 0 && tipoAP == 1) {
-            for (int i = 0; i < nVariaveis; i++) {
-                delete[] saidaBHP[i];
-                delete[] saidaVazLiq[i];
-            }
-            delete[] saidaBHP;
-            delete[] saidaVazLiq;
-        }
+        liberaSequencias();
     }
 
     Document parseEntrada();
@@ -603,6 +591,10 @@ class APara {
                         double &presiniG, double &tempiniG, double &vazgasG, double &presE, double &tempE,
                         double &titE, double &betaE, double &vazE, int seq, int &indCHK, double *vdPdLH,
                         double *vdPdLF, double *vdTdL, double BHP, double tempSaida);
+
+  private:
+    int tamanhoSerie(const Value &serie, const string &chaveJson);
+    void liberaSequencias();
 };
 
 #endif /* LERAP_H_ */
