@@ -562,7 +562,7 @@ void APara::parse_FonMas(Value &FonMas_json) {
                     dim++;
                     APFonMas[iFM].parserieMP = tamanhoSerie(FonMas_json[iFM]["vazaoProd"], chaveJson + "/" + to_string(iFM) + "/vazaoProd");
                     for (int ifreq = 0; ifreq < APFonMas[iFM].parserieMP; ifreq++) {
-                        APFonMas[iFM].vazMasP.push_back(FonMas_json[iFM]["vazaoTotal"][ifreq].GetDouble());
+                        APFonMas[iFM].vazMasP.push_back(FonMas_json[iFM]["vazaoProd"][ifreq].GetDouble());
                     }
                     if (combinacao)
                         sort(APFonMas[iFM].vazMasP.begin(), APFonMas[iFM].vazMasP.end());
@@ -597,7 +597,7 @@ void APara::parse_FonMas(Value &FonMas_json) {
                 if (FonMas_json[iFM].HasMember("fluido")) {
                     dim++;
                     APFonMas[iFM].parserieFlu = tamanhoSerie(FonMas_json[iFM]["fluido"], chaveJson + "/" + to_string(iFM) + "/fluido");
-                    for (int ifreq = 0; ifreq < APFonLiq[iFM].parserieFlu; ifreq++) {
+                    for (int ifreq = 0; ifreq < APFonMas[iFM].parserieFlu; ifreq++) {
                         APFonMas[iFM].indfluP.push_back(FonMas_json[iFM]["fluido"][ifreq].GetInt());
                     }
                 } else

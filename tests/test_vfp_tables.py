@@ -37,7 +37,7 @@ def engine():
 def run_ap(engine, directory, mode, parallel=False, rates=(1000, 2000, 3000),
            pressures=(10, 20), table=True, choke=None, threads=2,
            inlet_condition=0, series_length=1, analysis_override=None,
-           expected_error=None):
+           expected_error=None, model_override=None):
     directory.mkdir(parents=True, exist_ok=True)
     model = json.loads((ROOT / "demos/pt-br/atritoTuboLiso.mr3").read_text(encoding="utf-8"))
     model["configuracaoInicial"].update({
@@ -79,6 +79,8 @@ def run_ap(engine, directory, mode, parallel=False, rates=(1000, 2000, 3000),
     }
     if analysis_override is not None:
         analysis = analysis_override
+    if model_override is not None:
+        model.update(model_override)
     (directory / "model.mr3").write_text(json.dumps(model), encoding="utf-8")
     (directory / "leituraAP.json").write_text(json.dumps(analysis), encoding="utf-8")
     process = subprocess.run(

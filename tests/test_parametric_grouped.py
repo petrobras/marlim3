@@ -178,6 +178,9 @@ def test_grouped_requires_active_series(engine, tmp_path):
 
 def sweep_fields():
     for section, schema in SCHEMA["properties"].items():
+        # The shared fixture is a production model, not an injector well.
+        if section == "pocoInjetor":
+            continue
         multiple = schema["type"] == "array"
         details = schema["items"] if multiple else schema
         for field, field_schema in details.get("properties", {}).items():
@@ -236,5 +239,27 @@ def test_grouped_never_computes_cartesian_product(engine, tmp_path, mode):
         "dPdLFric": [{"indicedPdLFric": 0, "fator": [1] * count}],
     })
     assert count ** 10 > 2 ** 31 - 1
-    run_ap(engine, tmp_path, mode, analysis_override=analysis)
+    base_model = json.loads(
+        (ROOT / "demos" / "pt-br" / "atritoTuboLiso.mr3").read_text(encoding="utf-8")
+    )
+    model_override = {
+        "correcao": {
+            "ativo": True,
+            "dPdLHidro": [1.0],
+            "dPdLFric": [1.0],
+        },
+        "dutosProducao": [
+            {**duct, "dPdLHidro": 0, "dPdLFric": 0}
+            for duct in base_model["dutosProducao"]
+        ],
+    }
+    run_ap(
+        engine, tmp_path, mode, analysis_override=analysis,
+        model_override=model_override,
+    )
     assert selected_values(tmp_path, "Pressao Separador") == [10] * count
+    results = re.findall(
+        r"^\s*(\d+)\s*:\s*Resultado = (\w+)",
+        (tmp_path / "sucessoAP.dat").read_text(encoding="utf-8"), re.MULTILINE,
+    )
+    assert results == [(str(index), "sucesso") for index in range(count)]
