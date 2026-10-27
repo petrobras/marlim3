@@ -21,6 +21,8 @@ void Ler::iniciarVariaveis() {
 	nCompTotalUnidadesG = 0;
 	saidaClassica=0;
 	dtmaxserie.parserie = 0;
+	CCPres = {};
+	CCVPres = {};
 	nfluP = 0;
 	flup = 0;
 	indFlup=0;
@@ -162,9 +164,9 @@ void Ler::iniciarVariaveis() {
 
 	compLinServ=0;
 
-	miniTabAtraso=0;
-	miniTabDp=0;
-	miniTabDt=0;
+	miniTabAtraso=5;
+	miniTabDp=10;
+	miniTabDt=10;
 	tabVisc=0;
 
 	valTempChokeJus=0;
@@ -331,6 +333,9 @@ void Ler::iniciarVariaveis() {
 	inibidor="";
 	fracFWcarregada=1e-4;
 	estruturaHidratos="";
+	cTurneraprox=1e-10; //alteracao hidratos modelo 3
+	tlimitArea=200; //alteracao hidratos modelo 3
+	Alimit=1e3; //alteracao hidratos modelo 3
     rd=4e-5;
 	rp=4e-5;
 
@@ -346,6 +351,15 @@ void Ler::iniciarVariaveis() {
 
 	pmin=0.01;
 	tmin=-200;
+
+	pocoTermAxiSim=0;
+	anulAxiSim=0;
+	nAxiSim=0;
+	pocoAxiSimJson="";
+	resGlobAxiSim=0;
+
+	imprimeInventario=0;
+	tipoFatorFric=0;
 }
 
 /*!
@@ -567,6 +581,9 @@ void Ler::iniciarVariaveisConstrutorDefault() {
 	inibidor="";
 	fracFWcarregada=1e-4;
 	estruturaHidratos="";
+	cTurneraprox=1e-10; //alteracao hidratos modelo 3
+	tlimitArea=200; //alteracao hidratos modelo 3
+	Alimit=1e3; //alteracao hidratos modelo 3
     rd=4e-5;
 	rp=4e-5;
 
@@ -581,6 +598,15 @@ void Ler::iniciarVariaveisConstrutorDefault() {
 
 	pmin=0.01;
 	tmin=-200;
+
+	pocoTermAxiSim=0;
+	anulAxiSim=0;
+	nAxiSim=0;
+	pocoAxiSimJson="";
+	resGlobAxiSim=0;
+
+	imprimeInventario=0;
+	tipoFatorFric=0;
 }
 
 /*!
@@ -713,7 +739,14 @@ Ler& Ler::operator =(const Ler& vler) {
 				}
 				delete[] IPRS[i].jp;
 				delete[] IPRS[i].tjp;
-
+                ////////////////////////////////////////////////////////////
+				if(IPRS[i].ICV==1){
+					if(IPRS[i].serieICV>0){
+						delete [] IPRS[i].abertura;
+						delete [] IPRS[i].tempoICV;
+					}
+					if(IPRS[i].ncv>0)delete [] IPRS[i].cvCurv;
+				}
 			}
 			delete[] IPRS;
 		}
@@ -1100,6 +1133,10 @@ Ler& Ler::operator =(const Ler& vler) {
 		if(evento.size()>0)evento.clear();
 		if(celAcop.size()>0)celAcop.clear();
 		if(geoAcop.size()>0)geoAcop.clear();
+
+        if(nAxiSim>0){
+        	delete [] resGlobAxiSim;
+        }
 
 	    iniciarVariaveis();
 	    vg1dSP=vler.vg1dSP;
@@ -1616,9 +1653,9 @@ void Ler::testaTipo() {
 	FILE *mr3InFile = NULL;
 	char mr3InBuf[65536];
 	logger.setNomeArqEntrada(impfile);
-	    // abrir arquivo de entrada da simulação
+	    // abrir arquivo de entrada da simulaÃ§Ã£o
 	mr3InFile = fopen(impfile.c_str(), "r");
-    // criar stream para o arquivo de entrada da simulação
+    // criar stream para o arquivo de entrada da simulaÃ§Ã£o
 	FileReadStream mr3InStream(mr3InFile, mr3InBuf, sizeof(mr3InBuf));
 	// realizar o parse do Rede de entrada
 	doc.ParseStream(mr3InStream);
@@ -1745,13 +1782,13 @@ void Ler::validateVsSchema(Document *schemaDoc,
  * \return bool Flag indicating whether the property is active.
  */
 template<typename T> bool is_ativo(T& propriedade_json) {
-	// caso a propriedade não esteja vazia e exista uma chave "ativo"
+	// caso a propriedade nÃ£o esteja vazia e exista uma chave "ativo"
 	if (propriedade_json.ativo().exists()) {
 		// retorna o valor da chave "ativo" da propriedade
 		return propriedade_json.ativo();
 	} else {
 		// TODO: alterar quando tratar os erros no JSON.
-		// habilita a propriedade, caso não exista a chave "ativo"
+		// habilita a propriedade, caso nÃ£o exista a chave "ativo"
 		return true;
 	}
 }
@@ -1821,7 +1858,7 @@ int Ler::identificarMaterial(int identificador) {
 		}
 		if(i==nmaterial) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarMaterial", "",
-						"Material não encontrado");
+						"Material nÃ£o encontrado");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -1845,7 +1882,7 @@ int Ler::identificarCorte(int identificador) {
 		}
 		if(i==ncorte) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarSecaoTransversal", "",
-						"Secao Transversal não encontrada");
+						"Secao Transversal nÃ£o encontrada");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -1869,7 +1906,7 @@ int Ler::identificarFormacao(int identificador) {
 		}
 		if(i==nform) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarFormacao", "",
-						"formacao não encontrada");
+						"formacao nÃ£o encontrada");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -1893,7 +1930,7 @@ int Ler::identificarFluidoProducao(int identificador) {
 		}
 		if(i==nfluP) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarFluidoProducao", "",
-						"fluido não encontrado");
+						"fluido nÃ£o encontrado");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -2083,7 +2120,7 @@ bool Ler::verificarUnicidade(const std::vector<int>& identificadores) {
     // Encontrar o maior elemento
     int maiorElemento = *std::max_element(identificadores.begin(), identificadores.end());
 
-    // Usar vector para unicidade (gerencia memória automaticamente)
+    // Usar vector para unicidade (gerencia memÃ³ria automaticamente)
     std::vector<bool> unicidade(maiorElemento + 1, false);
 
     // percorrer os elementos do array
@@ -2095,15 +2132,15 @@ bool Ler::verificarUnicidade(const std::vector<int>& identificadores) {
         }
     }
 
-    return true; // todos os elementos são únicos
+    return true; // todos os elementos sÃ£o Ãºnicos
 }
 
 
-// Função auxiliar para ler uma linha "lógica" com continuações com barra invertida (\)
+// FunÃ§Ã£o auxiliar para ler uma linha "lÃ³gica" com continuaÃ§Ãµes com barra invertida (\)
 std::string Ler::ler_linha_continua(std::ifstream& in) {
 	std::string linha, temp;
 	while (std::getline(in, temp)) {
-		// Remove espaços e caracteres de fim de linha (como \r)
+		// Remove espaÃ§os e caracteres de fim de linha (como \r)
 		temp.erase(std::find_if(temp.rbegin(), temp.rend(),
 			[](unsigned char ch) { return !std::isspace(ch); }).base(), temp.end());
 
@@ -2189,7 +2226,7 @@ void Ler::parse_configuracao_inicial(
 		ConContEntrada = 0;
 		mudaArea=0;
 
-		miniTabAtraso=0;
+		miniTabAtraso=5;
 		miniTabDp=10.;
 		miniTabDt=10.;
 
@@ -2227,8 +2264,8 @@ void Ler::parse_configuracao_inicial(
 		}
 		if(reverso>0)sentidoGeometriaSegueEscoamento=false;
 
-		// indicador do sentido dos angulos dos dutos em relacao ao do escoamento
-		saidaClassica = 1; // angulos do duto a favor do sentido do escoamento
+
+		saidaClassica = 1;
 		if (configuracao_inicial_json.saidaClassica().exists()) {
 			saidaClassica = configuracao_inicial_json.saidaClassica();
 		}
@@ -2269,6 +2306,10 @@ void Ler::parse_configuracao_inicial(
 			// caso simulacao com tabela flash - modeloFluidoTabelaFlash: true
 			if (configuracao_inicial_json.modoParafina().exists())
 				modoParafina=configuracao_inicial_json.modoParafina();
+			if (configuracao_inicial_json.imprimeInventario().exists())
+				imprimeInventario = configuracao_inicial_json.imprimeInventario();
+			if (configuracao_inicial_json.fatorFric().exists())
+				tipoFatorFric = configuracao_inicial_json.fatorFric();
 
 			if (flashCompleto == 0) {
 				int verifComp=0;
@@ -2286,27 +2327,27 @@ void Ler::parse_configuracao_inicial(
 					if (configuracao_inicial_json.modeloJTL().exists())
 						modelJTL = configuracao_inicial_json.modeloJTL();
 					if(modelcp==1 || modelJTL==1 || latente==1){
-						// Verificar extensão .tab
+						// Verificar extensÃ£o .tab
 						if (pvtsimarq.empty()){
 							logger.log(LOGGER_FALHA,
 									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 									"Chave requerida: latente, modeloCp ou modeloJTL",
-									chaveJson, "black-oil com uso híbrido de tabelas, é necessária uma tabela do tipo .tab, não se está indicando o arquivo");
+									chaveJson, "black-oil com uso hÃ­brido de tabelas, Ã© necessÃ¡ria uma tabela do tipo .tab, nÃ£o se estÃ¡ indicando o arquivo");
 						}
-						// Verificar extensão .ctm
-						else if (pvtsimarq.length() >= 4 && pvtsimarq.substr(pvtsimarq.length() - 4) == ".ctm" ||
-								pvtsimarq.substr(pvtsimarq.length() - 4) == ".CTM" ) {
-						    // É um arquivo .ctm
+						// Verificar extensÃ£o .ctm
+						else if (pvtsimarq.length() >= 4 && (pvtsimarq.substr(pvtsimarq.length() - 4) == ".ctm" ||
+								pvtsimarq.substr(pvtsimarq.length() - 4) == ".CTM") ) {
+						    // Ã‰ um arquivo .ctm
 							logger.log(LOGGER_FALHA,
 									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 									"Chave requerida: latente, modeloCp ou modeloJTL",
-									chaveJson, "black-oil com uso híbrido de tabelas, é necessária uma tabela do tipo .tab não um arquivo ctm");
+									chaveJson, "black-oil com uso hÃ­brido de tabelas, Ã© necessÃ¡ria uma tabela do tipo .tab nÃ£o um arquivo ctm");
 						}
 						else if (pvtsimarq.length() >= 4 && pvtsimarq.substr(pvtsimarq.length() - 4) != ".tab") {
 							logger.log(LOGGER_FALHA,
 									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 									"Chave requerida: latente, modeloCp ou modeloJTL",
-									chaveJson, "black-oil com uso híbrido de tabelas, é necessária uma tabela do tipo .tab, se indicou um arquivo de extensão desconhecida");
+									chaveJson, "black-oil com uso hÃ­brido de tabelas, Ã© necessÃ¡ria uma tabela do tipo .tab, se indicou um arquivo de extensÃ£o desconhecida");
 						}
 
 					}
@@ -2410,7 +2451,7 @@ void Ler::parse_configuracao_inicial(
 			}
 			else (*vg1dSP).tipoModeloDrift=tipoModeloDrift;
 
-			// condicao inicial: 0 – informada pelo usuario, 1 – permanente, 2 – restart, 3 – descarga de gas lift
+			// condicao inicial: 0 â€“ informada pelo usuario, 1 â€“ permanente, 2 â€“ restart, 3 â€“ descarga de gas lift
 			int condicaoInicial = 1;
 			perm = 1;
 			snaps = 0;
@@ -2683,6 +2724,7 @@ void Ler::parse_configuracao_inicial(
 			    	corrigeContSep=configuracao_inicial_json.Avancado().corrigeContSep();
 			    if (configuracao_inicial_json.Avancado().miniTabDinAtraso().exists())
 			    	miniTabAtraso=configuracao_inicial_json.Avancado().miniTabDinAtraso();
+			    if(miniTabAtraso==0)miniTabAtraso=1;
 			    if (configuracao_inicial_json.Avancado().miniTabDinDp().exists())
 			    	miniTabDp=configuracao_inicial_json.Avancado().miniTabDinDp();
 			    if (configuracao_inicial_json.Avancado().miniTabDinDt().exists())
@@ -2942,6 +2984,20 @@ void Ler::parse_configuracao_inicial(
 			formacPoc[0].id = 0;
 		}
 
+		if (configuracao_inicial_json.pocoTermAxiSim().exists()) {
+			if (configuracao_inicial_json.Formacao().exists()){
+				pocoTermAxiSim = configuracao_inicial_json.pocoTermAxiSim();
+				anulAxiSim = configuracao_inicial_json.anulAxiSim();
+				pocoAxiSimJson=configuracao_inicial_json.pocoAxiSimJson();
+			}
+			else{
+				string chaveFormacaoId(chaveJson + "/modelo Axissimetrico");
+				logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+										"pocoTermAxiSim", chaveFormacaoId, "necessário preenchimento das informações térmicasd da formacao ");
+			}
+		}
+
+
 		// caso exista uma condicao de falha da aplicacao
 		if (!logger.getStResultadoSimulacao().sucesso) {
 			// gerar o arquivo de saida da simulacao e encerra a aplicacao
@@ -2971,10 +3027,10 @@ void Ler::parse_condcont_pocinjec(JSON_entrada_CondicaoContPocInjec& condcont_js
 		// caso a propriedade "ativo" esteja habilitada
 		if (is_ativo(condcont_json)) {
 			// caso o elemento usuario exista
-			if (condcont_json.usuario().exists()) {
+			//if (condcont_json.usuario().exists()) {
 				// obter o valor da chave
-				usuario = string(condcont_json.usuario());
-			}
+				//usuario = string(condcont_json.usuario());
+			//}
 
 			condpocinj.tipoFlui = condcont_json.tipoFluido();
 			// caso o tipo do fluido seja 1 - agua salinizada
@@ -3094,7 +3150,7 @@ void Ler::parse_condcont_pocinjec(JSON_entrada_CondicaoContPocInjec& condcont_js
 				if (condcont_json.presInjec().exists()) {
 					condpocinj.presinj = condcont_json.presInjec();
 				} else {
-					// RN-019: Chave "presInjec" requerida para as condições de contorno (CC = 1, 3 ou 4)
+					// RN-019: Chave "presInjec" requerida para as condiÃ§Ãµes de contorno (CC = 1, 3 ou 4)
 					// incluir falha
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -3111,7 +3167,7 @@ void Ler::parse_condcont_pocinjec(JSON_entrada_CondicaoContPocInjec& condcont_js
 					condpocinj.presfundo =
 							condcont_json.presFundo();
 				} else {
-					// RN-020: Chave "presFundo" requerida para as condições de contorno (CC = 2, 3 ou 5)
+					// RN-020: Chave "presFundo" requerida para as condiÃ§Ãµes de contorno (CC = 2, 3 ou 5)
 					// incluir falha
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -3235,7 +3291,11 @@ void Ler::parse_parafina(JSON_entrada_parafina& parafina_json) {
 	detalParafina.arquivo="";
 	detalParafina.poroRey=0;
 	detalParafina.valRey=0;
+	detalParafina.TIACusuarioAtiva=0;
+	detalParafina.TIACusuario=0.;
 	detalParafina.C2C3=0;
+	detalParafina.boolC3=0;
+	detalParafina.boolC2=0;
 	detalParafina.valC2=1.;
 	detalParafina.valC3=1.;
 	detalParafina.difus=0;
@@ -3246,6 +3306,7 @@ void Ler::parse_parafina(JSON_entrada_parafina& parafina_json) {
 	detalParafina.DmultipWax = 1.;
 	detalParafina.EmultipWax = 1.;
 	detalParafina.FmultipWax = 1.;
+	detalParafina.ponderaCond=0;
 
 	if (parafina_json.arquivoWax().exists())
 		detalParafina.arquivo = parafina_json.arquivoWax();
@@ -3264,23 +3325,38 @@ void Ler::parse_parafina(JSON_entrada_parafina& parafina_json) {
 						"Chave #/parafina sem porosidade");
 		}
 	}
+	if (parafina_json.TIACusuarioAtiva().exists()){
+		detalParafina.TIACusuarioAtiva = parafina_json.TIACusuarioAtiva();
+		if(detalParafina.TIACusuarioAtiva==1){
+			if (parafina_json.TIACusuario().exists())
+				detalParafina.TIACusuario = parafina_json.TIACusuario();
+			else
+				logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+						chaveJson, chaveJson,
+						"Chave #/parafina sem valor de TIAC");
+		}
+	}
 	if (parafina_json.usuarioC2C3().exists()){
 		detalParafina.C2C3 = parafina_json.usuarioC2C3();
 		if(detalParafina.C2C3==1){
 
-			if (parafina_json.c2().exists())
+			if (parafina_json.c2().exists()){
 				detalParafina.valC2 = parafina_json.c2();
-			else
-				logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						chaveJson, chaveJson,
-						"Chave #/parafina sem C2");
+				detalParafina.boolC2=1;
+			}
+			//else
+				//logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+						//chaveJson, chaveJson,
+						//"Chave #/parafina sem C2");
 
-			if (parafina_json.c3().exists())
+			if (parafina_json.c3().exists()){
 				detalParafina.valC3 = parafina_json.c3();
-			else
-				logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						chaveJson, chaveJson,
-						"Chave #/parafina sem C3");
+				detalParafina.boolC3=1;
+			}
+			//else
+				//logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+						//chaveJson, chaveJson,
+						//"Chave #/parafina sem C3");
 		}
 	}
 	if (parafina_json.usuarioDifus().exists()){
@@ -3312,12 +3388,15 @@ void Ler::parse_parafina(JSON_entrada_parafina& parafina_json) {
 
 	if (parafina_json.multVis().exists())
 		detalParafina.multVis = parafina_json.multVis();
+
+	if (parafina_json.ponderaCond().exists())
+		detalParafina.ponderaCond = parafina_json.ponderaCond();
 }
 
 /*!
  * Converter o elemento "fluidosProducao" do arquivo Json do MRT em struct flup.
  *
- * \tparam Objeto JSON correspondente à fluidos producao
+ * \tparam Objeto JSON correspondente Ã  fluidos producao
  */
 void Ler::parse_fluidos_producao(
 		JSON_entrada_fluidosProducao& fluidos_producao_json) {
@@ -3378,13 +3457,13 @@ void Ler::parse_fluidos_producao(
 			if (flashCompleto == 0) {
 				// loop para carga do vetor do JSON
 				for (int i = 0; i < nfluP; i++) {
-					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avança
+					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avanÃ§a
 					while (!is_ativo(fluidos_producao_json[++indAtivo]))
 						;
 					// obter maior identificador
 					indFlup[i]=identificadores[i] =
 							fluidos_producao_json[indAtivo].id();
-					// caso o identificador seja maior que o último selecionado, substitui
+					// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 					if (identificadores[i] > maiorIdentificador) {
 						maiorIdentificador = identificadores[i];
 					}
@@ -3464,6 +3543,12 @@ void Ler::parse_fluidos_producao(
 					if (fluidos_producao_json[indAtivo].fracCO2().exists())
 					yco2 =
 							fluidos_producao_json[indAtivo].fracCO2();
+					if(yco2>1){
+						logger.log(LOGGER_FALHA,
+						LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+								"fracCO2 > 1", chaveJson,
+								"fracCO2>1");
+					}
 					if (fluidos_producao_json[indAtivo].correlacaoCritica().exists())
 					corrC =
 							fluidos_producao_json[indAtivo].correlacaoCritica();
@@ -3548,6 +3633,7 @@ void Ler::parse_fluidos_producao(
 					flup[i].dzdtP = dzdtP;
 					flup[i].npontos = npontos;
 					flup[i].viscBlackOil = 1;
+					flup[i].condBlackOil = 1;
 					flup[i].modelaAgua = 1;
 					flup[i].corrDeng=corrDeng;
 					flup[i].nvecEmul=nvecEmul;
@@ -3569,7 +3655,7 @@ void Ler::parse_fluidos_producao(
 				double testatok;
 				char line[50000];
 
-				// Lê linha com possível quebra
+				// LÃª linha com possÃ­vel quebra
 
 				lendoPVTSimPre >> chave;
 				while (chave != "PRESSURE") {
@@ -3584,7 +3670,7 @@ void Ler::parse_fluidos_producao(
 				}
 
 
-				// Lê novamente linha com quebra e monta linha unificada
+				// LÃª novamente linha com quebra e monta linha unificada
 				std::string linha_completa = ler_linha_continua(lendoPVTSimPre);
 				strcpy(line, linha_completa.c_str());
 
@@ -3675,13 +3761,13 @@ void Ler::parse_fluidos_producao(
 
 				flash = new tabelaFlash[nfluP];
 				for (int i = 0; i < nfluP; i++) {
-					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avança
+					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avanÃ§a
 					while (!is_ativo(fluidos_producao_json[++indAtivo]))
 						;
 					// obter maior identificador
 					indFlup[i]=identificadores[i] =
 							fluidos_producao_json[indAtivo].id();
-					// caso o identificador seja maior que o último selecionado, substitui
+					// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 					if (identificadores[i] > maiorIdentificador) {
 						maiorIdentificador = identificadores[i];
 					}
@@ -3706,6 +3792,11 @@ void Ler::parse_fluidos_producao(
 					if (fluidos_producao_json[indAtivo].modeloAguaBlackOil().exists())
 						modelagua =
 								fluidos_producao_json[indAtivo].modeloAguaBlackOil();
+
+					int modelcond=1;
+					if (fluidos_producao_json[indAtivo].modeloCondBlackOil().exists())
+						modelcond =
+								fluidos_producao_json[indAtivo].modeloCondBlackOil();
 
 					flash[i].visc = 0;  // modelo viscosidade tabela flash
 					if (fluidos_producao_json[indAtivo].modeloViscBlackOil().exists())
@@ -3849,6 +3940,8 @@ void Ler::parse_fluidos_producao(
 					flash[i].sigWGF = new double*[tabent.npont + 1];
 					flash[i].viscO = new double*[tabent.npont + 1];
 					flash[i].viscG = new double*[tabent.npont + 1];
+					flash[i].condO = new double*[tabent.npont + 1];
+					flash[i].condG = new double*[tabent.npont + 1];
 					flash[i].PBF = new double[tabent.npontB];
 					flash[i].TBF = new double[tabent.npontB];
 
@@ -3875,6 +3968,8 @@ void Ler::parse_fluidos_producao(
 						flash[i].sigWGF[k] = new double[tabent.npont + 1];
 						flash[i].viscO[k] = new double[tabent.npont + 1];
 						flash[i].viscG[k] = new double[tabent.npont + 1];
+						flash[i].condO[k] = new double[tabent.npont + 1];
+						flash[i].condG[k] = new double[tabent.npont + 1];
 					}
 
 					for (int k = 0; k < tabent.npont + 1; k++) {
@@ -3896,6 +3991,8 @@ void Ler::parse_fluidos_producao(
 							flash[i].sigWGF[k][j] = 0;
 							flash[i].viscO[k][j] = 0;
 							flash[i].viscG[k][j] = 0;
+							flash[i].condO[k][j] = 0;
+							flash[i].condG[k][j] = 0;
 						}
 					}
 					for (int k = 0; k < tabent.npontB; k++) {
@@ -3908,7 +4005,7 @@ void Ler::parse_fluidos_producao(
 					else dadosMR=condpocinj.pvtsimarqInj;
 					ifstream lendoPVTSim(dadosMR.c_str(), ios_base::in);
 
-					// Lê novamente linha com quebra e monta linha unificada
+					// LÃª novamente linha com quebra e monta linha unificada
 					linha_completa = ler_linha_continua(lendoPVTSim);
 					strcpy(line, linha_completa.c_str());
 
@@ -3984,8 +4081,9 @@ void Ler::parse_fluidos_producao(
 							denag, templ, lvisl, temph, lvish, tipoemul, aemul,
 							bemul,PHI100, bswCorte, tabp, yco2, corrC, corrSat,
 							vcorrOM, vcorrOV, vcorrOS, flashCompleto, identificadores[i]);
-					flup[i].indiceFlash = i;
+					flup[i].indiceFlash = miniTabAtraso;
 					flup[i].viscBlackOil = flash[i].visc;
+					flup[i].condBlackOil = modelcond;
 					flup[i].modelaAgua=modelagua;
 					flup[i].JTLiquidoSimple=JTLiquidoSimple;
 
@@ -4063,6 +4161,8 @@ void Ler::parse_fluidos_producao(
 					geraTabFlash(i, 14);
 					geraTabFlash(i, 16);
 					geraTabFlash(i, 17);
+					geraTabFlash(i, 18);
+					geraTabFlash(i, 19);
 					if (threeOrtwo == 1) {
 						geraTabFlash(i, 7);
 						geraTabFlash(i, 11);
@@ -4183,6 +4283,8 @@ void Ler::parse_fluidos_producao(
 					flup[i].sigWGF = flash[i].sigWGF;
 					flup[i].viscO = flash[i].viscO;
 					flup[i].viscG = flash[i].viscG;
+					flup[i].condO = flash[i].condO;
+					flup[i].condG = flash[i].condG;
 					flup[i].PBPVTSim = flash[i].PBF;
 					flup[i].TBPVTSim = flash[i].TBF;
 
@@ -4225,12 +4327,12 @@ void Ler::parse_fluidos_producao(
                 }
                 double fractemp[npseudo];
                 for(int i=0; i<nfluP;i++){
-                	// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avança
+                	// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avanÃ§a
                 	while (!is_ativo(fluidos_producao_json[++indAtivo]));
  					// obter maior identificador
                 	indFlup[i]=identificadores[i] =
 							fluidos_producao_json[indAtivo].id();
-					// caso o identificador seja maior que o último selecionado, substitui
+					// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 					if (identificadores[i] > maiorIdentificador) {
 						maiorIdentificador = identificadores[i];
 					}
@@ -4322,7 +4424,7 @@ void Ler::parse_fluidos_producao(
 
 
 					int modelovisc = 1;  // modelo viscosidade tabela flash
-					//!!!!!!!!!!!!!!!!!!!!!!!!!!!momentaneamente, sera desconsiderada esta opção para composicional!!!!!!!!!!!!
+					//!!!!!!!!!!!!!!!!!!!!!!!!!!!momentaneamente, sera desconsiderada esta opÃ§Ã£o para composicional!!!!!!!!!!!!
 								//fluidos_producao_json[indAtivo].modeloViscBlackOil(); //alteracao6
 					if (modelovisc == 1) {  //modelo viscosidade black oil
 						vcorrOM = 0;
@@ -4459,9 +4561,11 @@ void Ler::parse_fluidos_producao(
 
 
 					flup[i].viscBlackOil = modelovisc;
+					flup[i].condBlackOil = 1;
 					flup[i].modelaAgua=1;
 					flup[i].JTLiquidoSimple=JTLiquidoSimple;
 					flup[i].tabelaDinamica=tabelaDinamica;
+					flup[i].indiceFlash=miniTabAtraso;
 					if(tabelaDinamica==1)flup[i].flashCompleto=0;
 
 					flup[i].TIndepPeneloux=compDet[i].TIndepPeneloux;
@@ -4513,11 +4617,20 @@ void Ler::parse_fluidos_producao(
 									GivenInitialLiqComposition, GivenInitialVapComposition,
 									oGORAdjustedGlobalComp, &dAdjustedGlobalCompGOR,
 							        &iier);
+
+	    					double fracTot=0.;
+	    					for(int j=0;j<npseudo;j++){
+	    							//if(oGORAdjustedGlobalComp[j]<1e-7)oGORAdjustedGlobalComp[j]=0;
+	    							fracTot+=oGORAdjustedGlobalComp[j];
+	    					}
+	    					for(int j=0;j<npseudo;j++)oGORAdjustedGlobalComp[j]/=fracTot;
+
 							 for(int k=0;k<npseudo;k++)flup[i].fracMol[k]=oGORAdjustedGlobalComp[k];
 							 flup[i].atualizaPropCompStandard();
 					         delete[] GivenInitialLiqComposition;
 					         delete[] GivenInitialVapComposition;
 					         delete[] oGORAdjustedGlobalComp;
+
 						}
 					}
 
@@ -4643,7 +4756,7 @@ void Ler::parse_fluidos_producao(
 /*!
  * Converter o elemento "fluidoComplementar" do arquivo Json do MRT em struct fluc.
  *
- * \tparam Objeto JSON correspondente à fluidos producao
+ * \tparam Objeto JSON correspondente Ã  fluidos producao
  */
 void Ler::parse_fluido_complementar(
 		JSON_entrada_fluidoComplementar& fluido_complementar_json) {
@@ -4690,7 +4803,7 @@ void Ler::parse_fluido_complementar(
 /*!
  * Converter o elemento "fluidoGas" do arquivo Json do MRT em struct flug.
  *
- * \tparam Objeto JSON correspondente à fluidos producao
+ * \tparam Objeto JSON correspondente Ã  fluidos producao
  */
 void Ler::parse_fluido_gas(JSON_entrada_fluidoGas& fluido_gas_json) {
 	double api = 60.0;
@@ -4734,21 +4847,13 @@ void Ler::parse_fluido_gas(JSON_entrada_fluidoGas& fluido_gas_json) {
 			}
 		}
 		else{
-			tabg=0;
-			flug.tab=tabg;
+			//tabg=0;
+
+			/*flug = ProFlu(vg1dSP, api, rgo,1.0, bsw,
+					denag, templ, lvisl, temph, lvish, tipoemul, aemul,
+					bemul, PHI100, bswCorte, tabg, 0, 1, 0,
+					0, 0, 0, flashCompleto, 0,npseudo);*/
 			flug = flup[0];
-			if(lingas==1){
-				tabg=1;
-				flug.tab=tabg;
-				flug.Deng = fluido_gas_json.densidadeGas();
-				flug.yco2 = fluido_gas_json.fracCO2();
-				flug.corrC = fluido_gas_json.correlacaoCritica();
-				flug.RenovaFluido();
-				flug.zdranP = zdranP;
-				flug.dzdpP = dzdpP;
-				flug.dzdtP = dzdtP;
-				flug.npontos = npontos;
-			}
 			compLinServ = new double[flug.npseudo];
 			for(int j=0;j<flug.npseudo;j++)flug.fracMol[j]=0.;
 
@@ -4775,7 +4880,37 @@ void Ler::parse_fluido_gas(JSON_entrada_fluidoGas& fluido_gas_json) {
 			else{
 				for(int j=1;j<flug.npseudo;j++)flug.fracMol[j]=flup[0].fracMol[j];
 			}
-			flug.atualizaPropCompStandard();
+			int modeloBlackO=1;
+			if (fluido_gas_json.linhaServComposicional().exists()){
+				int comp;
+				comp=fluido_gas_json.linhaServComposicional();
+				modeloBlackO=1-comp;
+			}
+			if(modeloBlackO==1){
+				//tabg=0;
+				flug.tab=tabg;
+				if (fluido_gas_json.densidadeGas().exists()){
+					flug.Deng = fluido_gas_json.densidadeGas();
+					if (fluido_gas_json.fracCO2().exists())
+						flug.yco2 = fluido_gas_json.fracCO2();
+					else flug.yco2 = 0.;
+					if (fluido_gas_json.correlacaoCritica().exists())
+						flug.corrC = fluido_gas_json.correlacaoCritica();
+					else flug.corrC =1;
+					flug.RenovaFluido();
+				}
+				else flug.atualizaPropCompStandard();
+				flug.zdranP = zdranP;
+				flug.dzdpP = dzdpP;
+				flug.dzdtP = dzdtP;
+				flug.npontos = npontos;
+				flug.lingas=1;
+			}
+			else if(modeloBlackO==0){
+				flug.atualizaPropCompStandard();
+				flug.lingas=0;
+				flug.tab=0;
+			}
 
 		}
 	}
@@ -4814,13 +4949,13 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 			// iniciar vetor de inteiros para armazenar os ids
 			identificadores.resize(nmaterial);
 			for (int i = 0; i < nmaterial; i++) {
-				// enquanto a propriedade "ativo" do material esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do material esteja desabilitada, avanÃ§a
 				while (!is_ativo(material_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = material_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -4831,7 +4966,7 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 				mat[i].tipo = material_json[indAtivo].tipo();
 				else mat[i].tipo =0;
 				// TODO: Remover BACALHAU
-				// caso poço injetor e material liquido, altera para água
+				// caso poÃ§o injetor e material liquido, altera para Ã¡gua
 				if (pocinjec == 1 && mat[i].tipo == 1)
 					mat[i].tipo = 2;
 				// de-para do elemento "material" do json para o struct material
@@ -4863,7 +4998,7 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 						if((mat[i].cp<1e-15 || mat[i].rho<1e-15) && transiente==1 ){
 							logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-									"'calorEspecifico' ou 'rho' com valor menor ou igual a zero, em uma simula��o com transiente, nestes casos, � requerido valores maiores que zero para estas propriedades",
+									"'calorEspecifico' ou 'rho' com valor menor ou igual a zero, em uma simulaï¿½ï¿½o com transiente, nestes casos, ï¿½ requerido valores maiores que zero para estas propriedades",
 									chaveJson, "tipo");
 						}
 					}
@@ -4924,7 +5059,7 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 /*!
  * Converter o elemento "secaoTransversal" do arquivo Json do MRT em struct material.
  *
- * \tparam Objeto JSON correspondente a secão transversal / corte
+ * \tparam Objeto JSON correspondente a secÃ£o transversal / corte
  */
 void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
@@ -4932,7 +5067,7 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 	try {
 		// obter o tamanho do elemento do Json
 		ncorte = 0;
-		// percorre o array de seções transversais
+		// percorre o array de seÃ§Ãµes transversais
 		for (size_t i = 0; i < corte_json.size(); i++) {
 			// caso a secao transversal esteja ativo
 			if (is_ativo(corte_json[i]))
@@ -4946,20 +5081,20 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 
 		// caso o tamanho do elemento seja maior que zero
 		if (ncorte > 0) {
-			// vetor de seções transversais
+			// vetor de seÃ§Ãµes transversais
 			corte = new corteduto[ncorte];
 			// iniciar vetor de inteiros para armazenar os ids
 			identificadores.resize(ncorte);
 			// loop para carga do vetor do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < ncorte; i++) {
-				// enquanto a propriedade "ativo" da secao transversal esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da secao transversal esteja desabilitada, avanÃ§a
 				while (!is_ativo(corte_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = corte_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -4989,7 +5124,7 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 				corte[i].rug = corte_json[indAtivo].rugosidade();
 				// obter vetor de camadas da secao transversal
 				corte[i].ncam = (int) corte_json[indAtivo].camadas().size();
-				// alocar memória para os elementos das camadas
+				// alocar memÃ³ria para os elementos das camadas
 				corte[i].diam = new double[corte[i].ncam];
 				corte[i].indmat = new int[corte[i].ncam];
 				corte[i].discre = new int[corte[i].ncam];
@@ -5084,7 +5219,7 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 /*!
  * Converter os elementos "dutosProducao" e "dutosServico" do arquivo Json do MRT em struct detduto.
  *
- * \tparam Objeto JSON correspondente à fluidos producao
+ * \tparam Objeto JSON correspondente Ã  fluidos producao
  */
 void Ler::parse_unidades_producao(
 		JSON_entrada_dutosProducao& dutos_producao_json) {
@@ -5105,7 +5240,7 @@ void Ler::parse_unidades_producao(
 			// loop para carga do vetor de unidades de producao do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadep; i++) {
-				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avanÃ§a
 				while (!is_ativo(dutos_producao_json[++indAtivo]))
 					;
 
@@ -5115,7 +5250,7 @@ void Ler::parse_unidades_producao(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_producao_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -5253,7 +5388,7 @@ void Ler::parse_unidades_producao(
 				}
 				if(unidadeP[ind].acopcol==1 || unidadeP[ind].acopcolRede==1)unidadeP[ind].dirconv=1;
 
-				// caso poço injetor e formacao desabilitada
+				// caso poÃ§o injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeP[ind].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeP[ind].ambext = 1;
@@ -5299,15 +5434,15 @@ void Ler::parse_unidades_producao(
 						unidadeP[ind].ncel +=
 							dutos_producao_json[indAtivo].discretizacao()[j].nCelulas();
 					}
-					// quantidade de células total da unidade de producao
+					// quantidade de cÃ©lulas total da unidade de producao
 					ncelp += unidadeP[ind].ncel;
-					// vetor de comprimentos de cada célula desta unidade de producao
+					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
 					unidadeP[ind].dx = new double[unidadeP[ind].ncel];
 
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizações
+					// percorre o vetor de discretizaÃ§Ãµes
 					for (int kontadiscre = 0;
 							kontadiscre
 								< (int) dutos_producao_json[indAtivo].discretizacao().size();
@@ -5387,20 +5522,20 @@ void Ler::parse_unidades_producao(
 					if(fabs(unidadeP[ind].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretização diferente dos limites X e Y indicados"
+									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de producao
 				nCompTotalUnidadesP += unidadeP[ind].comp;
 
-				// tamanho do vetor das condições iniciais
+				// tamanho do vetor das condiÃ§Ãµes iniciais
 				int npontsTeste=0;
 				unidadeP[ind].nponts = 0;
 				// caso uma das chaves 'condicoesIniciais', 'condicoesIniciais/compInter' inexista
 				if ((unidadeP[ind].acopcol == 0 || (perm == 0 && descarga == 0)) && (!dutos_producao_json[indAtivo].condicoesIniciais().exists()
 						)) {
-					// validar obrigatoriedade das condições iniciais e do vetor compInter
+					// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
 					// RN-069: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -5746,7 +5881,7 @@ void Ler::parse_unidades_producaoAmb(
 			// loop para carga do vetor de unidades de producao do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadep; i++) {
-				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avanÃ§a
 				while (!is_ativo(dutos_producao_json[++indAtivo]))
 					;
 
@@ -5756,7 +5891,7 @@ void Ler::parse_unidades_producaoAmb(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_producao_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -5893,7 +6028,7 @@ void Ler::parse_unidades_producaoAmb(
 				}
 				if(unidadeP[ind].acopcol==1 || unidadeP[ind].acopcolRede==1)unidadeP[ind].dirconv=1;
 
-				// caso poço injetor e formacao desabilitada
+				// caso poÃ§o injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeP[ind].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeP[ind].ambext = 1;
@@ -5939,15 +6074,15 @@ void Ler::parse_unidades_producaoAmb(
 						unidadeP[ind].ncel +=
 							dutos_producao_json[indAtivo].discretizacao()[j].nCelulas();
 					}
-					// quantidade de células total da unidade de producao
+					// quantidade de cÃ©lulas total da unidade de producao
 					ncelp += unidadeP[ind].ncel;
-					// vetor de comprimentos de cada célula desta unidade de producao
+					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
 					unidadeP[ind].dx = new double[unidadeP[ind].ncel];
 
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizações
+					// percorre o vetor de discretizaÃ§Ãµes
 					for (int kontadiscre = 0;
 							kontadiscre
 								< (int) dutos_producao_json[indAtivo].discretizacao().size();
@@ -6027,20 +6162,20 @@ void Ler::parse_unidades_producaoAmb(
 					if(fabs(unidadeP[ind].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretização diferente dos limites X e Y indicados"
+									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de producao
 				nCompTotalUnidadesP += unidadeP[ind].comp;
 
-				// tamanho do vetor das condições iniciais
+				// tamanho do vetor das condiÃ§Ãµes iniciais
 				int npontsTeste=0;
 				unidadeP[ind].nponts = 0;
 				// caso uma das chaves 'condicoesIniciais', 'condicoesIniciais/compInter' inexista
 				if ((unidadeP[ind].acopcol == 0 || (perm == 0 && descarga == 0)) && (!dutos_producao_json[indAtivo].condicoesIniciaisEAmbiente().exists()
 						)) {
-					// validar obrigatoriedade das condições iniciais e do vetor compInter
+					// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
 					// RN-069: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -6382,7 +6517,7 @@ void Ler::parse_unidades_servico(
 			// loop para carga do vetor de unidades de servico do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadeg; i++) {
-				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avanÃ§a
 				while (!is_ativo(dutos_servico_json[++indAtivo]))
 					;
 
@@ -6392,7 +6527,7 @@ void Ler::parse_unidades_servico(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_servico_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -6490,7 +6625,7 @@ void Ler::parse_unidades_servico(
 					}
 				}
 
-				// caso poço injetor e formacao desabilitada
+				// caso poÃ§o injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeG[i].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeG[i].ambext = 1;
@@ -6532,12 +6667,12 @@ void Ler::parse_unidades_servico(
 					}
 					// quantidade de celulas total da unidade de servico
 					ncelg += unidadeG[i].ncel;
-					// vetor de comprimentos de cada célula desta unidade de producao
+					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
 					unidadeG[i].dx = new double[unidadeG[i].ncel];
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizações
+					// percorre o vetor de discretizaÃ§Ãµes
 					for (int kontadiscre = 0;
 						kontadiscre
 								< (int) dutos_servico_json[indAtivo].discretizacao().size();
@@ -6584,17 +6719,17 @@ void Ler::parse_unidades_servico(
 					if(fabs(unidadeG[i].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretização diferente dos limites X e Y indicados"
+									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de servico
 				nCompTotalUnidadesG += unidadeG[i].comp;
 
-				// tamanho do vetor das condições iniciais
+				// tamanho do vetor das condiÃ§Ãµes iniciais
 				unidadeG[i].nponts = 0;
 				int npontsTeste=0;
-				// validar obrigatoriedade das condições iniciais e do vetor compInter
+				// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
 				if (!dutos_servico_json[indAtivo].condicoesIniciais().exists()
 						) {
 					// RN-028: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas para simulacao nao permanente (#configuracaoInicial/permanente = 0) e sem descarga
@@ -6617,7 +6752,7 @@ void Ler::parse_unidades_servico(
 								new double[npontsTeste];
 				}
 
-				// caso não permanente e sem descarga
+				// caso nÃ£o permanente e sem descarga
 				if ((perm == 0 && descarga == 0)
 						|| ((*vg1dSP).chaverede == 1 )) {
 					// caso uma das chaves "temp", "pressao", "vazaoMassicaGas" inexista
@@ -6868,7 +7003,7 @@ void Ler::parse_unidades_servicoAmb(
 			// loop para carga do vetor de unidades de servico do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadeg; i++) {
-				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avanÃ§a
 				while (!is_ativo(dutos_servico_json[++indAtivo]))
 					;
 
@@ -6878,7 +7013,7 @@ void Ler::parse_unidades_servicoAmb(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_servico_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -6976,7 +7111,7 @@ void Ler::parse_unidades_servicoAmb(
 					}
 				}
 
-				// caso poço injetor e formacao desabilitada
+				// caso poÃ§o injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeG[i].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeG[i].ambext = 1;
@@ -7018,12 +7153,12 @@ void Ler::parse_unidades_servicoAmb(
 					}
 					// quantidade de celulas total da unidade de servico
 					ncelg += unidadeG[i].ncel;
-					// vetor de comprimentos de cada célula desta unidade de producao
+					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
 					unidadeG[i].dx = new double[unidadeG[i].ncel];
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizações
+					// percorre o vetor de discretizaÃ§Ãµes
 					for (int kontadiscre = 0;
 						kontadiscre
 								< (int) dutos_servico_json[indAtivo].discretizacao().size();
@@ -7070,17 +7205,17 @@ void Ler::parse_unidades_servicoAmb(
 					if(fabs(unidadeG[i].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretização diferente dos limites X e Y indicados"
+									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de servico
 				nCompTotalUnidadesG += unidadeG[i].comp;
 
-				// tamanho do vetor das condições iniciais
+				// tamanho do vetor das condiÃ§Ãµes iniciais
 				unidadeG[i].nponts = 0;
 				int npontsTeste=0;
-				// validar obrigatoriedade das condições iniciais e do vetor compInter
+				// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
 				if (!dutos_servico_json[indAtivo].condicoesIniciaisEAmbiente().exists()
 						) {
 					// RN-028: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas para simulacao nao permanente (#configuracaoInicial/permanente = 0) e sem descarga
@@ -7103,7 +7238,7 @@ void Ler::parse_unidades_servicoAmb(
 								new double[npontsTeste];
 				}
 
-				// caso não permanente e sem descarga
+				// caso nÃ£o permanente e sem descarga
 				if ((perm == 0 && descarga == 0)
 						|| ((*vg1dSP).chaverede == 1 )) {
 					// caso uma das chaves "temp", "pressao", "vazaoMassicaGas" inexista
@@ -7407,7 +7542,7 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 			}
 
 			if (hidrato_json.Hammerschmidt().exists()) {
-				// carregar os parâmetros da chave
+				// carregar os parÃ¢metros da chave
 				MMH =
 						hidrato_json.Hammerschmidt().MMH();
 				MMG =
@@ -7430,7 +7565,7 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 			}
 
 			if (hidrato_json.PropFluHidrato().exists()) {
-				// carregar os parâmetros da chave
+				// carregar os parÃ¢metros da chave
 
 				coefEsteq =
 						hidrato_json.PropFluHidrato().coefEsteq();
@@ -7444,7 +7579,7 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 
 
 			if (hidrato_json.ModeloTurner().exists()) {
-				// carregar os parâmetros da chave
+				// carregar os parÃ¢metros da chave
 
 				estruturaHidratos =
 						hidrato_json.ModeloTurner().estruturaHidratos();
@@ -7452,6 +7587,18 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 						hidrato_json.ModeloTurner().rd();
 				rp =
 						hidrato_json.ModeloTurner().rp();
+
+				cTurneraprox =
+
+						hidrato_json.ModeloTurner().cTurneraprox(); //alteracao hidratos modelo 3
+
+				tlimitArea =
+
+						hidrato_json.ModeloTurner().tlimitArea(); //alteracao hidratos modelo 3
+
+				Alimit =
+
+						hidrato_json.ModeloTurner().Alimit(); //alteracao hidratos modelo 3
 
 			} else {
 
@@ -7501,13 +7648,13 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 			// loop para parse das estruturas do ipr
 			int indAtivo = -1;
 			for (int i = 0; i < nipr; i++) {
-				// enquanto a propriedade "ativo" do ipr esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do ipr esteja desabilitada, avanÃ§a
 				while (!is_ativo(ipr_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = ipr_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -7521,7 +7668,7 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 					IPRS[i].comp = 0.0;
 				double lverif = IPRS[i].comp;
 				IPRS[i].indcel = buscaIndiceMeioP(lverif);
-				// parse do vetor de pressões estáticas
+				// parse do vetor de pressÃµes estÃ¡ticas
 				IPRS[i].tipoIPR=1;
 				if (ipr_json[indAtivo].tipoIPR().exists())IPRS[i].tipoIPR=ipr_json[indAtivo].tipoIPR();
 				IPRS[i].seriep =
@@ -7543,7 +7690,7 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 							chaveJson,
 							"Chaves #/ipr/pressaoEstatica e #/ipr/tempoPressaoEstatica com tamanhos diferentes");
 				} else {
-					// loop para parse do vetor de pressões estáticas
+					// loop para parse do vetor de pressÃµes estÃ¡ticas
 					for (int j = 0; j < IPRS[i].seriep; j++) {
 						IPRS[i].pres[j] =
 								ipr_json[indAtivo].pressaoEstatica()[j];
@@ -7637,30 +7784,68 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 						}
 					}
 				}
-				// parse do vetor de jp
-				IPRS[i].seriejp = (int) ipr_json[indAtivo].ii().size();
-				if(IPRS[i].seriejp>0){
-					IPRS[i].jp = new double[IPRS[i].seriejp];
-					IPRS[i].tjp = new double[IPRS[i].seriejp];
+				if (ipr_json[indAtivo].ii().exists()){
+					// parse do vetor de jp
+					IPRS[i].seriejp = (int) ipr_json[indAtivo].ii().size();
+					if(IPRS[i].seriejp>0){
+						IPRS[i].jp = new double[IPRS[i].seriejp];
+						IPRS[i].tjp = new double[IPRS[i].seriejp];
+						// caso os tamanhos dos vetores das chaves difiram entre si
+						if (ipr_json[indAtivo].ii().size()
+								!= ipr_json[indAtivo].tempoii().size()) {
+							// RN-073: chaves ii e tempoii com tamanhos diferentes
+							logger.log(LOGGER_FALHA,
+									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
+									chaveJson,
+									"Chaves #/ipr/ii e #/ipr/tempoii com tamanhos diferentes");
+						} else {
+							// loop para parse do vetor de jp / ii
+							for (int j = 0; j < IPRS[i].seriejp; j++) {
+								IPRS[i].jp[j] = ipr_json[indAtivo].ii()[j];
+								IPRS[i].tjp[j] =
+										ipr_json[indAtivo].tempoii()[j];
+							}
+						}
+					}
+					else{
+						if(IPRS[i].tipoIPR!=2){
+							IPRS[i].seriejp =IPRS[i].serieip;
+							IPRS[i].jp = new double[IPRS[i].seriejp];
+							IPRS[i].tjp = new double[IPRS[i].seriejp];
+							for (int j = 0; j < IPRS[i].seriejp; j++) {
+								IPRS[i].jp[j] = IPRS[i].ip[j];
+								IPRS[i].tjp[j] = IPRS[i].tip[j];
+							}
+						}
+						else{
+							IPRS[i].seriejp =1;
+							IPRS[i].jp = new double[IPRS[i].seriejp];
+							IPRS[i].tjp = new double[IPRS[i].seriejp];
+							for (int j = 0; j < IPRS[i].seriejp; j++) {
+								IPRS[i].jp[j] = 1.8*IPRS[i].qMax[0]/IPRS[i].pres[0];
+								IPRS[i].tjp[j] = 0.;
+							}
+						}
+					}
 				}
 				else{
-					IPRS[i].jp = 0;
-					IPRS[i].tjp = 0;
-				}
-				// caso os tamanhos dos vetores das chaves difiram entre si
-				if (ipr_json[indAtivo].ii().size()
-						!= ipr_json[indAtivo].tempoii().size()) {
-					// RN-073: chaves ii e tempoii com tamanhos diferentes
-					logger.log(LOGGER_FALHA,
-					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
-							chaveJson,
-							"Chaves #/ipr/ii e #/ipr/tempoii com tamanhos diferentes");
-				} else {
-					// loop para parse do vetor de jp / ii
-					for (int j = 0; j < IPRS[i].seriejp; j++) {
-						IPRS[i].jp[j] = ipr_json[indAtivo].ii()[j];
-						IPRS[i].tjp[j] =
-								ipr_json[indAtivo].tempoii()[j];
+					if(IPRS[i].tipoIPR!=2){
+						IPRS[i].seriejp =IPRS[i].serieip;
+						IPRS[i].jp = new double[IPRS[i].seriejp];
+						IPRS[i].tjp = new double[IPRS[i].seriejp];
+						for (int j = 0; j < IPRS[i].seriejp; j++) {
+							IPRS[i].jp[j] = IPRS[i].ip[j];
+							IPRS[i].tjp[j] = IPRS[i].tip[j];
+						}
+					}
+					else{
+						IPRS[i].seriejp =1;
+						IPRS[i].jp = new double[IPRS[i].seriejp];
+						IPRS[i].tjp = new double[IPRS[i].seriejp];
+						for (int j = 0; j < IPRS[i].seriejp; j++) {
+							IPRS[i].jp[j] = 1.8*IPRS[i].qMax[0]/IPRS[i].pres[0];
+							IPRS[i].tjp[j] = 0.;
+						}
 					}
 				}
 				// parse do valor
@@ -7677,6 +7862,63 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 
 				IPRS[i].indfluP = identificarFluidoProducao(
 						IPRS[i].indfluP);
+				////////////////////////////////////////////////////////////////////////////////////////
+				IPRS[i].ICV=0;
+				IPRS[i].abertura=0;
+				IPRS[i].cd=0.84;
+				IPRS[i].curvaCV=0;
+				IPRS[i].cvCurv=0;
+				IPRS[i].ncv=0;
+				IPRS[i].serieICV=0;
+				IPRS[i].cvCurv=0;
+				if(ipr_json[indAtivo].ICV().exists()){
+					IPRS[i].ICV = ipr_json[indAtivo].ICV();
+					if(IPRS[i].ICV==1){
+						if ((ipr_json[indAtivo].tempoICV().size()
+										!= ipr_json[indAtivo].abertura().size())) {
+							// RN-078: chaves tempo e abertura com tamanhos diferentes
+							logger.log(LOGGER_FALHA,
+							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
+									chaveJson,
+									"Chaves #/ICV/tempoICV e #/ICV/abertura com tamanhos diferentes");
+						}
+						IPRS[i].serieICV=(int) ipr_json[indAtivo].abertura().size();
+						IPRS[i].abertura = new double[IPRS[i].serieICV];
+						IPRS[i].tempoICV = new double[IPRS[i].serieICV];
+						IPRS[i].cd = ipr_json[indAtivo].cd();
+						for (int j = 0; j < IPRS[i].serieICV; j++) {
+							IPRS[i].abertura[j] = ipr_json[indAtivo].abertura()[j];
+							IPRS[i].tempoICV[j] = ipr_json[indAtivo].tempoICV()[j];
+						}
+						if(ipr_json[indAtivo].curvaCV().exists()){
+							if (!ipr_json[indAtivo].x1().exists() || !ipr_json[indAtivo].cv1().exists()){
+								logger.log(LOGGER_FALHA,
+								LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
+										chaveJson,
+										"Chaves #/ICV/x1 ou #/ICV/cv1 inexistente");
+							}
+							if (ipr_json[indAtivo].x1().size() != ipr_json[indAtivo].cv1().size()){
+								logger.log(LOGGER_FALHA,
+								LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
+										chaveJson,
+										"Chaves dimensao de #/ICV/x1 diferente de  #/ICV/cv1");
+							}
+							IPRS[i].curvaCV= ipr_json[indAtivo].curvaCV();
+							if(IPRS[i].curvaCV==1){
+								IPRS[i].ncv=(int) ipr_json[indAtivo].cv1().size()-1;
+								IPRS[i].cvCurv = new detCV[IPRS[i].ncv];
+								for(int konta=0;konta<valv[i].ncv;konta++){
+									IPRS[i].cvCurv[konta].x1=ipr_json[indAtivo].x1()[konta];
+									IPRS[i].cvCurv[konta].x2=ipr_json[indAtivo].x1()[konta+1];
+									IPRS[i].cvCurv[konta].cv1=ipr_json[indAtivo].cv1()[konta];
+									IPRS[i].cvCurv[konta].cv2=ipr_json[indAtivo].cv1()[konta+1];
+								}
+							}
+						}
+					}
+				}
+
+
 			}
 			// verificar a unicidade dos identificadores
 			if (!verificarUnicidade(identificadores)) {
@@ -7854,11 +8096,11 @@ void Ler::parse_fonte_gaslift(JSON_entrada_fonteGasLift& fonte_gaslift_json) {
 	int colEanul=1;
 
 	try {
-		// tamanho do vetor de fontes de gás lift
+		// tamanho do vetor de fontes de gÃ¡s lift
 		nvalvgas = 0;
-		// percorre o array de fontes de gás lift
+		// percorre o array de fontes de gÃ¡s lift
 		for (size_t i = 0; i < fonte_gaslift_json.size(); i++) {
-			// caso a fonte de gás lift esteja ativo
+			// caso a fonte de gÃ¡s lift esteja ativo
 			if (is_ativo(fonte_gaslift_json[i]))
 				nvalvgas++;
 		}
@@ -7869,7 +8111,7 @@ void Ler::parse_fonte_gaslift(JSON_entrada_fonteGasLift& fonte_gaslift_json) {
 
 			int indAtivo = -1;
 			for (int i = 0; i < nvalvgas; i++) {
-				// enquanto a propriedade "ativo" da fonte de gás lift esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de gÃ¡s lift esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonte_gaslift_json[++indAtivo]))
 					;
 
@@ -7940,10 +8182,10 @@ void Ler::parse_fonte_gaslift(JSON_entrada_fonteGasLift& fonte_gaslift_json) {
 				valvgl[i].cd =
 						fonte_gaslift_json[indAtivo].cdvgl();
 
-				if (fonte_gaslift_json[indAtivo].frecupera().exists())
-					valvgl[i].frec =
-							fonte_gaslift_json[indAtivo].frecupera();
-				else
+				//if (fonte_gaslift_json[indAtivo].frecupera().exists())
+					//valvgl[i].frec =
+							//fonte_gaslift_json[indAtivo].frecupera();
+				//else
 					valvgl[i].frec = 0.;
 
 				if (fonte_gaslift_json[indAtivo].cdvLiq().exists())
@@ -7952,10 +8194,10 @@ void Ler::parse_fonte_gaslift(JSON_entrada_fonteGasLift& fonte_gaslift_json) {
 				else
 					valvgl[i].cdLiq = 0.84;
 
-				if (fonte_gaslift_json[indAtivo].frecuperaLiq().exists())
-					valvgl[i].frecLiq =
-							fonte_gaslift_json[indAtivo].frecuperaLiq();
-				else
+				//if (fonte_gaslift_json[indAtivo].frecuperaLiq().exists())
+					//valvgl[i].frecLiq =
+							//fonte_gaslift_json[indAtivo].frecuperaLiq();
+				//else
 					valvgl[i].frecLiq = valvgl[i].frec;
 
 				if (valvgl[i].tipo != 1) {
@@ -8065,9 +8307,9 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 	try {
 		// tamanho do vetor fonteGas
 		ninjgas = 0;
-		// percorre o array de fontes de gás
+		// percorre o array de fontes de gÃ¡s
 		for (size_t i = 0; i < fonte_gas_json.size(); i++) {
-			// caso a fonte de gás esteja ativo
+			// caso a fonte de gÃ¡s esteja ativo
 			if (is_ativo(fonte_gas_json[i]))
 				ninjgas++;
 		}
@@ -8086,13 +8328,13 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 			// loop para parse das estruturas do fonteGas
 			int indAtivo = -1;
 			for (int i = 0; i < ninjgas; i++) {
-				// enquanto a propriedade "ativo" da fonte de gás esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de gÃ¡s esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonte_gas_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = fonte_gas_json[indAtivo].id();
-				// caso o identificador seja maior que o último selecionado, substitui
+				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -8106,7 +8348,7 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 					fonteg[i].comp = 0.0;
 				double lverif = fonteg[i].comp;
 				fonteg[i].posicP = buscaIndiceMeioP(lverif);
-				// parse do vetor de pressões estáticas
+				// parse do vetor de pressÃµes estÃ¡ticas
 				fonteg[i].parserie =
 						(int) fonte_gas_json[indAtivo].tempo().size();
 				fonteg[i].temp = new double[fonteg[i].parserie];
@@ -8194,7 +8436,7 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 /*!
  * Converter o elemento "valvula" do arquivo Json do MRT em struct .
  *
- * \tparam Objeto JSON correspondente à fonte de liquido
+ * \tparam Objeto JSON correspondente Ã  fonte de liquido
  */
 void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
@@ -8224,7 +8466,7 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 			// loop para parse das estruturas do valv
 			int indAtivo = -1;
 			for (int i = iIni; i < nvalv; i++) {
-				// enquanto a propriedade "ativo" da valvula esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da valvula esteja desabilitada, avanÃ§a
 				while (!is_ativo(valvula_json[++indAtivo]))
 					;
 
@@ -8276,26 +8518,153 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 				double lverif = valv[i].comp;
 				valv[i].posicP = buscaIndiceMeioP(lverif);
 
-				// caso os tamanhos dos vetores das chaves difiram entre si
-				if ((valvula_json[indAtivo].tempo().size()
+				valv[i].cxvVerifica=0;
+				if(valvula_json[indAtivo].caixaValvula().exists())valv[i].cxvVerifica=valvula_json[indAtivo].caixaValvula();
+				if(valv[i].cxvVerifica==0){
+					// caso os tamanhos dos vetores das chaves difiram entre si
+					if ((valvula_json[indAtivo].tempo().size()
 								!= valvula_json[indAtivo].abertura().size())) {
-					// RN-078: chaves tempo e abertura com tamanhos diferentes
-					logger.log(LOGGER_FALHA,
-					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
-							chaveJson,
-							"Chaves #/valvula/tempo e #/valvula/abertura com tamanhos diferentes");
-				} else {
-					valv[i].parserie =
-							(int) valvula_json[indAtivo].tempo().size();
+						// RN-078: chaves tempo e abertura com tamanhos diferentes
+						logger.log(LOGGER_FALHA,
+								LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson,
+								chaveJson,
+								"Chaves #/valvula/tempo e #/valvula/abertura com tamanhos diferentes");
+					} else {
+						valv[i].parserie =
+								(int) valvula_json[indAtivo].tempo().size();
+						valv[i].abertura = new double[valv[i].parserie];
+						valv[i].tempo = new double[valv[i].parserie];
+
+						// parse does vetores
+						for (int j = 0; j < valv[i].parserie; j++) {
+							valv[i].abertura[j] =
+									valvula_json[indAtivo].abertura()[j];
+							valv[i].tempo[j] =
+									valvula_json[indAtivo].tempo()[j];
+						}
+					}
+					valv[i].cxv.lCaixa=0;
+					valv[i].cxv.indFlu=0;
+					valv[i].cxv.secaoTrans=0;
+					valv[i].cxv.formac=0;
+					valv[i].cxv.lito=-1;
+					valv[i].cxv.ambiente=0;
+					valv[i].cxv.tamb=0;
+					valv[i].cxv.velAmb=0;
+					valv[i].cxv.nMon=0;
+					valv[i].cxv.serieAberturaMon=0;
+					valv[i].cxv.tempMon=0;
+					valv[i].cxv.nJus=0;
+					valv[i].cxv.serieAberturaJus=0;
+					valv[i].cxv.tempJus=0;
+					valv[i].cxv.posic=-1;
+					valv[i].cxv.temperaturaFonte=0.;
+					valv[i].cxv.massLiqP=0;
+					valv[i].cxv.massGas=0;
+					valv[i].cxv.massLiqC=0;
+					valv[i].cxv.tempoFonte=0;
+					valv[i].cxv.nfonte=0;
+				}
+				else{
+					valv[i].parserie = 0;
+					valv[i].abertura = 0;
+					valv[i].tempo = 0;
+
+					valv[i].cxv.posic=valv[i].posicP;
+					valv[i].cxv.lCaixa=valvula_json[indAtivo].compCaixa();
+					valv[i].cxv.indFlu=0;
+					valv[i].cxv.secaoTrans=valvula_json[indAtivo].indSecTrans();
+					valv[i].cxv.formac=valvula_json[indAtivo].formac();
+					if(valv[i].cxv.formac==1)valv[i].cxv.lito=valvula_json[indAtivo].lito();
+					else valv[i].cxv.lito=-1;
+					valv[i].cxv.ambiente=valvula_json[indAtivo].ambiente();
+					valv[i].cxv.tamb=valvula_json[indAtivo].tempAmbiente();
+					valv[i].cxv.velAmb=valvula_json[indAtivo].velAmbiente();
+					valv[i].cxv.nMon=valvula_json[indAtivo].aberturaMon().size();
+					valv[i].cxv.serieAberturaMon=new double [valv[i].cxv.nMon];
+					valv[i].cxv.tempMon=new double [valv[i].cxv.nMon];
+					if (valvula_json[indAtivo].tempoAberturaMon().size()
+						!= valvula_json[indAtivo].aberturaMon().size()) {
+								// RN-082: chaves tempo, abertura com tamanhos diferentes
+								logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+												chaveJson, chaveJson,
+												"Chaves #/valvula/tempoAberturaMon, #/valvula/aberturaMon com tamanhos diferentes");
+					}
+					for(int imon=0; imon<valv[i].cxv.nMon; imon++){
+						valv[i].cxv.serieAberturaMon[imon]=valvula_json[indAtivo].aberturaMon()[imon];
+						valv[i].cxv.tempMon[imon]=valvula_json[indAtivo].tempoAberturaMon()[imon];
+					}
+					valv[i].cxv.nJus=valvula_json[indAtivo].aberturaJus().size();
+					valv[i].cxv.serieAberturaJus=new double [valv[i].cxv.nJus];
+					valv[i].cxv.tempJus=new double [valv[i].cxv.nJus];
+					if (valvula_json[indAtivo].tempoAberturaJus().size()
+						!= valvula_json[indAtivo].aberturaJus().size()) {
+								// RN-082: chaves tempo, abertura com tamanhos diferentes
+								logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+												chaveJson, chaveJson,
+												"Chaves #/valvula/tempoAberturaJus, #/valvula/aberturaJus com tamanhos diferentes");
+					}
+					for(int ijus=0; ijus<valv[i].cxv.nJus; ijus++){
+						valv[i].cxv.serieAberturaJus[ijus]=valvula_json[indAtivo].aberturaJus()[ijus];
+						valv[i].cxv.tempJus[ijus]=valvula_json[indAtivo].tempoAberturaJus()[ijus];
+					}
+
+					std::set<double> conjunto;
+					for(int imon = 0; imon < valv[i].cxv.nMon; imon++)
+					    conjunto.insert(valv[i].cxv.tempMon[imon]);
+					for(int ijus = 0; ijus < valv[i].cxv.nJus; ijus++)
+					    conjunto.insert(valv[i].cxv.tempJus[ijus]);
+
+					std::vector<double> tempoCX(conjunto.begin(), conjunto.end());
+					valv[i].parserie = tempoCX.size();
 					valv[i].abertura = new double[valv[i].parserie];
 					valv[i].tempo = new double[valv[i].parserie];
+					for(int iabre=0; iabre<valv[i].parserie; iabre++)valv[i].tempo[iabre]=tempoCX[iabre];
+					for(int iabre=0; iabre<valv[i].parserie; iabre++){
+						double abre0;
+						double abre1;
+						int ind;
+						double raz;
+						double tempo=tempoCX[iabre];
+						indraz(ind, raz, tempo, valv[i].cxv.nMon, valv[i].cxv.tempMon);
+						double aberinf = valv[i].cxv.serieAberturaMon[ind];
+						double abersup;
+						if (ind < valv[i].cxv.nMon - 1)
+							abersup = valv[i].cxv.serieAberturaMon[ind+1];
+						else
+							abersup = valv[i].cxv.serieAberturaMon[ind];
+						abre0=aberinf * raz + (1 - raz) * abersup;
 
-					// parse does vetores
-					for (int j = 0; j < valv[i].parserie; j++) {
-						valv[i].abertura[j] =
-								valvula_json[indAtivo].abertura()[j];
-						valv[i].tempo[j] =
-								valvula_json[indAtivo].tempo()[j];
+						indraz(ind, raz, tempo, valv[i].cxv.nJus, valv[i].cxv.tempJus);
+						aberinf = valv[i].cxv.serieAberturaJus[ind];
+						if (ind <valv[i].cxv.nJus - 1)
+							abersup = valv[i].cxv.serieAberturaJus[ind+1];
+						else
+							abersup = valv[i].cxv.serieAberturaJus[ind];
+						abre1=aberinf * raz + (1 - raz) * abersup;
+						if(abre0<abre1)valv[i].abertura[iabre]=abre0;
+						else valv[i].abertura[iabre]=abre1;
+					}
+					eventoabre = 0;
+					eventofecha = 0;
+					Tevento = new double[valv[i].parserie];
+					Teventof = new double[valv[i].parserie];
+
+					valv[i].cxv.temperaturaFonte=valv[i].cxv.tamb;
+					if(valvula_json[indAtivo].temperaturaFonte().exists())valv[i].cxv.temperaturaFonte=valvula_json[indAtivo].temperaturaFonte();
+					valv[i].cxv.nfonte=0;
+					if(valvula_json[indAtivo].tempoFonte().exists()){
+						valv[i].cxv.nfonte=valvula_json[indAtivo].tempoFonte().size();
+						valv[i].cxv.massLiqP=new double [valv[i].cxv.nfonte];
+						valv[i].cxv.massGas=new double [valv[i].cxv.nfonte];
+						valv[i].cxv.massLiqC=new double [valv[i].cxv.nfonte];
+						valv[i].cxv.tempoFonte=new double [valv[i].cxv.nfonte];
+						for(int ifonte=0; ifonte<valv[i].cxv.nfonte; ifonte++){
+							valv[i].cxv.massLiqP[ifonte]=valvula_json[indAtivo].massLiqP()[ifonte];
+							valv[i].cxv.massGas[ifonte]=valvula_json[indAtivo].massGas()[ifonte];
+							valv[i].cxv.massLiqC[ifonte]=valvula_json[indAtivo].massLiqC()[ifonte];
+							valv[i].cxv.tempoFonte[ifonte]=valvula_json[indAtivo].tempoFonte()[ifonte];
+						}
 					}
 				}
 				valv[i].cd=0.84;
@@ -8325,7 +8694,7 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 /*!
  * Converter o elemento "fonteLiquido" do arquivo Json do MRT em struct .
  *
- * \tparam Objeto JSON correspondente à fonte de liquido
+ * \tparam Objeto JSON correspondente Ã  fonte de liquido
  */
 void Ler::parse_fonte_liquido(JSON_entrada_fonteLiquido& fonte_liquido_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
@@ -8333,9 +8702,9 @@ void Ler::parse_fonte_liquido(JSON_entrada_fonteLiquido& fonte_liquido_json) {
 	try {
 		// tamanho do vetor fonte_liquido
 		ninjliq = 0;
-		// percorre o array de fontes de líquido
+		// percorre o array de fontes de lÃ­quido
 		for (size_t i = 0; i < fonte_liquido_json.size(); i++) {
-			// caso a fonte de líquido esteja ativo
+			// caso a fonte de lÃ­quido esteja ativo
 			if (is_ativo(fonte_liquido_json[i]))
 				ninjliq++;
 		}
@@ -8376,7 +8745,7 @@ void Ler::parse_fonte_liquido(JSON_entrada_fonteLiquido& fonte_liquido_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < ninjliq; i++) {
-				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonte_liquido_json[++indAtivo]))
 					;
 
@@ -8469,9 +8838,9 @@ void Ler::parse_fonte_massa(JSON_entrada_fonteMassa& fonte_massa_json) {
 
 	    if(ConContEntrada!=2)ninjmass = 0;
 	    else ninjmass = 1;
-		// percorre o array de fontes de líquido
+		// percorre o array de fontes de lÃ­quido
 		for (size_t i = 0; i < fonte_massa_json.size(); i++) {
-			// caso a fonte de líquido esteja ativo
+			// caso a fonte de lÃ­quido esteja ativo
 			if (is_ativo(fonte_massa_json[i]))
 				ninjmass++;
 		}
@@ -8521,7 +8890,7 @@ void Ler::parse_fonte_massa(JSON_entrada_fonteMassa& fonte_massa_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < ninjmass; i++) {
-				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonte_massa_json[++indAtivo]))
 					;
 
@@ -8624,9 +8993,9 @@ void Ler::parse_fonte_PoroRadial(JSON_entrada_fontePoroRadial& fonte_poroRadial_
 	try {
 		// tamanho do vetor fonte_liquido
 		nPoroRad = 0;
-		// percorre o array de fontes de líquido
+		// percorre o array de fontes de lÃ­quido
 		for (size_t i = 0; i < fonte_poroRadial_json.size(); i++) {
-			// caso a fonte de líquido esteja ativo
+			// caso a fonte de lÃ­quido esteja ativo
 			if (is_ativo(fonte_poroRadial_json[i]))
 				nPoroRad++;
 		}
@@ -8647,7 +9016,7 @@ void Ler::parse_fonte_PoroRadial(JSON_entrada_fontePoroRadial& fonte_poroRadial_
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nPoroRad; i++) {
-				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonte_poroRadial_json[++indAtivo]))
 					;
 
@@ -8697,9 +9066,9 @@ void Ler::parse_fonte_Poro2D(JSON_entrada_fontePoro2D& fonte_poro2D_json) {
 	try {
 		// tamanho do vetor fonte_liquido
 		nPoro2D = 0;
-		// percorre o array de fontes de líquido
+		// percorre o array de fontes de lÃ­quido
 		for (size_t i = 0; i < fonte_poro2D_json.size(); i++) {
-			// caso a fonte de líquido esteja ativo
+			// caso a fonte de lÃ­quido esteja ativo
 			if (is_ativo(fonte_poro2D_json[i]))
 				nPoro2D++;
 		}
@@ -8720,7 +9089,7 @@ void Ler::parse_fonte_Poro2D(JSON_entrada_fontePoro2D& fonte_poro2D_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nPoro2D; i++) {
-				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonte_poro2D_json[++indAtivo]))
 					;
 
@@ -8777,12 +9146,12 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 	try {
 		// tamanho do vetor fonte_liquido
 		nfuro = 0;
-		// percorre o array de fontes de líquido
+		// percorre o array de fontes de lÃ­quido
 		for (size_t i = 0; i < fontePressao_json.size(); i++) {
-		 // caso a fonte de líquido esteja ativo
-		 if (is_ativo(fontePressao_json[i]))
-		 nfuro++;
+		 // caso a fonte de lÃ­quido esteja ativo
+			nfuro++;
 		}
+
 		// criar vetor de inteiros para armazenar os ids
 		std::vector<int> identificadores;
 		// criar variavel para o maior identificador encontrado
@@ -8800,7 +9169,7 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nfuro; i++) {
-				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
 				while (!is_ativo(fontePressao_json[++indAtivo]))
 				;
 				indAtivo = i;//??????????????????????????ESTA CERTO???????????????????????????????????????????
@@ -8811,14 +9180,39 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 					maiorIdentificador = identificadores[i];
 				}
 
+				furo[i].recircula=0;
+				furo[i].indJus=-1;
+				furo[i].indMon=-1;
+				furo[i].compR=-1.;
+
+				if (fontePressao_json[indAtivo].recircula().exists()){
+					furo[i].recircula=fontePressao_json[indAtivo].recircula();
+					if(furo[i].recircula==1){
+						if (fontePressao_json[indAtivo].comprimentoMedidoRecircula().exists())
+						furo[i].compR=fontePressao_json[indAtivo].comprimentoMedidoRecircula();
+						else logger.log(LOGGER_FALHA,
+								LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson, chaveJson,
+								"Chaves #/fontePressao/comprimentoMedidoRecircula não existente para um caso de recirculacao");
+					}
+				}
+
 				furo[i].comp = fontePressao_json[indAtivo].comprimentoMedido();
 				// sentido plataforma para fundo-poco
-				if (!sentidoGeometriaSegueEscoamento && reverso<2)
+				if (!sentidoGeometriaSegueEscoamento && reverso<2){
 					furo[i].comp = nCompTotalUnidadesP - furo[i].comp;
+					if(furo[i].recircula==1) furo[i].compR= nCompTotalUnidadesP - furo[i].compR;
+				}
 				if (furo[i].comp < 0.0)
 					furo[i].comp = 0.0;
+				if (furo[i].recircula==1 && furo[i].compR < 0.0)
+					furo[i].compR = 0.0;
 				double lverif = furo[i].comp;
 				furo[i].posicP = buscaIndiceMeioP(lverif);
+				if(furo[i].recircula==1){
+					lverif = furo[i].compR;
+					furo[i].indMon = buscaIndiceMeioP(lverif);
+					furo[i].indJus = furo[i].posicP;
+				}
 
 				furo[i].TipoAbertura=0;
 				if (fontePressao_json[indAtivo].TipoAbertura().exists()){
@@ -8826,12 +9220,12 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 				}
 
 				furo[i].beta=0;
-				if (fontePressao_json[indAtivo].beta().exists()){
+				if (fontePressao_json[indAtivo].beta().exists() && furo[i].recircula==0){
 					furo[i].beta=fontePressao_json[indAtivo].beta();
 				}
 
 				furo[i].titAmb=0;
-				if (fontePressao_json[indAtivo].titAmb().exists()){
+				if (fontePressao_json[indAtivo].titAmb().exists() && furo[i].recircula==0){
 					furo[i].titAmb=fontePressao_json[indAtivo].titAmb();
 				}
 
@@ -8839,7 +9233,8 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 				if (fontePressao_json[indAtivo].tempo().size() != fontePressao_json[indAtivo].abertura().size()) {
 					// RN-078: chaves tempo, temperatura, beta e vazaoLiquido com tamanhos diferentes
 					logger.log(LOGGER_FALHA,
-					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson, chaveJson, "Chaves #/fontePressao/tempo e #/fontePressao/abertura com tamanhos diferentes");
+					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson, chaveJson,
+					"Chaves #/fontePressao/tempo e #/fontePressao/abertura com tamanhos diferentes");
 				} else {
 					furo[i].parserie = (int) fontePressao_json[indAtivo].tempo().size();
 					furo[i].abertura = new double[furo[i].parserie];
@@ -8851,10 +9246,17 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 						furo[i].tempo[j] = fontePressao_json[indAtivo].tempo()[j];
 					}
 				}
+				if(furo[i].recircula==1 && furo[i].abertura[0]>1.e-15){
+					logger.log(LOGGER_FALHA,
+							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, chaveJson, chaveJson,
+					"FontePressao em modo de recirculacao, neste modo, a FontePressao so atua no modo transiente, deve se iniciar com abertura = 0");
+				}
 				furo[i].temp=10;
-				furo[i].temp = fontePressao_json[indAtivo].temperatura();
+				if(furo[i].recircula==0)
+					furo[i].temp = fontePressao_json[indAtivo].temperatura();
 				furo[i].pres=1.;
-				furo[i].pres = fontePressao_json[indAtivo].pressao();
+				if(furo[i].recircula==0)
+					furo[i].pres = fontePressao_json[indAtivo].pressao();
 				furo[i].cd=0.84;
 				if(fontePressao_json[indAtivo].cd().exists())
 				furo[i].cd = fontePressao_json[indAtivo].cd();
@@ -8889,17 +9291,14 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 					}
 				}
 				furo[i].ambGas=0;
-				if(fontePressao_json[indAtivo].ambGas().exists())
-				furo[i].ambGas = fontePressao_json[indAtivo].ambGas();
+				if(fontePressao_json[indAtivo].ambGas().exists() && furo[i].recircula==0)
+					furo[i].ambGas = fontePressao_json[indAtivo].ambGas();
 				furo[i].tipoFlu =1;
-				if(fontePressao_json[indAtivo].tipoFluido().exists())
-				furo[i].tipoFlu = fontePressao_json[indAtivo].tipoFluido();
+				if(fontePressao_json[indAtivo].tipoFluido().exists() && furo[i].recircula==0)
+					furo[i].tipoFlu = fontePressao_json[indAtivo].tipoFluido();
 				if (furo[i].tipoFlu == 0){
 					furo[i].indFlu = fontePressao_json[indAtivo].indiFluidoPro();
 					furo[i].indFlu = identificarFluidoProducao(furo[i].indFlu);
-
-
-
 				}
 				else{
 					furo[i].indFlu = 0;
@@ -8951,7 +9350,7 @@ void Ler::parse_bcs(JSON_entrada_bcs& bcs_json) {
 			// loop para parse das estruturas do bcs
 			int indAtivo = -1;
 			for (int i = 0; i < nbcs; i++) {
-				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avanÃ§a
 				while (!is_ativo(bcs_json[++indAtivo]))
 					;
 
@@ -9088,7 +9487,7 @@ void Ler::parse_multibcs(JSON_entrada_multibcs& multibcs_json) {
 			// loop para parse das estruturas do bcs
 			int indAtivo = -1;
 			for (int i = 0; i < nmultibcs; i++) {
-				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avanÃ§a
 				while (!is_ativo(multibcs_json[++indAtivo]))
 					;
 
@@ -9258,11 +9657,11 @@ void Ler::parse_bomba_volumetrica(
 	// criar variavel para o maior identificador encontrado
 	int maiorIdentificador = -99999;
 	try {
-		// tamanho do array de bombas volumétricas
+		// tamanho do array de bombas volumÃ©tricas
 		nbvol = 0;
-		// percorre o array de bombas volumétricas
+		// percorre o array de bombas volumÃ©tricas
 		for (size_t i = 0; i < bomba_volumetrica_json.size(); i++) {
-			// caso a bomba volumétrica esteja ativo
+			// caso a bomba volumÃ©trica esteja ativo
 			if (is_ativo(bomba_volumetrica_json[i]))
 				nbvol++;
 		}
@@ -9270,10 +9669,10 @@ void Ler::parse_bomba_volumetrica(
 			bvol = new detBVOL[nbvol];
 			// criar vetor de inteiros para armazenar os ids
 			identificadores.resize(nbvol);
-			// loop para parse das estruturas de bombas volumétricas
+			// loop para parse das estruturas de bombas volumÃ©tricas
 			int indAtivo = -1;
 			for (int i = 0; i < nbvol; i++) {
-				// enquanto a propriedade "ativo" da bomba volumétrica esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da bomba volumÃ©trica esteja desabilitada, avanÃ§a
 				while (!is_ativo(bomba_volumetrica_json[++indAtivo]))
 					;
 
@@ -9354,11 +9753,11 @@ void Ler::parse_delta_pressao(JSON_entrada_deltaPressao& delta_pressao_json) {
 	// criar variavel para o maior identificador encontrado
 	int maiorIdentificador = -99999;
 	try {
-		// tamanho do array de deltas de pressão
+		// tamanho do array de deltas de pressÃ£o
 		ndpreq = 0;
-		// percorre o array de deltas de pressão
+		// percorre o array de deltas de pressÃ£o
 		for (size_t i = 0; i < delta_pressao_json.size(); i++) {
-			// caso o delta de pressão esteja ativo
+			// caso o delta de pressÃ£o esteja ativo
 			if (is_ativo(delta_pressao_json[i]))
 				ndpreq++;
 		}
@@ -9366,10 +9765,10 @@ void Ler::parse_delta_pressao(JSON_entrada_deltaPressao& delta_pressao_json) {
 			dpreq = new detDPREQ[ndpreq];
 			// criar vetor de inteiros para armazenar os ids
 			identificadores.resize(ndpreq);
-			// loop para parse das estruturas de deltas de pressão
+			// loop para parse das estruturas de deltas de pressÃ£o
 			int indAtivo = -1;
 			for (int i = 0; i < ndpreq; i++) {
-				// enquanto a propriedade "ativo" do delta de pressão esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do delta de pressÃ£o esteja desabilitada, avanÃ§a
 				while (!is_ativo(delta_pressao_json[++indAtivo]))
 					;
 
@@ -9457,11 +9856,11 @@ void Ler::parse_fonteCalor(JSON_entrada_fonteCalor& fonteCalor_json) {
 	// criar variavel para o maior identificador encontrado
 	int maiorIdentificador = -99999;
 	try {
-		// tamanho do array de deltas de pressão
+		// tamanho do array de deltas de pressÃ£o
 		ncalor = 0;
-		// percorre o array de deltas de pressão
+		// percorre o array de deltas de pressÃ£o
 		for (size_t i = 0; i < fonteCalor_json.size(); i++) {
-			// caso o delta de pressão esteja ativo
+			// caso o delta de pressÃ£o esteja ativo
 			if (is_ativo(fonteCalor_json[i]))
 				ncalor++;
 		}
@@ -9469,10 +9868,10 @@ void Ler::parse_fonteCalor(JSON_entrada_fonteCalor& fonteCalor_json) {
 			fonteCal = new detCalor[ncalor];
 			// criar vetor de inteiros para armazenar os ids
 			identificadores.resize(ncalor);
-			// loop para parse das estruturas de deltas de pressão
+			// loop para parse das estruturas de deltas de pressÃ£o
 			int indAtivo = -1;
 			for (int i = 0; i < ncalor; i++) {
-				// enquanto a propriedade "ativo" do delta de pressão esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do delta de pressÃ£o esteja desabilitada, avanÃ§a
 				while (!is_ativo(fonteCalor_json[++indAtivo]));
 
 				// obter maior identificador
@@ -9594,38 +9993,168 @@ void Ler::parse_master1(JSON_entrada_master1& master1_json) {
 		}
 
 
-		if (master1_json.tempo().exists() && master1_json.abertura().exists()){
-		// caso os tamanhos dos vetores das chaves difiram entre si
-			if (master1_json.tempo().size()
-					!= master1_json.abertura().size()) {
-			// RN-082: chaves tempo, abertura com tamanhos diferentes
-				logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						chaveJson, chaveJson,
-						"Chaves #/master1/tempo, #/master1/abertura com tamanhos diferentes");
-			} else {
-				master1.parserie = (int) master1_json.abertura().size();
+		master1.cxvVerifica=0;
+		if(master1_json.caixaValvula().exists())master1.cxvVerifica=master1_json.caixaValvula();
+		if(master1.cxvVerifica==0){
+			if (master1_json.tempo().exists() && master1_json.abertura().exists()){
+				// caso os tamanhos dos vetores das chaves difiram entre si
+				if (master1_json.tempo().size()
+						!= master1_json.abertura().size()) {
+					// RN-082: chaves tempo, abertura com tamanhos diferentes
+					logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+							chaveJson, chaveJson,
+							"Chaves #/master1/tempo, #/master1/abertura com tamanhos diferentes");
+				} else {
+					master1.parserie = (int) master1_json.abertura().size();
+					master1.abertura = new double[master1.parserie];
+					master1.tempo = new double[master1.parserie];
+					for (int i = 0; i < master1.parserie; i++) {
+						master1.abertura[i] = master1_json.abertura()[i];
+						master1.tempo[i] = master1_json.tempo()[i];
+					}
+				}
+			}
+			else{
+				master1.parserie = 1;
 				master1.abertura = new double[master1.parserie];
 				master1.tempo = new double[master1.parserie];
 				for (int i = 0; i < master1.parserie; i++) {
-					master1.abertura[i] = master1_json.abertura()[i];
-					master1.tempo[i] = master1_json.tempo()[i];
+					master1.abertura[i] = 1;
+					master1.tempo[i] = 0.;
+				}
+			}
+			eventoabre = 0;
+			eventofecha = 0;
+			Tevento = new double[master1.parserie];
+			Teventof = new double[master1.parserie];
+
+			master1.cxv.lCaixa=0;
+			master1.cxv.indFlu=0;
+			master1.cxv.secaoTrans=0;
+			master1.cxv.formac=0;
+			master1.cxv.lito=-1;
+			master1.cxv.ambiente=0;
+			master1.cxv.tamb=0;
+			master1.cxv.velAmb=0;
+			master1.cxv.nMon=0;
+			master1.cxv.serieAberturaMon=0;
+			master1.cxv.tempMon=0;
+			master1.cxv.nJus=0;
+			master1.cxv.serieAberturaJus=0;
+			master1.cxv.tempJus=0;
+			master1.cxv.posic=-1;
+			master1.cxv.temperaturaFonte=0.;
+			master1.cxv.massLiqP=0;
+			master1.cxv.massGas=0;
+			master1.cxv.massLiqC=0;
+			master1.cxv.tempoFonte=0;
+			master1.cxv.nfonte=0;
+		}
+		else{
+			master1.parserie = 0;
+			master1.abertura = 0;
+			master1.tempo = 0;
+
+			master1.cxv.posic=master1.posic;
+			master1.cxv.lCaixa=master1_json.compCaixa();
+			master1.cxv.indFlu=0;
+			master1.cxv.secaoTrans=master1_json.indSecTrans();
+			master1.cxv.formac=master1_json.formac();
+			if(master1.cxv.formac==1)master1.cxv.lito=master1_json.lito();
+			else master1.cxv.lito=-1;
+			master1.cxv.ambiente=master1_json.ambiente();
+			master1.cxv.tamb=master1_json.tempAmbiente();
+			master1.cxv.velAmb=master1_json.velAmbiente();
+			master1.cxv.nMon=master1_json.aberturaMon().size();
+			master1.cxv.serieAberturaMon=new double [master1.cxv.nMon];
+			master1.cxv.tempMon=new double [master1.cxv.nMon];
+			if (master1_json.tempoAberturaMon().size()
+				!= master1_json.aberturaMon().size()) {
+						// RN-082: chaves tempo, abertura com tamanhos diferentes
+						logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+										chaveJson, chaveJson,
+										"Chaves #/master1/tempoAberturaMon, #/master1/aberturaMon com tamanhos diferentes");
+			}
+			for(int imon=0; imon<master1.cxv.nMon; imon++){
+				master1.cxv.serieAberturaMon[imon]=master1_json.aberturaMon()[imon];
+				master1.cxv.tempMon[imon]=master1_json.tempoAberturaMon()[imon];
+			}
+			master1.cxv.nJus=master1_json.aberturaJus().size();
+			master1.cxv.serieAberturaJus=new double [master1.cxv.nJus];
+			master1.cxv.tempJus=new double [master1.cxv.nJus];
+			if (master1_json.tempoAberturaJus().size()
+				!= master1_json.aberturaJus().size()) {
+						// RN-082: chaves tempo, abertura com tamanhos diferentes
+						logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+										chaveJson, chaveJson,
+										"Chaves #/master1/tempoAberturaJus, #/master1/aberturaJus com tamanhos diferentes");
+			}
+			for(int ijus=0; ijus<master1.cxv.nJus; ijus++){
+				master1.cxv.serieAberturaJus[ijus]=master1_json.aberturaJus()[ijus];
+				master1.cxv.tempJus[ijus]=master1_json.tempoAberturaJus()[ijus];
+			}
+
+			std::set<double> conjunto;
+			for(int imon = 0; imon < master1.cxv.nMon; imon++)
+			    conjunto.insert(master1.cxv.tempMon[imon]);
+			for(int ijus = 0; ijus < master1.cxv.nJus; ijus++)
+			    conjunto.insert(master1.cxv.tempJus[ijus]);
+
+			std::vector<double> tempoCX(conjunto.begin(), conjunto.end());
+			master1.parserie = tempoCX.size();
+			master1.abertura = new double[master1.parserie];
+			master1.tempo = new double[master1.parserie];
+			for(int iabre=0; iabre<master1.parserie; iabre++)master1.tempo[iabre]=tempoCX[iabre];
+			for(int iabre=0; iabre<master1.parserie; iabre++){
+				double abre0;
+				double abre1;
+				int ind;
+				double raz;
+				double tempo=tempoCX[iabre];
+				indraz(ind, raz, tempo, master1.cxv.nMon, master1.cxv.tempMon);
+				double aberinf = master1.cxv.serieAberturaMon[ind];
+				double abersup;
+				if (ind < master1.cxv.nMon - 1)
+					abersup = master1.cxv.serieAberturaMon[ind+1];
+				else
+					abersup = master1.cxv.serieAberturaMon[ind];
+				abre0=aberinf * raz + (1 - raz) * abersup;
+
+				indraz(ind, raz, tempo, master1.cxv.nJus, master1.cxv.tempJus);
+				aberinf = master1.cxv.serieAberturaJus[ind];
+				if (ind < master1.cxv.nJus - 1)
+					abersup = master1.cxv.serieAberturaJus[ind+1];
+				else
+					abersup = master1.cxv.serieAberturaJus[ind];
+				abre1=aberinf * raz + (1 - raz) * abersup;
+				if(abre0<abre1)master1.abertura[iabre]=abre0;
+				else master1.abertura[iabre]=abre1;
+			}
+			eventoabre = 0;
+			eventofecha = 0;
+			Tevento = new double[master1.parserie];
+			Teventof = new double[master1.parserie];
+
+			master1.cxv.temperaturaFonte=master1.cxv.tamb;
+			if(master1_json.temperaturaFonte().exists())master1.cxv.temperaturaFonte=master1_json.temperaturaFonte();
+			master1.cxv.nfonte=0;
+			if(master1_json.tempoFonte().exists()){
+				master1.cxv.nfonte=master1_json.tempoFonte().size();
+				master1.cxv.massLiqP=new double [master1.cxv.nfonte];
+				master1.cxv.massGas=new double [master1.cxv.nfonte];
+				master1.cxv.massLiqC=new double [master1.cxv.nfonte];
+				master1.cxv.tempoFonte=new double [master1.cxv.nfonte];
+				for(int ifonte=0; ifonte<master1.cxv.nfonte; ifonte++){
+					master1.cxv.massLiqP[ifonte]=master1_json.massLiqP()[ifonte];
+					master1.cxv.massGas[ifonte]=master1_json.massGas()[ifonte];
+					master1.cxv.massLiqC[ifonte]=master1_json.massLiqC()[ifonte];
+					master1.cxv.tempoFonte[ifonte]=master1_json.tempoFonte()[ifonte];
 				}
 			}
 		}
-		else{
-			master1.parserie = 1;
-			master1.abertura = new double[master1.parserie];
-			master1.tempo = new double[master1.parserie];
-			for (int i = 0; i < master1.parserie; i++) {
-				master1.abertura[i] = 1;
-				master1.tempo[i] = 0.;
-			}
-		}
-		eventoabre = 0;
-		eventofecha = 0;
-		Tevento = new double[master1.parserie];
-		Teventof = new double[master1.parserie];
-
+		master1.cd=0.84;
+		if (master1_json.cd().exists())
+			master1.cd =master1_json.cd();
 		// caso exista uma condicao de falha da aplicacao ate esta etapa
 			if (!logger.getStResultadoSimulacao().sucesso) {
 				// gerar o arquivo de saida da simulacao e encerra a aplicacao
@@ -9691,6 +10220,32 @@ void Ler::parse_master2(JSON_entrada_master2& master2_json) {
 			master2.abertura[0] =1;
 			master2.tempo[0] = 0;
 		}
+		master2.cd=0.84;
+
+		master2.cxvVerifica=0;
+		master2.cxv.lCaixa=0;
+		master2.cxv.indFlu=0;
+		master2.cxv.secaoTrans=0;
+		master2.cxv.formac=0;
+		master2.cxv.lito=-1;
+		master2.cxv.ambiente=0;
+		master2.cxv.tamb=0;
+		master2.cxv.velAmb=0;
+		master2.cxv.nMon=0;
+		master2.cxv.serieAberturaMon=0;
+		master2.cxv.tempMon=0;
+		master2.cxv.nJus=0;
+		master2.cxv.serieAberturaJus=0;
+		master2.cxv.tempJus=0;
+		master2.cxv.posic=-1;
+		master2.cxv.temperaturaFonte=0.;
+		master2.cxv.massLiqP=0;
+		master2.cxv.massGas=0;
+		master2.cxv.massLiqC=0;
+		master2.cxv.tempoFonte=0;
+		master2.cxv.nfonte=0;
+
+
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -9943,7 +10498,7 @@ void Ler::parse_chokeInj(JSON_entrada_chokeInj& chokeInj_json) {
  *
  * \tparam Objeto JSON correspondente a chokeSup
  */
-void Ler::parse_fontechk(JSON_entrada_fonteChoke& fontechk_json) {
+/*void Ler::parse_fontechk(JSON_entrada_fonteChoke& fontechk_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
 	string chaveJson("#/fontechk");
 	try {
@@ -9992,7 +10547,7 @@ void Ler::parse_fontechk(JSON_entrada_fonteChoke& fontechk_json) {
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
 		LOG_ERR_UNEXPECTED_EXCEPTION, "", chaveJson, e.what());
 	}
-}
+}*/
 
 /*!
  * Converter os elementos "pig" do arquivo Json do MRT em struct pig.
@@ -10022,7 +10577,7 @@ void Ler::parse_pig(JSON_entrada_pig& pig_json) {
 			// loop para parse das estruturas de pigs
 			int indAtivo = -1;
 			for (int i = 0; i < npig; i++) {
-				// enquanto a propriedade "ativo" do pig esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do pig esteja desabilitada, avanÃ§a
 				while (!is_ativo(pig_json[++indAtivo]))
 					;
 
@@ -10089,9 +10644,9 @@ void Ler::parse_intermitencia(JSON_entrada_intermitenciaSevera& intermitencia_js
 	try {
 		// tamanho do vetor fonte_liquido
 		nintermi = 0;
-		// percorre o array de fontes de líquido
+		// percorre o array de fontes de lÃ­quido
 		for (size_t i = 0; i < intermitencia_json.size(); i++) {
-			// caso a fonte de líquido esteja ativo
+			// caso a fonte de lÃ­quido esteja ativo
 			if (is_ativo(intermitencia_json[i]))
 				nintermi++;
 		}
@@ -10112,7 +10667,7 @@ void Ler::parse_intermitencia(JSON_entrada_intermitenciaSevera& intermitencia_js
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nintermi; i++) {
-				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
 				while (!is_ativo(intermitencia_json[++indAtivo]))
 					;
 
@@ -10204,7 +10759,7 @@ void Ler::parse_celulaUnitaria(JSON_entrada_detalheCelulaUnitaria& celulaUnitari
 			// loop para parse das estruturas do celUnit
 			int indAtivo = -1;
 			for (int i = 0; i < nCelUnit; i++) {
-				// enquanto a propriedade "ativo" do celUnit esteja desabilitada, avança
+				// enquanto a propriedade "ativo" do celUnit esteja desabilitada, avanÃ§a
 				while (!is_ativo(celulaUnitaria_json[++indAtivo]))
 					;
 
@@ -10314,6 +10869,7 @@ void Ler::parse_perfil_producao(
 				}
 
 				profp.pres = 0;
+				profp.presFront = 0;
 				profp.temp = 0;
 				profp.hol = 0;
 
@@ -10326,6 +10882,7 @@ void Ler::parse_perfil_producao(
 				profp.ul = 0;
 				profp.arra = 0;
 				profp.viscl = 0;
+				profp.viscom = 0;
 				profp.viscg = 0;
 				profp.rhog = 0;
 				profp.rhol = 0;
@@ -10344,6 +10901,9 @@ void Ler::parse_perfil_producao(
 				profp.masstrans = 0;
 				profp.cpg = 0;
 				profp.cpl = 0;
+				profp.condg = 0;
+				profp.condl = 0;
+				profp.condo = 0;
 				profp.qlst = 0;
 				profp.qlwst = 0;
 				profp.qlstTot = 0;
@@ -10392,12 +10952,19 @@ void Ler::parse_perfil_producao(
 				profp.subResfria=0;
 
 				profp.correlacaoBB=0;
+				profp.titulo=0;
 
 
 
 				if (perfil_producao_json.pressao().exists()) {
 				    profp.pres = perfil_producao_json.pressao();
 				    if (profp.pres == 1)
+					nvarprofp++;
+				}
+
+				if (perfil_producao_json.pressaoFront().exists()) {
+				    profp.presFront = perfil_producao_json.pressaoFront();
+				    if (profp.presFront == 1)
 					nvarprofp++;
 				}
 
@@ -10460,6 +11027,13 @@ void Ler::parse_perfil_producao(
 					profp.viscl =
 							perfil_producao_json.viscosidadeLiquido();
 					if (profp.viscl == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.viscosidadeOleoMorto().exists()) {
+					profp.viscom =
+							perfil_producao_json.viscosidadeOleoMorto();
+					if (profp.viscom == 1)
 						nvarprofp++;
 				}
 
@@ -10575,7 +11149,30 @@ void Ler::parse_perfil_producao(
 						nvarprofp++;
 				}
 
-				if (perfil_producao_json.QLstd().exists()) {
+				if (perfil_producao_json.condgas().exists()) {
+					profp.condg = perfil_producao_json.condgas();
+					if (profp.condg == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.condliq().exists()) {
+					profp.condl = perfil_producao_json.condliq();
+					if (profp.condl == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.condoleo().exists()) {
+					profp.condo = perfil_producao_json.condoleo();
+					if (profp.condo == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.QOstd().exists()) {
+					profp.qlst = perfil_producao_json.QOstd();
+					if (profp.qlst == 1)
+						nvarprofp++;
+				}
+				else if (perfil_producao_json.QLstd().exists()) {
 					profp.qlst = perfil_producao_json.QLstd();
 					if (profp.qlst == 1)
 						nvarprofp++;
@@ -10802,12 +11399,18 @@ void Ler::parse_perfil_producao(
 				if (perfil_producao_json.dadosParafina().exists() && modoParafina==1) {
 					profp.dadosParafina = perfil_producao_json.dadosParafina();
 					if (profp.dadosParafina == 1)
-						nvarprofp+=19;
+						nvarprofp+=22+npseudoWax;
 				}
 
 				if (perfil_producao_json.correlacaoBB().exists() && tipoModeloDrift==0) {
 					profp.correlacaoBB = perfil_producao_json.correlacaoBB();
 					if (profp.correlacaoBB == 1)
+						nvarprofp++;
+				}
+
+				if (perfil_producao_json.titulo().exists()) {
+					profp.titulo = perfil_producao_json.titulo();
+					if (profp.titulo == 1)
 						nvarprofp++;
 				}
 			}
@@ -11135,7 +11738,7 @@ void Ler::parse_tendencia_producao(
 			// loop para parse das estruturas de tendencias de producao
 			int indAtivo = -1;
 			for (int i = 0; i < ntendp; i++) {
-				// enquanto a propriedade "ativo" da tendencia de producao esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da tendencia de producao esteja desabilitada, avanÃ§a
 				while (!is_ativo(tendencia_producao_json[++indAtivo]))
 					;
 
@@ -11213,6 +11816,9 @@ void Ler::parse_tendencia_producao(
 				trendp[i].inventarioLiq = 0;
 
 				trendp[i].subResfria=0;
+
+				trendp[i].presAnulICV=0;
+				trendp[i].caixaValvula=0;
 
 				nvartrendp[i] = 0;
 				double lComp =
@@ -11660,6 +12266,29 @@ void Ler::parse_tendencia_producao(
 					if (trendp[i].subResfria == 1)
 						nvartrendp[i]++;
 				}
+
+				if (tendencia_producao_json[indAtivo].presAnulICV().exists()) {
+					trendp[i].presAnulICV = tendencia_producao_json[indAtivo].presAnulICV();
+					if (trendp[i].presAnulICV == 1)
+						nvartrendp[i]++;
+				}
+
+				if (tendencia_producao_json[indAtivo].caixaValvula().exists()) {
+					int pos=trendp[i].posic;
+					int temCaixa=0;
+					if(master1.posic==pos && master1.cxvVerifica==1)temCaixa=1;
+					else{
+						for(int iv=0; iv<nvalv; iv++){
+							if(valv[iv].posicP==pos && valv[iv].cxvVerifica==1){
+								temCaixa=1;
+								break;
+							}
+						}
+					}
+					if(temCaixa==1)trendp[i].caixaValvula = tendencia_producao_json[indAtivo].caixaValvula();
+					if (trendp[i].caixaValvula == 1)
+						nvartrendp[i]+=8;
+				}
 			}
 			// caso exista uma condicao de falha da aplicacao ate esta etapa
 				if (!logger.getStResultadoSimulacao().sucesso) {
@@ -11721,7 +12350,7 @@ void Ler::parse_tendencia_servico(
 			// loop para parse das estruturas de tendencias de servico
 			int indAtivo = -1;
 			for (int i = 0; i < ntendg; i++) {
-				// enquanto a propriedade "ativo" da tendencia de servico esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da tendencia de servico esteja desabilitada, avanÃ§a
 				while (!is_ativo(tendencia_servico_json[++indAtivo]))
 					;
 
@@ -12175,7 +12804,7 @@ void Ler::parse_tendencia_trans_producao(
 			// loop para parse das estruturas de tendencias trans producao
 			int indAtivo = -1;
 			for (int i = 0; i < ntendtransp; i++) {
-				// enquanto a propriedade "ativo" da tendencia trans producao esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da tendencia trans producao esteja desabilitada, avanÃ§a
 				while (!is_ativo(tendencia_trans_producao_json[++indAtivo]))
 					;
 				double lComp =
@@ -12199,12 +12828,13 @@ void Ler::parse_tendencia_trans_producao(
 									+ to_string(ncelp));
 				}
 				trendtransp[i].camada =
-						tendencia_trans_producao_json[indAtivo].camada()
-								- 1;
-				if (trendtransp[i].camada < 0)
-					trendtransp[i].camada = 0;
+						tendencia_trans_producao_json[indAtivo].camada();
+				if (trendtransp[i].camada < 1)
+					trendtransp[i].camada = 1;
 				trendtransp[i].discre =
 						tendencia_trans_producao_json[indAtivo].discretizacao();
+				if (trendtransp[i].discre < 1)
+						trendtransp[i].discre = 1;
 				if(transiente==1)
 				trendtransp[i].dt =
 						tendencia_trans_producao_json[indAtivo].dt();
@@ -12255,7 +12885,7 @@ void Ler::parse_tendencia_trans_servico(
 			// loop para parse das estruturas de tendencias trans servico
 			int indAtivo = -1;
 			for (int i = 0; i < ntendtransg; i++) {
-				// enquanto a propriedade "ativo" da tendencia trans servico esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da tendencia trans servico esteja desabilitada, avanÃ§a
 				while (!is_ativo(tendencia_trans_servico_json[++indAtivo]))
 					;
 				double lComp =
@@ -12275,12 +12905,13 @@ void Ler::parse_tendencia_trans_servico(
 									+ to_string(ncelg));
 				}
 				trendtransg[i].camada =
-						tendencia_trans_servico_json[indAtivo].camada()
-								- 1;
-				if (trendtransg[i].camada < 0)
-					trendtransg[i].camada = 0;
+						tendencia_trans_servico_json[indAtivo].camada();
+				if (trendtransg[i].camada < 1)
+					trendtransg[i].camada = 1;
 				trendtransg[i].discre =
 						tendencia_trans_servico_json[indAtivo].discretizacao();
+				if (trendtransg[i].discre < 1)
+					trendtransg[i].discre = 1;
 				if(transiente==1)
 				trendtransg[i].dt =
 						tendencia_trans_servico_json[indAtivo].dt();
@@ -12331,7 +12962,7 @@ void Ler::parse_tela(JSON_entrada_tela& tela_json) {
 			// loop para parse das estruturas de tela
 			int indAtivo = -1;
 			for (int i = 0; i < ntela; i++) {
-				// enquanto a propriedade "ativo" da tela esteja desabilitada, avança
+				// enquanto a propriedade "ativo" da tela esteja desabilitada, avanÃ§a
 				while (!is_ativo(tela_json[++indAtivo]))
 					;
 
@@ -12762,7 +13393,7 @@ void Ler::lerArq() {
 		}
 
 
-		// caso o atributo "tabG" do elemento "configuracaoInicial" seja true e exista elemento "fonteGas" não vazio
+		// caso o atributo "tabG" do elemento "configuracaoInicial" seja true e exista elemento "fonteGas" nÃ£o vazio
 
 		// caso simulacao de poco de injecao e tipo de fluido CO2
 		if (pocinjec == 1 && condpocinj.tipoFlui == 2 && flashCompleto!=1) {
@@ -12825,6 +13456,7 @@ void Ler::lerArq() {
 			double posicfronteira = 0.;
 			int iniSegF = 0;
 			int iniSegC = 0;
+			nAxiSim=0;
 			for (int j = tempncel; j < (tempncel + unidadeP[i].ncel); j++) {
 				int kontauni = j - tempncel;
 				celp[j].duto = unidadeP[i].duto;
@@ -12861,7 +13493,7 @@ void Ler::lerArq() {
 				else{
 					celp[j].difusTerm3D=0;
 					celp[j].difusTerm3DFE=0;
-					celp[j].difusTerm3DAcop="vazio";
+					celp[j].difusTerm3DAcop="trocaTermica3D-vazio";
 				}
 				if (lingas > 0 && para == 0) {
 					if (j > 1) {
@@ -12927,6 +13559,16 @@ void Ler::lerArq() {
 						+(posiccentro-unidadeP[i].dxVar[iniSegF] * unidadeP[i].comp)
 								* (unidadeP[i].var[11][iniSegC + 1]
 										- unidadeP[i].var[11][iniSegC]) / compC;
+				celp[j].difusAxiSim=0;
+				if(pocoTermAxiSim==1 && celp[j].formacCel==1 && celp[j].lito>=0 && anulAxiSim==0){
+					celp[j].difusAxiSim=1;
+					indAxiSim.push_back(j);
+					geoTermAxiSim.push_back(celp[j].textern);
+					dxAxiSim.push_back(celp[j].dx);
+					double diamInt=corte[duto[celp[j].duto].indcorte].a;
+					diamAxiSim.push_back(diamInt);
+					nAxiSim++;
+				}
 			}
 			tempncel += unidadeP[i].ncel;
 		}
@@ -12945,6 +13587,14 @@ void Ler::lerArq() {
 		if (descarga == 1)
 			celdescargaP = buscaIndiceFrontP(compInterDescP);
 
+		if(pocoTermAxiSim==1 && nAxiSim>0 && anulAxiSim==0){
+			resGlobAxiSim=new double [nAxiSim];
+			std::reverse(indAxiSim.begin(), indAxiSim.end());
+			std::reverse(geoTermAxiSim.begin(), geoTermAxiSim.end());
+			std::reverse(dxAxiSim.begin(),dxAxiSim.end());
+			std::reverse(diamAxiSim.begin(),diamAxiSim.end());
+		}
+
 		if(tempReves<-999)tempReves=celp[ncelp-1].textern;
 
 		// carga das unidades de servico
@@ -12954,7 +13604,7 @@ void Ler::lerArq() {
 			if(conINIAmbS==0)parse_unidades_servico(jsonDoc.dutosServico());
 			else if(conINIAmbS==1)parse_unidades_servicoAmb(jsonDoc.dutosServico());
 
-			// gerar as células da linha de servico
+			// gerar as cÃ©lulas da linha de servico
 			celg = new detcelg[ncelg];
 			int tempncel = 0;
 			int para = 0;
@@ -13039,6 +13689,18 @@ void Ler::lerArq() {
 									* (unidadeG[i].var[8][iniSegC + 1]
 											- unidadeG[i].var[8][iniSegC])
 									/ compC;
+
+					celg[j].difusAxiSim=0;
+					if(pocoTermAxiSim==1 && celg[j].formacCel==1 && celg[j].lito>=0 && anulAxiSim==1){
+						celg[j].difusAxiSim=1;
+						indAxiSim.push_back(j);
+						geoTermAxiSim.push_back(celg[j].textern);
+						dxAxiSim.push_back(celg[j].dx);
+						double diamInt=corte[duto[celg[j].duto].indcorte].a;
+						diamAxiSim.push_back(diamInt);
+						nAxiSim++;
+					}
+
 				}
 				tempncel += unidadeG[i].ncel;
 			}
@@ -13059,6 +13721,10 @@ void Ler::lerArq() {
 					celg[i + 1].profundiF = celg[i].profundiF
 							+ celg[i].dx * sin(-duto[iDu].ang);
 			}
+		}
+
+		if(pocoTermAxiSim==1 && nAxiSim>0 && anulAxiSim==1){
+			resGlobAxiSim=new double [nAxiSim];
 		}
 
 		celdescarga = 1e7;
@@ -13573,7 +14239,7 @@ void Ler::copiaArq(Ler& arqAntigo) {
 			else{
 				celp[j].difusTerm3D=0;
 				celp[j].difusTerm3DFE=0;
-				celp[j].difusTerm3DAcop="vazio";
+				celp[j].difusTerm3DAcop="TrocaTermica3D-vazio";
 			}
 			if (lingas > 0 && para == 0) {
 				if (j > 1) {
@@ -13641,6 +14307,18 @@ void Ler::copiaArq(Ler& arqAntigo) {
 					+(posiccentro-unidadeP[i].dxVar[iniSegF] * unidadeP[i].comp)
 							* (unidadeP[i].var[11][iniSegC + 1]
 									- unidadeP[i].var[11][iniSegC]) / compC;
+
+			celp[j].difusAxiSim=0;
+			if(pocoTermAxiSim==1 && celp[j].formacCel==1 && celp[j].lito>=0 && anulAxiSim==0){
+				celp[j].difusAxiSim=1;
+				indAxiSim.push_back(j);
+				geoTermAxiSim.push_back(celp[j].textern);
+				dxAxiSim.push_back(celp[j].dx);
+				double diamInt=corte[celp[j].duto].a;
+				diamAxiSim.push_back(diamInt);
+				nAxiSim++;
+			}
+
 		}
 		tempncel += unidadeP[i].ncel;
 	}
@@ -13659,6 +14337,14 @@ void Ler::copiaArq(Ler& arqAntigo) {
 	if (descarga == 1)
 		celdescargaP = buscaIndiceFrontP(compInterDescP);
 	if(tempReves<-999)tempReves=celp[ncelp-1].textern;
+
+	if(pocoTermAxiSim==1 && nAxiSim>0 && anulAxiSim==0){
+		resGlobAxiSim=new double [nAxiSim];
+		std::reverse(indAxiSim.begin(), indAxiSim.end());
+		std::reverse(geoTermAxiSim.begin(), geoTermAxiSim.end());
+		std::reverse(dxAxiSim.begin(),dxAxiSim.end());
+		std::reverse(diamAxiSim.begin(),diamAxiSim.end());
+	}
 
 
 	if (pocinjec == 0 && nunidadeg > 0) {
@@ -13748,6 +14434,18 @@ void Ler::copiaArq(Ler& arqAntigo) {
 								* (unidadeG[i].var[8][iniSegC + 1]
 										- unidadeG[i].var[8][iniSegC])
 								/ compC;
+
+				celg[j].difusAxiSim=0;
+				if(pocoTermAxiSim==1 && celg[j].formacCel==1 && celg[j].lito>=0 && anulAxiSim==1){
+					celg[j].difusAxiSim=1;
+					indAxiSim.push_back(j);
+					geoTermAxiSim.push_back(celg[j].textern);
+					dxAxiSim.push_back(celg[j].dx);
+					double diamInt=corte[celg[j].duto].a;
+					diamAxiSim.push_back(diamInt);
+					nAxiSim++;
+				}
+
 			}
 			tempncel += unidadeG[i].ncel;
 		}
@@ -13765,10 +14463,13 @@ void Ler::copiaArq(Ler& arqAntigo) {
 		}
 	}
 
+	if(pocoTermAxiSim==1 && nAxiSim>0 && anulAxiSim==1){
+		resGlobAxiSim=new double [nAxiSim];
+	}
+
 	celdescarga = 1e7;
 	if (pocinjec == 0 && descarga == 1)
 		celdescarga = buscaIndiceFrontG(compInterDesc);
-
 
 	nparEnvelope = 0;
 	existeEnvelope=0;
@@ -13805,8 +14506,10 @@ void Ler::copiaArq(Ler& arqAntigo) {
 	copia_chokeSup(arqAntigo);
 	copia_chokeInj(arqAntigo);
 	copia_intermitencia(arqAntigo);
+	copia_celulaUnitaria(arqAntigo);
 	copia_perfil_producao(arqAntigo);
 	copia_perfis_trans_producao(arqAntigo);
+
 }
 
 
@@ -13824,7 +14527,7 @@ int Ler::retornaNTab(){
 		if(lendoPVTSimPre.eof( )){
 			logger.log_write_logs_and_exit(LOGGER_FALHA,
 			LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-					"Arquivo PVTSIM com problemas", "busca de número de pontos na tabela flash",
+					"Arquivo PVTSIM com problemas", "busca de nÃºmero de pontos na tabela flash",
 					"pvtsimArq");
 			break;
 		}
@@ -13832,7 +14535,7 @@ int Ler::retornaNTab(){
 
 
 
-	// Lê novamente linha com quebra e monta linha unificada
+	// LÃª novamente linha com quebra e monta linha unificada
 	std::string linha_completa = ler_linha_continua(lendoPVTSimPre);
 	strcpy(line, linha_completa.c_str());
 
@@ -13847,7 +14550,7 @@ int Ler::retornaNTab(){
 		if(lendoPVTSimPre.eof( )){
 			logger.log_write_logs_and_exit(LOGGER_FALHA,
 			LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-					"Arquivo PVTSIM com problemas",  "busca de número de pontos na tabela flash",
+					"Arquivo PVTSIM com problemas",  "busca de nÃºmero de pontos na tabela flash",
 					"pvtsimArq");
 		}
 
@@ -13856,14 +14559,14 @@ int Ler::retornaNTab(){
 			if(lendoPVTSimPre.eof( )){
 				logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						"Arquivo PVTSIM com problemas",  "busca de número de pontos na tabela flash",
+						"Arquivo PVTSIM com problemas",  "busca de nÃºmero de pontos na tabela flash",
 						"pvtsimArq");
 			}
 			tenta = strtok(NULL, " ,)/");
 			if(lendoPVTSimPre.eof( )){
 				logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						"Arquivo PVTSIM com problemas",  "busca de número de pontos na tabela flash",
+						"Arquivo PVTSIM com problemas",  "busca de nÃºmero de pontos na tabela flash",
 						"pvtsimArq");
 			}
 		}
@@ -14387,6 +15090,10 @@ void Ler::geraTabFlash(int flu, int var) {
 			lacoleitura = 13;  //visc oleo//alteracao6
 		else if (var == 17)
 			lacoleitura = 12;  //visc gas//alteracao6
+		else if (var == 18)
+			lacoleitura = 22;  //cond oleo//alteracao6
+		else if (var == 19)
+			lacoleitura = 21;  //cond gas//alteracao6
 	} else {
 		if (var == 1)
 			lacoleitura = 1;  //rhog
@@ -14416,6 +15123,10 @@ void Ler::geraTabFlash(int flu, int var) {
 			lacoleitura = 9;  //visc oleo//alteracao6
 		else if (var == 17)
 			lacoleitura = 8;  //visc gas//alteracao6
+		else if (var == 18)
+			lacoleitura = 15;  //cond oleo//alteracao6
+		else if (var == 19)
+			lacoleitura = 14;  //cond gas//alteracao6
 	}
 	lendoPVTSim.close();
 
@@ -14512,6 +15223,10 @@ void Ler::geraTabFlash(int flu, int var) {
 					flash[flu].viscO[i][j] = VarTemp[i][j]; //visc oleo //alteracao6
 				else if (var == 17)
 					flash[flu].viscG[i][j] = VarTemp[i][j]; //visc gas //alteracao6
+				else if (var == 18)
+					flash[flu].condO[i][j] = VarTemp[i][j]; //cond oleo //alteracao6
+				else if (var == 19)
+					flash[flu].condG[i][j] = VarTemp[i][j]; //cond gas //alteracao6
 
 				if (var == 8 && i > 0 && j > 0) {
 					double rhostd = 141.5 * 1000.
@@ -14559,6 +15274,10 @@ void Ler::geraTabFlash(int flu, int var) {
 					flash[flu].viscO[i][j] = VarTemp[i][j]; //visc oleo //alteracao6
 				else if (var == 17)
 					flash[flu].viscG[i][j] = VarTemp[i][j]; //visc gas //alteracao6
+				else if (var == 18)
+					flash[flu].condO[i][j] = VarTemp[i][j]; //cond oleo //alteracao6
+				else if (var == 19)
+					flash[flu].condG[i][j] = VarTemp[i][j]; //cond gas //alteracao6
 
 				if (var == 8 && i > 0 && j > 0) {
 					double rhostd = 141.5 * 1000.
@@ -14947,10 +15666,10 @@ void Ler::geraevento(int inic, int extrem) {
 							e.duracao = IPRS[i].tqMax[j + 1] - IPRS[i].tqMax[j];
 							if (IPRS[i].qMax[j] > IPRS[i].qMax[j + 1])
 								e.descricao =
-										"Diminuindo vazão máxima de IPR";
+										"Diminuindo vazÃ£o mÃ¡xima de IPR";
 							else
 								e.descricao =
-										"Aumentando vazão máxima de IPR";
+										"Aumentando vazÃ£o mÃ¡xima de IPR";
 							e.estIni = IPRS[i].qMax[j];
 							e.estFim = IPRS[i].qMax[j + 1];
 							logevento.push_back(e);
@@ -15455,7 +16174,8 @@ void Ler::geraevento(int inic, int extrem) {
 		}
 	}
 	if (((*vg1dSP).chaverede == 0 || inic == 1) && ConContEntrada == 1) {
-		for (int i = 0; i < CCPres.parserie; i++) {
+		// reads [i + 1]: stop one short, as the chokep event loop above does (j < chokep.parserie - 1)
+		for (int i = 0; i < CCPres.parserie - 1; i++) {
 			if ((fabs(CCPres.pres[i] - CCPres.pres[i + 1]) > 1e-15)
 					|| (fabs(CCPres.temperatura[i] - CCPres.temperatura[i + 1])
 							> 1e-15)
@@ -15478,7 +16198,8 @@ void Ler::geraevento(int inic, int extrem) {
 		}
 	}
 	if (((*vg1dSP).chaverede == 0 || inic == 1) && ConContEntrada == 2) {
-		for (int i = 0; i < CCVPres.parserie; i++) {
+		// reads [i + 1]: stop one short, as the chokep event loop above does (j < chokep.parserie - 1)
+		for (int i = 0; i < CCVPres.parserie - 1; i++) {
 			if ((fabs(CCVPres.pres[i] - CCVPres.pres[i + 1]) > 1e-15)
 					|| (fabs(CCVPres.temperatura[i] - CCVPres.temperatura[i + 1])
 							> 1e-15)
@@ -15709,6 +16430,7 @@ void Ler::geracelp(Cel* celula) {
 		double vdx;
 		double vdxL;
 		double vdxR;
+		double vdxLL;
 		double vazio;
 		double vazioL;
 		double vazioR;
@@ -15754,6 +16476,8 @@ void Ler::geracelp(Cel* celula) {
 			vdx = celp[i].dx;
 			vdxL = celp[i - 1].dx;
 			vdxR = celp[i + 1].dx;
+			if(i>=2)vdxLL = celp[i - 2].dx;
+			else vdxLL=vdxL;
 			razdx = celp[i].dx / (celp[i].dx + celp[i - 1].dx);
 			razdxL = celp[i - 1].dx / (celp[i - 1].dx + celp[i - 2].dx);
 			razdxR = celp[i + 1].dx / (celp[i + 1].dx + celp[i].dx);
@@ -15809,6 +16533,7 @@ void Ler::geracelp(Cel* celula) {
 			vdx = celp[i].dx;
 			vdxL = celp[i - 1].dx;
 			vdxR = celp[i + 1].dx;
+			vdxLL = celp[i - 1].dx;
 			razdx = celp[i].dx / (celp[i].dx + celp[i - 1].dx);
 			razdxL = 1.;
 			razdxR = celp[i + 1].dx / (celp[i + 1].dx + celp[i].dx);
@@ -15860,6 +16585,7 @@ void Ler::geracelp(Cel* celula) {
 			vdx = celp[i].dx;
 			vdxL = celp[i].dx;
 			vdxR = celp[i + 1].dx;
+			vdxLL = celp[i].dx;
 			razdx = 1.;
 			razdxL = 1.;
 			razdxR = celp[i + 1].dx / (celp[i + 1].dx + celp[i].dx);
@@ -15911,6 +16637,8 @@ void Ler::geracelp(Cel* celula) {
 			vdx = celp[i].dx;
 			vdxL = celp[i - 1].dx;
 			vdxR = celp[i].dx;
+			if(i>=2)vdxLL=celp[i-2].dx;
+			else vdxLL=vdxL;
 			razdx = celp[i].dx / (celp[i].dx + celp[i - 1].dx);
 			razdxL = celp[i - 1].dx / (celp[i - 1].dx + celp[i - 2].dx);
 			razdxR = 0.;
@@ -16010,8 +16738,9 @@ void Ler::geracelp(Cel* celula) {
 		celula[i] = Cel(vg1dSP,dutosMRT[idutoL], dutosMRT[iduto],
 				dutosMRT[idutoR], flup[indfluPIni], fluc, tmedL, tmed, tmedR,
 				tmed, pmedL, pmed, pmedR, vML, vMC, vMR, vMliqL, vMliq, vMliqR,
-				vazioL, vazio, vazioR, betL, bet, betR, vdxL, vdx, vdxR, dtmax,
+				vazioL, vazio, vazioR, betL, bet, betR, vdxL, vdx, vdxR, vdxLL, dtmax,
 				i, entrada);
+		celula[i].tipoFatorFric=tipoFatorFric;
 		celula[i].correlacaoMR2=celp[i].correlacaoMR2;
 		//enterramento
 		if(celp[i].difusTerm2D==1){
@@ -16031,6 +16760,12 @@ void Ler::geracelp(Cel* celula) {
 				if(celAcop[iacop].indCel==i){
 					geoAcop.push_back(celula[i].duto);
 				}
+			}
+		}
+		if(modoParafina==1){
+			celula[i].detParCel.comp=npseudoWax;
+			for(int icomp=0; icomp<npseudoWax;icomp++){
+				celula[i].detParCel.auxGradMolarConcentration_Component.push_back(0.);
 			}
 		}
 		celula[i].mudaArea=mudaArea;
@@ -16149,7 +16884,7 @@ void Ler::geracelg(CelG* celula) {
 			celula[i].salinidade = salinDescarga;
 
 		celula[i].indGeom=icorte;
-
+		celula[i].tipoFatorFric=tipoFatorFric;
 		celula[i].dPdLHidro=celg[i].dPdLHidro;
 		celula[i].dPdLFric=celg[i].dPdLFric;
 		celula[i].dTdLCor=celg[i].dTdL;
@@ -16269,9 +17004,20 @@ void Ler::geraipr(Cel* celula) {
 			flup[IPRS[i].indfluP].atualizaPropComp(celula[IPRS[i].indcel].pres,celula[IPRS[i].indcel].temp,-1,NULL,NULL,pocinjec);
 		}
 		IPR iprMRT(IPRS[i].pres[0], IPRS[i].temp[0], ip,
-				IPRS[i].jp[0],qm, flup[IPRS[i].indfluP],IPRS[i].tipoIPR);
+				IPRS[i].jp[0],qm, flup[IPRS[i].indfluP],IPRS[i].tipoIPR, IPRS[i].ICV,IPRS[i].ncv);
 		celula[IPRS[i].indcel].acsr.tipo = 3;
 		celula[IPRS[i].indcel].acsr.ipr = iprMRT;
+		if(IPRS[i].ICV==1){
+			double area = celula[IPRS[i].indcel].duto.area;
+			double abertura=IPRS[i].abertura[0];
+			double razarea=1.;
+			if(IPRS[i].curvaCV==1){
+				funcRazCV(abertura,IPRS[i].cvCurv,IPRS[i].ncv,IPRS[i].cd,area, razarea);
+			}
+			else razarea=abertura;
+			choke valvula(area, razarea * area);
+			celula[IPRS[i].indcel].acsr.ipr.chokeICV=valvula;
+		}
 		if (IPRS[i].indcel < (ncelp - 1))
 			celula[IPRS[i].indcel + 1].acsrL = &celula[IPRS[i].indcel].acsr;
 	}
@@ -16419,8 +17165,17 @@ void Ler::geraFuro(Cel* celula) {
 		fontemaschk furoMRT(0.,0.,0.,0.,furo[i].titAmb,furo[i].cd, furo[i].abertura[0],
 				            celula[iposp].duto.area, 0.,0.,furo[i].beta, celula[iposp].temp, celula[iposp].pres,
 				            furo[i].temp, furo[i].pres,flup[0],fluAmb, fluc, furo[i].check[0],furo[i].ambGas);
-		celula[iposp].acsr.tipo = 9;
 		celula[iposp].acsr.fontechk = furoMRT;
+		if(furo[i].recircula==0) celula[iposp].acsr.tipo = 9;
+		else{
+			celula[iposp].acsr.tipo = 19;
+			int irecic=furo[i].indMon;
+			celula[irecic].acsr.tipo = 18;
+			celula[iposp].acsr.indJusRecic=celula[iposp].acsr.fontechk.indJus=iposp;
+			celula[iposp].acsr.indMonRecic=celula[iposp].acsr.fontechk.indMon=irecic;
+			celula[irecic].acsr.indJusRecic=iposp;
+			celula[irecic].acsr.indMonRecic=irecic;
+		}
 	}
 
 }
@@ -16475,6 +17230,8 @@ void Ler::gerafBVOL(Cel* celula) {
 		celula[iposp].acsr.tipo = 8;
 		celula[iposp].acsr.bvol = bvolMRT;
 		celula[iposp + 1].acsrL = &celula[iposp].acsr;
+		if(iposp > 1)
+			celula[iposp - 1].acsrR = &celula[iposp].acsr;
 	}
 
 }
@@ -16537,11 +17294,87 @@ void Ler::geraValv(Cel* celula) {
 		if(valv[i].curvaCV==1){
 			funcRazCV(1.,valv[i].cvCurv,valv[i].ncv,valv[i].cd,area, razarea);
 		}
-		choke valvula(area, razarea * area);
+		choke valvula(area, razarea * area,valv[i].cd);
 		celula[posicM].acsr.tipo = 5;
 		celula[posicM].acsr.chk = valvula;
 		if (posicM < ncelp - 1)
 			celula[posicM + 1].acsrL = &celula[posicM].acsr;
+		if(posicM > 1)
+			celula[posicM - 1].acsrR = &celula[posicM].acsr;
+
+		if(valv[i].cxvVerifica==1){
+			TransCal entrada;
+			int cam = corte[valv[i].cxv.secaoTrans].ncam;
+			int icor = valv[i].cxv.secaoTrans;
+
+
+			double* vk;
+			vk = new double[cam];
+			for (int j = 0; j < cam; j++)
+				vk[j] = mat[corte[icor].indmat[j]].cond;
+			double* vcp;
+			vcp = new double[cam];
+			for (int j = 0; j < cam; j++)
+				vcp[j] = mat[corte[icor].indmat[j]].cp;
+			double* vrhoc;
+			vrhoc = new double[cam];
+			for (int j = 0; j < cam; j++)
+				vrhoc[j] = mat[corte[icor].indmat[j]].rho;
+			double* vvisc;
+			vvisc = new double[cam];
+			for (int j = 0; j < cam; j++)
+				vvisc[j] = mat[corte[icor].indmat[j]].visc;
+			double* vbeta;
+			vbeta = new double[cam];
+			for (int j = 0; j < cam; j++)
+				vbeta[j] = mat[corte[icor].indmat[j]].beta;
+			int* vtipomat;
+			vtipomat = new int[cam];
+			for (int j = 0; j < cam; j++)
+				vtipomat[j] = mat[corte[icor].indmat[j]].tipo;
+			int* vindmat;
+			vindmat = new int[cam];
+			for (int j = 0; j < cam; j++)
+				vindmat[j] = corte[icor].indmat[j];
+			double ang=0.;
+			DadosGeo dutosCXV = DadosGeo(corte[icor].a, corte[icor].b,
+					ang, corte[icor].rug, corte[icor].anul,
+					corte[icor].ncam, vk, corte[icor].diam, vcp, vrhoc, vvisc,
+					vbeta,vtipomat,vindmat);
+			delete[] vk;
+			delete[] vcp;
+			delete[] vrhoc;
+			delete[] vvisc;
+			delete[] vbeta;
+			delete[] vtipomat;
+			delete[] vindmat;
+			novatrans(entrada, dutosCXV, corte[icor].discre, celp[posicM].temp,
+					valv[i].cxv.tamb, valv[i].cxv.velAmb, celula[posicM].calor.Vint, celp[posicM].dirconv, dtmax,
+					celula[posicM].calor.kint, celula[posicM].calor.cpint, celula[posicM].calor.rhoint, celula[posicM].calor.viscint,
+					celp[posicM].kextern,celp[posicM].cpextern, celp[posicM].rhoextern, celp[posicM].viscextern,
+					valv[i].cxv.formac, valv[i].cxv.lito, valv[i].cxv.ambiente,
+					1.0197 + celp[posicM].profundiM * 1000 * 9.81 / 98066.52, valv[i].cxv.lCaixa);
+			caixaValv cxvTemp(posicM,valv[i].cxv.lCaixa, valv[i].cxv.nMon,valv[i].cxv.nJus,valv[i].cxv.nfonte, valv[i].cxv.temperaturaFonte, valv[i].cxv.formac, valv[i].cxv.lito,
+					          dutosCXV,entrada,vg1dSP);
+			vecCaixa.push_back(cxvTemp);
+			int ncxtemp=vecCaixa.size();
+			for(int ic=0; ic<valv[i].cxv.nMon; ic++){
+				vecCaixa[ncxtemp-1].serieAberturaMon[ic]=valv[i].cxv.serieAberturaMon[ic];
+				vecCaixa[ncxtemp-1].tempMon[ic]=valv[i].cxv.tempMon[ic];
+			}
+			for(int ic=0; ic<valv[i].cxv.nJus; ic++){
+				vecCaixa[ncxtemp-1].serieAberturaJus[ic]=valv[i].cxv.serieAberturaJus[ic];
+				vecCaixa[ncxtemp-1].tempJus[ic]=valv[i].cxv.tempJus[ic];
+			}
+
+			for(int ifonte=0; ifonte<master1.cxv.nfonte; ifonte++){
+				vecCaixa[ncxtemp-1].fonteMP[ifonte]=valv[i].cxv.massLiqP[ifonte];
+				vecCaixa[ncxtemp-1].fonteMG[ifonte]=valv[i].cxv.massGas[ifonte];
+				vecCaixa[ncxtemp-1].fonteMC[ifonte]=valv[i].cxv.massLiqC[ifonte];
+				vecCaixa[ncxtemp-1].tempFonte[ifonte]=valv[i].cxv.tempoFonte[ifonte];
+			}
+		}
+
 		double abre = valv[i].abertura[0];
 		for (int j = 1; j < valv[i].parserie; j++) {
 			if (abre == 0 && valv[i].abertura[j] == 1) {
@@ -16573,13 +17406,86 @@ void Ler::geraMaster1(Cel* celula) {
 	double area = celula[posicM].duto.area;
 	double razarea=1.;
 	if(master1.curvaCV==1){
-		funcRazCV(1.,master1.cvCurv,master1.ncv,1.,area, razarea);
+		funcRazCV(1.,master1.cvCurv,master1.ncv,master1.cd,area, razarea);
 	}
-	choke master(area, razarea * area);
+	choke master(area, razarea * area, master1.cd);
 	celula[posicM].acsr.tipo = 5;
 	celula[posicM].acsr.chk = master;
 	if (posicM < ncelp - 1)
 		celula[posicM + 1].acsrL = &celula[posicM].acsr;
+	if(posicM > 1)
+		celula[posicM - 1].acsrR = &celula[posicM].acsr;
+	if(master1.cxvVerifica==1){
+		TransCal entrada;
+		int cam = corte[master1.cxv.secaoTrans].ncam;
+		int icor = master1.cxv.secaoTrans;
+
+
+		double* vk;
+		vk = new double[cam];
+		for (int j = 0; j < cam; j++)
+			vk[j] = mat[corte[icor].indmat[j]].cond;
+		double* vcp;
+		vcp = new double[cam];
+		for (int j = 0; j < cam; j++)
+			vcp[j] = mat[corte[icor].indmat[j]].cp;
+		double* vrhoc;
+		vrhoc = new double[cam];
+		for (int j = 0; j < cam; j++)
+			vrhoc[j] = mat[corte[icor].indmat[j]].rho;
+		double* vvisc;
+		vvisc = new double[cam];
+		for (int j = 0; j < cam; j++)
+			vvisc[j] = mat[corte[icor].indmat[j]].visc;
+		double* vbeta;
+		vbeta = new double[cam];
+		for (int j = 0; j < cam; j++)
+			vbeta[j] = mat[corte[icor].indmat[j]].beta;
+		int* vtipomat;
+		vtipomat = new int[cam];
+		for (int j = 0; j < cam; j++)
+			vtipomat[j] = mat[corte[icor].indmat[j]].tipo;
+		int* vindmat;
+		vindmat = new int[cam];
+		for (int j = 0; j < cam; j++)
+			vindmat[j] = corte[icor].indmat[j];
+		double ang=0.;
+		DadosGeo dutosCXV = DadosGeo(corte[icor].a, corte[icor].b,
+				ang, corte[icor].rug, corte[icor].anul,
+				corte[icor].ncam, vk, corte[icor].diam, vcp, vrhoc, vvisc,
+				vbeta,vtipomat,vindmat);
+		delete[] vk;
+		delete[] vcp;
+		delete[] vrhoc;
+		delete[] vvisc;
+		delete[] vbeta;
+		delete[] vtipomat;
+		delete[] vindmat;
+		novatrans(entrada, dutosCXV, corte[icor].discre, celp[posicM].temp,
+				master1.cxv.tamb, master1.cxv.velAmb, celula[posicM].calor.Vint, celp[posicM].dirconv, dtmax,
+				celula[posicM].calor.kint, celula[posicM].calor.cpint, celula[posicM].calor.rhoint, celula[posicM].calor.viscint,
+				celp[posicM].kextern,celp[posicM].cpextern, celp[posicM].rhoextern, celp[posicM].viscextern,
+				master1.cxv.formac, master1.cxv.lito, master1.cxv.ambiente,
+				1.0197 + celp[posicM].profundiM * 1000 * 9.81 / 98066.52, master1.cxv.lCaixa);
+		vecCaixa.push_back(caixaValv(posicM,master1.cxv.lCaixa, master1.cxv.nMon,
+				master1.cxv.nJus,master1.cxv.nfonte, master1.cxv.temperaturaFonte, master1.cxv.formac, master1.cxv.lito, dutosCXV,	entrada,vg1dSP));
+		int ncxtemp=vecCaixa.size();
+		for(int ic=0; ic<master1.cxv.nMon; ic++){
+			vecCaixa[ncxtemp-1].serieAberturaMon[ic]=master1.cxv.serieAberturaMon[ic];
+			vecCaixa[ncxtemp-1].tempMon[ic]=master1.cxv.tempMon[ic];
+		}
+		for(int ic=0; ic<master1.cxv.nJus; ic++){
+			vecCaixa[ncxtemp-1].serieAberturaJus[ic]=master1.cxv.serieAberturaJus[ic];
+			vecCaixa[ncxtemp-1].tempJus[ic]=master1.cxv.tempJus[ic];
+		}
+
+		for(int ifonte=0; ifonte<master1.cxv.nfonte; ifonte++){
+			vecCaixa[ncxtemp-1].fonteMP[ifonte]=master1.cxv.massLiqP[ifonte];
+			vecCaixa[ncxtemp-1].fonteMG[ifonte]=master1.cxv.massGas[ifonte];
+			vecCaixa[ncxtemp-1].fonteMC[ifonte]=master1.cxv.massLiqC[ifonte];
+			vecCaixa[ncxtemp-1].tempFonte[ifonte]=master1.cxv.tempoFonte[ifonte];
+		}
+	}
 	double abre = master1.abertura[0];
 	for (int i = 1; i < master1.parserie; i++) {
 		if (abre == 0 && master1.abertura[i] == 1) {
@@ -16608,7 +17514,7 @@ void Ler::geraMaster2(CelG* celula) {
 
 	int posicM = master2.posic;
 	double area = celula[posicM].duto.area;
-	ChokeGas master(flug,area, 1.,0.84);
+	ChokeGas master(flug,area, 1.,master2.cd);
 	celula[posicM].chkcell = master;
 	celula[posicM].labelchk = 1;
 	if (posicM < ncelg - 1)
@@ -17180,6 +18086,27 @@ void Ler::atualiza(int inicio, int extrem,int anel,
 		if (celpos == 0)
 			temperatura = celula[celpos].acsr.ipr.Tres;
 
+
+		if(IPRS[i].ICV==1){
+				indraz(ind, raz, tempo, IPRS[i].serieICV, IPRS[i].tempoICV);
+				double aberinf = IPRS[i].abertura[ind];
+				double abersup;
+				if (ind < IPRS[i].serieICV - 1)
+					abersup = IPRS[i].abertura[ind + 1];
+				else
+					abersup = IPRS[i].abertura[ind];
+				double abertura;
+				abertura=aberinf * raz + (1 - raz) * abersup;
+				if(IPRS[i].curvaCV==1){
+					double razarea;
+					funcRazCV(abertura,IPRS[i].cvCurv,IPRS[i].ncv,IPRS[i].cd,
+							celula[celpos].duto.area, razarea);
+					celula[celpos].acsr.ipr.chokeICV.AreaGarg = razarea * celula[celpos].duto.area;
+				}
+				else
+					celula[celpos].acsr.ipr.chokeICV.AreaGarg = abertura	* celula[celpos].duto.area;
+		}
+
 	}
 
 	if (lingas > 0) {
@@ -17394,13 +18321,13 @@ double Ler::interpolaTempEnvelope(double pres){
 
 	if(pres<=envelopeHidra[0][0]){
  		logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
- 			      		    		"Valor da pressao abaixo do limite inferior do envelope de hidratos cadastrado, valor assumido será a menor pressao",
+ 			      		    		"Valor da pressao abaixo do limite inferior do envelope de hidratos cadastrado, valor assumido serÃ¡ a menor pressao",
  			      		          "", "");
  		return envelopeHidra[0][1];
 	}
 	else if(pres>=envelopeHidra[nparEnvelope-1][0]){
  		logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
- 			      		    		"Valor da pressao acima do limite inferior do envelope de hidratos cadastrado, valor assumido será a maior pressao",
+ 			      		    		"Valor da pressao acima do limite inferior do envelope de hidratos cadastrado, valor assumido serÃ¡ a maior pressao",
  			      		          "", "");
  		return envelopeHidra[nparEnvelope-1][1];
 	}
@@ -17448,12 +18375,20 @@ void Ler::imprimeProfile(Cel* const celula,
 				flut[i][k] = pi;
 				k++;
 			}
+			if (profp.presFront == 1) {
+				flut[i][k] = celula[i].presaux;
+				k++;
+			}
 			if (profp.temp == 1) {
 				flut[i][k] = ti;
 				k++;
 			}
 			if (profp.hol == 1) {
 				flut[i][k] = 1. - alfi;
+				k++;
+			}
+			if (profp.titulo == 1) {
+				flut[i][k] = celula[i].flui.FracMass(pi, ti);
 				k++;
 			}
 
@@ -17497,6 +18432,10 @@ void Ler::imprimeProfile(Cel* const celula,
 			if (profp.viscl == 1) {
 				flut[i][k] = celula[i].flui.ViscOleo(pi,ti)*(1.-beti)+
 						celula[i].fluicol.VisFlu(pi,ti)*beti;
+				k++;
+			}
+			if (profp.viscom == 1) {
+				flut[i][k] = celula[i].flui.VisOM(ti);
 				k++;
 			}
 			if (profp.viscg == 1) {
@@ -17573,6 +18512,19 @@ void Ler::imprimeProfile(Cel* const celula,
 			if (profp.cpl == 1) {
 				flut[i][k] = celula[i].flui.CalorLiq(pi,ti)*(1.-beti)+
 						celula[i].fluicol.CalorLiq(pi,ti)*beti;
+				k++;
+			}
+			if (profp.condg == 1) {
+				flut[i][k] = celula[i].flui.CondGas(pi,ti);
+				k++;
+			}
+			if (profp.condl == 1) {
+				flut[i][k] = celula[i].flui.CondLiq(pi,ti)*(1.-beti)+
+						celula[i].fluicol.CondLiq(pi,ti)*beti;
+				k++;
+			}
+			if (profp.condo == 1) {
+				flut[i][k] = celula[i].flui.CondOleo(pi,ti);
 				k++;
 			}
 			if (profp.qlst == 1) {
@@ -17743,7 +18695,9 @@ void Ler::imprimeProfile(Cel* const celula,
 				double pres=celula[i].pres;
 				double temp=celula[i].calor.Tcamada[0][0];
 				celula[i].flui.atualizaPropParafina(pres, temp);
-				flut[i][k] = celula[i].flui.dCloudPointTOutput;
+				if(detalParafina.TIACusuarioAtiva==0)
+					flut[i][k] = celula[i].flui.dCloudPointTOutput;
+				else flut[i][k] = detalParafina.TIACusuario;
 				flut[i][k+1] = celula[i].flui.dInterpolatedCPWaxOutput;
 				flut[i][k+2] = celula[i].flui.dInterpolatedThermCondOutput;
 				flut[i][k+3] = celula[i].flui.dInterpolatedDensOutput;
@@ -17762,7 +18716,12 @@ void Ler::imprimeProfile(Cel* const celula,
 				flut[i][k+16] = celula[i].detParCel.gradienteConcentracao;
 				flut[i][k+17] = celula[i].detParCel.kDep;
 				flut[i][k+18] = celula[i].detParCel.tempInterDeposito;
-				k+=19;
+				flut[i][k+19] = celula[i].detParCel.Vwax;
+				flut[i][k+20] = celula[i].detParCel.muOilf;
+				flut[i][k+21] = celula[i].detParCel.auxRatioHeatFluxMixtureThermalConductivity;
+				for(int icomp=0; icomp<npseudoWax; icomp++)
+					flut[i][k+22+icomp] = celula[i].detParCel.auxGradMolarConcentration_Component[icomp];
+				k+=22+npseudoWax;
 			}
 			if(tipoModeloDrift==0 && profp.correlacaoBB==1){
 				flut[i][k] = celula[i].correlacaoMR2;
@@ -17814,10 +18773,14 @@ void Ler::imprimeProfile(Cel* const celula,
 		escreveIni << t(" Tempo (s) ;", " Time (s) ;");
 		if (profp.pres == 1)
 			escreveIni << t(" Pressao (kgf/cm2) C;", " Pressure (kgf/cm2) C;");
+		if (profp.presFront == 1)
+			escreveIni << t(" Pressao na Fronteira esquerda da celula (kgf/cm2) C;", " Pressure at the left cell boundary (kgf/cm2) C;");
 		if (profp.temp == 1)
 			escreveIni << t(" Temperatura (C) C;", " Temperature (C) C;");
 		if (profp.hol == 1)
 			escreveIni << t(" Holdup de liquido (-) C;", " Liquid holdup (-) C;");
+		if (profp.titulo == 1)
+			escreveIni << t(" Titulo de Gas (-) C;", " Gas Mass Fraction (-) C;");
 
 		if (profp.FVH == 1) //solver de Hidratos - chris
 			escreveIni << t(" FVH (-) C;", " FVH (-) C;");
@@ -17836,6 +18799,8 @@ void Ler::imprimeProfile(Cel* const celula,
 			escreveIni << t(" Indicador de arranjo de fases (-) F;", " Phase pattern indicator (-) F;");
 		if (profp.viscl == 1)
 			escreveIni << t(" Viscosidade do Liquido (cP) C;", " Liquid viscosity (cP) C;");
+		if (profp.viscom == 1)
+			escreveIni << t(" Viscosidade do Oleo Morto (cP) C;", " Dead oil viscosity (cP) C;");
 		if (profp.viscg == 1)
 			escreveIni << t(" Viscosidade do Gas (cP) C;", " Gas viscosity (cP) C;");
 		if (profp.rhog == 1)
@@ -17872,6 +18837,12 @@ void Ler::imprimeProfile(Cel* const celula,
 			escreveIni << t(" Calor Especifico a pressao constante do Gas (J/[kg C]) C;", " Gas specific heat at constant pressure (J/[kg C]) C;");
 		if (profp.cpl == 1)
 			escreveIni << t(" Calor Especifico a pressao constante do Liquido (J/[kg C]) C;", " Liquid specific heat at constant pressure (J/[kg C]) C;");
+		if (profp.condg == 1)
+			escreveIni << t(" Condutividade termica do Gas (W/(m-K)) C;", " Gas thermal conductivity (W/(m-K)) C;");
+		if (profp.condl == 1)
+			escreveIni << t(" Condutividade Termica do Liquido (W/(m-K)) C;", " Liquid thermal conductivity (W/(m-K)) C;");
+		if (profp.condo == 1)
+			escreveIni << t(" Condutividade Termica do Oleo (W/(m-K)) C;", " Oil thermal conductivity (W/(m-K)) C;");
 		if (profp.qlst == 1)
 			escreveIni << t(" Vazao volumetrica standard de oleo morto (Sm3/d) F;", " Standard dead oil volumetric flow rate (Sm3/d) F;");
 		if (profp.qlwst == 1)
@@ -17975,6 +18946,12 @@ void Ler::imprimeProfile(Cel* const celula,
 			escreveIni << t(" Gradiente de concentracao de parafina (1/m) C;", " Paraffin concentration gradient (1/m) C;");
 			escreveIni << t(" Condutividade do deposito (W/(m-K)) C;", " Deposit conductivity (W/(m-K)) C;");
 			escreveIni << t(" Temperatura da Interface do deposito (C) C;", " Deposit interface temperature (C) C;");
+			escreveIni << t(" Volume molar (m3/mol) C;", " Molar volume (m3/mol) C;");
+			escreveIni << t(" Viscosidade do oleo na interface (cP) C;", " Oil viscosity at the interface (cP) C;");
+			escreveIni << t(" Razao entre fluxo de calor e condutividade (-) C;", " Heat Flux and Mixture Thermal Conductivity Ratio(-) C;");
+			for(int icomp=0; icomp<npseudoWax; icomp++)
+				escreveIni << t(" Fracoes molares na parafina ", " Parafina molar fractions ") << icomp << ";";
+
 		}
 		escreveIni << t(" id do duto;", " duct id;");
 		escreveIni << t(" Elevacao (m) F;", " Elevation (m) F;");
@@ -18295,8 +19272,8 @@ void Ler::resumoPermanente(Cel* const celula, CelG* const celulaG, double pGsup,
 	escreveIni << t(" P_JUS_CKP (kgf/cm2);", " P_DOWN_CKP (kgf/cm2);");
 	if(lingas==1){
 		escreveIni << t(" Vazao volumetrica standard de gas injetado (Sm3/(d));", " Standard injected gas flow rate (Sm3/(d));");
-		escreveIni << t(" Pressao de injeção a montante do choke (kgf/cm2);", " Upstream injection pressure at choke (kgf/cm2);");
-		escreveIni << t(" Pressao de injeção a jusante do choke (kgf/cm2);", " Downstream injection pressure at choke (kgf/cm2);");
+		escreveIni << t(" Pressao de injeÃ§Ã£o a montante do choke (kgf/cm2);", " Upstream injection pressure at choke (kgf/cm2);");
+		escreveIni << t(" Pressao de injeÃ§Ã£o a jusante do choke (kgf/cm2);", " Downstream injection pressure at choke (kgf/cm2);");
 	}
 	if(nbcs>0){
 		for(int ibcs=0;ibcs<nbcs;ibcs++){
@@ -18361,9 +19338,9 @@ void Ler::resumoPermanente(Cel* const celula, CelG* const celulaG, double pGsup,
 	if(nbcs>0){
 		for(int ibcs=0;ibcs<nbcs;ibcs++){
 			int iposp = bcs[ibcs].posicP;
-			escreveIni << celula[iposp].dpB/98066.52<<" ; ";
-			escreveIni << celula[iposp].potB/745.7<<" ; ";
-			escreveIni << celula[iposp].potBT/745.7<<" ; ";
+			escreveIni << celula[iposp].acsr.dpB/98066.52<<" ; ";
+			escreveIni << celula[iposp].acsr.potB/745.7<<" ; ";
+			escreveIni << celula[iposp].acsr.potBT/745.7<<" ; ";
 			escreveIni << celula[iposp].acsr.bcs.Hvis*0.3048<<" ; ";
 			escreveIni << celula[iposp].QL*(1-celula[iposp].FW)<<" ; ";
 			escreveIni << celula[iposp].QL<<" ; ";
@@ -18377,15 +19354,15 @@ void Ler::resumoPermanente(Cel* const celula, CelG* const celulaG, double pGsup,
 	if(nmultibcs>0){
 		for(int ibcs=0;ibcs<nmultibcs;ibcs++){
 			int iposp = multiBcs[ibcs].posicP;
-			escreveIni << celula[iposp].dpB/98066.52<<" ; ";
-			escreveIni << celula[iposp].potB/745.7<<" ; ";
-			escreveIni << celula[iposp].potBT/745.7<<" ; ";
+			escreveIni << celula[iposp].acsr.dpB/98066.52<<" ; ";
+			escreveIni << celula[iposp].acsr.potB/745.7<<" ; ";
+			escreveIni << celula[iposp].acsr.potBT/745.7<<" ; ";
 		    long double alfmed = celula[iposp - 1].alf;
 		    long double betmed = celula[iposp - 1].bet;
 			double rhol = (1. - betmed) * celula[iposp].rpCi + betmed * celula[iposp].rcCi;
 		    double rhog =celula[iposp].rgCi;
 			long double rhomix=alfmed*rhog+(1-alfmed)*rhol;
-			escreveIni << (celula[iposp].dpB)/(rhomix*9.82)<<" ; ";
+			escreveIni << (celula[iposp].acsr.dpB)/(rhomix*9.82)<<" ; ";
 			escreveIni << celula[iposp].QL*(1-celula[iposp].FW)<<" ; ";
 			escreveIni << celula[iposp].QL<<" ; ";
 			escreveIni << celula[iposp].QG<<" ; ";
@@ -18420,6 +19397,52 @@ void Ler::resumoPermanente(Cel* const celula, CelG* const celulaG, double pGsup,
 		}
 		delete [] criterioItermitencia;
 	}*/
+
+	escreveIni<<endl;
+	double voltot=0.;
+	for(int j=0; j<posicM;j++){
+			voltot+=(1.-celula[j].alf)*celula[j].duto.area*celula[j].dx;
+	}
+	escreveIni <<"Volume de liquido a montante da Master1 a P&T= "<<voltot<<" (m3); "<<endl;
+	voltot=0.;
+	for(int j=posicM; j<ncelp;j++){
+		voltot+=(1.-celula[j].alf)*celula[j].duto.area*celula[j].dx;
+	}
+	escreveIni <<"Volume de liquido a jusante da Master1 a P&T= "<<voltot<<" (m3); "<<endl;
+	voltot=0.;
+	for(int j=0; j<posicM;j++){
+		double pres=celula[j].pres;
+		double temp=celula[j].temp;
+		double bo=celula[j].flui.BOFunc(pres, temp);
+		double ba=celula[j].flui.BAFunc(pres, temp);
+		double fw=celula[j].FW;
+		double beta=celula[j].bet;
+		double rhocPT=celula[j].fluicol.MasEspFlu(pres, temp);
+		double rhocST=celula[j].fluicol.rholStd;
+		double hol=(1.-celula[j].alf);
+		double vop=(1-beta)*(1-fw)*hol/bo;
+		double voc=beta*hol*rhocPT/rhocST;
+		double va=(1-beta)*(fw)*hol/ba;
+		voltot+=(vop+voc+va)*celula[j].duto.area*celula[j].dx;
+	}
+	escreveIni <<"Volume de liquido a montante da Master1 'standard'= "<<voltot<<" (Sm3); "<<endl;
+	voltot=0.;
+	for(int j=posicM; j<ncelp;j++){
+		double pres=celula[j].pres;
+		double temp=celula[j].temp;
+		double bo=celula[j].flui.BOFunc(pres, temp);
+		double ba=celula[j].flui.BAFunc(pres, temp);
+		double fw=celula[j].FW;
+		double beta=celula[j].bet;
+		double rhocPT=celula[j].fluicol.MasEspFlu(pres, temp);
+		double rhocST=celula[j].fluicol.rholStd;
+		double hol=(1.-celula[j].alf);
+		double vop=(1-beta)*(1-fw)*hol/bo;
+		double voc=beta*hol*rhocPT/rhocST;
+		double va=(1-beta)*(fw)*hol/ba;
+		voltot+=(vop+voc+va)*celula[j].duto.area*celula[j].dx;
+	}
+	escreveIni <<"Volume de liquido a jusante da Master1 'standard'= "<<voltot<<" (Sm3); "<<endl;
 	escreveIni.close();
 }
 
@@ -18438,7 +19461,7 @@ void Ler::resumoIntermitencia(Cel* const celula, int indTramo, int nrede){
 	string tmp = saidaR.str();
 	ofstream escreveIni(tmp.c_str(), ios_base::out);
 
-	escreveIni << t(" Índice do Teste ", " Index Test ") << " ;";
+	escreveIni << t(" Ã�ndice do Teste ", " Index Test ") << " ;";
 	escreveIni << t(" Criterio do teste de Intermitencia Severa ", " Severe Intermittency test criterion ") << " ;";
 	escreveIni << t(" Qualidade do Arranjo estratificado para Trecho de Acumulacao ", " Stratified pattern quality for accumulation section ") <<  t(", (-);", ", (-);");
 	escreveIni << t(" Fator de compressibilidade medio zona de acumulo ", " Average compressibility factor in accumulation zone ") << t(", (-);", ", (-);");
@@ -18521,22 +19544,22 @@ void Ler::relatorioCelulaUnitaria(Cel *const celula, int posic, int indTramo, in
 	string tmp = saidaR.str();
 	ofstream escreveIni(tmp.c_str(), ios_base::out);
 	escreveIni << "us (m/s) Velocidade da mistura ; ";
-	escreveIni << "C  (-)   Parâmetro de distribuição ; ";
+	escreveIni << "C  (-)   ParÃ¢metro de distribuiÃ§Ã£o ; ";
 	escreveIni << "ud (m/s) Velocidade de drift ; ";
 	escreveIni << "ut (m/s) Velocidade translacional ; ";
 	escreveIni << "HG (-)   Holdup na golfada ; ";
-	escreveIni << "alpha_s (-) Fração de vazio na golfada ; ";
+	escreveIni << "alpha_s (-) FraÃ§Ã£o de vazio na golfada ; ";
 	escreveIni << "ub (m/s) Velocidade bolhas dispersas ; ";
-	escreveIni << "uL (m/s) Velocidade do líquido na golfada ; ";
+	escreveIni << "uL (m/s) Velocidade do lÃ­quido na golfada ; ";
 	escreveIni << "ls (m) Comprimento da golfada ; ";
 	escreveIni << "lf (m) Comprimento do filme ; ";
 	escreveIni << "lu (m) Comprimento do slug unit ; ";
-	escreveIni << "freq (Hz) Frequência da golfada ; ";
-	escreveIni << "hfe  (m)  Nível/espessura no final do filme ; ";
+	escreveIni << "freq (Hz) FrequÃªncia da golfada ; ";
+	escreveIni << "hfe  (m)  NÃ­vel/espessura no final do filme ; ";
 	escreveIni << "Rfe  (-)  Holdup no final do filme ; ";
 	escreveIni << "ufe  (m/s) Velocidade do filme final ; ";
-	escreveIni << "hE   (m)   Nível de equilíbrio ; ";
-	escreveIni << "alpha_u (-) Fração de vazio média do slug unit ; ";
+	escreveIni << "hE   (m)   NÃ­vel de equilÃ­brio ; ";
+	escreveIni << "alpha_u (-) FraÃ§Ã£o de vazio mÃ©dia do slug unit ; ";
 	escreveIni << "flowGeometry (-) Vertical annular ou stratified ; ";
 	escreveIni << "Indicador de Arranjo (-) ; ";
 	escreveIni << "Convergencia ; ";
@@ -18553,8 +19576,8 @@ void Ler::relatorioCelulaUnitaria(Cel *const celula, int posic, int indTramo, in
 	escreveIni << "////////////////////////////////////////////////////////////////////////////////";
 	escreveIni << "                                    Perfil Filme                               "<<"\n";
 
-	escreveIni<<"indice da posicao ; "<<"z (m) Posição axial desde o tail da golfada ; "<<"hf (m) Nivel (estratif.) ou espessura δ (anular) ; "<<
-		"Holf (-) Holdup do filme ; "<<	"uf (m/s) Velocidade do líquido no filme ; "<<"uG (m/s) Velocidade do gás"<<"\n";
+	escreveIni<<"indice da posicao ; "<<"z (m) PosiÃ§Ã£o axial desde o tail da golfada ; "<<"hf (m) Nivel (estratif.) ou espessura Î´ (anular) ; "<<
+		"Holf (-) Holdup do filme ; "<<	"uf (m/s) Velocidade do lÃ­quido no filme ; "<<"uG (m/s) Velocidade do gÃ¡s"<<"\n";
 	int nPerf=celUnitResults.profile.z.size();
 	for(int iPerf=0;iPerf<nPerf;iPerf++){
 		escreveIni<<iPerf<<" ; "<<celUnitResults.profile.z[iPerf]<<" ; "<<celUnitResults.profile.hf[iPerf]<<" ; "<<
@@ -18885,11 +19908,21 @@ void Ler::imprimeTrend(Cel* const celula,
 				qowstd /= (1 - bswi);
 			else qowstd=celula[m].QL * (1. - beti) * 86400/ba;
 			double qlsC = 0.;
-			if (beti > 1e-15)
+			if (beti > 1e-15 && i>0){
+			    double razdx;
+			    razdx = celula[m].dx / (celula[m].dx + celula[m].dxL);
+			    double tmed=(1-razdx)*celula[m].temp+razdx*celula[m-1].temp;
+			    double pmed=(1-razdx)*celula[m].pres+razdx*celula[m-1].pres;
 				qlsC = 86400 * celula[m].QL * beti
-						* celula[m - 1].fluicol.MasEspFlu(celula[m - 1].pres,
-								celula[m - 1].temp)
+						* celula[m - 1].fluicol.MasEspFlu(pmed,
+								tmed)
 						/ celula[m - 1].fluicol.MasEspFlu(1., 15);
+			}
+			else if (beti > 1e-15 && i==0)
+				qlsC = 86400 * celula[m].QL * beti
+						* celula[m ].fluicol.MasEspFlu(celula[m].presaux,
+								celula[m].temp)
+						/ celula[m].fluicol.MasEspFlu(1., 15);
 			flut[linha][k] = qowstd + qlsC;
 			k++;
 		}
@@ -18972,11 +20005,11 @@ void Ler::imprimeTrend(Cel* const celula,
 			k++;
 		}
 		if (trendp[trend].dpB == 1) {
-			flut[linha][k] = celula[i].dpB/98066.5;
+			flut[linha][k] = celula[i].acsr.dpB/98066.5;
 			k++;
 		}
 		if (trendp[trend].potB == 1) {
-			flut[linha][k] = celula[i].potB/1000.;
+			flut[linha][k] = celula[i].acsr.potB/1000.;
 			k++;
 		}
 		if (trendp[trend].tempChokeJus == 1) {
@@ -19157,6 +20190,31 @@ void Ler::imprimeTrend(Cel* const celula,
 			double tempH=interpolaTempEnvelope(celula[i].pres);
 			flut[linha][k] = celula[i].temp-tempH;
 			k++;
+		}
+
+		if (trendp[trend].presAnulICV == 1) {
+			flut[linha][k] = celula[i].acsr.ipr.presAnul;
+			k++;
+		}
+
+		if (trendp[trend].caixaValvula == 1) {
+			int ncaixa=vecCaixa.size();
+			int queCaixa=-1;
+			for(int ic=0; ic<ncaixa; ncaixa++){
+				if(vecCaixa[ic].posic==i){
+					queCaixa=ic;
+					break;
+				}
+			}
+			flut[linha][k] = vecCaixa[queCaixa].pres;
+			flut[linha][k+1] = vecCaixa[queCaixa].temp;
+			flut[linha][k+2] = vecCaixa[queCaixa].alf;
+			flut[linha][k+3] = vecCaixa[queCaixa].bet;
+			flut[linha][k+4] = vecCaixa[queCaixa].tit;
+			flut[linha][k+5] = vecCaixa[queCaixa].massLiqP;
+			flut[linha][k+6] = vecCaixa[queCaixa].massLiqC;
+			flut[linha][k+7] = vecCaixa[queCaixa].massGas;
+			k+=8;
 		}
 
 		if (trendp[trend].dadosParafina == 1) {
@@ -19513,6 +20571,8 @@ void Ler::copia_configuracao_inicial(Ler& arqAntigo) {
 		chutePerm = arqAntigo.chutePerm;
 		pocinjec =arqAntigo.pocinjec;
 
+		tipoFatorFric=arqAntigo.tipoFatorFric;
+
 		// caso nao seja simulacao de poco injetor
 		lingas = arqAntigo.lingas;
 		saidaTela = arqAntigo.saidaTela;
@@ -19525,6 +20585,7 @@ void Ler::copia_configuracao_inicial(Ler& arqAntigo) {
 		tabelaDinamica=arqAntigo.tabelaDinamica;
 		modelcp = arqAntigo.modelcp;
 		modelJTL = arqAntigo.modelJTL;
+		imprimeInventario=arqAntigo.imprimeInventario;
 		JTLiquidoSimple=arqAntigo.JTLiquidoSimple;;
 		tabp = arqAntigo.tabp;
 		trackRGO = arqAntigo.trackRGO;
@@ -19618,8 +20679,8 @@ void Ler::copia_configuracao_inicial(Ler& arqAntigo) {
         (*vg1dSP).ntrd=nthrd;
 		(*vg1dSP).ntrd3DP=threadP3D;
 		ConContEntrada = arqAntigo.ConContEntrada;
-		CCPres.parserie =arqAntigo.CCPres.parserie;
-		CCPres.indFluido=arqAntigo.CCPres.indFluido;
+		CCPres.parserie = ConContEntrada == 1 ? arqAntigo.CCPres.parserie : 0;
+		CCPres.indFluido = ConContEntrada == 1 ? arqAntigo.CCPres.indFluido : -1;
 		if(CCPres.parserie>0){
 			CCPres.temperatura = new double[CCPres.parserie];
 			CCPres.pres = new double[CCPres.parserie];
@@ -19645,8 +20706,8 @@ void Ler::copia_configuracao_inicial(Ler& arqAntigo) {
 			CCPres.bet = 0;
 			CCPres.tempo = 0;
 		}
+		CCVPres.parserie = ConContEntrada == 2 ? arqAntigo.CCVPres.parserie : 0;
 		if(CCVPres.parserie>0){
-			CCVPres.parserie =arqAntigo.CCVPres.parserie;
 			CCVPres.temperatura = new double[CCVPres.parserie];
 			CCVPres.pres = new double[CCVPres.parserie];
 			CCVPres.mass = new double[CCVPres.parserie];
@@ -19695,6 +20756,10 @@ void Ler::copia_configuracao_inicial(Ler& arqAntigo) {
 		else{
 			formacPoc = 0;
 		}
+
+		pocoTermAxiSim=arqAntigo.pocoTermAxiSim;
+		anulAxiSim=arqAntigo.anulAxiSim;
+		pocoAxiSimJson=arqAntigo.pocoAxiSimJson;
 
 
 }
@@ -19767,7 +20832,7 @@ void Ler::copia_corte(Ler& arqAntigo) {
 
 		// caso o tamanho do elemento seja maior que zero
 		if (ncorte > 0) {
-			// vetor de seções transversais
+			// vetor de seÃ§Ãµes transversais
 			corte = new corteduto[ncorte];
 			for(int i=0; i< ncorte; i++){
 				corte[i].id = arqAntigo.corte[i].id;
@@ -19806,6 +20871,8 @@ void Ler::copia_parafina(Ler& arqAntigo) {
 
 	if(modoParafina==1){
 		detalParafina.arquivo=arqAntigo.detalParafina.arquivo;
+		detalParafina.TIACusuarioAtiva=arqAntigo.detalParafina.TIACusuarioAtiva;
+		detalParafina.TIACusuario=arqAntigo.detalParafina.TIACusuario;
 		detalParafina.poroRey=arqAntigo.detalParafina.poroRey;
 		detalParafina.valRey=arqAntigo.detalParafina.valRey;
 		detalParafina.C2C3=arqAntigo.detalParafina.C2C3;
@@ -19875,6 +20942,7 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 				flup[iflu].dzdtP = dzdtP;
 				flup[iflu].npontos = npontos;
 				flup[iflu].viscBlackOil = 1;
+				flup[iflu].condBlackOil = 1;
 				flup[iflu].modelaAgua = 1;
 				flup[iflu].corrDeng=corrDeng;
 				flup[iflu].nvecEmul=nvecEmul;
@@ -19926,6 +20994,8 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 				flash[i].sigWGF = new double*[tabent.npont + 1];
 				flash[i].viscO = new double*[tabent.npont + 1];
 				flash[i].viscG = new double*[tabent.npont + 1];
+				flash[i].condO = new double*[tabent.npont + 1];
+				flash[i].condG = new double*[tabent.npont + 1];
 				flash[i].PBF = new double[tabent.npontB];
 				flash[i].TBF = new double[tabent.npontB];
 
@@ -19952,6 +21022,8 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 					flash[i].sigWGF[k] = new double[tabent.npont + 1];
 					flash[i].viscO[k] = new double[tabent.npont + 1];
 					flash[i].viscG[k] = new double[tabent.npont + 1];
+					flash[i].condO[k] = new double[tabent.npont + 1];
+					flash[i].condG[k] = new double[tabent.npont + 1];
 				}
 
 				for (int k = 0; k < tabent.npont + 1; k++) {
@@ -19973,6 +21045,8 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 						flash[i].sigWGF[k][j] = arqAntigo.flash[i].sigOGF[k][j];
 						flash[i].viscO[k][j] = arqAntigo.flash[i].viscO[k][j];
 						flash[i].viscG[k][j] = arqAntigo.flash[i].viscG[k][j];
+						flash[i].condO[k][j] = arqAntigo.flash[i].condO[k][j];
+						flash[i].condG[k][j] = arqAntigo.flash[i].condG[k][j];
 					}
 				}
 				for (int k = 0; k < tabent.npontB; k++) {
@@ -19988,8 +21062,10 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 						arqAntigo.flup[i].yco2,arqAntigo.flup[i].corrC,arqAntigo.flup[i].corrSat,
 						arqAntigo.flup[i].corrOM,arqAntigo.flup[i].corrOV,arqAntigo.flup[i].corrOS, flashCompleto,
 						arqAntigo.flup[i].id);
-				flup[i].indiceFlash = i;
-				flup[i].viscBlackOil = flash[i].visc;
+				flup[i].indiceFlash = arqAntigo.flup[i].indiceFlash;
+				flup[i].multbcs = arqAntigo.flup[i].multbcs;
+				flup[i].viscBlackOil = arqAntigo.flup[i].viscBlackOil;
+				flup[i].condBlackOil = arqAntigo.flup[i].condBlackOil;
 				flup[i].modelaAgua=arqAntigo.flup[i].modelaAgua;
 
 				flup[i].npontos=tabent.npont;
@@ -20028,6 +21104,8 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 				flup[i].sigWGF = flash[i].sigWGF;
 				flup[i].viscO = flash[i].viscO;
 				flup[i].viscG = flash[i].viscG;
+				flup[i].condO = flash[i].condO;
+				flup[i].condG = flash[i].condG;
 				flup[i].PBPVTSim = flash[i].PBF;
 				flup[i].TBPVTSim = flash[i].TBF;
 
@@ -20092,9 +21170,14 @@ void Ler::copia_fluidos_producao(Ler& arqAntigo) {
 
 
 				flup[i].viscBlackOil = arqAntigo.flup[i].viscBlackOil;
+				flup[i].condBlackOil = arqAntigo.flup[i].condBlackOil;
 				flup[i].modelaAgua=arqAntigo.flup[i].modelaAgua;
-
+				flup[i].JTLiquidoSimple=arqAntigo.flup[i].JTLiquidoSimple;
 				flup[i].tabelaDinamica=arqAntigo.flup[i].tabelaDinamica;
+				flup[i].indiceFlash=arqAntigo.flup[i].indiceFlash;
+				flup[i].multbcs=arqAntigo.flup[i].multbcs;
+				flup[i].flashCompleto=arqAntigo.flup[i].flashCompleto;
+
 
 				flup[i].TIndepPeneloux=compDet[i].TIndepPeneloux;
 				flup[i].fatAcent=compDet[i].fatAcent;
@@ -20463,6 +21546,42 @@ void Ler::copia_ipr(Ler& arqAntigo) {
 				IPRS[i].tjp[j] =arqAntigo.IPRS[i].tjp[j];
 			}
 		}
+		////////////////////////////////////////////////////////////////////
+
+		IPRS[i].ICV=0;
+		IPRS[i].abertura=0;
+		IPRS[i].cd=0.84;
+		IPRS[i].curvaCV=0;
+		IPRS[i].cvCurv=0;
+		IPRS[i].ncv=0;
+		IPRS[i].serieICV=0;
+		IPRS[i].cvCurv=0;
+
+		IPRS[i].ICV = arqAntigo.IPRS[i].ICV;
+		if(IPRS[i].ICV==1){
+			IPRS[i].serieICV=(int) arqAntigo.IPRS[i].serieICV;
+			IPRS[i].abertura = new double[IPRS[i].serieICV];
+			IPRS[i].tempoICV = new double[IPRS[i].serieICV];
+			IPRS[i].cd = arqAntigo.IPRS[i].cd;
+			for (int j = 0; j < IPRS[i].serieICV; j++) {
+				IPRS[i].abertura[j] = arqAntigo.IPRS[i].abertura[j];
+				IPRS[i].tempoICV[j] = arqAntigo.IPRS[i].tempoICV[j];
+			}
+			IPRS[i].curvaCV= arqAntigo.IPRS[i].curvaCV;
+			if(IPRS[i].curvaCV==1){
+				IPRS[i].ncv=arqAntigo.IPRS[i].ncv;
+				IPRS[i].cvCurv = new detCV[IPRS[i].ncv];
+				for(int konta=0;konta<valv[i].ncv;konta++){
+					IPRS[i].cvCurv[konta].x1=arqAntigo.IPRS[i].cvCurv[konta].x1;
+					IPRS[i].cvCurv[konta].x2=arqAntigo.IPRS[i].cvCurv[konta].x2;
+					IPRS[i].cvCurv[konta].cv1=arqAntigo.IPRS[i].cvCurv[konta].cv1;
+					IPRS[i].cvCurv[konta].cv2=arqAntigo.IPRS[i].cvCurv[konta].cv2;
+				}
+			}
+		}
+
+
+
 	}
 }
 
@@ -20568,6 +21687,7 @@ void Ler::copia_master1(Ler& arqAntigo) {
 	master1.curvaCV=arqAntigo.master1.curvaCV;
 	master1.ncv=arqAntigo.master1.ncv;
 	master1.razareaativ = arqAntigo.master1.razareaativ ;
+	master1.cd=arqAntigo.master1.cd;
 	master1.comp = arqAntigo.master1.comp;
 	master1.posic = arqAntigo.master1.posic;
 
@@ -20593,23 +21713,121 @@ void Ler::copia_master1(Ler& arqAntigo) {
 	eventofecha = 0;
 	Tevento = new double[master1.parserie];
 	Teventof = new double[master1.parserie];
+
+	master1.cxvVerifica=arqAntigo.master1.cxvVerifica;
+	if(master1.cxvVerifica==1){
+		master1.cxv.lCaixa=arqAntigo.master1.cxv.lCaixa;
+		master1.cxv.indFlu=arqAntigo.master1.cxv.indFlu;
+		master1.cxv.secaoTrans=arqAntigo.master1.cxv.secaoTrans;
+		master1.cxv.formac=arqAntigo.master1.cxv.formac;
+		master1.cxv.lito=arqAntigo.master1.cxv.lito;
+		master1.cxv.ambiente=arqAntigo.master1.cxv.ambiente;
+		master1.cxv.tamb=arqAntigo.master1.cxv.tamb;
+		master1.cxv.velAmb=arqAntigo.master1.cxv.velAmb;
+		master1.cxv.nMon=arqAntigo.master1.cxv.nMon;
+		if(master1.cxv.nMon>0){
+			master1.cxv.serieAberturaMon=new double [master1.cxv.nMon];
+			master1.cxv.tempMon=new double [master1.cxv.nMon];
+			for(int i=0; i<master1.cxv.nMon;i++){
+				master1.cxv.serieAberturaMon[i]=arqAntigo.master1.cxv.serieAberturaMon[i];
+				master1.cxv.tempMon[i]=arqAntigo.master1.cxv.tempMon[i];
+			}
+		}
+		else{
+				master1.cxv.serieAberturaMon=0;
+				master1.cxv.tempMon=0;
+		}
+		master1.cxv.nJus=arqAntigo.master1.cxv.nJus;
+		if(master1.cxv.nJus>0){
+			master1.cxv.serieAberturaJus=new double [master1.cxv.nJus];
+			master1.cxv.tempJus=new double [master1.cxv.nJus];
+			for(int i=0; i<master1.cxv.nJus;i++){
+				master1.cxv.serieAberturaJus[i]=arqAntigo.master1.cxv.serieAberturaJus[i];
+				master1.cxv.tempJus[i]=arqAntigo.master1.cxv.tempJus[i];
+			}
+		}
+		else{
+			master1.cxv.serieAberturaJus=0;
+			master1.cxv.tempJus=0;
+		}
+
+		master1.cxv.temperaturaFonte=arqAntigo.master1.cxv.temperaturaFonte;
+		master1.cxv.nfonte=arqAntigo.master1.cxv.nfonte;
+		master1.cxv.massLiqP=new double [master1.cxv.nfonte];
+		master1.cxv.massGas=new double [master1.cxv.nfonte];
+		master1.cxv.massLiqC=new double [master1.cxv.nfonte];
+		master1.cxv.tempoFonte=new double [master1.cxv.nfonte];
+		for(int ifonte=0; ifonte<master1.cxv.nfonte; ifonte++){
+			master1.cxv.massLiqP[ifonte]=arqAntigo.master1.cxv.massLiqP[ifonte];
+			master1.cxv.massGas[ifonte]=arqAntigo.master1.cxv.massGas[ifonte];
+			master1.cxv.massLiqC[ifonte]=arqAntigo.master1.cxv.massLiqC[ifonte];
+			master1.cxv.tempoFonte[ifonte]=arqAntigo.master1.cxv.tempoFonte[ifonte];
+		}
+
+	}
+	else{
+		master1.cxv.lCaixa=0;
+		master1.cxv.indFlu=0;
+		master1.cxv.secaoTrans=0;
+		master1.cxv.formac=0;
+		master1.cxv.lito=-1;
+		master1.cxv.ambiente=0;
+		master1.cxv.tamb=0;
+		master1.cxv.velAmb=0;
+		master1.cxv.nMon=0;
+		master1.cxv.serieAberturaMon=0;
+		master1.cxv.tempMon=0;
+		master1.cxv.nJus=0;
+		master1.cxv.serieAberturaJus=0;
+		master1.cxv.tempJus=0;
+		master1.cxv.temperaturaFonte=0.;
+		master1.cxv.massLiqP=0;
+		master1.cxv.massGas=0;
+		master1.cxv.massLiqC=0;
+		master1.cxv.tempoFonte=0;
+		master1.cxv.nfonte=0;
+	}
+
 }
 
 void Ler::copia_master2(Ler& arqAntigo) {
 
-	master2.curvaCV=arqAntigo.master2.curvaCV;
-	master2.ncv=arqAntigo.master2.ncv;
-	master2.parserie = arqAntigo.master2.parserie;
-	if(master2.parserie>0){
-		master2.abertura = new double[master2.parserie];
-		master2.tempo = new double[master2.parserie];
-		master2.comp =arqAntigo.master2.comp;
-		master2.posic = arqAntigo.master2.posic;
-
-		for (int i = 0; i < master2.parserie; i++) {
-			master2.abertura[i] =arqAntigo.master2.abertura[i];
-			master2.tempo[i] = arqAntigo.master2.tempo[i];
+	if(lingas==1){
+		master2.curvaCV=arqAntigo.master2.curvaCV;
+		master2.ncv=arqAntigo.master2.ncv;
+		master2.cd=arqAntigo.master2.cd;
+		master2.parserie = arqAntigo.master2.parserie;
+		if(master2.parserie>0){
+			master2.abertura = new double[master2.parserie];
+			master2.tempo = new double[master2.parserie];
+			master2.comp =arqAntigo.master2.comp;
+			master2.posic = arqAntigo.master2.posic;
+			for (int i = 0; i < master2.parserie; i++) {
+				master2.abertura[i] =arqAntigo.master2.abertura[i];
+				master2.tempo[i] = arqAntigo.master2.tempo[i];
+			}
 		}
+		master2.cxvVerifica=0;
+		master2.cxv.lCaixa=0;
+		master2.cxv.indFlu=0;
+		master2.cxv.secaoTrans=0;
+		master2.cxv.formac=0;
+		master2.cxv.lito=-1;
+		master2.cxv.ambiente=0;
+		master2.cxv.tamb=0;
+		master2.cxv.velAmb=0;
+		master2.cxv.nMon=0;
+		master2.cxv.serieAberturaMon=0;
+		master2.cxv.tempMon=0;
+		master2.cxv.nJus=0;
+		master2.cxv.serieAberturaJus=0;
+		master2.cxv.tempJus=0;
+		master2.cxv.temperaturaFonte=0.;
+		master2.cxv.massLiqP=0;
+		master2.cxv.massGas=0;
+		master2.cxv.massLiqC=0;
+		master2.cxv.tempoFonte=0;
+		master2.cxv.nfonte=0;
 	}
 }
 
@@ -20640,6 +21858,79 @@ void Ler::copia_valv(Ler& arqAntigo) {
 			for (int j = 0; j < valv[i].parserie; j++) {
 				valv[i].abertura[j] =arqAntigo.valv[i].abertura[j];
 				valv[i].tempo[j] =arqAntigo.valv[i].tempo[j];
+			}
+
+			valv[i].cxvVerifica=arqAntigo.valv[i].cxvVerifica;
+			if(valv[i].cxvVerifica==1){
+				valv[i].cxv.lCaixa=arqAntigo.valv[i].cxv.lCaixa;
+				valv[i].cxv.indFlu=arqAntigo.valv[i].cxv.indFlu;
+				valv[i].cxv.secaoTrans=arqAntigo.valv[i].cxv.secaoTrans;
+				valv[i].cxv.formac=arqAntigo.valv[i].cxv.formac;
+				valv[i].cxv.lito=arqAntigo.valv[i].cxv.lito;
+				valv[i].cxv.ambiente=arqAntigo.valv[i].cxv.ambiente;
+				valv[i].cxv.tamb=arqAntigo.valv[i].cxv.tamb;
+				valv[i].cxv.velAmb=arqAntigo.valv[i].cxv.velAmb;
+				valv[i].cxv.nMon=arqAntigo.valv[i].cxv.nMon;
+				if(valv[i].cxv.nMon>0){
+					valv[i].cxv.serieAberturaMon=new double [valv[i].cxv.nMon];
+					valv[i].cxv.tempMon=new double [valv[i].cxv.nMon];
+					for(int i=0; i<valv[i].cxv.nMon;i++){
+						valv[i].cxv.serieAberturaMon[i]=arqAntigo.valv[i].cxv.serieAberturaMon[i];
+						valv[i].cxv.tempMon[i]=arqAntigo.valv[i].cxv.tempMon[i];
+					}
+				}
+				else{
+						valv[i].cxv.serieAberturaMon=0;
+						valv[i].cxv.tempMon=0;
+				}
+				valv[i].cxv.nJus=arqAntigo.valv[i].cxv.nJus;
+				if(valv[i].cxv.nJus>0){
+					valv[i].cxv.serieAberturaJus=new double [valv[i].cxv.nJus];
+					valv[i].cxv.tempJus=new double [valv[i].cxv.nJus];
+					for(int i=0; i<valv[i].cxv.nJus;i++){
+						valv[i].cxv.serieAberturaJus[i]=arqAntigo.valv[i].cxv.serieAberturaJus[i];
+						valv[i].cxv.tempJus[i]=arqAntigo.valv[i].cxv.tempJus[i];
+					}
+				}
+				else{
+					valv[i].cxv.serieAberturaJus=0;
+					valv[i].cxv.tempJus=0;
+				}
+
+				valv[i].cxv.temperaturaFonte=arqAntigo.valv[i].cxv.temperaturaFonte;
+				valv[i].cxv.nfonte=arqAntigo.valv[i].cxv.nfonte;
+				valv[i].cxv.massLiqP=new double [valv[i].cxv.nfonte];
+				valv[i].cxv.massGas=new double [valv[i].cxv.nfonte];
+				valv[i].cxv.massLiqC=new double [valv[i].cxv.nfonte];
+				valv[i].cxv.tempoFonte=new double [valv[i].cxv.nfonte];
+				for(int ifonte=0; ifonte<valv[i].cxv.nfonte; ifonte++){
+					valv[i].cxv.massLiqP[ifonte]=arqAntigo.valv[i].cxv.massLiqP[ifonte];
+					valv[i].cxv.massGas[ifonte]=arqAntigo.valv[i].cxv.massGas[ifonte];
+					valv[i].cxv.massLiqC[ifonte]=arqAntigo.valv[i].cxv.massLiqC[ifonte];
+					valv[i].cxv.tempoFonte[ifonte]=arqAntigo.valv[i].cxv.tempoFonte[ifonte];
+				}
+			}
+			else{
+				valv[i].cxv.lCaixa=0;
+				valv[i].cxv.indFlu=0;
+				valv[i].cxv.secaoTrans=0;
+				valv[i].cxv.formac=0;
+				valv[i].cxv.lito=-1;
+				valv[i].cxv.ambiente=0;
+				valv[i].cxv.tamb=0;
+				valv[i].cxv.velAmb=0;
+				valv[i].cxv.nMon=0;
+				valv[i].cxv.serieAberturaMon=0;
+				valv[i].cxv.tempMon=0;
+				valv[i].cxv.nJus=0;
+				valv[i].cxv.serieAberturaJus=0;
+				valv[i].cxv.tempJus=0;
+				valv[i].cxv.temperaturaFonte=0.;
+				valv[i].cxv.massLiqP=0;
+				valv[i].cxv.massGas=0;
+				valv[i].cxv.massLiqC=0;
+				valv[i].cxv.tempoFonte=0;
+				valv[i].cxv.nfonte=0;
 			}
 		}
 	}
@@ -20814,6 +22105,11 @@ void Ler::copia_furo(Ler& arqAntigo) {
 			furo[i].ambGas=arqAntigo.furo[i].ambGas;
 			furo[i].tipoFlu =arqAntigo.furo[i].tipoFlu;
 			furo[i].indFlu = arqAntigo.furo[i].indFlu;
+
+			furo[i].recircula=arqAntigo.furo[i].recircula;
+			furo[i].compR=arqAntigo.furo[i].compR;
+			furo[i].indJus=arqAntigo.furo[i].indJus;
+			furo[i].indMon=arqAntigo.furo[i].indMon;
 		}
 	}
 }
@@ -21094,8 +22390,10 @@ void Ler::copia_perfil_producao(Ler& arqAntigo) {
 		}
 
 		profp.pres = arqAntigo.profp.pres;
+		profp.presFront = arqAntigo.profp.presFront;
 		profp.temp = arqAntigo.profp.temp;
 		profp.hol = arqAntigo.profp.hol;
+		profp.titulo = arqAntigo.profp.titulo;
 		profp.FVH = arqAntigo.profp.FVH;
 		profp.bet = arqAntigo.profp.bet;
 		profp.ugs = arqAntigo.profp.ugs;
@@ -21104,6 +22402,7 @@ void Ler::copia_perfil_producao(Ler& arqAntigo) {
 		profp.ul = arqAntigo.profp.ul;
 		profp.arra = arqAntigo.profp.arra;
 		profp.viscl = arqAntigo.profp.viscl;
+		profp.viscom = arqAntigo.profp.viscom;
 		profp.viscg = arqAntigo.profp.viscg;
 		profp.rhog = arqAntigo.profp.rhog;
 		profp.rhol = arqAntigo.profp.rhol;
@@ -21122,6 +22421,9 @@ void Ler::copia_perfil_producao(Ler& arqAntigo) {
 		profp.masstrans = arqAntigo.profp.masstrans;
 		profp.cpg = arqAntigo.profp.cpg;
 		profp.cpl = arqAntigo.profp.cpl;
+		profp.condg = arqAntigo.profp.condg;
+		profp.condl = arqAntigo.profp.condl;
+		profp.condo = arqAntigo.profp.condo;
 		profp.qlst = arqAntigo.profp.qlst;
 		profp.qlwst = arqAntigo.profp.qlwst;
 		profp.qlstTot = arqAntigo.profp.qlstTot;
@@ -21304,6 +22606,8 @@ void Ler::copia_tendencia_producao(Ler& arqAntigo) {
 
 				trendp[i].Rs = arqAntigo.trendp[i].Rs;
 				trendp[i].Bo = arqAntigo.trendp[i].Bo;
+				trendp[i].presAnulICV = arqAntigo.trendp[i].presAnulICV;
+				trendp[i].caixaValvula = arqAntigo.trendp[i].caixaValvula;
 
 				trendp[i].volJusM1PT = arqAntigo.trendp[i].volJusM1PT;
 				trendp[i].volMonM1PT = arqAntigo.trendp[i].volMonM1PT;

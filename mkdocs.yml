@@ -4,6 +4,8 @@ site_author: Petrobras
 
 theme:
   name: material
+  icon:
+    repo: fontawesome/brands/github
   palette:
     - scheme: default
       primary: cyan
@@ -18,34 +20,89 @@ theme:
         icon: material/brightness-4
         name: Switch to light mode
   features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
     - navigation.top
+    - navigation.indexes
+    - navigation.path
+    - toc.follow
     - toc.integrate
     - search.highlight
+    - search.suggest
+    - content.code.copy
+    - content.tabs.link
 
 nav:
   - Home: index.md
-  - User Guide:
-    - Fluids: user-guide/fluids.md
-    - Materials: user-guide/materials.md
-    - Cross Sections: user-guide/cross-sections.md
-    - Rock Formation: user-guide/rock-formation.md
-    - Pipes: user-guide/pipes.md
-    - Accessories: user-guide/accessories.md
-    - Boundary Conditions: user-guide/boundary-conditions.md
-    - Time: user-guide/time.md
-    - General: user-guide/general.md
-    - Results: user-guide/results.md
+  - Getting Started:
+    - Installation: getting-started.md
+    - Dependency Maintenance: dev-guide/dependencies.md
   - Tutorials:
-    - tutorials/index.md
-  - Reference:
-    - JSON Schema: reference/json-schema.md
+    - Overview: tutorials/index.md
+    - Horizontal vs Vertical: tutorials/1-horizontal_vertical_comparison.ipynb
+    - Nodal Analysis: tutorials/2-nodal_analysis.ipynb
+    - Gas Lift: tutorials/3-gas_lift.ipynb
+    - Black-Box Correlations: tutorials/4_black_box_correlations.ipynb
+    - Temperature Pulse: tutorials/5_temperature_pulse.ipynb
+  - Model Reference:
+    - Overview: single-branch-model-reference/index.md
+    - Fluids: single-branch-model-reference/fluids.md
+    - Materials: single-branch-model-reference/materials.md
+    - Cross Sections: single-branch-model-reference/cross-sections.md
+    - Rock Formation: single-branch-model-reference/rock-formation.md
+    - Pipes: single-branch-model-reference/pipes.md
+    - Accessories: single-branch-model-reference/accessories.md
+    - Boundary Conditions: single-branch-model-reference/boundary-conditions.md
+    - Time: single-branch-model-reference/time.md
+    - General: single-branch-model-reference/general.md
+    - Results: single-branch-model-reference/results.md
+    - JSON Schema: single-branch-model-reference/json-schema.md
+    - Input Migration: single-branch-model-reference/migration.md
+  - Theory:
+    - Overview: theoretical-reference/index.md
+    - Drift-Flux vs. Two-Fluid: theoretical-reference/two-fluids_vs_drift-flux.md
+    - Mass & Momentum Balances: theoretical-reference/mass-momentum-balances.md
+    - Energy Balance: theoretical-reference/energy-balance.md
+    - Discretization: theoretical-reference/discretization.md
+    - Service Line: theoretical-reference/service-line.md
+  - Schemas:
+    - Overview: schemas/index.md
+    - Branch EN: schemas/generated/branch.en.md
+    - Branch PT: schemas/generated/branch.pt.md
+    - Network EN: schemas/generated/network.en.md
+    - Network PT: schemas/generated/network.pt.md
+    - Buried Line 2D PT: schemas/generated/buried-line-2d.pt.md
+    - Porous Radial PT: schemas/generated/porous-radial.pt.md
+    - Parametric Analysis PT: schemas/generated/leituraAP.pt.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/petrobras/marlim3
+      name: Marlim3 repository
+
+extra_css:
+  - stylesheets/markmap-fullsize.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - javascripts/markmap-fullsize.js
 
 markdown_extensions:
   - admonition
+  - pymdownx.arithmatex:
+      generic: true
   - pymdownx.details
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: markmap
+          class: language-markmap
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - tables
@@ -54,33 +111,20 @@ markdown_extensions:
   - toc:
       permalink: true
 
+hooks:
+  - mkdocs_markmap_local.py
+
 plugins:
   - search
+  - markmap:
+      base_path: docs
+      encoding: utf-8
+      file_extension: .md
+      d3_version: "7"
+      lib_version: "0.18"
+      view_version: "0.18"
   - mkdocs-jupyter:
-      execute: false          # set true to re-run notebooks on build
-      include_source: true    # adds a download button for the .ipynb
+      execute: false
+      include_source: true
       kernel_name: python3
-
-nav:
-  - Home: index.md
-  - User Guide:
-    - Fluids: user-guide/fluids.md
-    - Materials: user-guide/materials.md
-    - Cross Sections: user-guide/cross-sections.md
-    - Rock Formation: user-guide/rock-formation.md
-    - Pipes: user-guide/pipes.md
-    - Accessories: user-guide/accessories.md
-    - Boundary Conditions: user-guide/boundary-conditions.md
-    - Time: user-guide/time.md
-    - General: user-guide/general.md
-    - Results: user-guide/results.md
-  - Tutorials:
-    - tutorials/index.md
-    - Horizontal vs Vertical: tutorials/1-horizontal_vertical_comparison.ipynb
-    - Nodal Analysis: tutorials/2-nodal_analysis.ipynb
-    - Gas Lift: tutorials/3-gas_lift.ipynb
-    - Black Box Correlations: tutorials/4_black_box_correlations.ipynb
-  - Reference:
-    - JSON Schema: reference/json-schema.md
-    - Bilingual Support: dev-guide/translations.md
 

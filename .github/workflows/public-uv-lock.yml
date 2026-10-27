@@ -1,0 +1,65 @@
+name: Public uv lock
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-uv-lock-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  generate:
+    name: Generate and verify public uv lock
+    runs-on: ubuntu-latest
+    steps:
+      # The artifact must describe the author's head, not a synthetic merge.
+      # This job executes untrusted PR inputs without repository writes/secrets.
+      - uses: actions/checkout@v5
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: astral-sh/setup-uv@v7.0.0
+        with:
+          version: "0.13.1"
+          enable-cache: false
+
+      - name: Generate public lock artifact
+        env:
+          TARGET_REPOSITORY: ${{ github.repository }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: >-
+          python scripts/dependencies.py generate-lock
+          --output "$RUNNER_TEMP/public-uv-lock"
+          --repository "$TARGET_REPOSITORY"
+          --head-repository "$HEAD_REPOSITORY"
+          --head-sha "$HEAD_SHA"
+          --base-sha "$BASE_SHA"
+
+      - name: Show version changes
+        run: cat "$RUNNER_TEMP/public-uv-lock/summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      # Upload before failing the readiness check: a stale lock is exactly when
+      # the author needs this artifact. No auto-commit token is needed for forks.
+      - uses: actions/upload-artifact@v6
+        with:
+          name: public-uv-lock-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/public-uv-lock/
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Verify the versioned lock matches the generated result
+        run: python scripts/dependencies.py check-generated --artifact-dir "$RUNNER_TEMP/public-uv-lock"

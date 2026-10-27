@@ -5,6 +5,7 @@ module MarlimComposicional
     !   das rotinas e suas variáveis internas) estão no SI, EXCETO QUANTO devidamente explicitado...
 
     use iso_c_binding   ! Para viabilizar a comunicação com C...
+    use BlackOilModels
     use VLECalculations
     use PvtSimCTMFileImport
     use PhaseProperties
@@ -267,6 +268,7 @@ module MarlimComposicional
                     ! Chamada sem componentes zerados:
                     call CalculateMixtureThermodynamicCondition_V3(dFlashPressure, dFlashTemperature, iNComp_Fixed, oMW_Fixed, &
                         oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqModel, iVapModel, &
+                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                         (dGivenInitialBeta.GE.(0.0d0)), oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, &
                         dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
@@ -275,6 +277,7 @@ module MarlimComposicional
                     ! Chamada original:
                     call CalculateMixtureThermodynamicCondition_V3(dFlashPressure, dFlashTemperature, iNComp, temp_oMW, &
                         temp_oZ, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, iLiqModel, iVapModel, &
+                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                         (dGivenInitialBeta.GE.(0.0d0)), temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
                         dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
@@ -882,6 +885,7 @@ end subroutine ReadWaxCalculationParametersFromExternalFile
 ! ===========================================================================================================
 subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashTemperature, iNComp, oMW, oZ, oTc, oPc, oW, &
                     oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
+                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                     dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
                     dCalculatedBubbleT, iIER_BubbleT, dCalculatedDewT, &
                     iIER_DewT, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash, dCalculatedBubbleP, &
@@ -904,6 +908,8 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
     type(c_ptr), value, intent(in) :: oLij                               ! Matriz dos parâmetros "lij".
     integer(c_int), value, intent(in) :: iLiqPhaseModel                  ! Modelo da fase líquida, conforme convenção.
     integer(c_int), value, intent(in) :: iVapPhaseModel                  ! Modelo da fase vapor, conforme convenção.
+    integer(c_int), value, intent(in) :: iLiqDensityCalculationMethod  ! Índice do método de cálculo da massa específica do líquido, conforme convenção.
+    integer(c_int), value, intent(in) :: iVapDensityCalculationMethod  ! Índice do método de cálculo da massa específica do vapor, conforme convenção.
     real(c_double), value, intent(in) :: dGivenInitialBeta               ! Estimativa inicial de fração molar vaporizada para o "flash" (dar negativo caso indisponível).
     type(c_ptr), value, intent(in) :: oGivenInitialLiqComposition        ! Estimativa inicial de composição da fase líquida para o "flash".
     type(c_ptr), value, intent(in) :: oGivenInitialVapComposition        ! Estimativa inicial de composição da fase vapor para o "flash".
@@ -1043,6 +1049,7 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
             else deactivateV2
                 call CalculateMixtureThermodynamicCondition_V3(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp_Fixed, oMW_Fixed, &
                     oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqPhaseModel, iVapPhaseModel, &
+                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                     (dGivenInitialBeta.GE.(0.0d0)), oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, &
                     dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
             end if deactivateV2
@@ -1768,49 +1775,123 @@ subroutine Marlim_CalculateOilFormationVolumeFactor(dPressure, dTemperature, iNC
 end subroutine Marlim_CalculateOilFormationVolumeFactor
 
 ! ===========================================================================================================
+!  ROTINA A SER CHAMADA PELO MARLIM 3 DURANTE AS SIMULAÇÕES PARA CORRIGIR OS Rs CALCULADOS POR CORRELAÇÕES
+! ===========================================================================================================
+subroutine Marlim_CorrectBlackOilRsWithPVTAnalysisRegression(iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+                dRsCalculated_Arg, dSaturationPressure, dRGO_RsUpperLimit, dLocalPressure, &
+                dRsCorrected) bind(C, name = "Marlim_CorrectBlackOilRsWithPVTAnalysisRegression")
+
+    ! OBJETIVO: Habilitar o MARLIM 3 a usar dados experimentais de uma Análise PVT para corrigir, DURANTE uma simulação,
+    !           valores que correlações black-oil prevêem para "Rs".
+                
+    implicit none
+
+    ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+    integer(c_int), value, intent(in) :: iRsRegressionModelType     ! Tipo do modelo de regressão: 1=linear, 0=potencial
+    real(c_double), value, intent(in) :: dRsRegressionA             ! Coeficiente angular do modelo de regressão
+    real(c_double), value, intent(in) :: dRsRegressionB             ! Coeficiente linear do modelo de regressão
+    real(c_double), value, intent(in) :: dRsCalculated_Arg          ! Rs calculado pela correlação, em "scft/bbl"
+    real(c_double), value, intent(in) :: dSaturationPressure        ! Pressão de saturação (kgf/cm2)
+    real(c_double), value, intent(in) :: dRGO_RsUpperLimit          ! Limite superior de Rs (em Sm3/Sm3)
+    real(c_double), value, intent(in) :: dLocalPressure             ! Pressão local (kgf/cm2)
+
+    real(c_double), intent(out) :: dRsCorrected                     ! Rs corrigido (resultado final), em "scft/bbl"           
+
+    ! ------------ DECLARAÇÃO E DESCRIÇÃO DAS VARIÁVEIS LOCAIS:
+    real(c_double) :: dRsCalculated              ! Rs calculado pela correlação, em m3/m3
+
+    ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
+
+    ! CONVERSÃO DE UNIDADES:
+
+        ! Converter "dRsCalculated" de "scft/bbl" para "m3/m3".
+    dRsCalculated = dRsCalculated_Arg / 1.589873d-1 * 2.831685d-2
+
+    ! CHAMADA PRINCIPAL:
+    call CorrectBlackOilRsWithPVTAnalysisRegression(iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+            dRsCalculated, dSaturationPressure, dRGO_RsUpperLimit, dLocalPressure, dRsCorrected)
+
+        ! Resultado está em "m3/m3"; retornar em "scft/bbl":
+    dRsCorrected = dRsCorrected * 1.589873d-1 / 2.831685d-2     
+
+end subroutine Marlim_CorrectBlackOilRsWithPVTAnalysisRegression
+
+! ===========================================================================================================
 !  ROTINA A SER CHAMADA PELO MARLIM 3 NO INÍCIO DE SIMULAÇÕES PARA AJUSTAR MODELOS BLACK-OIL CONTRA ANÁLISES PVT
 ! ===========================================================================================================
-!subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB) bind(C, name = "Marlim_FitBlackOilPVTAnalysisCalibrationModels")
-!
-!    ! OBJETIVO: Permitir que o MARLIM 3 faça a regressão de correlações black-oil contra resultados experimentais de Análises PVT.
-!
-!    ! REFERÊNCIA BIBLIOGRÁFICA 1: "Multiphase Flow in Wells", James P. Brill e Hemanta Mukherjee, 1999
-!    implicit none
-!
-!    ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
-!    integer(c_int), value, intent(in) :: iNPVTPoints                         ! Número de pontos experimentais da Análise PVT.
-!    type(c_ptr), value, intent(in) :: oExpPressures_Arg                      ! Pressões da Análise PVT (kgf/cm2).
-!    type(c_ptr), value, intent(in) :: oExpRs_Arg                             ! Valores de Rs medidos na Análise PVT ("scft/bbl").
-!    real(c_double), value, intent(in) :: dExpTemperature                     ! Temperatura da Análise PVT (°C)
-!    real(c_double), value, intent(in) :: dPSEP_VB        ! Vazquez e Beggs, pág 104 da Referência 1: "actual separator pressure", em kgf/cm2 (MARLIM 2 usa "standard")
-!    real(c_double), value, intent(in) :: dTSEP_VB        ! Vazquez e Beggs, pág 104 da Referência 1: "actual separator temperature", em graus Celsius (MARLIM 2 usa "standard")
-!
-!    ! PAREI AQUI NO SÃO LUCAS EM 21/04/2026
-!    ! (Seguir trabalhando na lista de argumentos, na ordem da chamada principal)
-!
-!    ! PRESENCIAL PUC 28/4/2026: COMENTANDO A ROTINA INTEIRA PRA PERMITIR COMPILAR A PARAFINA!
-!    ! (quando for continuar esta rotina, basta descomentar CADA linha na primeira coluna)
-!
-!    ! ------------ DECLARAÇÃO E DESCRIÇÃO DAS VARIÁVEIS LOCAIS:
-!    real(c_double), dimension(:), pointer :: temp_oExpPressures_Arg                ! Mapeamento do argumento "oExpPressures_Arg"
-!    real(c_double), dimension(:), pointer :: temp_oExpRs_Arg                       ! Mapeamento do argumento "oExpRs_Arg"
-!
-!    ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
-!
-!    ! Mapeando vetores e matrizes:
-!    call c_f_pointer(oExpPressures_Arg, temp_oExpPressures_Arg, [iNPVTPoints])
-!    call c_f_pointer(oExpRs_Arg, temp_oExpRs_Arg, [iNPVTPoints])
-!
-!    ! CONVERSÃO DE UNIDADES:
-!
-!        ! TODO: Converter "oExpRs_Arg" de "scft/bbl" para "m3/m3".
-!
-!    ! CHAMADA PRINCIPAL:
-!    call FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, temp_oExpPressures_Arg, temp_oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, dAPI, &
-!        dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
-!        oCorrectedRs, oCalibrationInfoSummary, iIER)
-!
-!end subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels
+subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, &
+                dAPI, dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, &
+                dRsRegressionB, oCorrectedRs, oCalibrationInfoSummary, iIER) bind(C, name = "Marlim_FitBlackOilPVTAnalysisCalibrationModels")
+
+    ! OBJETIVO: Permitir que o MARLIM 3 faça a regressão de correlações black-oil contra resultados experimentais de Análises PVT.
+
+    ! REFERÊNCIA BIBLIOGRÁFICA 1: "Multiphase Flow in Wells", James P. Brill e Hemanta Mukherjee, 1999
+    implicit none
+
+    ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+    integer(c_int), value, intent(in) :: iNPVTPoints                         ! Número de pontos experimentais da Análise PVT.
+    type(c_ptr), value, intent(in) :: oExpPressures_Arg                      ! Pressões da Análise PVT (kgf/cm2).
+    type(c_ptr), value, intent(in) :: oExpRs_Arg                             ! Valores de Rs medidos na Análise PVT ("scft/bbl").
+    real(c_double), value, intent(in) :: dExpTemperature                     ! Temperatura da Análise PVT (°C)
+    real(c_double), value, intent(in) :: dPSEP_VB        ! Vazquez e Beggs, pág 104 da Referência 1: "actual separator pressure", em kgf/cm2 (MARLIM 2 usa "standard")
+    real(c_double), value, intent(in) :: dTSEP_VB        ! Vazquez e Beggs, pág 104 da Referência 1: "actual separator temperature", em graus Celsius (MARLIM 2 usa "standard")
+    real(c_double), value, intent(in) :: dAPI            ! Grau API do óleo
+    real(c_double), value, intent(in) :: dRGO_Arg        ! RGO (Sm3/Sm3) - fornecer valor negativo para determinação automática
+    real(c_double), value, intent(in) :: dDeng           ! Referência 1, pág 104: gammaG = "specific gravity of gas (air = 1.0)"
+
+    type(c_ptr), value, intent(in) :: oTestedRsCorrelations     ! RESULTADO: Vetor de índices convencionados de correlações de Rs testadas (desconsiderar elementos negativos).
+    type(c_ptr), value, intent(in) :: oCorrelationsRs           ! RESULTADO: Elemento [i, j]: Rs em m3/m3, calculado pela correlação "i" do vetor
+                                                                !               "oTestedRsCorrelations",  nas condições do ponto experimental "j"
+                                                                !               (valores experimentais na última linha da matriz).
+    integer(c_int), intent(out) :: iBestRsCorrelation           ! RESULTADO: Índice (confome convenção da biblioteca) da correlação de Rs que mais se aproxima dos resultados da Análise PVT (sem correção)
+    integer(c_int), intent(out) :: iRsRegressionModelType       ! RESULTADO: Tipo do modelo de calibração ajustado para Rs (1=linear, 0=potencial)
+    real(c_double), intent(out) :: dRsRegressionA               ! RESULTADO: Coeficiente angular do modelo de calibração ajustado para Rs.
+    real(c_double), intent(out) :: dRsRegressionB               ! RESULTADO: Coeficiente linear do modelo de calibração ajustado para Rs.
+    type(c_ptr), value, intent(in) :: oCorrectedRs              ! RESULTADO: Rs calibrado (resultante do modelo ajustado) em cada ponto da Análise PVT, em m3/m3.
+    type(c_ptr), value, intent(in) :: oCalibrationInfoSummary   ! RESULTADO: Matriz apenas para facilitar primeiras verificações e gráficos
+                                                                ! (mais detalhes nos comentários descritivos no corpo da subrotina "FitBlackOilPVTAnalysisCalibrationModels")
+    integer(c_int), intent(out) :: iIER                         ! RESULTADO: Código de erros (conforme convenção da biblioteca).
+
+    ! ------------ DECLARAÇÃO E DESCRIÇÃO DAS VARIÁVEIS LOCAIS:
+    real(c_double), dimension(:), pointer :: temp_oExpPressures_Arg                ! Mapeamento do argumento "oExpPressures_Arg"
+    real(c_double), dimension(:), pointer :: temp_oExpRs_Arg                       ! Mapeamento do argumento "oExpRs_Arg"
+    integer(c_int), dimension(:), pointer :: temp_oTestedRsCorrelations            ! Mapeamento do argumento "oTestedRsCorrelations"
+    real(c_double), dimension(:,:), pointer :: temp_oCorrelationsRs                ! Mapeamento do argumento "oCorrelationsRs" 
+    real(c_double), dimension(:), pointer :: temp_oCorrectedRs                     ! Mapeamento do argumento "oCorrectedRs"
+    real(c_double), dimension(:,:), pointer :: temp_oCalibrationInfoSummary        ! Mapeamento do argumento "oCalibrationInfoSummary"
+    integer :: i
+
+    ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
+
+    ! Mapeando vetores e matrizes:
+    call c_f_pointer(oExpPressures_Arg, temp_oExpPressures_Arg, [iNPVTPoints])
+    call c_f_pointer(oExpRs_Arg, temp_oExpRs_Arg, [iNPVTPoints])
+    call c_f_pointer(oTestedRsCorrelations, temp_oTestedRsCorrelations , [RSCORRELATION_COUNT])
+    call c_f_pointer(oCorrelationsRs, temp_oCorrelationsRs, [RSCORRELATION_COUNT+1, iNPVTPoints])
+    call c_f_pointer(oCorrectedRs, temp_oCorrectedRs, [iNPVTPoints])
+    call c_f_pointer(oCalibrationInfoSummary, temp_oCalibrationInfoSummary, [4, iNPVTPoints])
+
+    ! CONVERSÃO DE UNIDADES:
+
+        ! Converter "oExpRs_Arg" de "scft/bbl" para "m3/m3".
+    convExpRs: do i = 1, iNPVTPoints
+        temp_oExpRs_Arg(i) = temp_oExpRs_Arg(i) / 1.589873d-1 * 2.831685d-2
+    end do convExpRs
+
+    ! INICIALIZAÇÕES:
+    iIER = ERROR_EverythingOK
+
+    ! CHAMADA PRINCIPAL:
+    call FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, temp_oExpPressures_Arg, temp_oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, dAPI, &
+        dRGO_Arg, dDeng, temp_oTestedRsCorrelations, temp_oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+        temp_oCorrectedRs, temp_oCalibrationInfoSummary, iIER)
+
+    if(iIER.NE.ERROR_EverythingOK) return
+
+    ! SUBROTINA CONCLUÍDA EM 05/05/2026!
+    ! Próximos passos: (i) ver se compila (ii) SEGUIR!
+
+end subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels
 
 ! ===========================================================================================================
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR A PRESSÃO DE BOLHA DA MISTURA EM ESCOAMENTO

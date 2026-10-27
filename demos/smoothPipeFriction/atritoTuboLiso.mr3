@@ -1,0 +1,224 @@
+{
+  "sistema": "MULTIFASICO",
+  "configuracaoInicial": {
+    "Formacao": {
+      "Propriedades": [
+        {
+          "id": 0,
+          "condutividade": 2.5,
+          "calorEspecifico": 1000.0,
+          "massaEspecifica": 2500.0,
+          "rotulo": "Rocha típica"
+        }
+      ],
+      "TempoProducao": 365
+    },
+    "linhaGas": false,
+    "modoXY": true,
+    "transiente": false,
+    "tipoModeloDrift": false
+  },
+  "fluidosProducao": [
+    {
+      "id": 0,
+      "api": 30,
+      "rgo": 0,
+      "densidadeGas": 0.7,
+      "bsw": 0.0
+    }
+  ],
+  "fluidoGas": {
+    "densidadeGas": 0.7
+  },
+  "material": [
+    {
+      "id": 0,
+      "rotulo": "Aço",
+      "tipo": 0,
+      "condutividade": 58,
+      "calorEspecifico": 480,
+      "rho": 7850
+    },
+    {
+      "id": 1,
+      "rotulo": "Fluido de completação",
+      "tipo": 2
+    },
+    {
+      "id": 2,
+      "rotulo": "Cimento",
+      "tipo": 0,
+      "condutividade": 0.6,
+      "calorEspecifico": 1000.0,
+      "rho": 500.0
+    },
+    {
+      "id": 3,
+      "rotulo": "Isolante",
+      "tipo": 0,
+      "condutividade": 0.12,
+      "calorEspecifico": 1214,
+      "rho": 510
+    }
+  ],
+  "secaoTransversal": [
+    {
+      "id": 0,
+      "rotulo": "Duto liso",
+      "diametroInterno": 0.2032,
+      "rugosidade": 2.032e-06,
+      "camadas": [
+        {
+          "rotulo": "Camada de aço interna",
+          "idMaterial": 0,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.00635
+        },
+        {
+          "rotulo": "Camada de isolante",
+          "idMaterial": 3,
+          "tipoMedicaoCamada": "ESPESSURA",
+          "espessura": 0.0508
+        }
+      ]
+    }
+  ],
+  "dutosProducao": [
+    {
+      "id": 0,
+      "rotulo": "Duto horizontal",
+      "idCorte": 0,
+      "ambienteExterno": 1,
+      "angulo": 0.0,
+      "xCoor": 5000.0,
+      "yCoor": 0,
+      "discretizacao": [
+        {
+          "nCelulas": 50,
+          "comprimento": 100.0
+        }
+      ],
+      "nCelulas_XY": 50,
+      "correlacaoMR2": 6,
+      "condicoesIniciais": {
+        "compInter": [
+          0,
+          1
+        ],
+        "tempExterna": [
+          20.0,
+          20.0
+        ],
+        "velExterna": [
+          0.1,
+          0.1
+        ]
+      }
+    }
+  ],
+  "separador": {
+    "tempo": [
+      0
+    ],
+    "pressao": [
+      10.0
+    ]
+  },
+  "ipr": [
+    {
+      "id": 0,
+      "tipoIPR": 0,
+      "indiFluidoPro": 0,
+      "comprimentoMedido": 0.1,
+      "tempoPressaoEstatica": [
+        0
+      ],
+      "pressaoEstatica": [
+        150
+      ],
+      "tempoTemperaturas": [
+        0
+      ],
+      "temperaturas": [
+        90
+      ],
+      "tempoip": [
+        0
+      ],
+      "ip": [
+        200
+      ],
+      "tempoii": [
+        0
+      ],
+      "ii": [
+        200
+      ],
+      "ativo": false
+    }
+  ],
+  "fonteGas": [
+    {
+      "id": 0,
+      "comprimentoMedido": 200,
+      "tempo": [
+        0
+      ],
+      "temperatura": [
+        87
+      ],
+      "vazaoGas": [
+        150000.0
+      ],
+      "ativo": false
+    }
+  ],
+  "fonteLiquido": [
+    {
+      "id": 0,
+      "indiFluidoPro": 0,
+      "comprimentoMedido": 0.1,
+      "tempo": [
+        0
+      ],
+      "temperatura": [
+        20.0
+      ],
+      "beta": [
+        1.0
+      ],
+      "vazaoLiquido": [
+        8405.669029252569
+      ],
+      "ativo": true
+    }
+  ],
+  "perfilProducao": {
+    "tempo": [
+      0
+    ],
+    "pressao": true,
+    "temperatura": true,
+    "holdup": true,
+    "bet": true,
+    "uls": true,
+    "fric": true,
+    "hidro": true,
+    "ReyInterno": true
+  },
+  "fluidoComplementar": {
+    "id": 0,
+    "massaEspecifica": 1000.0,
+    "compP": 0.0,
+    "compT": 0.0,
+    "tensup": 0.072,
+    "calorEspecifico": 4180.0,
+    "condutividade": 0.6,
+    "temp1": 20.0,
+    "visc1": 1.0,
+    "temp2": 40.0,
+    "visc2": 1.0,
+    "salinidade": 0.0,
+    "tipoF": 0
+  }
+}

@@ -136,7 +136,7 @@ When you add a new field to the Marlim3 JSON input schema:
 5. **Verify** — the Python side picks up changes automatically (it reads `translations.json` at import time). No code changes needed in `_keys.py` unless the new field has special semantics.
 
 6. **Update documentation**:
-   - Add the key to `docs/schema_branch.json` if it's a branch-level field.
+   - Add the key to `docs/schemas/branch.en.json` if it's a branch-level field.
    - Update relevant tutorial notebooks if the field is user-facing.
 
 ### If the field has translatable *values*
@@ -168,11 +168,11 @@ Renaming an English key requires coordinated changes across the project:
 3. **Update Python `Branch` class** (`marlim3/_tramo/_branch.py`):
    - Rename the attribute in `__init__()` and `to_json()`. The `__getattr__`/`__setattr__` and `BilingualDict` will automatically pick up the new mapping from `translations.json` — no changes needed in those.
 
-4. **Update English demo files** (`demos/*.json` with `"language": "en"`):
+4. **Update English demo files** (`demos/<case>/*.mr3` written with English keys):
    - Replace all occurrences of the old key with the new one.
 
 5. **Update documentation**:
-   - `docs/schema_branch.json` — rename the property key and update descriptions.
+   - `docs/schemas/branch.en.json` — rename the property key and update descriptions.
    - `docs/tutorials/*.ipynb` — update code cells and markdown references.
 
 6. **Run tests** to verify nothing breaks:

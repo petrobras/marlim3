@@ -268,9 +268,6 @@ module Obsoletes
             ! O equilíbrio de fases não será calculado caso já se saiba COM CERTEZA que há
             ! somente uma fase presente.
 
-                ! NOTA: Está se usando aqui a forma que o PVTSim usa para identificar fases apenas quando a
-                !   pressão é menor que a pressão crítica! Caso se mostre necessário, esta identificação
-                !   pode ser aprimorada... ver o "PVTSimMethodDoc.pdf", em "Phase Identification".
             bIsSubcooledLiquid = (iIER_BubbleT.EQ.ERROR_EverythingOK).AND.(dFlashTemperature.LT.dCalculatedBubbleT)
             bIsSuperheatedVapor = (iIER_DewT.EQ.ERROR_EverythingOK).AND.(dFlashTemperature.GT.dCalculatedDewT)
 

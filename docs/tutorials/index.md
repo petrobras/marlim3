@@ -1,6 +1,6 @@
 # Tutorials
 
-Step-by-step guides for common Marlim3 simulation workflows.
+Step-by-step guides for common `Marlim3` simulation workflows.
 
 ## Available Tutorials
 

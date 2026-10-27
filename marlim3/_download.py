@@ -25,7 +25,7 @@ def get_platform_asset_info():
     machine = platform.machine().lower()
     
     if system == 'Windows':
-        return ('Marlim3.exe', 'Marlim3.exe')
+        return ('Marlim3-windows-x64.exe', 'Marlim3.exe')
     elif system == 'Linux':
         return ('Marlim3-linux-x64', 'Marlim3')
     elif system == 'Darwin':  # macOS
@@ -125,8 +125,7 @@ def download_executable(silent=False):
         log(f"  - Release v{__version__} not found on GitHub")
         log("  - No internet connection")
         log("  - GitHub API rate limit exceeded")
-        log("\nTo compile from source instead, set environment variable:")
-        log("  MARLIM3_COMPILE_FROM_SOURCE=1")
+        log("\nTo compile from source instead, follow the repository build instructions.")
         return False
         
     except Exception as e:
@@ -285,7 +284,7 @@ def ensure_executable():
         print("\n" + "!" * 80)
         print("[WARNING] Failed to download Marlim3 executable.")
         print("[WARNING] The package can still be imported, but simulation will not work.")
-        print("[WARNING] Set MARLIM3_COMPILE_FROM_SOURCE=1 and reinstall to compile from source.")
+        print("[WARNING] Follow the repository build instructions to compile from source.")
         print("!" * 80 + "\n")
         return
 

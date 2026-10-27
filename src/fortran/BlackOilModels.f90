@@ -13,6 +13,389 @@ module BlackOilModels
     contains
 
     ! =============================================================
+    !           ROTINA PARA CÁLCULOS DE Bo
+    ! =============================================================
+    subroutine CalculateFVFOfOilByCorrelations(iBoCorrelation, pres, temp, varPb, &
+                                               dGivenRs, iRsCorrelation, iRsCorrelationForPSat, &
+                                               dPSEP_VB, dTSEP_VB, API, RGO, Deng, &
+                                               pbtemp, BoResult, iIER)
+
+        ! OBJETIVO: Calcular "Bo" (fator volume de formação do óleo) usando correlações black-oil.
+        !
+        ! IMPORTANTE (consistência): esta rotina pode usar Rs e PB oriundos de modelos diferentes,
+        !    dependendo dos valores de dGivenRs / iRsCorrelation / varPb / iRsCorrelationForPSat.
+        !
+        ! REFERÊNCIA BIBLIOGRÁFICA 1: "Multiphase Flow in Wells", James P. Brill e Hemanta Mukherjee, 1999
+        implicit none
+
+        ! ------------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+        integer(c_int), intent(in) :: iBoCorrelation          ! Índice da correlação escolhida para "Bo" (ver constantes abaixo)
+        real(c_double), intent(in) :: pres                    ! Pressão (kgf/cm2)
+        real(c_double), intent(in) :: temp                    ! Temperatura (°C)
+        real(c_double), intent(in) :: varPb                   ! Pressão de bolha em psia (negativa para cálculo automático)
+
+        real(c_double), intent(in) :: dGivenRs                ! Rs fornecido (m3/m3); se <0, calcular via correlação de Rs
+        integer(c_int), intent(in) :: iRsCorrelation          ! Correlação de Rs para calcular Rs se dGivenRs<0; se <0, usar a mesma de Bo quando aplicável
+        integer(c_int), intent(in) :: iRsCorrelationForPSat   ! Correlação de Rs para calcular PB se varPb<0; se <0, usar a mesma de Bo quando aplicável (exceto Bacia de Campos -> erro)
+
+        real(c_double), intent(in) :: dPSEP_VB                ! Pressão do separador (kgf/cm2) (usada p/ SG100 e/ou Rs/PB)
+        real(c_double), intent(in) :: dTSEP_VB                ! Temperatura do separador (°C)  (usada p/ SG100 e/ou Rs/PB)
+        real(c_double), intent(in) :: API                     ! Grau API do óleo
+        real(c_double), intent(in) :: RGO                     ! RGO (Sm3/Sm3)
+        real(c_double), intent(in) :: Deng                    ! gammaG (ar=1), adimensional (densidade relativa do gás produzido)
+
+        real(c_double), intent(out) :: pbtemp                 ! Pressão de bolha usada (psia)
+        real(c_double), intent(out) :: BoResult               ! Resultado de Bo (adimensional, m3/m3)
+        integer(c_int), intent(out) :: iIER                   ! Código de erro, conforme convenção
+
+        ! ------------------ DECLARAÇÃO E DESCRIÇÃO DE VARIÁVEIS LOCAIS:
+
+        ! Conversões / constantes auxiliares:
+        real(c_double), parameter :: KGFCM2_TO_PSIA = 14.2233426d0
+        real(c_double), parameter :: ATM_TOPSI      = 14.6959488d0
+        real(c_double), parameter :: SM3SM3_TO_SCFSTB = 35.31467d0 / 6.29d0  ! ~5.61458 (consistente com rotina de Rs)
+        real(c_double), parameter :: EPS = 1.0d-15
+
+        ! Variáveis internas em unidades do equacionamento original:
+        real(c_double) :: P_psia, T_F
+        real(c_double) :: PB_psia
+        real(c_double) :: R_scfstb
+        real(c_double) :: RS_scfstb
+
+        ! Variáveis auxiliares das correlações (mesmos símbolos do código original):
+        real(c_double) :: A, B, C, D, BOB, CO, SGO
+        real(c_double) :: F1, RHOS, PD, FBO
+
+        ! SG100 (densidade do gás a 100 psig e T): no Pascal vem pronto; aqui estimamos conforme lógica VB.
+        real(c_double) :: pSep_psia, tSep_F
+        real(c_double) :: SG100             ! Referência 1, pág 104: gas specific gravity [at] separator pressure of 100 psig
+
+        ! Controle de chamadas da rotina de Rs:
+        integer(c_int) :: iCorrRS, iCorrPB
+        real(c_double) :: dPbFromRs, dRsFromCorr
+        integer(c_int) :: iIER_Rs
+
+        ! ------------------ CÁLCULOS:
+
+        ! 1) ---> CONVERSÕES E INICIALIZAÇÕES:
+
+        ! Inicializações:
+        iIER = ERROR_EverythingOK
+        BoResult = -1.0d0               ! Inicializando com valor inválido
+
+        ! Converter pressões e temperaturas para unidades internas:
+        P_psia = pres * KGFCM2_TO_PSIA      ! de kgf/cm2 para psia
+        T_F    = 1.8d0 * temp + 32.0d0      ! de oC para oF 
+
+        pSep_psia = dPSEP_VB * KGFCM2_TO_PSIA   ! de kgf/cm2 para psia
+        tSep_F    = 1.8d0 * dTSEP_VB + 32.0d0   ! de oC para oF
+
+        ! "d60": Referência 1, pág 103, Equação B-5
+        SGO = 141.5d0 / (131.5d0 + API)
+
+        ! Converter RGO de Sm3/Sm3 para scft/bbl:
+        R_scfstb = RGO * SM3SM3_TO_SCFSTB
+
+        ! 2) ---> CORRELAÇÃO PARA PSAT (caso necessário):
+
+        ! Determinar correlação para cálculo automático da pressão de bolha (se varPb < 0):
+        iCorrPB = iRsCorrelationForPSat
+
+        chkBoCorrForPSat: if ((iCorrPB.lt.0).AND.(varPb.lt.(0.0d0))) then
+
+            ! Usar a mesma correlação de Bo quando aplicável.
+            atribBoCorrToPSat: select case (iBoCorrelation)
+                    
+                case (BOCORRELATION_VAZQUEZBEGGS) atribBoCorrToPSat
+                    iCorrPB = RSCORRELATION_VAZQUEZBEGGS
+                case (BOCORRELATION_STANDING) atribBoCorrToPSat
+                    iCorrPB = RSCORRELATION_STANDING
+                case (BOCORRELATION_GLASO) atribBoCorrToPSat
+                    iCorrPB = RSCORRELATION_GLASO
+                case (BOCORRELATION_BACIACAMPOS) atribBoCorrToPSat
+
+                    ! Esta correlação de "Bo" não calcula pressão de bolha.
+                    iIER = ERROR_MissingRsCorrelationForPSat
+                    return
+
+                case default atribBoCorrToPSat
+
+                    ! Correlação inválida para "Bo"!
+                    iIER = ERROR_InvalidBoCorrelation
+                    return
+
+            end select atribBoCorrToPSat
+
+        end if chkBoCorrForPSat
+
+        ! 3) ---> CORRELAÇÃO PARA RS (caso necessário):
+
+        ! Determinar correlação para "Rs" (a ser usada quando dGivenRs < 0 e "Rs" for necessário):
+        iCorrRS = iRsCorrelation
+
+        chkBoCorrForRs: if((iCorrRS.lt.0).AND.(dGivenRs.lt.(0.0d0))) then
+
+            ! Usar a mesma correlação de "Bo" quando aplicável.
+            atribBoCorrToRs: select case (iBoCorrelation)
+
+                case (BOCORRELATION_VAZQUEZBEGGS) atribBoCorrToRs
+                    iCorrRS = RSCORRELATION_VAZQUEZBEGGS
+                case (BOCORRELATION_STANDING) atribBoCorrToRs
+                    iCorrRS = RSCORRELATION_STANDING
+                case (BOCORRELATION_GLASO) atribBoCorrToRs
+                    iCorrRS = RSCORRELATION_GLASO
+                case (BOCORRELATION_BACIACAMPOS) atribBoCorrToRs
+
+                    ! Para "Bo" por Bacia de Campos, "Rs" não é necessário. Não é erro.
+                    iCorrRS = -1
+
+                case default atribBoCorrToRs 
+
+                    ! Correlação inválida para "Bo"!
+                    iIER = ERROR_InvalidBoCorrelation
+                    return
+
+            end select atribBoCorrToRs
+
+        end if chkBoCorrForRs
+
+        ! 4) ---> DETERMINAÇÃO DA PSAT:
+
+        ! Determinando a pressão de saturação:
+        PB_psia = varPb
+
+        dirPbCalc: if(PB_psia.lt.(0.0d0)) then
+
+            ! Calcular a pressão de bolha usando a correlação especificada / determinada:
+            call CalculateBlackOilSolutionGasOilRatio(iCorrPB, pres, temp, varPb, dPSEP_VB, dTSEP_VB, &
+                                                        API, RGO, Deng, dPbFromRs, dRsFromCorr, iIER)
+
+            if(iIER.NE.ERROR_EverythingOK) return
+
+            PB_psia = dPbFromRs
+            RS_scfstb = dRsFromCorr     ! Armazenar "provisoriamente", para o caso de as correlações de Rs e Pb coincidirem!
+
+        end if dirPbCalc
+
+        pbtemp = PB_psia    ! Argumento de saída
+
+        ! 5) ---> DETERMINAÇÃO DE RS:
+
+        ! Determinar "Rs" para uso nas situações necessárias:
+        dirRsCalc: if (iBoCorrelation.EQ.BOCORRELATION_BACIACAMPOS) then
+
+            ! "Bo" por "Bacia de Campos": "Rs" não é necessário; podemos ignorar "dGivenRs" / "iRsCorrelation" para "Bo".
+            RS_scfstb = 0.0d0
+
+        else dirRsCalc
+
+            ! Vai precisar de "Rs"!
+
+            chkGaveRs: if (dGivenRs.ge.(0.0d0)) then
+
+                ! Adotar o "Rs" fornecido
+                RS_scfstb = dGivenRs * SM3SM3_TO_SCFSTB
+
+            else chkGaveRs
+
+                ! Calcular "Rs" por correlação.
+                calcPBAndRs: if ((varPb.lt.(0.0d0)).AND.(iCorrPB.eq.iCorrRS)) then
+
+                    ! Cálculo de Pb já realizado, e pela mesma correlação de Rs.
+                    ! "Rs" já foi determinado, nada mais a fazer aqui!
+
+                else calcPBAndRs
+
+                    ! Pressão de bolha já conhecida, ou calculada por outra correlação que não a de "Rs".
+                    ! Em ambos os casos, calcular agora "Rs" pela devida correlação.
+                    call CalculateBlackOilSolutionGasOilRatio(iCorrRS, pres, temp, PB_psia, dPSEP_VB, &
+                            dTSEP_VB, API, RGO, Deng, dPbFromRs, dRsFromCorr, iIER)
+
+                    if(iIER.NE.ERROR_EverythingOK) return
+
+                    RS_scfstb = dRsFromCorr
+
+                end if calcPBAndRs
+
+            end if chkGaveRs
+
+        end if dirRsCalc
+
+        ! 6) ---> CÁLCULO DO BO DE ACORDO COM A CORRELAÇÃO SELECIONADA:
+
+        ! Calcular SG100 antes (aqui,pois afeta mais de uma correlação).
+
+            ! Equação B-9 da pág 104 da Referência 1:
+        SG100 = 5.912d-5 * API * tSep_F * log10(pSep_psia / 114.7d0)
+        SG100 = Deng * (1.0d0 + SG100)
+        if (SG100.lt.(0.5538d0)) SG100 = 0.5538d0   ! Metano (de acordo com o código-fonte do MARLIM 2).
+        
+            ! Proceder de acordo com a correlação selecionada:
+        calcBoByCorr: select case (iBoCorrelation)
+
+            case (BOCORRELATION_VAZQUEZBEGGS) calcBoByCorr
+                ! --- CALFVF, JCODE=0 (Vazquez & Beggs)
+
+                    ! Ver Referência 1, pág 105, Equação B-18
+                D = (T_F - 60.0d0) * API / SG100
+
+                    ! Referência 1, pág 106, Tabela B-3:
+                VBCtes: if ((API > 30.0d0).or.(R_scfstb > 750.0d0)) then
+                    A = 4.670d-04
+                    B = 1.100d-05
+                    C = 1.337d-09
+                else VBCtes
+                    A = 4.677d-04
+                    B = 1.751d-05
+                    C = -1.811d-08
+                end if VBCtes
+
+                    ! Proceder de acordo com a pressão de bolha:
+                vbBoCorr: if (P_psia >= PB_psia) then
+
+                        ! Referência 1, pág 105, Equação B-18:
+                    BOB = 1.0d0 + A*R_scfstb + D*(B + C*R_scfstb)
+
+                        ! Referência 1, pág 106, Equação B-19:
+                    CO  = (-1433.0d0 + 5.0d0*R_scfstb + 17.2d0*T_F - 1180.0d0*SG100 + 12.61d0*API) / (P_psia*1.0d5)
+
+                        ! TODO: Verificar, no 2o termo acima, faz entido estar usando RGO em vez do Rs
+                        ! por estar acima de PB? MARLIM 2 também faz assim?
+                    
+                        ! Referência 1, pág 105, Equação B-16:
+                    BoResult = BOB * exp(CO * (PB_psia - P_psia))
+
+                else vbBoCorr
+
+                        ! Referência 1, pág 105, Equação B-18:
+                    BoResult = 1.0d0 + A*RS_scfstb + D*(B + C*RS_scfstb)
+
+                end if vbBoCorr
+
+        
+            case (BOCORRELATION_STANDING) calcBoByCorr
+                ! --- CALFVF, JCODE=1 (Standing)
+
+                    ! Proceder de acordo com a pressão de bolha:
+                stBoCorr: if (P_psia >= PB_psia) then
+
+                        ! Referência 1, pág 105, Equação B-15
+                    BOB = 0.972d0 + 1.47d-4 * ( (R_scfstb * sqrt(Deng/SGO) + 1.25d0*T_F) ** 1.175d0 )
+
+                        ! Referência 1, pág 106, Equação B-19:
+                    CO  = (-1433.0d0 + 5.0d0*R_scfstb + 17.2d0*T_F - 1180.0d0*SG100 + 12.61d0*API) / (P_psia*1.0d5)
+                    
+                        ! Referência 1, pág 105, Equação B-16:
+                    BoResult = BOB * exp(CO * (PB_psia - P_psia))
+
+                else stBoCorr
+
+                        ! Referência 1, pág 105, Equação B-15:
+                    A = sqrt(Deng/SGO)
+                    B = RS_scfstb*A + 1.25d0*T_F
+                    BoResult = 0.972d0 + 1.47d-4 * (B ** 1.175d0)
+
+                    ! TODO: Equação B-15 mesmo? Coeficientes um pouco diferentes nesta última
+                    !   linha, e na primeira do bloco anterior. 
+                    !   MARLIM 2 usa assim? Algum livro confirma?
+
+                    ! UPDATE: em primeiro check, coeficientes conferem com MARLIM 2.
+                    ! Coeficientes também conferem com os da rotina CALFVF do livro de Beggs e Brill!
+                    ! Esse livro vai precisar figurar nas referências desta rotina como Referência 2!
+
+                end if stBoCorr
+
+                
+            case (BOCORRELATION_GLASO) calcBoByCorr
+                ! --- CALFVF, JCODE=2 (Glaso)
+
+                    ! Proceder de acordo com a pressão de bolha:
+                glasoBoCorr: if (P_psia >= PB_psia) then
+
+                        ! Referência 1, pág 106, Equação B-21c: 
+                    A = R_scfstb * ( (Deng/SGO) ** 0.526d0 ) + 0.968d0*T_F
+
+                        ! Referência 1, pág 106, Equação B-21b:
+                    B = log10(A)
+                    C = -6.58511d0 + 2.91329d0*B - 0.27683d0*(B*B)
+
+                        ! Referência 1, pág 106, Equação B-21a:
+                    BOB = (10.0d0 ** C) + 1.0d0
+
+                        ! Referência 1, pág 106, Equação B-19:
+                    CO  = (-1433.0d0 + 5.0d0*R_scfstb + 17.2d0*T_F - 1180.0d0*SG100 + 12.61d0*API) / (P_psia*1.0d5)
+                    
+                        ! Referência 1, pág 105, Equação B-16:
+                    BoResult = BOB * exp(CO * (PB_psia - P_psia))
+
+                else glasoBoCorr
+
+                        ! Referência 1, pág 106, Equação B-21c:
+                    A = (Deng/SGO) ** 0.526d0
+                    A = RS_scfstb*A + 0.968d0*T_F
+
+                        ! Referência 1, pág 106, Equação B-21b:
+                    B = log10(A)
+                    C = -6.58511d0 + 2.91329d0*B - 0.27683d0*(B*B)
+
+                        ! Referência 1, pág 106, Equação B-21a:
+                    BoResult = (10.0d0 ** C) + 1.0d0
+
+                end if glasoBoCorr
+
+
+            case (BOCORRELATION_BACIACAMPOS) calcBoByCorr
+                ! "Bacia de Campos e Espírito Santo"
+                ! (conforme "procedure FVFO" no arquivo "PVT.pas" do código original)
+
+                F1  = (Deng/SGO) ** 0.76d0
+                BOB = 1.0d0 + 1.328865d-4 * ( (F1*R_scfstb + 1.35d0*T_F) ** 1.170318d0 )
+                RHOS = (SGO + 2.178d-4 * Deng * R_scfstb) / BOB
+                CO = (13.81083d0 - 1032.687d0*log10(RHOS)) / 14.22d6
+
+                    ! Proceder de acordo com a pressão de bolha:
+                bCESPb: if (P_psia.ge.PB_psia) then
+
+                    BoResult = BOB * (10.0d0 ** (CO*(PB_psia - P_psia)/2.3025851d0))
+
+                else bCESPb
+
+                    PD = (P_psia - ATM_TOPSI) / (PB_psia - ATM_TOPSI)
+
+                    if (PD <= 0.05d0) PD = 0.05d0
+
+                    bCESPd: if (PD <= 0.32d0) then
+                        FBO = 0.8587983d0 * (PD ** 0.2493832d0)
+                    else bCESPd
+                        FBO = 0.5195096d0 * PD + 0.4806904d0
+                    end if bCESPd
+
+                    BoResult = FBO*(BOB - 1.0d0) + 1.0d0
+
+                end if bCESPb
+
+
+            case default calcBoByCorr
+
+                ! Correlação inválida para "Bo"!
+                BoResult = -1.0d0
+                iIER = ERROR_InvalidBoCorrelation
+                return
+
+        end select calcBoByCorr
+
+        ! Proteção do Pascal: BO >= 1.0
+        if (BoResult < 1.0d0) BoResult = 1.0d0
+
+        ! PRIMEIRA CONFERÊNCIA ATÉ AQUI CONCLUÍDA EM 14-AGO-2026!
+
+        ! Bo é adimensional: bbl/stb == m3/m3 (mesma razão de volumes)
+        ! Então, não há conversão numérica adicional aqui.
+
+    end subroutine CalculateFVFOfOilByCorrelations
+
+
+    ! =============================================================
     !           ROTINAS PARA CÁLCULOS DE Rs
     ! =============================================================
     subroutine CalculateBlackOilSolutionGasOilRatio(corrSat, pres, temp, varPb, dPSEP_VB, dTSEP_VB, API, RGO, Deng, pbtemp, RsResult, iIER)
@@ -50,6 +433,7 @@ module BlackOilModels
         ipres = pres * 14.2233426               ! Conversão de kgf/cm2 para psia.
         itemp = temp * 1.8 + 491.67             ! Conversão de °C para Rankine.
         IRGO = RGO * 35.31467 / 6.29            ! Conversão de Sm3/Sm3 para scft/bbl
+        IRGO = RGO * 5.614583                   ! (update: "mesma" conversão acima, fator ligeiramente diferente)
 
         tFahrenheit = (1.8d0 * temp) + 32.0d0   ! Conversão de °C para Fahrenheit.
 
@@ -250,6 +634,9 @@ module BlackOilModels
 
         end select whichRsCorr
 
+        ! Incluindo verificação do código original (arquivo "PVT.pas", procedure "CALRS"):
+        if(rstemp.gt.IRGO) rstemp = IRGO
+
         ! Retornar resultado:
         RsResult = rstemp
 
@@ -440,6 +827,240 @@ module BlackOilModels
     !  ROTINAS PARA CORREÇÃO VIA REGRESSÃO LINEAR CONTRA ANÁLISE PVT
     ! =============================================================
 
+    subroutine FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, dAPI, &
+        dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+        oCorrectedRs, oCalibrationInfoSummary, iIER)
+
+        ! OBJETIVO: Executa o procedimento completo de ajuste (regressão) de modelos de calibração para propriedades black-oil 
+        !           a partir de dados experimentais de Análise PVT, retornando os parâmetros desses modelos ajustados, junto com
+        !           resultados intermediários importantes.
+        !           (Fluxo inspirado na rotina PVT2A do código Pascal original, do MARLIM 2 - arquivo fonte MRL_pvt.pas.)
+
+        ! REFERÊNCIA BIBLIOGRÁFICA 1: "Multiphase Flow in Wells", James P. Brill e Hemanta Mukherjee, 1999
+        implicit none
+
+        !------------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+        integer(c_int), intent(in) :: iNPVTPoints                               ! Número de pontos experimentais da Análise PVT
+        real(c_double), dimension(iNPVTPoints), intent(in) :: oExpPressures_Arg ! Pressões da Análise PVT (kgf/cm2).
+        real(c_double), dimension(iNPVTPoints), intent(in) :: oExpRs_Arg        ! Valores de Rs medidos na Análise PVT (m3/m3).
+        real(c_double), intent(in) :: dExpTemperature                           ! Temperatura da Análise PVT (°C)
+        real(c_double), intent(in) :: dPSEP_VB                ! Vazquez e Beggs, pág 104 da Referência 1: "actual separator pressure", em kgf/cm2 (MARLIM 2 usa "standard")
+        real(c_double), intent(in) :: dTSEP_VB                ! Vazquez e Beggs, pág 104 da Referência 1: "actual separator temperature", em graus Celsius (MARLIM 2 usa "standard")             
+        real(c_double), intent(in) :: dAPI                    ! Grau API do óleo
+        real(c_double), intent(in) :: dRGO_Arg                ! RGO (Sm3/Sm3) - fornecer valor negativo para determinação automática
+        real(c_double), intent(in) :: dDeng                   ! Referência 1, pág 104: gammaG = "specific gravity of gas (air = 1.0)"
+
+        integer(c_int), dimension(RSCORRELATION_COUNT), intent(out) :: oTestedRsCorrelations ! Vetor de índices convencionados de correlações de Rs testadas (desconsiderar elementos negativos).
+        real(c_double), dimension(RSCORRELATION_COUNT+1, iNPVTPoints), intent(out) :: oCorrelationsRs ! Elemento [i, j]: Rs em m3/m3, calculado pela correlação "i" do vetor
+                                                                                                      ! "oTestedRsCorrelations",  nas condições do ponto experimental "j"
+                                                                                                      ! (valores experimentais na última linha da matriz).
+        integer(c_int), intent(out) :: iBestRsCorrelation          ! Índice (confome convenção da biblioteca) da correlação de Rs que mais se aproxima dos resultados da Análise PVT (sem correção)
+        integer(c_int), intent(out) :: iRsRegressionModelType      ! Tipo do modelo de calibração ajustado para Rs (1=linear, 0=potencial)
+        real(c_double), intent(out) :: dRsRegressionA              ! Coeficiente angular do modelo de calibração ajustado para Rs.
+        real(c_double), intent(out) :: dRsRegressionB              ! Coeficiente linear do modelo de calibração ajustado para Rs.
+        real(c_double), dimension(iNPVTPoints), intent(out) :: oCorrectedRs ! Rs calibrado (resultante do modelo ajustado) em cada ponto da Análise PVT, em m3/m3.
+        real(c_double), dimension(4, iNPVTPoints), intent(out) :: oCalibrationInfoSummary   ! Matriz apenas para facilitar primeiras verificações e gráficos
+                                                                                            ! (mais detalhes nos comentários descritivos no corpo da subrotina)
+        integer(c_int), intent(out) :: iIER                        ! Código de erros, conforme convenção da biblioteca.
+
+        !------------------ DECLARAÇÃO E DESCRIÇÃO DE VARIÁVEIS LOCAIS:
+        real(c_double), dimension(iNPVTPoints) :: oExpPressures ! Pressões da Análise PVT (kgf/cm2), em ordem DECRESCENTE!
+        real(c_double), dimension(iNPVTPoints) :: oExpRs        ! Valores de Rs medidos na Análise PVT (m3/m3) em ordem correspondente a "oExpPressures".
+        real(c_double) :: dRGO                                  ! RGO (Sm3/Sm3) fornecido ou determinado automaticamente
+        integer(c_int) :: iPb                                   ! Índice do ponto de pressão de bolha nos dados da Análise PVT
+        real(c_double) :: dPSat                                 ! Pressão de saturação (kgf/cm2)
+        integer(c_int) :: i, j, iX
+        logical :: bPVTIsDescending
+        real(c_double) :: dTempP, dTempRs
+
+            ! Variáveis locais para chamadas intermediárias:
+
+            ! Para regressão:
+        real(c_double), dimension(iNPVTPoints) :: dX, dY
+        real(c_double) :: dC, dR2, dC_pot, dR2_pot
+    
+            ! Para chamada de rotina de insumos adicionais:
+        integer(c_int), dimension(RSCORRELATION_COUNT) :: oTestedRsCorrLoc
+        real(c_double), dimension(RSCORRELATION_COUNT+1, iNPVTPoints) :: oCorrelationsRsLoc
+        integer(c_int) :: iBestRsCorrLoc, iPbLoc
+        real(c_double) :: dPSatLoc
+
+        !------------------ CÁLCULOS:
+
+        ! 1. Garantir ordem decrescente das pressões (e Rs correspondente)
+        oExpPressures = oExpPressures_Arg
+        oExpRs = oExpRs_Arg
+
+        bPVTIsDescending = .true.
+
+        doChkDescending: do i = 2, iNPVTPoints
+
+            chkDescending: if (oExpPressures(i) > oExpPressures(i-1)) then
+                bPVTIsDescending = .false.
+                exit doChkDescending
+            end if chkDescending
+
+        end do doChkDescending
+
+        ! Garantir que os pontos da Análise PVT estejam ordenados no sentido decrescente das pressões.
+        hasToSortPVT: if (.not.bPVTIsDescending) then
+
+            ! Selection Sort decrescente, custo computacional irrelevante para vetores pequenos
+            outerPVTSort: do i = 1, iNPVTPoints-1
+
+                innerPVTSort: do j = i+1, iNPVTPoints
+
+                    chkOutOfOrder: if (oExpPressures(j) > oExpPressures(i)) then
+
+                        dTempP = oExpPressures(i)
+                        oExpPressures(i) = oExpPressures(j)
+                        oExpPressures(j) = dTempP
+
+                        dTempRs = oExpRs(i)
+                        oExpRs(i) = oExpRs(j)
+                        oExpRs(j) = dTempRs
+
+                    end if chkOutOfOrder
+
+                end do innerPVTSort
+
+            end do outerPVTSort
+
+        end if hasToSortPVT
+
+        ! 2. Determinação automática de RGO, se necessário
+        dRGO = dRGO_Arg
+
+        findRGO: if (dRGO.LT.(0.0d0)) then
+
+            ! Determinação automática da RGO (a partir da Análise PVT).
+            ! Obter do último ponto antes de Rs experimental diminuir.
+            loopRs1: do i = 2, iNPVTPoints
+
+                rsDiminishes: if (oExpRs(i) < oExpRs(i-1)) then
+
+                    hasMinPoints: if (i > 2) then
+
+                        dRGO = oExpRs(i-1)
+                        exit loopRs1
+
+                    else hasMinPoints
+
+                        ! Não aceitar RGO a partir da Análise PVT caso esta não contenha pelo menos
+                        !   2 medidas acima da pressão de saturação.
+                        iIER = ERROR_CouldNotDetermineGORFromPVTAnalysis
+                        return
+
+                    end if hasMinPoints
+
+                end if rsDiminishes
+
+            end do loopRs1
+
+            foundRGO: if (dRGO.LT.(0.0d0)) then
+                iIER = ERROR_CouldNotDetermineGORFromPVTAnalysis
+                return
+            end if foundRGO
+
+        end if findRGO
+
+        ! 3. Chamada à rotina de cálculo de dados preliminares para subsidiar a regressão
+        !    dos modelos de calibração:
+
+        call CalculateBlackOilInputForPVTAnalysisRegression(iNPVTPoints, oExpPressures, oExpRs, &
+            dExpTemperature, dPSEP_VB, dTSEP_VB, dAPI, dRGO, dDeng, &
+            oTestedRsCorrLoc, oCorrelationsRsLoc, iPbLoc, dPSatLoc, iBestRsCorrLoc, iIER)
+
+        if (iIER.NE.ERROR_EverythingOK) return
+
+            ! Repasse dos resultados de interesse para os argumentos de saída
+        oTestedRsCorrelations = oTestedRsCorrLoc
+        oCorrelationsRs = oCorrelationsRsLoc
+        iBestRsCorrelation = iBestRsCorrLoc
+        iPb = iPbLoc
+        dPSat = dPSatLoc
+
+        ! 4. Preparar os vetores para regressão do modelo de calibração de Rs:
+        
+            ! Encontrar o índice da linha de oCorrelationsRs correspondente à melhor correlação para Rs:
+            ! ("melhor correlação" = a que mais se aproxima da Análise PVT, sem qualquer calibração)
+        iX = -1
+        doBestRsCorrIndex: do i = 1, RSCORRELATION_COUNT
+
+            chkBestRsCorrIndex: if (oTestedRsCorrelations(i).EQ.iBestRsCorrelation) then
+                iX = i
+                exit doBestRsCorrIndex
+            end if chkBestRsCorrIndex
+
+        end do doBestRsCorrIndex
+
+            ! Unidades de m3/m3 na regressão do modelo de calibração de Rs, abaixo:
+        dX = oCorrelationsRs(iX, :)     ! Todos os elementos da linha iX
+        dY = oExpRs
+
+        ! 5. Chamada à rotina de regressão para Rs
+        call CalculateBlackOilPVTAnalysisCorrectionModelParameters(iPb, iNPVTPoints, dX, dY, &
+            iRsRegressionModelType, dRsRegressionA, dRsRegressionB, dC, dR2, dC_pot, dR2_pot)
+
+        ! 6. Calcular Rs calibrado em cada ponto experimental:
+        doCalcCalibratedRs: do i = 1, iNPVTPoints
+            call CorrectBlackOilRsWithPVTAnalysisRegression( &
+                iRsRegressionModelType, dRsRegressionA, dRsRegressionB, dX(i), dPSat, &
+                dRGO, oExpPressures(i), oCorrectedRs(i))
+        end do doCalcCalibratedRs
+
+        ! FINAL PARA Rs: "Matriz resumo", para facilitar primeiras verificações ou gráficos:
+        oCalibrationInfoSummary(1, :) = oExpPressures       ! Pressões em ordem decrescente, em kgf/cm2
+        oCalibrationInfoSummary(2, :) = oExpRs              ! Rs experimentais usados na regressão, em m3/m3
+        oCalibrationInfoSummary(3, :) = oCorrelationsRs(iX, :)  ! Rs calculados usados na regressão, em m3/m3
+        oCalibrationInfoSummary(4, :) = oCorrectedRs        ! Valores calibrados de Rs, em m3/m3
+
+        ! ROTINA CONFERIDA ATÉ O FINAL EM 16/04/2026. CONCLUÍDA! PROSSEGUIR PARA A PRÓXIMA!
+
+        ! ================ ESCRITA OPCIONAL NA TELA =============================
+        wantsToWriteOnScreen: if(.false.) then
+
+            ! Escrever a "oCalibrationInfoSummary":
+            write(*, '(/, A)') '----> oCalibrationInfoSummary:'
+            write(*, '("      ", A)') 'Linha 1: Pressões da Análise PVT (kgf/cm2)'
+            write(*, '("      ", A)') 'Linha 2: Rs experimentais da Análise PVT (m3/m3)'
+            write(*, '("      ", A)') 'Linha 3: Rs calculados, usados na regressão (m3/m3)'
+            write(*, '("      ", A)') 'Linha 4: Rs calibrados (m3/m3)'
+
+            writeCalibrationInfoSummaryToScreen: do i = 1, 4
+
+                write(*, '(/, /"Linha ", I3, ":", /)') i
+
+                writeInfoSummaryColumnsToScreen: do j = 1, iNPVTPoints
+                    write(*, '(F15.4, "      ")', advance='no') oCalibrationInfoSummary(i, j)
+                end do writeInfoSummaryColumnsToScreen
+            end do  writeCalibrationInfoSummaryToScreen
+
+            ! Escrever a "oCorrelationsRs":
+            write(*, '(/, A)') '----> oCorrelationsRs (Valores em m3/m3):'
+            write(*, '("      Linha ", A)') 'Linha 1: Vasquez and Beggs'
+            write(*, '("      Linha ", A)') 'Linha 2: Lasater'
+            write(*, '("      Linha ", A)') 'Linha 3: Standing'
+            write(*, '("      Linha ", A)') 'Linha 4: Glaso'
+            write(*, '("      Linha ", A)') 'Linha 5: Análise PVT'
+
+            writeCorrRsLinesToScreen: do i = 1, (RSCORRELATION_COUNT + 1)
+
+                write(*, '(/, /"Linha ", I3, ":", /)') i
+
+                writeCorrRsColsToScreen: do j = 1, iNPVTPoints
+                    write(*, '(F15.4, "      ")', advance='no') oCorrelationsRs(i, j)          
+                end do writeCorrRsColsToScreen
+
+            end do writeCorrRsLinesToScreen
+
+        end if wantsToWriteOnScreen
+        ! ================ FIM DA ESCRITA OPCIONAL NA TELA ======================
+
+    end subroutine FitBlackOilPVTAnalysisCalibrationModels
+
+    ! =============================================================
+    ! =============================================================
     subroutine CalculateBlackOilInputForPVTAnalysisRegression(nPVTPoints, oExpPressures, oExpRs, dExpTemperature, &
         dPSEP_VB, dTSEP_VB, dAPI, dRGO, dDeng, oTestedRsCorrelations, oCorrelationsRs, iPb, dPSat, iBestRsCorrelation, iIER)
   
@@ -559,10 +1180,9 @@ module BlackOilModels
 
                 oCorrelationsRs(iRsCorr, i) = dRsResult / 1.589873d-1 * 2.831685d-2       ! Convertendo de scft/bbl para m3/m3 antes de armazenar.
 
-                ! CONFERI ATÉ ESTA LINHA EM 23/03/2026, E PAREI. RETOMAR DAQUI PRA BAIXO.
-
                 oRsCorrelationsPSat(iRsCorr) = -10.0d0
                 keepCorrPSat: if (dPSat.lt.(0.0d0)) then
+                    ! Pressão de saturação foi calculada automaticamente junto com "Rs". Armazenar o resultado!
                     oRsCorrelationsPSat(iRsCorr) = dPbTemp / 14.22334    ! Convertendo de psia para kgf/cm2 
                 end if keepCorrPSat
 
@@ -594,7 +1214,7 @@ module BlackOilModels
         
         end do calcRsL2
   
-        ! SELECIONA A MELHOR CORRELAÇÃO (MENOR NORMA L2):
+        ! SELECIONA A MELHOR CORRELAÇÃO PARA Rs (MENOR NORMA L2):
         dNormMin = oRsNormL2(1)
         iBest = -1
 
@@ -634,7 +1254,127 @@ module BlackOilModels
             return
         end if hasValidIpb
 
+        ! SUBROTINA CONFERIDA ATÉ O FINAL EM 26/03/2026. SEGUIR!
+
     end subroutine CalculateBlackOilInputForPVTAnalysisRegression
+
+    ! =============================================================
+    ! =============================================================
+    subroutine CorrectBlackOilRsWithPVTAnalysisRegression(iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
+        dRsCalculated, dSaturationPressure, dRGO_RsUpperLimit, dLocalPressure, dRsCorrected)
+
+        ! OBJETIVO: Centraliza o cálculo do valor final de Rs em contexto de ajuste contra Análise PVT, usando quando necessário os coeficientes
+        !           de regressão obtidos para este fim, considerando também a pressão de saturação e limites físicos aplicáveis.
+        !           (Aplica proteções conforme práticas das rotinas PVT2 e PVT2A do código original).
+        !           Almeja-se que esta subrotina seja acionada tanto internamente a este código, quanto diretamente pelo MARLIM 3 ao longo de uma simulação.
+
+        ! IMPORTANTE: Considera-se que no ajuste dos parâmetros "dRsRegressionA" e "dRsRegressionB", tenha sido
+        !             feita regressão de Rs x Rs sempre usando as unidades de m3/m3! 
+
+        implicit none
+
+        !------------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+        integer(c_int), intent(in) :: iRsRegressionModelType   ! Tipo do modelo de regressão: 1=linear, 0=potencial (IRS em PVT2 / PVT2A)
+        real(c_double), intent(in) :: dRsRegressionA           ! Coeficiente angular do modelo de regressão (ARS em PVT2 / PVT2A)
+        real(c_double), intent(in) :: dRsRegressionB           ! Coeficiente linear do modelo de regressão (BRS ou DBRS em PVT2 / PVT2A)
+        real(c_double), intent(in) :: dRsCalculated            ! Rs calculado pela correlação, em m3/m3 (RST em PVT2 / PVT2A)
+        real(c_double), intent(in) :: dSaturationPressure      ! Pressão de saturação (kgf/cm2)
+        real(c_double), intent(in) :: dRGO_RsUpperLimit        ! Limite superior de Rs (RGO ou GORM do código original, em Sm3/Sm3)
+        real(c_double), intent(in) :: dLocalPressure           ! Pressão local (kgf/cm2)
+
+        real(c_double), intent(out) :: dRsCorrected            ! Rs corrigido (resultado final), em m3/m3
+
+        !------------------ DECLARAÇÃO E DESCRIÇÃO DE VARIÁVEIS LOCAIS:
+        real(c_double) :: dRsTemp
+
+        !------------------ CÁLCULOS:
+
+        checkPSat: if (dLocalPressure >= dSaturationPressure) then
+
+            ! Acima da pressão de saturação: Rs saturado
+            dRsCorrected = dRGO_RsUpperLimit
+
+        else checkPSat
+
+            ! Abaixo da pressão de saturação: aplicar modelo de regressão
+            checkPotMod: if ((iRsRegressionModelType == 0).and.(dRsCalculated <= 0.0d0)) then
+
+                ! Para o modelo potencial, o resultado poderia ser indefinido (especialmente para
+                !   expoentes não inteiros).
+                dRsCorrected = 0.0d0
+
+            else checkPotMod
+
+                call ApplyBlackOilPVTAnalysisCorrectionModel( &
+                    iRsRegressionModelType, dRsRegressionA, dRsRegressionB, dRsCalculated, dRsTemp)
+
+                dRsCorrected = dRsTemp
+
+            end if checkPotMod
+
+        end if checkPSat
+
+        ! Proteção: Rs negativo
+        if (dRsCorrected < 0.0d0) dRsCorrected = 0.0d0
+
+        ! Proteção: Rs maior que limite superior:
+        if (dRsCorrected > dRGO_RsUpperLimit) dRsCorrected = dRGO_RsUpperLimit
+
+        ! ROTINA CONFERIDA ATÉ O FINAL EM 06/04/2026!
+        ! CONFERÊNCIA FINALIZADA! PODE SEGUIR COM O PRÓXIMO PASSO DO TRABALHO!
+
+    end subroutine CorrectBlackOilRsWithPVTAnalysisRegression
+
+    ! =============================================================
+    ! =============================================================
+    subroutine ApplyBlackOilPVTAnalysisCorrectionModel(iModelType, dA, dB, dValueCalculated, dValueCorrected)
+
+        ! OBJETIVO: Aplica o modelo de correção calibrado (linear ou potencial) sobre um valor
+        !           calculado por correlação (Rs ou Bo), retornando o valor corrigido correspondente.
+        !           Importante: Os coeficientes de calibração (a, b) e o tipo de modelo são aqueles fornecidos
+        !           pela rotina de regressão "CalculateBlackOilPVTAnalysisCorrectionModelParameters".
+        !           (Corresponde à aplicação dos modelos na rotina PVT2 do arquivo fonte "MRL_pvt.pas" do código Pascal original.)
+
+        implicit none
+
+        !------------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+        integer(c_int), intent(in) :: iModelType         ! Tipo de modelo: 1=linear, 0=potencial (IRS / IBO no código original, em PVT2 / PVT2A)
+        real(c_double), intent(in) :: dA                 ! Coeficiente angular do modelo de correção (ARS / ABO em PVT2A)
+        real(c_double), intent(in) :: dB                 ! Coeficiente linear do modelo de correção (BRS / BBO em PVT2A, ou DBRS / DBBO em modelo potencial)
+        real(c_double), intent(in) :: dValueCalculated   ! Valor calculado por correlação black-oil (RST / BO em PVT2)
+
+        real(c_double), intent(out) :: dValueCorrected   ! Valor corrigido da propriedade black-oil (RS / BO em PVT2)
+
+        !------------------ DECLARAÇÃO E DESCRIÇÃO DE VARIÁVEIS LOCAIS:
+        real(c_double) :: dB_Converted                   ! Coeficiente linear convertido para modelo potencial (BRS / BBO em PVT2)
+
+        !------------------ CÁLCULOS:
+
+        checkModelType: select case (iModelType)
+
+            case (1) checkModelType
+
+                ! Modelo linear: Y = b + a * X
+                ! (RS := BRS + RST * ARS) ou (BO := BBO + BO * ABO) em PVT2
+                dValueCorrected = dB + dA * dValueCalculated
+
+            case (0) checkModelType
+
+                ! Modelo potencial: Y = b * X^a, sendo b = 10^dB (dB = DBRS / DBBO em PVT2A, linha 298 de "MRL_pvt.pas")
+                ! (RS := BRS * POWER(RST, ARS)) ou (BO := BBO * POWER(BO, ABO)) em PVT2
+                dB_Converted = 10.0d0 ** dB
+                dValueCorrected = dB_Converted * (dValueCalculated ** dA)
+
+            case default checkModelType
+
+                ! Modelo desconhecido: retorna valor não corrigido
+                dValueCorrected = dValueCalculated
+
+        end select checkModelType
+
+        ! ROTINA CONFERIDA ATÉ O FINAL EM 31/03/2026 (inclusive contra o MARLIM 2). SEGUIR!
+
+    end subroutine ApplyBlackOilPVTAnalysisCorrectionModel
 
     ! =============================================================
     ! =============================================================

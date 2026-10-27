@@ -8,15 +8,56 @@ from .._output_headers import CANONICAL_TIME_COLUMN, normalize_time_column
 from .._plots._plots_perfis import _plotar_perfis, _plotar_perfis_animados
 from .._plots._plots_redes import _plotar_rede
 from .._tramo._branch import Branch
+from .._tramo._keys import (
+    translate as _translate_pt_to_en,
+    translate_en_to_pt as _translate_en_to_pt,
+    PT_TO_EN as _PT_TO_EN,
+    EN_TO_PT as _EN_TO_PT,
+    _make_bilingual,
+)
+from .._process import process_group_kwargs
 import subprocess
 import time
 from threading import Thread
 import re
 import pandas as pd
 from datetime import datetime
-import platform
 
 class Network:
+
+    def __getattr__(self, name):
+        """Allow Portuguese attribute access (e.g., network.configuracaoInicial)."""
+        en_name = _PT_TO_EN.get(name)
+        if en_name is not None and en_name != name:
+            try:
+                return object.__getattribute__(self, en_name)
+            except AttributeError:
+                pass
+        raise AttributeError(
+            f"'{type(self).__name__}' object has no attribute '{name}'"
+        )
+
+    def __setattr__(self, name, value):
+        """Allow Portuguese attribute assignment (e.g., network.Conexao = [...]).
+
+        When setting via a Portuguese name, nested dict keys and enum values
+        are also translated PT->EN so the user can build networks fully in PT.
+        All dict/list values are wrapped in bilingual containers for
+        transparent PT/EN nested access.
+        Tuples are coerced to list so that a trailing comma
+        (e.g. ``network.attr = {...},``) does not silently bypass translation.
+        """
+        # Coerce tuples to list (guards against trailing-comma assignment)
+        if isinstance(value, tuple):
+            value = list(value)
+        en_name = _PT_TO_EN.get(name)
+        if en_name is not None and en_name != name:
+            translated = _translate_pt_to_en({name: value})
+            object.__setattr__(self, en_name, _make_bilingual(translated[en_name]))
+        else:
+            if isinstance(value, (dict, list)):
+                value = _make_bilingual(value)
+            object.__setattr__(self, name, value)
 
     def __init__(self, 
                  configuracaoInicial=None,
@@ -25,26 +66,26 @@ class Network:
                  layout = None,
                  nome_rede=None):
 
-        self.configuracaoInicial = configuracaoInicial
+        self.language = "en"
+
+        # Stored internally under English names; PT constructor arguments are
+        # translated to English on assignment via __setattr__.
+        self.configuracaoInicial = configuracaoInicial if configuracaoInicial is not None else {}
         self.Arquivos = Arquivos if Arquivos is not None else []
         self.Conexao = Conexao if Conexao is not None else []
         self.layout = layout if layout is not None else {}
 
-        #self.tramos = {nome: Tramo(nome_tramo=nome) for nome in self.Arquivos} if self.Arquivos else {}
-
-        # Garantir que Conexao.coletores e Conexao.afluentes sejam listas vazias
-        # self.Conexao['coletores'] = self.Conexao.get('coletores', [])
-        # self.Conexao['afluentes'] = self.Conexao.get('afluentes', [])
-
-        self.json_entrada_keys = set(self.__dict__.keys())
+        self.json_entrada_keys = {"initialConfig", "files", "connection", "layout"}
+        # Top-level sections without a dedicated attribute, kept so they reach the engine.
+        self.extraSections = {}
 
         self.nome_rede = nome_rede
         
         # Remove file extensions before creating tramos
         self.tramos = {
             os.path.splitext(nome)[0]: Branch(name=os.path.splitext(nome)[0])
-            for nome in self.Arquivos
-        } if self.Arquivos else {}
+            for nome in self.files
+        } if self.files else {}
 
 
         #self.resultados = {}
@@ -57,7 +98,8 @@ class Network:
 
         _plotar_rede(self)
         
-    def to_json(self, filename='marlim3_rede', generate_empty_fields=False): 
+    def to_json(self, filename='marlim3_rede', language='en',
+                generate_empty_fields=False): 
         if not filename.endswith('.json'):
             file_path = './' + filename + '.json'
         else:
@@ -88,6 +130,13 @@ class Network:
 
         filtered_data = {k: v for k, v in filtered_data.items() if v is not None}
 
+        for key, value in (getattr(self, 'extraSections', None) or {}).items():
+            filtered_data.setdefault(key, value)
+
+        if language == 'pt':
+            filtered_data.pop('language', None)
+            filtered_data = _translate_en_to_pt(filtered_data)
+
         with open(file_path, 'w', encoding='utf-8') as file:
             json.dump(filtered_data, file, indent=2, ensure_ascii=True)
 
@@ -99,7 +148,7 @@ class Network:
         if is_string:
             data = json_input
         else:
-            with open(json_input, 'r') as file:
+            with open(json_input, 'r', encoding='utf-8') as file:
                 data = json.load(file)
             if not hasattr(self, 'label'):
                 if json_input.endswith('.json'):
@@ -108,15 +157,24 @@ class Network:
                     label = json_input
                 self.label = label
 
-        self.configuracaoInicial = data.get('configuracaoInicial',{})
-        self.Arquivos = data.get('Arquivos', [])
-        self.Conexao = data.get('Conexao', [])
+        lang = data.get('language', '').lower() if isinstance(data, dict) else ''
+        if lang != 'en':
+            data = _translate_pt_to_en(data, _root=True)
+            data['language'] = 'en'
+
+        self.configuracaoInicial = data.get('initialConfig', {})
+        self.Arquivos = data.get('files', [])
+        self.Conexao = data.get('connection', [])
         self.layout = data.get('layout', {})
+        self.extraSections = {
+            k: v for k, v in data.items()
+            if k not in self.json_entrada_keys and k not in ('language', 'version', 'versao')
+        }
 
         self.tramos = {
             os.path.splitext(nome)[0]: Branch(name=os.path.splitext(nome)[0])
-            for nome in self.Arquivos
-        } if self.Arquivos else {}
+            for nome in self.files
+        } if self.files else {}
 
     ###########################################################################
 
@@ -144,23 +202,23 @@ class Network:
                     elif os.path.isdir(item_path):
                         shutil.rmtree(item_path)
                 
-            self.to_json(label)
+            # The C++ REDE reader (LerRede.cpp) expects Portuguese keys and does
+            # not invoke JSONKeyTranslator, so always emit the input file in PT.
+            self.to_json(label, language='pt')
             
-            comando_simulacao = f'{executavel} -d {diretorio} -i {filename} -s REDE'
-
-            # Iniciar o processo de simulação
-            if platform.system() == "Windows":
-                process = subprocess.Popen(
-                    comando_simulacao,
-                    shell=True,
-                    creationflags=subprocess.CREATE_NEW_PROCESS_GROUP
-                )
-            else:
-                process = subprocess.Popen(
-                    comando_simulacao,
-                    shell=True,
-                    preexec_fn=os.setsid
-                )
+            comando_simulacao = [
+                str(executavel),
+                "-d",
+                diretorio,
+                "-i",
+                filename,
+                "-s",
+                "REDE",
+            ]
+            process = subprocess.Popen(
+                comando_simulacao,
+                **process_group_kwargs(),
+            )
             if tracker:
                 tracker.process_pid = process.pid
                 tracker.save()

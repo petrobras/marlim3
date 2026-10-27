@@ -9,6 +9,7 @@ module Newton
     !use FlashExtras, only: CalculateLnFugAndDerivativesForEachComponent, SolveRachfordRiceEquation, &
     !        PerformTangentPlaneAnalysisForVLE, GetResultsForSinglePhaseFeed, CalculateRelativeMolarGibbsEnergy, &
     !        CalculateTPD
+    use DebugFacilities
 
     implicit none
 
@@ -259,7 +260,10 @@ module Newton
         integer(c_int) :: iIER_Local
         real(c_double), dimension(iXLength) :: oPreviousX
 
+        character(len=150) :: sDebugFileLine    ! Linha para escrever no arquivo de "debug".
+
         ! ------------ CONSTANTES:
+        logical, parameter :: bWriteToDebugFile = .true.                    ! No futuro, MANTER LOCAL, mas possibilitar mudar com argumento opcional!
 
         ! ------------ PROCEDIMENTOS:
 
@@ -267,6 +271,7 @@ module Newton
         !iNParam = size(oProblemParams)
         dObjectiveFunctionValue = -10000000.0d0     ! Valor aleatório
         bNewtonMinimizationConverged = .false.
+        iIER = ERROR_EverythingOK
         iIER_Local = ERROR_EverythingOK
         !iXLength = size(oX)
 
@@ -284,6 +289,12 @@ module Newton
 
             iIER_Local = int(oProblemParams(iNParam))
             if(iIER_Local.NE.ERROR_EverythingOK) then
+
+                ! -------> Escrita no arquivo de Debug
+                write(sDebugFileLine, '("                    Iter ", I4, " de Newton; FuncAndDerivatives: iIER_Local = ", I3)') iIter, iIER_Local
+                call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile) 
+                ! -------> Fim da escrita no arquivo de Debug
+
                 iIER = iIER_Local
                 return
             end if
@@ -333,6 +344,13 @@ module Newton
             dCurrentError = abs( (dObjectiveFunctionValue - dPreviousObjectiveFunctionValue + dOffsetInErrorCalc) / &
                                  (dPreviousObjectiveFunctionValue + dOffsetInErrorCalc) - &
                                  dOffsetInErrorCalc)
+
+            ! ----------> Escrita no arquivo de Debug:
+            write(sDebugFileLine, &
+                '("                    Iter ", I4, " de Newton: dCurrentError = ", E12.5, " ; dObjectiveFunctionValue = ", E12.5, " ; dOffsetInErrorCalc = ", F3.1)') &
+                iIter, dCurrentError, dObjectiveFunctionValue, dOffsetInErrorCalc
+            call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)                    
+            ! ----------> Fim da escrita no aruivo de Debug:
 
             ! Verificar se já pode considerar convergido:
             bConverged = (dCurrentError.lt.dRelativeTolerance)
@@ -1176,6 +1194,8 @@ module Newton
         integer(c_int) :: iNewtonIterationsForSol
         integer :: iNParam
 
+        character(len=150) :: sDebugFileLine    ! Linha para escrever no arquivo de "debug".
+
         ! ------------ CONSTANTES:
         real(c_double), parameter :: dTPDNewtonMinRelativeTol = 1.0d5 * epsilon(1.0)   ! Tolerância relativa para o cálculo por Newton.
         !real(c_double), parameter :: dTPDNewtonMinRelativeTol = 1.0d5 * epsilon(1.0) * 0.46d0
@@ -1183,7 +1203,23 @@ module Newton
 
         integer :: iTPDNewtonMinMaxIter = 1000          ! Máximo de iterações permitido para o cálculo por Newton
 
+        logical, parameter :: bWriteToDebugFile = .true.                    ! No futuro, MANTER LOCAL, mas possibilitar mudar com argumento opcional!
+
         ! ------------ PROCEDIMENTOS:
+
+        ! --------> Escrita no arquivo de Debug.
+        call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
+        call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
+        write(sDebugFileLine, '("                ENTRANDO NA SUBROTINA TryStabilityAnalysisWith2ndOrderMinimization")')
+        call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
+        call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
+        write(sDebugFileLine, '("                Tol. Relativa p/ Newton = ", E12.5)') dTPDNewtonMinRelativeTol
+        call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
+        ! --------> Fim da escrita no arquivo de Debug
+
+        ! Inicializando:
+        iIER = ERROR_EverythingOK
+
         bIgnoreOutcomeAndResume = .false.
 
         doAnythingOrNot: if((.not.bAllowNewtonMinimization).or.(.not.bAllowTPDNewtonMinimization)) then
@@ -1570,6 +1606,9 @@ module Newton
 
         ! ------------ PROCEDIMENTOS:
 
+        ! Inicializando:
+        iIER = ERROR_EverythingOK
+
         ! "Voltar" para as variáveis independentes originais ("W"):
         iNComp = size(oAlpha)
 
@@ -1614,6 +1653,7 @@ module Newton
         ! Calcular a matriz Hessiana para o método de Newton (equação 55 do Capítulo 10 da Referência Bibliográfica 1):
         dN = sum(oW)
         oPhiIJ = dN * oDerivLnCoefFugWithNj_W      ! Eq 12 do Capítulo 10 da Referência Bibliográfica 1
+
         oHessianMatrix = oPhiIJ
 
         calcHMatrix_outer: do i = 1, iNComp

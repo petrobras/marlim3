@@ -3,11 +3,10 @@ name: Build, Test & Release
 on:
   pull_request:
     branches:
-      - develop
       - main
   push:
     branches:
-      - develop
+      - main
     tags:
       - "v*"
 
@@ -20,6 +19,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
+  UV_LOCKED: "1"
+  UV_DEFAULT_INDEX: "https://pypi.org/simple"
   MARLIM3_SKIP_BUILD: "1"
   MARLIM3_SKIP_EXECUTABLE_RESOLUTION: "1"
   ARTIFACT_RETENTION_DAYS: "7"
@@ -51,10 +52,35 @@ jobs:
             echo "should_skip=${SKIP_FROM_CHECK:-false}" >> "$GITHUB_OUTPUT"
           fi
 
+  public-lock-check:
+    name: Public dependency lock policy
+    needs: pre_check
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7.0.0
+        with:
+          version: "0.13.1"
+          enable-cache: false
+      - name: Validate public sources, hashes and lock consistency
+        run: python scripts/dependencies.py check
+      - name: Test dependency workflow
+        run: |
+          uv sync --locked --group dev
+          uv run --locked python -m pytest tests/test_dependency_workflow.py
+
   # Python-only package sanity. Does not depend on the native executable.
   python-checks:
     name: Python checks / package sanity
-    needs: pre_check
+    needs: [pre_check, public-lock-check]
     if: needs.pre_check.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
 
@@ -72,6 +98,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7.0.0
         with:
+          version: "0.13.1"
           enable-cache: true
 
       - name: Install package and dev dependencies
@@ -80,18 +107,18 @@ jobs:
       - name: Import package
         run: uv run python -c "import marlim3; print(marlim3.__version__)"
 
+      - name: Test schema Markdown batch discovery
+        run: uv run pytest tests/test_schema_to_markdown.py
+
       - name: Lint (syntax / undefined names)
         run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
       - name: Lint (full report, non-blocking)
         run: uv run flake8 . --count --exit-zero --statistics
 
-  # Build jobs: produce the native executable only. No tests here.
-  build-linux:
-    name: Build – Linux x64 (manylinux2014)
-    needs:
-      - pre_check
-      - python-checks
+  docs-check:
+    name: Documentation / schema references
+    needs: [pre_check, public-lock-check]
     if: needs.pre_check.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
 
@@ -101,25 +128,58 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build executable in manylinux2014
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          version: "0.13.1"
+          enable-cache: true
+
+      - name: Install documentation dependencies
+        run: uv sync --locked --group docs --no-install-project
+
+      - name: Generate schema references
+        run: uv run --no-sync python schema_to_markdown.py --batch
+
+      - name: Build documentation
+        run: uv run --no-sync mkdocs build
+
+  # Build jobs: produce the native executable only. No tests here.
+  build-linux:
+    name: Build – Linux x64 (manylinux_2_28)
+    needs:
+      - pre_check
+      - python-checks
+      - docs-check
+    if: needs.pre_check.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Build executable in manylinux_2_28
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/workspace" \
-            quay.io/pypa/manylinux2014_x86_64 \
+            quay.io/pypa/manylinux_2_28_x86_64 \
             bash -lc '
               set -euo pipefail
-              # devtoolset-10/enable references MANPATH/LD_LIBRARY_PATH, which
-              # are unset in the clean manylinux container; pre-initialize them
-              # so `set -u` does not abort on the unbound variable.
-              export MANPATH="${MANPATH:-}"
-              export LD_LIBRARY_PATH="${LD_LIBRARY_PATH:-}"
-              source /opt/rh/devtoolset-10/enable
+              # Unlike manylinux2014, this image ships GCC 14 as the default
+              # toolchain, so no devtoolset activation is required.
               /opt/python/cp312-cp312/bin/python -m pip install "cmake>=3.27,<4"
               export PATH="/opt/python/cp312-cp312/bin:${PATH}"
               cd /workspace
               rm -rf build
-              cmake --preset gcc-release
-              cmake --build --preset gcc-release -j$(nproc)
+              cmake --preset gcc-release -DMARLIM_BUILD_TESTS=ON
+              cmake --build --preset gcc-release --target Marlim3 test_inlet_boundary_initialization -j$(nproc)
+              ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
             '
           sudo chown -R "$(id -u):$(id -g)" build src/include/versao.h
 
@@ -153,6 +213,7 @@ jobs:
     needs:
       - pre_check
       - python-checks
+      - docs-check
     if: needs.pre_check.outputs.should_skip != 'true'
     runs-on: windows-2022
 
@@ -170,6 +231,7 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-gcc-fortran
+            mingw-w64-x86_64-libgomp
             mingw-w64-x86_64-cmake
             mingw-w64-x86_64-make
 
@@ -178,8 +240,9 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf build
-          cmake --preset mingw-release
-          cmake --build --preset mingw-release -j$(nproc)
+          cmake --preset mingw-release -DMARLIM_BUILD_TESTS=ON
+          cmake --build --preset mingw-release --target Marlim3 test_inlet_boundary_initialization -j$(nproc)
+          ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
 
       - name: Inspect executable
         shell: msys2 {0}
@@ -213,8 +276,9 @@ jobs:
     needs:
       - pre_check
       - python-checks
+      - docs-check
     if: needs.pre_check.outputs.should_skip != 'true'
-    runs-on: macos-14
+    runs-on: macos-15
 
     steps:
       - name: Checkout
@@ -228,9 +292,11 @@ jobs:
       - name: Build executable
         run: |
           set -euo pipefail
+          test "$(uname -m)" = "arm64"
           rm -rf build
-          cmake --preset gcc-release
-          cmake --build --preset gcc-release -j$(sysctl -n hw.ncpu)
+          cmake --preset gcc-release -DMARLIM_BUILD_TESTS=ON
+          cmake --build --preset gcc-release --target Marlim3 test_inlet_boundary_initialization -j"$(sysctl -n hw.ncpu)"
+          ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
 
       - name: Inspect executable
         run: |
@@ -240,8 +306,12 @@ jobs:
           lipo -info build/Marlim3
           otool -L build/Marlim3 | tee build/Marlim3.otool
           otool -l build/Marlim3 | tee build/Marlim3.load-commands
-          ! grep -E '/opt/homebrew|libgomp|libgfortran|libquadmath|libstdc\+\+' build/Marlim3.otool
-          ! grep -E 'LC_RPATH|/opt/homebrew|libgomp|libgfortran|libquadmath|libstdc\+\+' build/Marlim3.load-commands
+          if grep -E '/opt/homebrew|libgomp|libgfortran|libquadmath|libstdc\+\+' build/Marlim3.otool; then
+            exit 1
+          fi
+          if grep -E 'LC_RPATH|/opt/homebrew|libgomp|libgfortran|libquadmath|libstdc\+\+' build/Marlim3.load-commands; then
+            exit 1
+          fi
           ./build/Marlim3 --help >/dev/null
 
       - name: Compute SHA-256 of executable
@@ -282,6 +352,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7.0.0
         with:
+          version: "0.13.1"
           enable-cache: true
 
       - name: Install package and test dependencies
@@ -324,7 +395,26 @@ jobs:
           [ "$EXPECTED" = "$ACTUAL" ]
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short
+        env:
+          MARLIM_TEST_ARTIFACTS: ${{ runner.temp }}/pytest
+        run: uv run pytest tests/ -v --tb=short --basetemp "$MARLIM_TEST_ARTIFACTS"
+
+      - name: Upload simulation failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: simulation-diagnostics-linux
+          path: |
+            ${{ runner.temp }}/pytest/**/*.log
+            ${{ runner.temp }}/pytest/**/*.imx
+            ${{ runner.temp }}/pytest/**/*.ecp
+            ${{ runner.temp }}/pytest/**/*.dat
+            ${{ runner.temp }}/pytest/**/model.mr3
+            ${{ runner.temp }}/pytest/**/leituraAP.json
+            ${{ runner.temp }}/pytest/**/stdout.txt
+            ${{ runner.temp }}/pytest/**/stderr.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
   test-windows:
     name: Test – Windows x64
@@ -345,6 +435,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7.0.0
         with:
+          version: "0.13.1"
           enable-cache: true
 
       - name: Install package and test dependencies
@@ -394,11 +485,30 @@ jobs:
 
       - name: Run tests
         shell: pwsh
-        run: uv run pytest tests/ -v --tb=short
+        env:
+          MARLIM_TEST_ARTIFACTS: ${{ runner.temp }}/pytest
+        run: uv run pytest tests/ -v --tb=short --basetemp "$env:MARLIM_TEST_ARTIFACTS"
+
+      - name: Upload simulation failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: simulation-diagnostics-windows
+          path: |
+            ${{ runner.temp }}/pytest/**/*.log
+            ${{ runner.temp }}/pytest/**/*.imx
+            ${{ runner.temp }}/pytest/**/*.ecp
+            ${{ runner.temp }}/pytest/**/*.dat
+            ${{ runner.temp }}/pytest/**/model.mr3
+            ${{ runner.temp }}/pytest/**/leituraAP.json
+            ${{ runner.temp }}/pytest/**/stdout.txt
+            ${{ runner.temp }}/pytest/**/stderr.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
   test-macos:
     name: Test – macOS ARM64
-    runs-on: macos-14
+    runs-on: macos-15
     needs: build-macos
 
     steps:
@@ -415,6 +525,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7.0.0
         with:
+          version: "0.13.1"
           enable-cache: true
 
       - name: Install package and test dependencies
@@ -441,6 +552,7 @@ jobs:
       - name: Install executable into package directory
         run: |
           set -euo pipefail
+          test "$(uname -m)" = "arm64"
           install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
           test -x marlim3/Marlim3
           file marlim3/Marlim3
@@ -457,7 +569,309 @@ jobs:
           [ "$EXPECTED" = "$ACTUAL" ]
 
       - name: Run tests
-        run: uv run pytest tests/ -v --tb=short
+        env:
+          MARLIM_TEST_ARTIFACTS: ${{ runner.temp }}/pytest
+        run: uv run pytest tests/ -v --tb=short --basetemp "$MARLIM_TEST_ARTIFACTS"
+
+      - name: Upload simulation failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: simulation-diagnostics-macos
+          path: |
+            ${{ runner.temp }}/pytest/**/*.log
+            ${{ runner.temp }}/pytest/**/*.imx
+            ${{ runner.temp }}/pytest/**/*.ecp
+            ${{ runner.temp }}/pytest/**/*.dat
+            ${{ runner.temp }}/pytest/**/model.mr3
+            ${{ runner.temp }}/pytest/**/leituraAP.json
+            ${{ runner.temp }}/pytest/**/stdout.txt
+            ${{ runner.temp }}/pytest/**/stderr.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
+  desktop-linux:
+    name: Desktop App – Linux x64
+    runs-on: ubuntu-24.04
+    needs: test-linux
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download validated Linux engine
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-linux-x64
+          path: artifact-in
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install engine into package directory
+        run: |
+          set -euo pipefail
+          ( cd artifact-in && sha256sum -c Marlim3.sha256 )
+          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
+
+      - name: Build desktop executable in manylinux_2_34
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "x86_64"
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            quay.io/pypa/manylinux_2_34_x86_64 \
+            bash -lc '
+              set -euo pipefail
+              dnf install -y \
+                alsa-lib cups-libs dbus-libs fontconfig gtk3 mesa-libEGL \
+                mesa-libGL libglvnd-gles libglvnd-opengl nspr nss \
+                libX11-xcb libXcomposite libXdamage libXi libXrandr \
+                libXrender libXtst libxcb libxkbcommon-x11 libxkbfile \
+                xcb-util xcb-util-cursor xcb-util-image xcb-util-keysyms \
+                xcb-util-renderutil xcb-util-wm
+              export PATH="/opt/python/cp312-cp312/bin:${PATH}"
+              export UV_PROJECT_ENVIRONMENT=/tmp/marlim3-desktop-venv
+              export MARLIM3_SKIP_BUILD=1
+              export MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1
+              export MARLIM3_GLIBC_BASELINE=2.34
+              python -m pip install "uv==0.13.1"
+              uv python install 3.12
+              managed_python="$(uv python find --managed-python 3.12)"
+              uv sync --python "${managed_python}" \
+                --locked --no-dev --group gui --group desktop
+              uv run --no-dev --group gui --group desktop python -m marlim3_desktop.build \
+                --skip-engine-build --skip-dependency-sync --skip-validate --skip-package
+            '
+          sudo chown -R "$(id -u):$(id -g)" dist build
+
+      - name: Install virtual display for Linux smoke test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
+
+      - name: Validate and package desktop executable
+        run: |
+          set -euo pipefail
+          xvfb-run -a env QT_QPA_PLATFORM=xcb QTWEBENGINE_DISABLE_SANDBOX=1 \
+            python3 -m marlim3_desktop.build --skip-build
+          ls -lh dist/Marlim3-desktop-linux-x64*
+
+      - name: Upload desktop executable + checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: Marlim3-desktop-linux-x64
+          path: |
+            dist/Marlim3-desktop-linux-x64
+            dist/Marlim3-desktop-linux-x64.sha256
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  desktop-windows:
+    name: Desktop App – Windows x64
+    runs-on: windows-2022
+    needs: test-windows
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          version: "0.13.1"
+          enable-cache: true
+
+      - name: Install GUI and desktop build dependencies
+        shell: pwsh
+        run: uv sync --locked --no-dev --group gui --group desktop
+
+      - name: Download validated Windows engine
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-windows-x64
+          path: artifact-in
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install engine into package directory
+        shell: pwsh
+        run: |
+          $expected = (Get-Content artifact-in\Marlim3.exe.sha256 -Raw).Split()[0].ToLower()
+          $actual = (Get-FileHash artifact-in\Marlim3.exe -Algorithm SHA256).Hash.ToLower()
+          if ($expected -ne $actual) { throw "SHA-256 mismatch on downloaded Windows engine" }
+          Copy-Item artifact-in\Marlim3.exe marlim3\Marlim3.exe -Force
+
+      - name: Build, validate and package desktop executable
+        shell: pwsh
+        run: |
+          if ($env:PROCESSOR_ARCHITECTURE -ne "AMD64") { throw "Expected Windows x64 runner" }
+          $env:QT_QPA_PLATFORM = "offscreen"
+          $env:QTWEBENGINE_DISABLE_SANDBOX = "1"
+          uv run --no-dev --group gui --group desktop python -m marlim3_desktop.build `
+            --skip-engine-build --skip-dependency-sync
+          Get-Item dist\Marlim3-desktop-windows-x64.exe, dist\Marlim3-desktop-windows-x64.exe.sha256 | Format-List FullName, Length
+
+      - name: Upload desktop executable + checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: Marlim3-desktop-windows-x64
+          path: |
+            dist/Marlim3-desktop-windows-x64.exe
+            dist/Marlim3-desktop-windows-x64.exe.sha256
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
+
+  desktop-macos:
+    name: Desktop App – macOS ARM64
+    runs-on: macos-15
+    needs: test-macos
+    if: startsWith(github.ref, 'refs/tags/v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v7.0.0
+        with:
+          version: "0.13.1"
+          enable-cache: true
+
+      - name: Install GUI and desktop build dependencies
+        run: uv sync --locked --no-dev --group gui --group desktop
+
+      - name: Download validated macOS engine
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-macos-arm64
+          path: artifact-in
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install engine into package directory
+        run: |
+          set -euo pipefail
+          ( cd artifact-in && shasum -a 256 -c Marlim3.sha256 )
+          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
+
+      - name: Build and validate desktop app bundle
+        env:
+          QTWEBENGINE_DISABLE_SANDBOX: "1"
+        run: |
+          set -euo pipefail
+          test "$(uname -m)" = "arm64"
+          uv run --no-dev --group gui --group desktop python -m marlim3_desktop.build \
+            --skip-engine-build --skip-dependency-sync --skip-package
+
+      - name: Import Apple Developer ID certificate
+        if: github.repository == 'petrobras/marlim3' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          MACOS_CERTIFICATE_BASE64: ${{ secrets.MACOS_CERTIFICATE_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_KEYCHAIN_PASSWORD: ${{ secrets.MACOS_KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${MACOS_CERTIFICATE_BASE64:-}" || \
+                -z "${MACOS_CERTIFICATE_PASSWORD:-}" || \
+                -z "${MACOS_KEYCHAIN_PASSWORD:-}" ]]; then
+            echo "macOS signing secrets are incomplete; producing an unsigned DMG."
+            echo "MACOS_SIGNING_READY=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          KEYCHAIN_PATH="$RUNNER_TEMP/marlim3-signing.keychain-db"
+          echo "$MACOS_CERTIFICATE_BASE64" | base64 -D > "$RUNNER_TEMP/marlim3-cert.p12"
+          security create-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$RUNNER_TEMP/marlim3-cert.p12" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          echo "MACOS_SIGNING_READY=true" >> "$GITHUB_ENV"
+
+      - name: Sign app bundle
+        if: github.repository == 'petrobras/marlim3' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+        run: |
+          set -euo pipefail
+          if [[ "${MACOS_SIGNING_READY:-false}" != "true" ]]; then
+            echo "macOS signing certificate not configured; skipping app signing."
+            exit 0
+          fi
+          if [[ -z "${MACOS_CODESIGN_IDENTITY:-}" ]]; then
+            echo "MACOS_CODESIGN_IDENTITY is missing; producing an unsigned DMG."
+            echo "MACOS_SIGNING_READY=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          codesign --force --deep --options runtime --timestamp --sign "$MACOS_CODESIGN_IDENTITY" dist/Marlim3.app
+          codesign --verify --deep --strict --verbose=2 dist/Marlim3.app
+
+      - name: Package DMG
+        run: |
+          set -euo pipefail
+          uv run --no-dev --group gui --group desktop python -m marlim3_desktop.build \
+            --skip-build --skip-validate
+
+      - name: Sign and notarize DMG
+        if: github.repository == 'petrobras/marlim3' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          MACOS_CODESIGN_IDENTITY: ${{ secrets.MACOS_CODESIGN_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          set -euo pipefail
+          if [[ "${MACOS_SIGNING_READY:-false}" != "true" ]]; then
+            echo "macOS signing is not configured; skipping DMG signing and notarization."
+            exit 0
+          fi
+          if [[ -z "${MACOS_CODESIGN_IDENTITY:-}" || -z "${APPLE_ID:-}" || -z "${APPLE_APP_SPECIFIC_PASSWORD:-}" || -z "${APPLE_TEAM_ID:-}" ]]; then
+            echo "Apple notarization secrets are incomplete; skipping DMG notarization."
+            exit 0
+          fi
+          codesign --force --timestamp --sign "$MACOS_CODESIGN_IDENTITY" dist/Marlim3-desktop-macos-arm64.dmg
+          xcrun notarytool submit dist/Marlim3-desktop-macos-arm64.dmg \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_APP_SPECIFIC_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" \
+            --wait
+          xcrun stapler staple dist/Marlim3-desktop-macos-arm64.dmg
+          spctl -a -vv -t open --context context:primary-signature dist/Marlim3-desktop-macos-arm64.dmg
+
+      - name: Compute SHA-256 of DMG
+        run: |
+          set -euo pipefail
+          ( cd dist && shasum -a 256 Marlim3-desktop-macos-arm64.dmg > Marlim3-desktop-macos-arm64.dmg.sha256 )
+          ls -lh dist/Marlim3-desktop-macos-arm64.dmg*
+
+      - name: Upload DMG + checksum
+        uses: actions/upload-artifact@v6
+        with:
+          name: Marlim3-desktop-macos-arm64
+          path: |
+            dist/Marlim3-desktop-macos-arm64.dmg
+            dist/Marlim3-desktop-macos-arm64.dmg.sha256
+          retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
+          if-no-files-found: error
 
   # Publishes the same artifacts the test-* jobs validated. Tag pushes only.
   release:
@@ -468,6 +882,9 @@ jobs:
       - test-linux
       - test-windows
       - test-macos
+      - desktop-linux
+      - desktop-windows
+      - desktop-macos
     permissions:
       contents: write
 
@@ -496,24 +913,52 @@ jobs:
           run-id: ${{ github.run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Download Linux desktop app
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-desktop-linux-x64
+          path: artifacts/desktop-linux
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Windows desktop app
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-desktop-windows-x64
+          path: artifacts/desktop-windows
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download macOS desktop app
+        uses: actions/download-artifact@v7
+        with:
+          name: Marlim3-desktop-macos-arm64
+          path: artifacts/desktop-macos-arm64
+          run-id: ${{ github.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify SHA-256 of all downloaded artifacts
         run: |
           set -euo pipefail
           ( cd artifacts/linux       && sha256sum -c Marlim3.sha256 )
           ( cd artifacts/windows     && sha256sum -c Marlim3.exe.sha256 )
           ( cd artifacts/macos-arm64 && sha256sum -c Marlim3.sha256 )
+          ( cd artifacts/desktop-linux       && sha256sum -c Marlim3-desktop-linux-x64.sha256 )
+          ( cd artifacts/desktop-windows     && sha256sum -c Marlim3-desktop-windows-x64.exe.sha256 )
+          ( cd artifacts/desktop-macos-arm64 && sha256sum -c Marlim3-desktop-macos-arm64.dmg.sha256 )
 
       - name: Prepare release assets
         run: |
           set -euo pipefail
           mv artifacts/linux/Marlim3              artifacts/linux/Marlim3-linux-x64
+          mv artifacts/windows/Marlim3.exe         artifacts/windows/Marlim3-windows-x64.exe
           mv artifacts/macos-arm64/Marlim3        artifacts/macos-arm64/Marlim3-macos-arm64
           # Rebuild .sha256 files referencing the final release filenames so users
           # can run e.g. `sha256sum -c Marlim3-linux-x64.sha256` after downloading.
           ( cd artifacts/linux       && sha256sum Marlim3-linux-x64       > Marlim3-linux-x64.sha256       && rm Marlim3.sha256 )
-          ( cd artifacts/windows     && sha256sum Marlim3.exe             > Marlim3.exe.sha256 )
+          ( cd artifacts/windows     && sha256sum Marlim3-windows-x64.exe > Marlim3-windows-x64.exe.sha256 && rm Marlim3.exe.sha256 )
           ( cd artifacts/macos-arm64 && sha256sum Marlim3-macos-arm64     > Marlim3-macos-arm64.sha256     && rm Marlim3.sha256 )
-          ls -la artifacts/linux artifacts/windows artifacts/macos-arm64
+          ls -la artifacts/linux artifacts/windows artifacts/macos-arm64 artifacts/desktop-linux artifacts/desktop-windows artifacts/desktop-macos-arm64
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
@@ -521,10 +966,16 @@ jobs:
           files: |
             artifacts/linux/Marlim3-linux-x64
             artifacts/linux/Marlim3-linux-x64.sha256
-            artifacts/windows/Marlim3.exe
-            artifacts/windows/Marlim3.exe.sha256
+            artifacts/windows/Marlim3-windows-x64.exe
+            artifacts/windows/Marlim3-windows-x64.exe.sha256
             artifacts/macos-arm64/Marlim3-macos-arm64
             artifacts/macos-arm64/Marlim3-macos-arm64.sha256
+            artifacts/desktop-linux/Marlim3-desktop-linux-x64
+            artifacts/desktop-linux/Marlim3-desktop-linux-x64.sha256
+            artifacts/desktop-windows/Marlim3-desktop-windows-x64.exe
+            artifacts/desktop-windows/Marlim3-desktop-windows-x64.exe.sha256
+            artifacts/desktop-macos-arm64/Marlim3-desktop-macos-arm64.dmg
+            artifacts/desktop-macos-arm64/Marlim3-desktop-macos-arm64.dmg.sha256
           draft: false
           prerelease: false
           generate_release_notes: true
@@ -551,6 +1002,7 @@ jobs:
       - name: Set up uv
         uses: astral-sh/setup-uv@v7.0.0
         with:
+          version: "0.13.1"
           enable-cache: true
 
       - name: Build package
@@ -586,30 +1038,31 @@ jobs:
       MARLIM3_SKIP_EXECUTABLE_RESOLUTION: "0"
 
     steps:
+      - name: Checkout workflow scripts
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.ref_name }}
+          path: workflow-scripts
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - name: Wait for version to be visible on PyPI
+      - name: Upgrade pip
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+
+      - name: Wait for version to be installable from PyPI
         shell: bash
         env:
           REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           VERSION="${REF_NAME#v}"
-          echo "Looking for marlim3==$VERSION on PyPI (JSON API)..."
-          export TARGET_VERSION="$VERSION"
-          for i in $(seq 1 30); do
-            if python -c "import os,json,sys,urllib.request; d=json.load(urllib.request.urlopen('https://pypi.org/pypi/marlim3/json',timeout=10)); sys.exit(0 if os.environ['TARGET_VERSION'] in d.get('releases',{}) else 1)"; then
-              echo "marlim3==$VERSION is available on PyPI"
-              exit 0
-            fi
-            echo "Attempt $i: marlim3==$VERSION not yet on PyPI, sleeping 20s..."
-            sleep 20
-          done
-          echo "marlim3==$VERSION did not become available on PyPI in time"
-          exit 1
+          python workflow-scripts/.github/scripts/wait_for_pypi_release.py marlim3 "$VERSION"
 
       - name: Install marlim3 from PyPI (clean environment)
         shell: bash
@@ -618,8 +1071,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${REF_NAME#v}"
-          python -m pip install --upgrade pip
-          python -m pip install "marlim3==${VERSION}"
+          python -m pip install --no-cache-dir "marlim3==${VERSION}"
 
       - name: Import package and trigger executable resolution
         shell: bash

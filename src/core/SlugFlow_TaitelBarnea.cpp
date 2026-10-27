@@ -207,8 +207,8 @@ static double dispersedBubbleVelocity(
 
 static double slugLength(double angle, double D) {
     double beta = angle * PI / 180.0;
-    double ls_v = 20.0 * D;
-    double ls_h = 30.0 * D;
+    double ls_v = 15.0 * D;
+    double ls_h = 21.0 * D;
 
     if (angle >= 80.0) return ls_v;
     if (angle <= 5.0) return ls_h;

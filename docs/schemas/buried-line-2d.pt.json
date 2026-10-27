@@ -1,0 +1,242 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://github.com/petrobras/marlim3/blob/main/docs/schemas/buried-line-2d.pt.json",
+    "title": "Marlim3 — Buried Line 2D Thermal Diffusion Input (Portuguese keys)",
+    "description": "JSON de entrada do modelo de difusão térmica 2D (linha enterrada) do Marlim3, com chaves em português.",
+    "type": "object",
+    "properties": {
+      "configuracaoInicial": {
+        "type": "object",
+        "description": "Parâmetros gerais da simulação.",
+        "properties": {
+          "anguloAcoplamento": {
+            "type": "number",
+            "description": "Ângulo definido pelo arco da circunferência da tubulação em contato com o solo.",
+            "unit": "rad"
+          },
+          "tempoImp": {
+            "type": "array",
+            "description": "Instantes de tempo em que serão impressos os resultados da distribuição de temperatura na malha.",
+            "items": {
+              "type": "number",
+              "unit": "s"
+            }
+          },
+          "relax": {
+            "type": "number",
+            "description": "Parâmetro de relaxação do processo iterativo de convergência da solução 2D a cada passo de tempo. Número entre 0 e 1; quanto menor a relaxação, mais lento e seguro é o processo de convergência."
+          },
+          "threadLocal": {
+            "type": "integer",
+            "description": "Número de threads usadas para execução da simulação 2D."
+          },
+          "acop": {
+            "type": "integer",
+            "description": "Indica se o contorno da tubulação está acoplado à solução do escoamento no tramo (troca de calor conjugada)."
+          },
+          "DimensaoReferenciaExterna": {
+            "type": "number",
+            "description": "Dimensão de referência externa usada na normalização do domínio 2D.",
+            "unit": "m"
+          },
+          "solverMat": {
+            "type": "integer",
+            "description": "Seleciona o solver do sistema linear da difusão 2D."
+          },
+          "rankLU": {
+            "type": "integer",
+            "description": "Posto (rank) utilizado na fatoração LU quando o solver correspondente é selecionado."
+          },
+          "corLU": {
+            "type": "boolean",
+            "description": "Habilita a coloração (reordenamento) da matriz para acelerar a fatoração LU."
+          }
+        }
+      },
+      "malha": {
+        "type": "object",
+        "description": "Arquivos que especificam a geometria da malha 2D.",
+        "properties": {
+          "tipoArquivo": {
+            "type": "integer",
+            "description": "Formato dos arquivos de malha (por exemplo, .ele/.node ou .unv)."
+          },
+          "elemento": {
+            "type": "string",
+            "description": "Nome do arquivo .ele contendo os elementos da malha."
+          },
+          "no": {
+            "type": "string",
+            "description": "Nome do arquivo .node contendo os nós da malha. Válido apenas para tipoArquivo = 0."
+          }
+        }
+      },
+      "prop": {
+        "type": "array",
+        "description": "Retângulos em cujo domínio são definidas propriedades térmicas do solo.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "xmax": {
+              "type": "number",
+              "description": "Ponto máximo do domínio no eixo x.",
+              "unit": "m"
+            },
+            "xmin": {
+              "type": "number",
+              "description": "Ponto mínimo do domínio no eixo x.",
+              "unit": "m"
+            },
+            "ymax": {
+              "type": "number",
+              "description": "Ponto máximo do domínio no eixo y.",
+              "unit": "m"
+            },
+            "ymin": {
+              "type": "number",
+              "description": "Ponto mínimo do domínio no eixo y.",
+              "unit": "m"
+            },
+            "cond": {
+              "type": "number",
+              "description": "Condutividade térmica do solo.",
+              "unit": "W/(m.degC)"
+            },
+            "cp": {
+              "type": "number",
+              "description": "Calor específico do solo.",
+              "unit": "J/(kg.degC)"
+            },
+            "rho": {
+              "type": "number",
+              "description": "Massa específica do solo.",
+              "unit": "kg/m3"
+            }
+          }
+        }
+      },
+      "CI": {
+        "type": "array",
+        "description": "Retângulos em cujo domínio são definidas as condições iniciais de temperatura do solo.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "xmax": {
+              "type": "number",
+              "description": "Ponto máximo do domínio no eixo x.",
+              "unit": "m"
+            },
+            "xmin": {
+              "type": "number",
+              "description": "Ponto mínimo do domínio no eixo x.",
+              "unit": "m"
+            },
+            "ymax": {
+              "type": "number",
+              "description": "Ponto máximo do domínio no eixo y.",
+              "unit": "m"
+            },
+            "ymin": {
+              "type": "number",
+              "description": "Ponto mínimo do domínio no eixo y.",
+              "unit": "m"
+            },
+            "temp": {
+              "type": "number",
+              "description": "Temperatura do solo.",
+              "unit": "degC"
+            }
+          }
+        }
+      },
+      "CC": {
+        "type": "object",
+        "description": "Condições de contorno de acordo com os rótulos definidos nos arquivos de malha.",
+        "properties": {
+          "Dirichlet": {
+            "type": "array",
+            "description": "Condição de contorno do tipo Dirichlet (temperatura do solo imposta pelo usuário).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rotulo": {
+                  "type": "integer",
+                  "description": "Rótulo indicado no arquivo de malha para os contornos em que a condição de Dirichlet será aplicada."
+                },
+                "rotuloSTR": {
+                  "type": "string",
+                  "description": "Rótulo textual (nome) do contorno em que a condição de Dirichlet será aplicada, alternativa ao rótulo numérico."
+                },
+                "valor": {
+                  "type": "array",
+                  "description": "Temperatura do solo ao longo do tempo.",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "tempo": {
+                  "type": "array",
+                  "description": "Instantes de tempo associados com as temperaturas definidas no campo 'valor'.",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "VonNewman": {
+            "type": "array",
+            "description": "Condição de contorno do tipo Von Neumann (fluxo de calor imposto no contorno).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rotulo": {
+                  "type": "integer",
+                  "description": "Rótulo indicado no arquivo de malha para os contornos em que a condição de Von Neumann será aplicada."
+                },
+                "rotuloSTR": {
+                  "type": "string",
+                  "description": "Rótulo textual (nome) do contorno em que a condição de Von Neumann será aplicada, alternativa ao rótulo numérico."
+                },
+                "valor": {
+                  "type": "array",
+                  "description": "Fluxo de calor imposto ao longo do tempo.",
+                  "items": {
+                    "type": "number"
+                  }
+                },
+                "tempo": {
+                  "type": "array",
+                  "description": "Instantes de tempo associados com os fluxos definidos no campo 'valor'.",
+                  "items": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "Richardson": {
+            "type": "array",
+            "description": "Condição de contorno do tipo Richardson (coeficiente de película convectivo).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rotulo": {
+                  "type": "integer",
+                  "description": "Rótulo indicado no arquivo de malha para os contornos em que a condição de Richardson será aplicada."
+                },
+                "rotuloSTR": {
+                  "type": "string",
+                  "description": "Rótulo textual (nome) do contorno em que a condição de Richardson será aplicada, alternativa ao rótulo numérico."
+                }
+              }
+            }
+          },
+          "acoplamento": {
+            "type": "integer",
+            "description": "Rótulo indicado no arquivo de malha para os contornos em que a condição de acoplamento será aplicada."
+          }
+        }
+      }
+    }
+  }

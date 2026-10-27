@@ -752,7 +752,7 @@ _CORR_MR2_MAP = {
     'DUKLER_EATON_FLANIGAN': 13,
     'DUKLER_MINAMI_I': 14,
     'DUKLER_MINAMI_II': 15,
-    'SHOHAM': 6 # shoham is not yet implement, so we use beggs and brill as placeholder
+    'SHOHAM': 16
 }
 
 

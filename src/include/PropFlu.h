@@ -212,8 +212,10 @@ class ProFlu {
     int flashCompleto; // Selects the PVTSim table model: 1 -> PVTSim table
     // 2 -> compositional model
     int tabelaDinamica;
+    int multbcs;
     int viscBlackOil; // For PVTSim tables, indicates whether viscosity values should still be obtained from
     // a Black Oil model
+    int condBlackOil;
     int indiceFlash; // Unused
 
     // Property tables loaded from a PVTSim file
@@ -234,6 +236,8 @@ class ProFlu {
     double **sigWGF;
     double **viscO;
     double **viscG;
+    double **condO;
+    double **condG;
 
     int *itempAnt;
     int *ipresAnt;
@@ -349,6 +353,8 @@ class ProFlu {
     double coefViscWax;
     double JTLiquidoSimple;
 
+    int tipoHmodel_local; //alteracao hidrato 3
+	double phi_h_disp_local; //alteracao hidrato 3
     double FalsaCorda(double, double, double, double, double delta = 0.00001, double epsn = 0.00001, int maxit = 100) const; // Root-finding routine used exclusively by FNDran
     // The integrand has the form f(x); x contains the quadrature points and w contains their weights
     void gauleg(const double x1, const double x2, double *const x, double *const w, int size) const; // Auxiliary routine for Gaussian quadrature
@@ -718,7 +724,7 @@ class ProFlu {
 
             Marlim_CalculateMixtureThermodynamicCondition(pres, temp, npseudo,
                                                           masMol, fracMol, tempCrit, presCrit, fatAcent, TIndepPeneloux, kij, lij, liqModel,
-                                                          liqModel, GivenInitialBeta, GivenInitialLiqComposition, GivenInitialVapComposition,
+                                                          liqModel,liqModel,liqModel, GivenInitialBeta, GivenInitialLiqComposition, GivenInitialVapComposition,
                                                           &dCalculatedBubbleT, &iIER_BubbleT, &dCalculatedDewT, &iIER_DewT,
                                                           &dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &iIER_Flash,
                                                           &dCalculatedBubbleP, &iIER_BubbleP, &iCalculatedThermodynamicCondition, &dLiquidPhaseMW,

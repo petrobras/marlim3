@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/petrobras/marlim3/blob/main/docs/schemas/network.en.json",
+  "title": "Marlim3 — Network Input (English keys)",
+  "description": "JSON input for a Marlim3 network (multiple connected branches), with English keys.",
+  "type": "object",
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "examples": ["3.0.0", "3.1.6"],
+      "description": "Software version referenced by this JSON."
+    },
+    "initialConfig": {
+      "type": "object",
+      "description": "Global network solution parameters, which override the parameters of the individual branches.",
+      "properties": {
+        "initialHoldupGuess": {
+          "type": "number",
+          "description": "Initial holdup guess. To help start the simulation, coarse flow-rate and hydrostatic estimates are shared across the whole network. This holdup is therefore important to estimate the hydrostatic portion. Ranges from 0 to 1."
+        },
+        "relaxation": {
+          "type": "number",
+          "default": 0.5,
+          "description": "For branch convergence/divergence points, sets the relaxation parameter R used to update the shared pressure at the meeting point from one iteration to the next, i.e. P_{it+1} = R*P_{it} + (1-R)*P_{it+1}. Useful for highly non-linear systems, especially at the start of the simulation when abrupt, unstable pressure updates can occur. Typical cases include those using IPR-type boundary conditions."
+        },
+        "guessNodePressures": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, the user must provide initial estimates of upstream and downstream pressures for all branches, except for the most downstream branches."
+        },
+        "networkTransient": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates whether the simulation is steady-state or transient. Overrides the initialConfig.transient parameter of the individual branches that make up the system."
+        },
+        "networkFluid": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "0: gas-dominated network; 1: liquid-dominated network."
+        },
+        "dynamicTableModel": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, builds a table a posteriori from the black-oil simulation using the compositional model, for the various segments of distinct composition, leveraging the P and T mapping provided by the initial black-oil result. Valid only when using compositional models in steady state. Can significantly speed up computation, particularly for networks, by avoiding repetitive flash calculations at each iteration. Overrides the initialConfig.dynamicTableModel parameter of the individual branches."
+        },
+        "simulationTime": {
+          "type": "number",
+          "unit": "s",
+          "description": "Total simulation time. Valid only for transient simulations."
+        },
+        "networkThreads": {
+          "type": "integer",
+          "default": 1,
+          "description": "Number of threads used in the network solution for contexts where the solution can be parallelized."
+        },
+        "preProcessingOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "Runs only the pre-processing that isolates the internal networks making up the system, without performing the simulation."
+        },
+        "injection": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates an injection network (e.g. pig-back systems). In this case the simulation is necessarily steady-state and the simpler injection-well model is used."
+        },
+        "gasLiftRing": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates a gas-lift ring, an arrangement in which a single line coming from the platform can branch, at several points, into service lines serving different wells."
+        },
+        "driftModel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Selects the flow model used in the network solution. When true, enables drift-flux treatment; otherwise, uses the default model."
+        },
+        "convergenceLimit": {
+          "type": "number",
+          "description": "Convergence criterion (tolerance) for the iterative network solution loop."
+        },
+        "parallelNetworkSource": {
+          "type": "boolean",
+          "default": false,
+          "description": "Indicates that the network has reciprocal sources (parallel networks connected by nodes). When true, the root-level field of the same name describes the connected node pairs."
+        }
+      }
+    },
+    "files": {
+      "type": "array",
+      "description": "Sequence of JSON files of the individual branches that make up the network.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "connection": {
+      "type": "array",
+      "description": "The items of this array specify the connections of each individual branch, ordered the same way as informed in the 'files' field.",
+      "items": {
+        "type": "object",
+        "description": "Connections of each branch.",
+        "properties": {
+          "imposedPressure": {
+            "type": "boolean",
+            "default": false,
+            "description": "Forces the use of the downstream pressure in the branch-specific JSON instead of updating it via the network solution."
+          },
+          "active": {
+            "type": "boolean",
+            "default": true,
+            "description": "Indicates whether the branch connection is active in the network assembly."
+          },
+          "derivesFromMain": {
+            "type": "integer",
+            "description": "Index of the main branch from which this branch derives, used for branched topologies."
+          },
+          "primaryBranch": {
+            "type": "boolean",
+            "description": "Indicates whether the branch is the primary one in a pair of branches sharing a connection (e.g. in reciprocal-source arrangements)."
+          },
+          "steadyStateActive": {
+            "type": "integer",
+            "enum": [0, 1],
+            "default": 1,
+            "description": "In steady-state simulation, if 0, indicates the branch is not used. Also valid for transient, since that mode uses the steady-state solution as initial condition. In this case, the branch initial condition is the one informed by the user in the branch-specific JSON."
+          },
+          "upstreamPressure": {
+            "type": "number",
+            "unit": "kgf/cm2",
+            "description": "Initial estimate of the upstream pressure for the case initialConfig.guessNodePressures: true."
+          },
+          "downstreamPressure": {
+            "type": "number",
+            "unit": "kgf/cm2",
+            "description": "Initial estimate of the downstream pressure for the case initialConfig.guessNodePressures: true."
+          },
+          "reverse": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0, 1],
+            "description": "If 1, reverses the branch flow direction relative to what is informed in the branch JSON."
+          },
+          "collectors": {
+            "type": "array",
+            "description": "Indices of the collector branches (downstream) associated with this branch."
+          },
+          "tributaries": {
+            "type": "array",
+            "description": "Indices of the tributary branches (upstream) associated with this branch."
+          },
+          "blockage": {
+            "type": "integer",
+            "description": "For branches with two collectors, indicates the index of the blocked collector. This feature was designed to represent manifolds where it is possible to align branches with a production line and a test line. It is thus possible to block the flow of one of the collector branches. Only works for branches that have exactly two collectors."
+          },
+          "ring": {
+            "type": "boolean",
+            "description": "For gas-lift ring cases (initialConfig.gasLiftRing: true), indicates that the branch is the ring (gas line that feeds the other gas lines)."
+          },
+          "ringLength": {
+            "type": "number",
+            "description": "For gas-lift ring cases (initialConfig.gasLiftRing: true), indicates the position where the branch connects to the gas line (ring). Valid for all branches other than the gas line (i.e. ring: false)."
+          }
+        }
+      }
+    },
+    "parallelNetworkSource": {
+      "type": "array",
+      "description": "Describes the pairs of nodes connected between parallel networks (reciprocal sources). Valid when initialConfig.parallelNetworkSource: true.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "primaryNodeId": {
+            "type": "integer",
+            "description": "Index of the primary node of the reciprocal connection."
+          },
+          "secondaryNodeId": {
+            "type": "integer",
+            "description": "Index of the secondary node of the reciprocal connection."
+          }
+        }
+      }
+    }
+  }
+}

@@ -83,12 +83,24 @@ module BlackOilFromCompositional
 
         ! ------------------ CÁLCULOS:
 
+        ! Inicializando...
+        iIER = ERROR_EverythingOK
+
+        ! --------- TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+        !WRITE(*,'(A,I5)') 'DEBUG: iIER antes da 1ª chamada a V3 = ', iIER
+        ! --------- FIM DO TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+
         ! PASSO 1: Calcular a condição termodinâmica da mistura nas condições "stock-tank":
         call CalculateMixtureThermodynamicCondition_V3(dStockTankPressure, dStockTankTemperature, iNComp, oMW, &
            oZ, oTc, oPc, oW, oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, &
+           iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
            bHasInitialFlashEstimates, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
            dCalculatedStockTankBeta, oCalculatedStockTankLiqComposition, oCalculatedStockTankVapComposition, &
            iCalculatedStockTankThermodynamicCondition, iIER_Flash, iIER)
+
+        ! --------- TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+        !WRITE(*,'(A,I5)') 'DEBUG: iIER após 1ª chamada a V3 = ', iIER
+        ! --------- FIM DO TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
 
         ! ===================================
         !   10-JUL-2023 - COMMENT OUT
@@ -325,6 +337,10 @@ module BlackOilFromCompositional
 
         ! ------------------ CÁLCULOS:
 
+        ! Inicializando...
+        iIER = ERROR_EverythingOK
+        !WRITE(*,'(A,I5)') 'DEBUG: iIER antes 1ª chamada = ', iIER
+
         ! PRIMEIRO PASSO: Fazer cálculos iniciais nas condições padrão:
         call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oOriginalGlobalComposition, oMW, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, &
                             iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure, dStockTankTemperature, &
@@ -333,6 +349,12 @@ module BlackOilFromCompositional
                             dOriginalCalculatedGOR, iIER, oCalculatedStockTankLiqComposition_Arg = oOriginalStockTankLiqComposition, &
                             oCalculatedStockTankVapComposition_Arg = oOriginalStockTankVapComposition, &
                             dStockTankVaporMW_Arg = dOriginalStockTankVaporMW, dMixtureMW_Arg = dOriginalMixtureMW)
+
+        ! --------- TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+        !WRITE(*,'(A,I5)') 'DEBUG: iIER após 1ª chamada = ', iIER
+        !WRITE(*,'(A,I5)') 'DEBUG: iCalculatedStockTankThermodynamicCondition = ', iCalculatedStockTankThermodynamicCondition
+        !FLUSH()
+        ! --------- FIM DO TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -356,6 +378,11 @@ module BlackOilFromCompositional
             ! Iniciar procedimento iterativo:
             adjustRecombRatioLoop: do iIter = 1, iMaxIterations
 
+                ! --------- TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+                !WRITE(*,'(A,I3,A,F12.6)') 'DEBUG: Iteração ', iIter, ' - dCurrentRecombRatio = ', dCurrentRecombRatio
+                !FLUSH()
+                ! --------- FIM DO TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+
                 ! TESTE 16-FEV-24: impedir surgimento de recombinações anômalas:
                 if(dCurrentRecombRatio.gt.(1.0d0)) dCurrentRecombRatio = 0.5d0 * (1.0d0 + dPreviousRecombRatio)
 
@@ -373,6 +400,12 @@ module BlackOilFromCompositional
                             dNewCalculatedGOR, iIER)
 
                 if(iIER.NE.ERROR_EverythingOK) exit adjustRecombRatioLoop
+
+                ! --------- TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+                !WRITE(*,'(A,I3,A,F12.6,A,I5)') 'DEBUG: Iter ', iIter, ' dNewCalculatedGOR = ', dNewCalculatedGOR, &
+                !                            ' ThermoCond = ', iNewlyCalculatedStockTankThermodynamicCondition
+                !FLUSH()
+                ! --------- FIM DO TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
 
                 ! Testar se já se atingiu convergência no RGO:
                 newRecombRatioHasTwoPhases: if(iNewlyCalculatedStockTankThermodynamicCondition.NE.THERMOCOND_LiquidVaporVLE) then
@@ -405,6 +438,11 @@ module BlackOilFromCompositional
             end do adjustRecombRatioLoop
 
         end if stdConditionsHasTwoPhases
+
+        ! --------- TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
+        !WRITE(*,'(A)') 'DEBUG: Retornando composição ORIGINAL (não convergiu)'
+        !FLUSH()
+        ! --------- FIM DO TESTE PROVISÓRIO 26-JUN-2026 || APAGAR LOGO!
 
         ! Manter a composição original:
         oGORAdjustedGlobalComp = oOriginalGlobalComposition

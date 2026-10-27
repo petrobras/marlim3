@@ -1,10 +1,12 @@
 #ifndef _FA_HIDRATO
 #define _FA_HIDRATO
 
-#include "SisProd.h"
+#include <vector>
 #include <string>
 #include <tuple>
-#include <vector>
+#include "SisProd.h"
+#include "Geometria.h" //alteracao hidratos 3
+#include "TrocaCalor.h" //alteracao hidratos 3
 
 /*!
  * Model hydrate formation in the production system.
@@ -35,7 +37,9 @@ class FA_Hidrato {
      * the hydrate-related state variables.
      */
     void solverHidrato();
-
+    void solverHidrato1();
+    void solverHidrato2();
+    void solverHidrato3();
     /*!
      * Check whether the specified pressure and temperature conditions are
      * within the hydrate-formation region.
@@ -64,11 +68,14 @@ class FA_Hidrato {
      * \param A_s_eff_out Effective surface area calculated by the model.
      * \return Hydrate-formation kinetic rate.
      */
+    void logModeloHidratoTxt();
     double TurnerHidrato(double P, double T, double P_eq, double T_eq,
-                         double A_s, double V_h, double V_w,
-                         double r_d, double r_p, const std::string &estruturaHidratos,
-                         double A_s_input, double &A_s_eff_out);
-
+                              double A_s, double V_h, double V_w,
+                              double r_d, double r_p,
+                              const std::string& estruturaHidratos,
+                              double A_s_input,
+                              double &A_s_eff_out);
+    void salvarMassaHidratoTotal(const std::string& nomeArquivo);
     /*!
      * Advance the gas-related hydrate variable using first-order Euler
      * integration.
@@ -124,11 +131,17 @@ class FA_Hidrato {
     double MM_H, MM_G, MM_W, W_Hamm;  // Hydrate, gas, and water molar masses and Hamm parameter.
     double M_Etanol, M_MEG;           // No longer used, including as input parameters.
     double coefEsteq;                 // Hydrate stoichiometric coefficient.
-    double rhoH;                      // Hydrate density.
+    //double rhoH;                      // Hydrate density.
+    double rhoH_sI, rhoH_sII, rhoW;
     double r_d, r_p;                  // Kinetic parameters associated with hydrate dissociation and formation.
                                       // Related historical parameters: k1_sI, k2_sI, k1_sII, and k2_sII.
+    double cTurneraprox;
+    double tlimitArea, Alimit;
     string inibidor;                  // Hydrate-inhibitor identifier.
     string estruturaHidratos;         // Hydrate crystal-structure identifier.
+    int tipoHmodel;
+    int tipoHmodel_local; //alteracao hidrato 3
+    double phi_h_disp_local; //alteracao hidrato 3
 
     /*!
      * Load a hydrate-equilibrium curve from a file.

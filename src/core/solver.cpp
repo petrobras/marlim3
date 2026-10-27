@@ -184,6 +184,11 @@ void solv2D::parse_tempo(
 
     tempVF.tendTemp = 10.;
     equilterm = 0;
+    velPreParada=0.;
+    if (tempo_json.HasMember("velPreParada"))
+    	velPreParada = tempo_json["velPreParada"].GetDouble();
+
+
     if (tempo_json.HasMember("equilibrioTermico"))
         equilterm = tempo_json["equilibrioTermico"].GetBool();
 
@@ -205,6 +210,10 @@ void solv2D::parse_tempo(
     (*vg1dSP).atrasaHR = 0;
     if (tempo_json.HasMember("implicitoHR"))
         (*vg1dSP).atrasaHR = 1 - tempo_json["implicitoHR"].GetBool();
+
+    acopD=0;
+    if (tempo_json.HasMember("acopDirichlet"))
+        acopD = tempo_json["acopDirichlet"].GetInt();
 
     dtSegur = 10.;
     cicloSegur = 100;
@@ -1657,6 +1666,21 @@ double solv2D::areaMedParede(malha2dVF &malha, double &condMed) {
     return varArea;
 }
 
+void solv2D::atualizaTParede(TransCal& transfer, double Tint, double viscint, double delt, int viscVar){
+
+	transfer.Vint = 0.;
+    transfer.dt = delt;
+    transfer.kint = prop.cond[0];
+    transfer.cpint = prop.cp[0];
+    transfer.rhoint = prop.rho[0];
+    double visci=viscint;
+    transfer.viscint = visci;
+    transfer.betint = prop.beta[0];
+    transfer.Tint=Tint;
+    double fluxcal;
+    fluxcal = transfer.transtrans();
+}
+
 void solv2D::resolve() {
 
     string elearq;
@@ -1818,15 +1842,15 @@ void solv2D::resolve() {
         }
 
         transfer = TransCal(vg1dSP, dutosMRT, perm, vncamada, vdrcamada, vTcamada,
-                            tInt, (*vg1dSP).tAmb, 0., 0, (*vg1dSP).vAmb, 0, 1, ki, cpi, rhoi, visci, 0.,
+                            tInt, (*vg1dSP).tAmb, 0., velPreParada, (*vg1dSP).vAmb, 0, 1, ki, cpi, rhoi, visci, 0.,
                             0., 0., 0., 0, (*vg1dSP).amb, 0,
                             0., 0., 0., 1.);
         transfer2 = TransCal(vg1dSP, dutosMRT, perm, vncamada, vdrcamada, vTcamada,
-                             tInt, (*vg1dSP).tAmb, 0., 0, (*vg1dSP).vAmb, 0, 1, ki, cpi, rhoi, visci, 0.,
+                             tInt, (*vg1dSP).tAmb, 0., velPreParada, (*vg1dSP).vAmb, 0, 1, ki, cpi, rhoi, visci, 0.,
                              0., 0., 0., 0, (*vg1dSP).amb, 0,
                              0., 0., 0., 1.);
-        transfer.condiTparede = 1;
-        transfer2.condiTparede = 1;
+        transfer.condiTparede = 0;
+        transfer2.condiTparede = 0;
         if (equilterm == 1) {
             transfer.transperm();
             transfer2.transperm();
@@ -1844,6 +1868,8 @@ void solv2D::resolve() {
             fluxcal = transfer.fluxFim / (M_PI * dutosMRT.a);
         else
             fluxcal = 0.;
+        transfer.Vint=0.;
+        transfer2.Vint=0.;
     }
 
     int nno = 0;
@@ -2152,7 +2178,7 @@ void solv2D::resolve() {
     (*vg1dSP).tempo = 0.;
     double holdupGlob = 0.;
     double areaTotal = 0.;
-    malha2dVF malha(xcoor, noEle, tipo, atributo, nvert, nele, nno, tempVF.dtmax[0], tempVF.perm, tempVF.trans, vg1dSP, flucVF);
+    malha2dVF malha(xcoor, noEle, tipo, atributo, nvert, nele, nno, tempVF.dtmax[0], tempVF.perm, tempVF.trans, vg1dSP, flucVF,acopD);
     int confinado = tempVF.confinado;
     double yMaxWall = -10000000.;
     for (int i = 0; i < malha.nele; i++) {
@@ -2423,13 +2449,16 @@ void solv2D::resolve() {
     unordered_map<int, int> indPar;
     unordered_map<int, int> indPar2;
     TransCal *vecTransfer = nullptr;
+    TransCal *vecTransferBuffer = nullptr;
     double *vecFluxcal = nullptr;
     if ((*vg1dSP).acop == 1) {
         paredeContorno(malha, indPar, indPar2, nPar);
         vecTransfer = new TransCal[nPar];
+        vecTransferBuffer = new TransCal[nPar];
         vecFluxcal = new double[nPar];
         for (int i = 0; i < nPar; i++) {
             vecTransfer[i] = transfer;
+            vecTransferBuffer[i] = transfer;
             vecFluxcal[i] = fluxcal;
         }
     }
@@ -2439,8 +2468,8 @@ void solv2D::resolve() {
     int contaCicloSeg = -1;
     int totalIter = 0;
     double deltCFL;
-    double multCiclo = 1.;
     double fluxCalMed = 0.;
+    double tInicial=transfer.Tint;
     while ((*vg1dSP).tempo <= tempVF.tmax) {
         int multEps = 1.0;
         chrono::steady_clock::time_point begin, end;
@@ -2448,13 +2477,11 @@ void solv2D::resolve() {
         if (totalIter > 25 || contaCicloSeg >= 0) {
             if (totalIter > 25 && contaCicloSeg >= 0) {
                 contaCicloSeg = -1;
-                multCiclo *= 2.;
             }
             contaCicloSeg++;
         }
         if (contaCicloSeg > cicloSegur) {
             contaCicloSeg = -1;
-            multCiclo = 1.;
         }
         velmax = 0.;
         (*vg1dSP).reiniciaVF = 0;
@@ -2467,7 +2494,7 @@ void solv2D::resolve() {
         } else
             delt = tempVF.dtmax[ind];
         if (contaCicloSeg >= 0)
-            delt /= (dtSegur * multCiclo);
+            delt /= (dtSegur);
         deltCFL = 100000.;
         for (int i = 0; i < malha.nele; i++) {
             if ((*vg1dSP).temInterface == 1 && (*vg1dSP).aplicaVOF == 1) {
@@ -2583,16 +2610,21 @@ void solv2D::resolve() {
         }
         // acoplamento fluxo de calor
         if ((*vg1dSP).acop == 1) {
-            for (int i = 0; i < nPar; i++)
+            for (int i = 0; i < nPar; i++){
                 vecTransfer[i].novoHi = 0.;
+            	vecTransferBuffer[i].novoHi = 0.;
+            }
         }
         // acoplamento fluxo de calor
         if ((*vg1dSP).acop == 1) {
+        	transfer.dt=delt;
             for (int i = 0; i < nPar; i++) {
                 vecTransfer[i].dt = delt;
+                vecTransferBuffer[i].dt = delt;
             }
             for (int i = 0; i < nPar; i++) {
                 vecFluxcal[i] = vecTransfer[i].transtrans() / (M_PI * dutosMRT.a);
+                vecTransferBuffer[i].transtrans() ;
             }
         }
 
@@ -2617,10 +2649,13 @@ void solv2D::resolve() {
         int totalizaIterTemp = 0;
         double multiRes = 1.;
         int multIter = 1;
+        double totalFlux;
         while ((((maxresi > tempVF.erroRes * multiRes) &&
                  (norma0 > erroPres || norma1 > erroV)) &&
                 iterTempo < iterMax) ||
                iterTempo < multIter * iterMin) {
+
+        	totalFlux=0.;
 
             // acoplamento fluxo de calor
             if ((*vg1dSP).acop == 1) {
@@ -2641,15 +2676,25 @@ void solv2D::resolve() {
                             int kcc = 0;
                             while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
                                 kcc++;
-                            if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
-                                int iFlux = indPar[i];
-                                malha.mlh2d[i].ccTVN[j] = -0 * 800 * fabs(malha.mlh2d[i].tempF[j] - transfer.Textern1) /
+                            if(acopD==0){
+                            	if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
+                            		int iFlux = indPar[i];
+                            		malha.mlh2d[i].ccTVN[j] = -0 * 800 * fabs(malha.mlh2d[i].tempF[j] - transfer.Textern1) /
                                                               fabs(60 - transfer.Textern1) +
                                                           1 * vecFluxcal[iFlux];
-                                if (fluxcal < 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) < 0.)
-                                    malha.mlh2d[i].ccTVN[j] = 0.;
-                                else if (fluxcal > 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) > 0.)
-                                    malha.mlh2d[i].ccTVN[j] = 0.;
+                            		if (fluxcal < 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) < 0.)
+                            			malha.mlh2d[i].ccTVN[j] = 0.;
+                            		else if (fluxcal > 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) > 0.)
+                            			malha.mlh2d[i].ccTVN[j] = 0.;
+                            	}
+                            }
+                            else{
+                            	if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
+                                    double tempfluidmed = tempMed(malha);
+                                    double viscfluidmed = viscMed(malha);
+                            		//atualizaTParede(transfer, tempfluidmed,viscfluidmed , delt, viscVar);
+                            		malha.mlh2d[i].ccTD[j] = transfer.Tcamada[0][0];
+                            	}
                             }
                         }
                     }
@@ -2996,60 +3041,120 @@ void solv2D::resolve() {
             // Heat flow coupling
             if (impliAcopTerm == 0) {
                 if ((*vg1dSP).acop == 1) {
-                    tempMedPar = tempMedParede(malha);
-                    double dtp = 0.0;
-                    for (int i = 0; i < nPar; i++) {
-                        int iFlux2 = indPar2[i];
+                	if(acopD==0){
+                		tempMedPar = tempMedParede(malha);
+                		double dtp = 0.0;
+                		for (int i = 0; i < nPar; i++) {
+                			int iFlux2 = indPar2[i];
 
-                        vecTransfer[i].FeiticoDoTempo();
-                        for (int j = 0; j < malha.mlh2d[iFlux2].cel2D.nvert; j++) {
-                            if (malha.mlh2d[iFlux2].kvizinho[j] < 0) {
-                                int kcc = 0;
-                                while (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] != CC.rotuloAcop)
-                                    kcc++;
-                                if (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] == CC.rotuloAcop) {
-                                    double contTemp = 1.;
-                                    if ((*vg1dSP).tempo > 1 && (*vg1dSP).tempo < 10) {
-                                        contTemp = 1 - ((*vg1dSP).tempo - 1.) / 9;
-                                    } else if ((*vg1dSP).tempo > 10)
-                                        contTemp = 0.;
-                                    vecTransfer[i].Tint = contTemp * malha.mlh2d[iFlux2].cel2D.tempC + (1 - contTemp) * malha.mlh2d[iFlux2].tempF[j];
-                                    dtp = -0.0001 * vecTransfer[i].Tint;
-                                }
-                            }
-                        }
-                        vecTransfer[i].Tint += dtp;
-                        double fluxTemp = vecTransfer[i].transtrans() / (M_PI * dutosMRT.a);
-                        vecTransfer[i].FeiticoDoTempo();
-                        vecTransfer[i].Tint -= dtp;
-                        vecFluxcal[i] = vecTransfer[i].transtrans() / (M_PI * dutosMRT.a);
-                        malha.mlh2d[iFlux2].DCCN = (vecFluxcal[i] - fluxTemp) / (-dtp);
-                    }
-                    for (int i = 0; i < malha.nele; i++) {
-                        for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
-                            if (malha.mlh2d[i].kvizinho[j] < 0) {
-                                int kcc = 0;
-                                while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
-                                    kcc++;
-                                if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
-                                    int iFlux = indPar[i];
-                                    malha.mlh2d[i].ccTVN[j] = -0 * 800 * fabs(malha.mlh2d[i].tempF[j] - transfer.Textern1) /
+                			vecTransfer[i].FeiticoDoTempo();
+                			vecTransferBuffer[i].FeiticoDoTempo();
+                			for (int j = 0; j < malha.mlh2d[iFlux2].cel2D.nvert; j++) {
+                				if (malha.mlh2d[iFlux2].kvizinho[j] < 0) {
+                					int kcc = 0;
+                					while (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] != CC.rotuloAcop)
+                						kcc++;
+                					if (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] == CC.rotuloAcop) {
+                						double contTemp = 0.;
+                						//vecTransferBuffer[i].Tint=
+                                    			vecTransfer[i].Tint = contTemp * malha.mlh2d[iFlux2].cel2D.tempC + (1 - contTemp) * malha.mlh2d[iFlux2].tempF[j];
+                                    			dtp = -0.0001 * vecTransfer[i].Tint;
+                					}
+                				}
+                			}
+                			//experimentos, ainda não definido como trabalhar com esta condição, favor não apagar
+                			vecTransferBuffer[i].Vint = 0.;
+                			vecTransferBuffer[i].dt = delt;
+                			vecTransferBuffer[i].kint = prop.cond[0];
+                			vecTransferBuffer[i].cpint = prop.cp[0];
+                			vecTransferBuffer[i].rhoint = prop.rho[0];
+                			double visci;
+                			if (viscVar == 1) {
+                				if (flucVF.naoN == 0)
+                					visci = flucVF.VisFlu(1., transfer2.Tint) / 1000.;
+                				else {
+                					double taxaDef = flucVF.viscNaoNew[0][1];
+                					visci = flucVF.VisFlu(1., transfer2.Tint, taxaDef) / 1000.;
+                				}
+                			} else
+                				visci = prop.visc[0];
+                			vecTransferBuffer[i].viscint = visci;
+                			vecTransferBuffer[i].betint = prop.beta[0];
+                			double fluxcal;
+                			fluxcal = vecTransferBuffer[i].transtrans();
+                			double dia = dutosMRT.a;
+                			double area = 0.25 * M_PI * dia * dia;
+                			double coefTempo = (transfer2.rhoint * transfer2.cpint) * area;
+                			vecTransferBuffer[i].Tint = vecTransferBuffer[i].Tint + fluxcal / (coefTempo / delt);
+                			/*vecTransfer[i].Tint += dtp;
+                        	double fluxTemp = vecTransfer[i].transperm() / (M_PI * dutosMRT.a);
+                        	vecTransfer[i].FeiticoDoTempo();
+                        	vecTransfer[i].Tint -= dtp;*/
+                			/*if((*vg1dSP).tempo<20){
+                        		vecFluxcal[i] = vecTransfer[i].transperm() / (M_PI * dutosMRT.a);
+                        		//vecTransferBuffer[i].transtrans();
+                        	}
+                        	else{*/
+                        		double verificaFlux1=vecTransfer[i].transperm() / (M_PI * dutosMRT.a);
+                        			//double verificaFlux2=vecTransferBuffer[i].transtrans() / (M_PI * dutosMRT.a);
+                        		if(fabs(verificaFlux1)<0.1*fabs(fluxcal)){
+                        			vecFluxcal[i] =10.*verificaFlux1;
+                        		}
+                        		else{
+                        			vecFluxcal[i] =fluxcal;
+                        		}
+                        		//vecFluxcal[i] = vecTransferBuffer[i].transtrans() / (M_PI * dutosMRT.a);
+                        		// }
+                        		//malha.mlh2d[iFlux2].DCCN = 0.*(vecFluxcal[i] - fluxTemp) / (-dtp);
+                		}
+                		for (int i = 0; i < malha.nele; i++) {
+                			for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
+                				if (malha.mlh2d[i].kvizinho[j] < 0) {
+                					int kcc = 0;
+                					while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
+                						kcc++;
+                					if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
+                						int iFlux = indPar[i];
+                						malha.mlh2d[i].ccTVN[j] = -0 * 800 * fabs(malha.mlh2d[i].tempF[j] - transfer.Textern1) /
                                                                   fabs(60 - transfer.Textern1) +
-                                                              1 * vecFluxcal[iFlux];
-                                    if (fluxcal < 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) < 0.)
-                                        malha.mlh2d[i].ccTVN[j] = 0.;
-                                    else if (fluxcal > 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) > 0.)
-                                        malha.mlh2d[i].ccTVN[j] = 0.;
-                                }
-                            }
-                        }
-                    }
+																  1 * vecFluxcal[iFlux];
+                						if (fluxcal < 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) < 0.)
+                							malha.mlh2d[i].ccTVN[j] = 0.;
+                						else if (fluxcal > 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) > 0.)
+                							malha.mlh2d[i].ccTVN[j] = 0.;
+                					}
+                				}
+                			}
+                		}
+                	}
+                	else{
+                		double comprimento=0.;
+                        double tempfluidmed = tempMed(malha);
+                        double viscfluidmed = viscMed(malha);
+                        if(iterTempo>0)transfer.FeiticoDoTempo();
+                		atualizaTParede(transfer, tempfluidmed,viscfluidmed , delt, viscVar);
+                		for (int i = 0; i < malha.nele; i++) {
+                			for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
+                				if (malha.mlh2d[i].kvizinho[j] < 0) {
+                					int kcc = 0;
+                					while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
+                						kcc++;
+                					if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
+                						comprimento += malha.mlh2d[i].cel2D.sFaceMod[j];
+                						totalFlux+=malha.mlh2d[i].fluxTface[j][0];
+                                		malha.mlh2d[i].ccTD[j] = transfer.Tcamada[0][0];
+                					}
+                				}
+                			}
+                		}
+                		totalFlux/=comprimento;
+                	}
                 }
             }
 
             int iterTemp = 0;
             normaTemp = 1e5;
-            while ((normaTemp > erroT * tempVF.relaxT || maxresiT > tempVF.erroRes) && iterTemp < 200) {
+            while ((normaTemp > erroT* tempVF.relaxT || maxresiT > tempVF.erroRes) && (iterTemp < 10)) {
 #pragma omp parallel for num_threads(nthrdLocal)
                 for (int i = 0; i < malha.nele; i++) {
                     for (int j = 0; j < malha.mlh2d[i].cel2D.dim; j++) {
@@ -3119,44 +3224,80 @@ void solv2D::resolve() {
                 // Heat flow coupling
                 if (impliAcopTerm == 1) {
                     if ((*vg1dSP).acop == 1) {
-                        tempMedPar = tempMedParede(malha);
-                        for (int i = 0; i < nPar; i++) {
-                            int iFlux2 = indPar2[i];
+                    	if(acopD==0){
+                    		tempMedPar = tempMedParede(malha);
+                    		for (int i = 0; i < nPar; i++) {
+                    			int iFlux2 = indPar2[i];
 
-                            vecTransfer[i].FeiticoDoTempo();
-                            for (int j = 0; j < malha.mlh2d[iFlux2].cel2D.nvert; j++) {
-                                if (malha.mlh2d[iFlux2].kvizinho[j] < 0) {
-                                    int kcc = 0;
-                                    while (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] != CC.rotuloAcop)
-                                        kcc++;
-                                    if (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] == CC.rotuloAcop) {
-                                        double contTemp = 0.;
-                                        vecTransfer[i].Tint = contTemp * malha.mlh2d[iFlux2].cel2D.tempC + (1 - contTemp) * malha.mlh2d[iFlux2].tempF[j];
-                                    }
-                                }
-                            }
-                            vecFluxcal[i] = -600 + 0 * vecTransfer[i].transtrans() / (M_PI * dutosMRT.a);
-                        }
-                        for (int i = 0; i < malha.nele; i++) {
-                            for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
-                                if (malha.mlh2d[i].kvizinho[j] < 0) {
-                                    int kcc = 0;
-                                    while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
-                                        kcc++;
-                                    if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
-                                        int iFlux = indPar[i];
-                                        malha.mlh2d[i].ccTVN[j] = -0 * 800 * fabs(malha.mlh2d[i].tempF[j] - transfer.Textern1) /
+                    			vecTransfer[i].FeiticoDoTempo();
+                    			for (int j = 0; j < malha.mlh2d[iFlux2].cel2D.nvert; j++) {
+                    				if (malha.mlh2d[iFlux2].kvizinho[j] < 0) {
+                    					int kcc = 0;
+                    					while (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] != CC.rotuloAcop)
+                    						kcc++;
+                    					if (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] == CC.rotuloAcop) {
+                    						double contTemp = 0.;
+                    						if((*vg1dSP).tempo<5)contTemp=0.;
+                    						vecTransfer[i].Tint = contTemp * malha.mlh2d[iFlux2].cel2D.tempC + (1 - contTemp) * malha.mlh2d[iFlux2].tempF[j];
+                    						/* if(vecTransfer[i].Tint>tInicial){
+                                        		if(contTemp==0)malha.mlh2d[iFlux2].tempF[j]=tInicial;
+                                        	}*/
+                    					}
+                    				}
+                    			}
+                    			/*if(vecTransfer[i].Tint>tInicial){
+                            		vecTransfer[i].Tint=tInicial;
+                            		vecFluxcal[i] =0.;
+                            	}
+                            	else*/ vecFluxcal[i] = -0*600 + 1 * vecTransfer[i].transperm() / (M_PI * dutosMRT.a);
+                    		}
+                    		for (int i = 0; i < malha.nele; i++) {
+                    			for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
+                    				if (malha.mlh2d[i].kvizinho[j] < 0) {
+                    					int kcc = 0;
+                    					while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
+                    						kcc++;
+                    					if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
+                    						int iFlux = indPar[i];
+                    						malha.mlh2d[i].ccTVN[j] = -0 * 800 * fabs(malha.mlh2d[i].tempF[j] - transfer.Textern1) /
                                                                       fabs(60 - transfer.Textern1) +
                                                                   1 * vecFluxcal[iFlux];
-                                        if (fluxcal < 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) < 0.)
-                                            malha.mlh2d[i].ccTVN[j] = 0.;
-                                        else if (fluxcal > 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) > 0.)
-                                            malha.mlh2d[i].ccTVN[j] = 0.;
-                                    }
-                                }
-                            }
-                        }
+                    						if (fluxcal < 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) < 0.)
+                    							malha.mlh2d[i].ccTVN[j] = 0.;
+                    						else if (fluxcal > 0. && (malha.mlh2d[i].tempF[j] - transfer.Textern1) > 0.)
+                    							malha.mlh2d[i].ccTVN[j] = 0.;
+                    					}
+                    				}
+                    			}
+                    		}
+                    	}
                     }
+                	else{
+                		double totalFlux=0.;
+                		for (int i = 0; i < malha.nele; i++) {
+                			for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
+                				if (malha.mlh2d[i].kvizinho[j] < 0) {
+                					int kcc = 0;
+                					while (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] != CC.rotuloAcop)
+                						kcc++;
+                					if (kcc < 1 && malha.mlh2d[i].cel2D.ccFace[j] == CC.rotuloAcop) {
+                						int iFlux = indPar[i];
+                						transfer.FeiticoDoTempo();
+                                        double tempfluidmed = tempMed(malha);
+                                        double viscfluidmed = viscMed(malha);
+                                		atualizaTParede(transfer, tempfluidmed,viscfluidmed , delt, viscVar);
+                						malha.mlh2d[i].ccTD[j]=transfer.Tcamada[0][0];
+                						//vecTransfer[iFlux].FeiticoDoTempo();
+                						//vecTransfer[iFlux].transtrans(-1, -2*M_PI*transfer.geom.a*malha.mlh2d[i].fluxTface[j][0]/malha.mlh2d[i].cel2D.sFaceMod[j]);
+                						//malha.mlh2d[i].ccTD[j]=vecTransfer[iFlux].Tcamada[0][0];
+                						totalFlux+=malha.mlh2d[i].fluxTface[j][0];
+                					}
+                				}
+                			}
+                		}
+						//transfer.FeiticoDoTempo();
+						//transfer.transtrans(-1, -totalFlux);
+                	}
                 }
             }
             totalizaIterTemp += iterTemp;
@@ -3167,15 +3308,15 @@ void solv2D::resolve() {
 
             if (velmed < 0.001) {
                 multEps = 1.;
-                multiRes = 10.;
+                multiRes = 50.;
                 multIter = 1;
             } else if (velmed < 0.005) {
                 multEps = 1.;
-                multiRes = 1.;
+                multiRes = 10.;
                 multIter = 1;
             } else if (velmed < 0.01) {
                 multEps = 1.;
-                multiRes = 1.;
+                multiRes = 5.;
             } else {
                 multEps = 1.;
                 multiRes = 1.;
@@ -3241,7 +3382,7 @@ void solv2D::resolve() {
 
             if (resetTrend > tempVF.tendTemp) {
                 ofstream escreveIni(tmp.c_str(), ios_base::app);
-                escreveIni << (*vg1dSP).tempo << "   ;   " << tempfluidmed << "  ;   " << tempMedPar << "   ;   " << transfer2.Tint << "  ;   " << transfer2.Tcamada[0][0] << "  ;   " << fluxCalMed << "  ;   " << viscfluidmed << "  ;   " << taxafluidmed << "  ;   " << velfluidmed << endl;
+                escreveIni << (*vg1dSP).tempo << "   ;   " << tempfluidmed << "  ;   " << tempMedPar << "   ;   " << transfer2.Tint << "  ;   " << transfer2.Tcamada[0][0] << "  ;   " << totalFlux << "  ;   " << viscfluidmed << "  ;   " << taxafluidmed << "  ;   " << velfluidmed << endl;
                 escreveIni.close();
             }
         }

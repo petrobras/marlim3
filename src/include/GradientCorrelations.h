@@ -9,6 +9,7 @@
 #include "FerramentasNumericas.h"
 #include "Log.h"
 #include "celula3.h"
+#include "GomezModel.h"
 #include <math.h>
 
 // ------------------------------------------------------------------------------

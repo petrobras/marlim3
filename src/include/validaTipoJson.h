@@ -101,6 +101,7 @@ class validadorTipo {
     void valida_fonteCalor(Value &fonteCalor_json, std::vector<std::string> &erros, bool &sucesso);
     void valida_fonte_gaslift(Value &fonte_gaslift_json, std::vector<std::string> &erros, bool &sucesso);
     void valida_intermitencia(Value &intermitencia_json, std::vector<std::string> &erros, bool &sucesso);
+    void valida_celUnit(Value &celUnit_json, std::vector<std::string> &erros, bool &sucesso);
     void valida_perfil_producao(Value &perfis_producao_json, std::vector<std::string> &erros, bool &sucesso);
     void valida_perfil_servico(Value &perfis_servico_json, std::vector<std::string> &erros, bool &sucesso);
     void valida_tendencia_producao(Value &tendencia_producao_json, std::vector<std::string> &erros, bool &sucesso);

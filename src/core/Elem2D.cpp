@@ -8,7 +8,7 @@
 
 
 elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int nele, int nno, int i
-		,double vdt, int vperm, int vtrans,ProFluColVF vflucVF,
+		,double vdt, int vperm, int vtrans,ProFluColVF vflucVF,int vacopd,
 		double vpres,double vu,double vv,double vt,double vfluxCal,double vcond,
 		double vcp,double vrho,double vvisc,double vbeta) :
 				TLUV(1), localUV(2,nVert+1),TLU(1), localU(1,nVert+1),TLV(1), localV(1,nVert+1),TLPCor(1), localPCor(1,nVert+1),
@@ -75,6 +75,7 @@ elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* 
 	CFLC=CFLCTemp;
 	vg1dSP=Vvg1dSP;
 	flucVF=vflucVF;
+	acopD=vacopd;
 
 
 	if(nele>0){
@@ -95,6 +96,11 @@ elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* 
     	gradUface=new double* [cel2D.nvert];
     	vF=new double [cel2D.nvert];
     	tempF=new double [cel2D.nvert];
+    	fluxTface=new double* [cel2D.nvert];
+    	for(int j=0; j<cel2D.nvert;j++){
+    		fluxTface[j]=new double [cel2D.dim];
+    		for(int i=0; i<cel2D.dim;i++)fluxTface[j][i]=0.;
+    	}
     	holF=new double [cel2D.nvert];
     	tUpw=new double [cel2D.nvert];
     	uUpw=new double [cel2D.nvert];
@@ -405,6 +411,7 @@ elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* 
 		gradUface=0;
 		vF=0;
 		tempF=0;
+		fluxTface=0;
 		holF=0;
 		tUpw=0;
 		uUpw=0;
@@ -516,6 +523,8 @@ elem2d::elem2d(const elem2d& velem) :
 	DCCN=velem.DCCN;
 	extrapSuaveCCN=velem.extrapSuaveCCN;
 
+	acopD=velem.acopD;
+
 
 	if(cel2D.nvert>0){
     	vizinho=new elemento* [cel2D.nvert];
@@ -550,6 +559,11 @@ elem2d::elem2d(const elem2d& velem) :
     	gradUface=new double* [cel2D.nvert];
     	vF=new double [cel2D.nvert];
     	tempF=new double [cel2D.nvert];
+    	fluxTface=new double* [cel2D.nvert];
+    	for(int i=0; i<cel2D.nvert;i++){
+    		fluxTface[i]=new double [cel2D.dim];
+    		for(int j=0;j<cel2D.dim;j++) fluxTface[i][j]=velem.fluxTface[i][j];
+    	}
     	holF=new double [cel2D.nvert];
     	tUpw=new double [cel2D.nvert];
     	uUpw=new double [cel2D.nvert];
@@ -844,6 +858,7 @@ elem2d::elem2d(const elem2d& velem) :
 		vUpw=0;
 		holUpw=0;
 		tMed=0;
+		fluxTface=0;
 		uMed=0;
 		vMed=0;
 		holMed=0;
@@ -942,6 +957,7 @@ elem2d& elem2d::operator =(const elem2d& velem) {
 				delete[] gradUface[i];
 				delete[] gradVface[i];
 				delete[] cel2D.vecSDif[i];
+				delete[] fluxTface[i];
 			}
 			delete[] cel2D.centroideFace;
 			delete[] cel2D.coordVert;
@@ -979,6 +995,7 @@ elem2d& elem2d::operator =(const elem2d& velem) {
 			delete[] gradUface;
 			delete[] vF;
 			delete[] tempF;
+			delete[] fluxTface;
 			delete[] holF;
 			delete[] tUpw;
 			delete[] uUpw;
@@ -1095,6 +1112,8 @@ elem2d& elem2d::operator =(const elem2d& velem) {
 		DCCN=velem.DCCN;
 		extrapSuaveCCN=velem.extrapSuaveCCN;
 
+		acopD=velem.acopD;
+
 
 		if(cel2D.nvert>0){
 	    	vizinho=new elemento* [cel2D.nvert];
@@ -1121,6 +1140,11 @@ elem2d& elem2d::operator =(const elem2d& velem) {
 	    	gradUface=new double* [cel2D.nvert];
 	    	vF=new double [cel2D.nvert];
 	    	tempF=new double [cel2D.nvert];
+	    	fluxTface=new double* [cel2D.nvert];
+	    	for(int i=0; i<cel2D.nvert;i++){
+	    		fluxTface[i]=new double [cel2D.dim];
+	    		for(int j=0;j<cel2D.dim;j++) fluxTface[i][j]=velem.fluxTface[i][j];
+	    	}
 	    	holF=new double [cel2D.nvert];
 	    	gradVface=new double* [cel2D.nvert];
 	    	tUpw=new double [cel2D.nvert];
@@ -2836,10 +2860,10 @@ void elem2d::calcGradGreenTemp(int inicia){
 			int kcc=0;
 			int acoplado=0;
 			tipoCCTemp(i, diri, vn, rich,acoplado,kcc);
-			if(diri==1){
+			if(diri==1 || (acoplado==1 && acopD==1)){
 				tempF[i]=ccTD[i];
 			}
-			else if(vn==1 || acoplado==1){
+			else if(vn==1 || (acoplado==1 && acopD==0)){
 				double condHarm=cel2D.cond;
 				double gradareaB=ccTVN[i]*cel2D.sFaceMod[i]/condHarm;
 
@@ -2852,8 +2876,10 @@ void elem2d::calcGradGreenTemp(int inicia){
 				double escalGradArea=escalar(gradMed,cel2D.sFace[i],cel2D.dim);
 				extrapSuaveCCN=(termoCorda)*cel2D.modE[i];
 				coefTHRC[i]=1.;
-				fonteTHR[i]=(gradareaB-escalGradArea+termoCorda*cordaArea)*(cel2D.modE[i]/cordaArea);
-				tempF[i]=cel2D.tempC+fonteTHR[i];
+				//fonteTHR[i]=(gradareaB-escalGradArea+termoCorda*cordaArea)*(cel2D.modE[i]/cordaArea);
+				//tempF[i]=cel2D.tempC+fonteTHR[i];
+				fonteTHR[i]=1*ccTVN[i]*cel2D.modE[i]/cel2D.cond;
+				tempF[i]=cel2D.tempC+1*ccTVN[i]*cel2D.modE[i]/cel2D.cond;
 
 
 			}
@@ -3743,7 +3769,7 @@ void elem2d::GeraLocalT(double rlx){
 			int kcc=0;
 			int acoplado;
 			tipoCCTemp(i, diri, vn, rich,acoplado,kcc);
-			if(diri==1){
+			if(diri==1 || (acoplado==1 && acopD==1)){
 
 				double gradMed [cel2D.dim];
 				for(int j=0; j<cel2D.dim;j++){
@@ -3756,6 +3782,7 @@ void elem2d::GeraLocalT(double rlx){
 				TLT[0]+=condHarm*(escalGradArea-termoCorda*cordaArea);
 				double termMat=(condHarm*cordaArea/cel2D.modE[i]);
 				TLT[0]+=termMat*tempF[i];
+				fluxTface[i][0]=TLT[0]-termMat*cel2D.tempC;
 				TLT[0]-=(cel2D.cp*massF[i]*tempF[i]);
 				localT.mx[0][diag]+=termMat;
 			}
@@ -3778,7 +3805,7 @@ void elem2d::GeraLocalT(double rlx){
 				localT.mx[0][diag]-=termMat*coefTHRC[i];
 				localT.mx[0][diag]+=termMat;
 			}
-			else if(vn==1 || acoplado==1){
+			else if(vn==1 || (acoplado==1 && acopD==0)){
 				TLT[0]+=(ccTVN[i]-DCCN*cel2D.tempC)*cel2D.sFaceMod[i];
 				TLT[0]-=1*(cel2D.cp*massF[i]*fonteTHR[i]);
 				localT.mx[0][diag]+=(-DCCN*cel2D.sFaceMod[i]+1*cel2D.cp*massF[i]*coefTHRC[i]);

@@ -10,14 +10,36 @@ using namespace rapidjson;
 
 int chrisao = 0;
 
-APara::APara(varGlob1D *Vvg1dSP, const string IMPFILE, int vncel, detcelp *vcelp, ProFlu *vflup, detBCS *vbcs, detFONGAS *vfonteg) {
+APara::APara(varGlob1D *Vvg1dSP, const string IMPFILE, int vncel, detcelp *vcelp, ProFlu *vflup, detBCS *vbcs, detMultiBCS *vmbcs,
+		detFONGAS *vfonteg) {
     entrada = IMPFILE;
     vg1dSP = Vvg1dSP;
     ncel = vncel;
     celp = vcelp;
     flup = vflup;
     bcs = vbcs;
+    mbcs = vmbcs;
     fonteg = vfonteg;
+
+    nVariaveis=0;
+    nAPIPR=0;
+    nAPFG=0;
+    nAPV=0;
+    nAPFL=0;
+    nAPFM=0;
+    nAPFuro=0;
+    nAPBCS=0;
+    nAPMBCS=0;
+    nAPBV=0;
+    nAPDP=0;
+    nAPdPdLH=0;
+    nAPdPdLF=0;
+    nAPdTdL=0;
+    nAPGeom=0;
+    nAPCondEquiv=0;
+
+    imprimePerfil=1;
+
     lerArq();
 }
 
@@ -28,7 +50,28 @@ APara::APara(const APara &vAP) {
     celp = vAP.celp;
     flup = vAP.flup;
     bcs = vAP.bcs;
+    mbcs = vAP.mbcs;
     fonteg = vAP.fonteg;
+
+    nVariaveis=0;
+    nAPIPR=0;
+    nAPFG=0;
+    nAPV=0;
+    nAPFL=0;
+    nAPFM=0;
+    nAPFuro=0;
+    nAPBCS=0;
+    nAPMBCS=0;
+    nAPBV=0;
+    nAPDP=0;
+    nAPdPdLH=0;
+    nAPdPdLF=0;
+    nAPdTdL=0;
+    nAPGeom=0;
+    nAPCondEquiv=0;
+
+    imprimePerfil=1;
+
     lerArq();
 }
 
@@ -36,6 +79,10 @@ APara &APara::operator=(const APara &vAP) {
     if (this != &vAP) {
         if (listaV.vbcs == 1) {
             delete[] APBCS;
+        }
+
+        if (listaV.vmbcs == 1) {
+            delete[] APMBCS;
         }
 
         if (listaV.vipr == 1) {
@@ -111,7 +158,28 @@ APara &APara::operator=(const APara &vAP) {
         celp = vAP.celp;
         flup = vAP.flup;
         bcs = vAP.bcs;
+        mbcs = vAP.mbcs;
         fonteg = vAP.fonteg;
+
+        nVariaveis=0;
+        nAPIPR=0;
+        nAPFG=0;
+        nAPV=0;
+        nAPFL=0;
+        nAPFM=0;
+        nAPFuro=0;
+        nAPBCS=0;
+        nAPMBCS=0;
+        nAPBV=0;
+        nAPDP=0;
+        nAPdPdLH=0;
+        nAPdPdLF=0;
+        nAPdTdL=0;
+        nAPGeom=0;
+        nAPCondEquiv=0;
+
+        imprimePerfil=1;
+
         lerArq();
     }
     return *this;
@@ -122,17 +190,17 @@ Document APara::parseEntrada() {
     char mensagemFalha[5000];
     // declarar o documento raiz do arquivo entrada
     Document jsonDoc;
-    // definir arquivo Rede de entrada da simulação
+    // definir arquivo Rede de entrada da simulaÃ§Ã£o
     FILE *APInFile = NULL;
-    // definir buffer de entrada da simulação
+    // definir buffer de entrada da simulaÃ§Ã£o
     char APInBuf[65536];
     // realizar a leitura do arquivo de rede
     try {
-        // atualizar a estrutura de resultado do parse do arquivo de entrada da simulação
+        // atualizar a estrutura de resultado do parse do arquivo de entrada da simulaÃ§Ã£o
         logger.setNomeArqEntrada(entrada);
-        // abrir arquivo de entrada da simulação
+        // abrir arquivo de entrada da simulaÃ§Ã£o
         APInFile = fopen(entrada.c_str(), "r");
-        // criar stream para o arquivo de entrada da simulação
+        // criar stream para o arquivo de entrada da simulaÃ§Ã£o
         FileReadStream APInStream(APInFile, APInBuf, sizeof(APInBuf));
         // realizar o parse de AP de entrada
         jsonDoc.ParseStream(APInStream);
@@ -169,6 +237,7 @@ void APara::parse_variaveis(Value &variaveis_json) {
     tipoAP = 0;
     vfp = 0;
     listaV.vbcs = 0;
+    listaV.vmbcs = 0;
     listaV.vbvol = 0;
     listaV.vchk = 0;
     listaV.vdp = 0;
@@ -347,7 +416,7 @@ void APara::parse_FonLiq(Value &FonLiq_json) {
                 total = APFonLiq[iFL].parserieTemp + APFonLiq[iFL].parserieBet + APFonLiq[iFL].parserieVL + APFonLiq[iFL].parserieFlu;
                 if (total == 0) {
                     logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                               "Chave 'FonteLiq-AP' sem variavel temperatura ou vazão de líquido, beta ou fluido",
+                               "Chave 'FonteLiq-AP' sem variavel temperatura ou vazÃ£o de lÃ­quido, beta ou fluido",
                                "#/FonteLiq", "Indice de FonteLiq na AP = " + to_string(iFL));
                 }
             }
@@ -411,7 +480,7 @@ void APara::parse_FonGas(Value &FonGas_json) {
                 total = APFonGas[iFG].parserieTemp + APFonGas[iFG].parserieVazC + APFonGas[iFG].parserieVazG;
                 if (total == 0) {
                     logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                               "Chave 'FonteGas-AP' sem variavel temperatura ou vazão de gás ou vazão complementar",
+                               "Chave 'FonteGas-AP' sem variavel temperatura ou vazÃ£o de gÃ¡s ou vazÃ£o complementar",
                                "#/FonteGas", "Indice de FonteGas na AP = " + to_string(iFG));
                 }
             }
@@ -495,7 +564,7 @@ void APara::parse_FonMas(Value &FonMas_json) {
                 int total = APFonMas[iFM].parserieTemp + APFonMas[iFM].parserieMP + APFonMas[iFM].parserieMC + APFonMas[iFM].parserieMG + APFonMas[iFM].parserieFlu;
                 if (total == 0) {
                     logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                               "Chave 'FonteMas-AP' sem variavel temperatura ou vazão tptal, ou complementar ou gas ou fluido",
+                               "Chave 'FonteMas-AP' sem variavel temperatura ou vazÃ£o tptal, ou complementar ou gas ou fluido",
                                "#/FonteMas", "Indice de FonteMas na AP = " + to_string(iFM));
                 }
             }
@@ -552,6 +621,47 @@ void APara::parse_BCS(Value &BCS_json) {
                 }
             }
             listaV.vbcs = 1;
+        }
+    } catch (exception &e) {
+        // incluir falha
+        logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "", chaveJson, e.what());
+    }
+}
+
+void APara::parse_MBCS(Value &MBCS_json) {
+    // criar variavel para o nome da propriedade json em processo de parse
+    string chaveJson("#/MultiBCS");
+
+    nAPMBCS = 0;
+    APMBCS = 0;
+    try {
+        nAPMBCS = MBCS_json.Size();
+        if (nAPMBCS < 1) {
+            logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "Chave 'MBCS-AP' possui menos de um elemento",
+                       "#Multi/BCS", "Quantidade de MultiBCS na AP = " + to_string(nAPMBCS));
+        } else {
+            APMBCS = new detBCSAP[nAPMBCS];
+            for (int indMBCS = 0; indMBCS < nAPMBCS; indMBCS++) {
+                APMBCS[indMBCS].indBCS = MBCS_json[indMBCS]["indiceMBCS"].GetInt();
+                if (MBCS_json[indMBCS].HasMember("frequencia")) {
+                    dim++;
+                    APMBCS[indMBCS].parserieFreq = MBCS_json[indMBCS]["frequencia"].Size();
+                    for (int ifreq = 0; ifreq < APMBCS[indMBCS].parserieFreq; ifreq++) {
+                        APMBCS[indMBCS].freq.push_back(MBCS_json[indMBCS]["frequencia"][ifreq].GetDouble());
+                    }
+                    sort(APMBCS[indMBCS].freq.begin(), APMBCS[indMBCS].freq.end());
+                } else
+                    APBCS[indMBCS].parserieFreq = 0;
+                if (APBCS[indMBCS].parserieFreq > 0)
+                    nVariaveis *= APMBCS[indMBCS].parserieFreq;
+                int total = APMBCS[indMBCS].parserieFreq;
+                if (total == 0) {
+                    logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                               "Chave 'MBCS-AP' sem variavel frequencia",
+                               "#/MultiBCS", "Indice de MultiBCS na AP = " + to_string(indMBCS));
+                }
+            }
+            listaV.vmbcs = 1;
         }
     } catch (exception &e) {
         // incluir falha
@@ -1392,6 +1502,7 @@ void APara::lerArq() {
     tipoAP = 0;
     vfp = 0;
     listaV.vbcs = 0;
+    listaV.vmbcs = 0;
     listaV.vbvol = 0;
     listaV.vchk = 0;
     listaV.vdp = 0;
@@ -1426,6 +1537,9 @@ void APara::lerArq() {
         this->vfp = 1; // default
     }
 
+    if (jsonDoc.HasMember("imprimePerfil"))
+        imprimePerfil = jsonDoc["imprimePerfil"].GetBool();
+
     APIPR = 0;
     if (jsonDoc.HasMember("IPR")) {
         parse_IPR(jsonDoc["IPR"]);
@@ -1445,6 +1559,10 @@ void APara::lerArq() {
     APBCS = 0;
     if (jsonDoc.HasMember("BCS")) {
         parse_BCS(jsonDoc["BCS"]);
+    }
+    APMBCS = 0;
+    if (jsonDoc.HasMember("MultiBCS")) {
+        parse_MBCS(jsonDoc["MultiBCS"]);
     }
     APBVOL = 0;
     if (jsonDoc.HasMember("BVol")) {
@@ -1515,20 +1633,21 @@ void APara::lerArq() {
     varSeq[5] = listaV.vipr;
     varSeq[6] = listaV.vfonmas;
     varSeq[7] = listaV.vbcs;
-    varSeq[8] = listaV.vdp;
-    varSeq[9] = listaV.vdpH;
-    varSeq[10] = listaV.vdpF;
-    varSeq[11] = listaV.vdt;
-    varSeq[12] = listaV.vbvol;
-    varSeq[13] = listaV.vvalv;
-    varSeq[14] = listaV.vfuro;
-    varSeq[15] = listaV.diam;
-    varSeq[16] = listaV.kequiv;
-    varSeq[17] = listaV.vgasinj;
-    varSeq[18] = listaV.vpresent;
-    varSeq[19] = listaV.vvazpresent;
-    varSeq[20] = listaV.vchk;
-    varSeq[21] = listaV.vpocinj;
+    varSeq[8] = listaV.vmbcs;
+    varSeq[9] = listaV.vdp;
+    varSeq[10] = listaV.vdpH;
+    varSeq[11] = listaV.vdpF;
+    varSeq[12] = listaV.vdt;
+    varSeq[13] = listaV.vbvol;
+    varSeq[14] = listaV.vvalv;
+    varSeq[15] = listaV.vfuro;
+    varSeq[16] = listaV.diam;
+    varSeq[17] = listaV.kequiv;
+    varSeq[18] = listaV.vgasinj;
+    varSeq[19] = listaV.vpresent;
+    varSeq[20] = listaV.vvazpresent;
+    varSeq[21] = listaV.vchk;
+    varSeq[22] = listaV.vpocinj;
 
     sequenciaAP = 0;
     if (nVariaveis > 1) {
@@ -1548,12 +1667,22 @@ void APara::lerArq() {
         constroiVecParSerie();
         inicializaSequen(0, 0);
         traduzSeq();
-    } else if (vfp == 0) {
+    }
+    else if (vfp == 0) {
         constroiVecParSerieImex();
         inicializaSequen(0, 0);
         traduzSeqImex();
     }
-
+	else if(vfp==2){ //alteracao aditivo
+	    constroiVecParSerieImex();
+	    inicializaSequen(0,0);
+	    traduzSeqImex();
+	    }
+	else if(vfp==3){
+	    constroiVecParSerie();
+	    inicializaSequen(0,0);
+	    traduzSeq();
+	}
     if (tipoAP == 1) {
         saidaBHP = new double *[nVariaveis];
         saidaVazLiq = new double *[nVariaveis];
@@ -1563,6 +1692,7 @@ void APara::lerArq() {
         }
 
         tabelaGenericaCabecalho();
+        tabelaGenericaCabecalho(true);
     } else {
         saidaBHP = 0;
         saidaVazLiq = 0;
@@ -1613,6 +1743,14 @@ void APara::constroiVecParSerie() {
         for (int indBCS = 0; indBCS < nAPBCS; indBCS++) {
             if (APBCS[indBCS].parserieEstag > 0) {
                 vecParSerie[locdim] = APBCS[indBCS].parserieEstag;
+                locdim++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                vecParSerie[locdim] = APMBCS[indBCS].parserieFreq;
                 locdim++;
             }
         }
@@ -2070,6 +2208,14 @@ void APara::constroiVecParSerieImex() {
             }
         }
     }
+    if (listaV.vmbcs == 1) {
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                vecParSerie[locdim] = APMBCS[indBCS].parserieFreq;
+                locdim++;
+            }
+        }
+    }
     if (listaV.vdp == 1) {
         for (int indBCS = 0; indBCS < nAPDP; indBCS++) {
             if (APDP[indBCS].parserieDP > 0) {
@@ -2329,6 +2475,14 @@ void APara::traduzSeq() {
             for (int indBCS = 0; indBCS < nAPBCS; indBCS++) {
                 if (APBCS[indBCS].parserieEstag > 0) {
                     sequenciaAP[iseq].BCSnestag.push_back(genericoAP[iseq].generico[locdim]);
+                    locdim++;
+                }
+            }
+        }
+        if (listaV.vmbcs == 1) {
+            for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+                if (APMBCS[indBCS].parserieFreq > 0) {
+                    sequenciaAP[iseq].MBCSfreq.push_back(genericoAP[iseq].generico[locdim]);
                     locdim++;
                 }
             }
@@ -2795,6 +2949,14 @@ void APara::traduzSeqImex() {
                 }
             }
         }
+        if (listaV.vmbcs == 1) {
+            for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+                if (APMBCS[indBCS].parserieFreq > 0) {
+                    sequenciaAP[iseq].MBCSfreq.push_back(genericoAP[iseq].generico[locdim]);
+                    locdim++;
+                }
+            }
+        }
         if (listaV.vdp == 1) {
             for (int indBCS = 0; indBCS < nAPDP; indBCS++) {
                 if (APDP[indBCS].parserieDP > 0) {
@@ -3228,10 +3390,10 @@ void APara::atualizaCorrecao(int ncelG, Cel *celula, CelG *celulaG, double *vdPd
 
 void APara::cabecalhoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                         detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                        detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq) {
+                        detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq) {
 
     ostringstream saidaP;
-    saidaP << "variaveisInteresseAP.dat";
+    saidaP <<pathPrefixoArqSaida << "variaveisInteresseAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::out);
@@ -3279,6 +3441,17 @@ void APara::cabecalhoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, 
             if (APBCS[indBCS].parserieEstag > 0) {
                 escreveIni << " BCS " << icel << " N. Estagios; ";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                escreveIni << " MultiBCS " << icel << " Frequencia; ";
+                konta1++;
             }
         }
     }
@@ -3580,10 +3753,10 @@ void APara::cabecalhoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, 
 
 void APara::cabecalhoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                             detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                            detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq) {
+                            detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq) {
 
     ostringstream saidaP;
-    saidaP << "variaveisInteresseAP.dat";
+    saidaP <<pathPrefixoArqSaida << "variaveisInteresseAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::out);
@@ -3721,6 +3894,17 @@ void APara::cabecalhoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celul
             if (APBCS[indBCS].parserieEstag > 0) {
                 escreveIni << " BCS " << icel << " N. Estagios; ";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                escreveIni << " MultiBCS " << icel << " Frequencia; ";
+                konta1++;
             }
         }
     }
@@ -3930,10 +4114,11 @@ void APara::cabecalhoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celul
 
 void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                                   detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                                  detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq, int seq) {
+                                  detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol,
+								  detDPREQ *dpreq, int seq) {
 
     ostringstream saidaP;
-    saidaP << "variaveisInteresseAP.dat";
+    saidaP <<pathPrefixoArqSaida << "variaveisInteresseAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::app);
@@ -3991,6 +4176,18 @@ void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG 
                 celula[icel].acsr.bcs.nestag = APBCS[indBCS].nestag[ind];
                 escreveIni << seq << " : " << " indice BCS = " << konta2 << " celula Fonte " << icel << " indice N. Estagios= " << ind << " N. Estagios= " << APBCS[indBCS].nestag[ind] << "\n";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                escreveIni << "   " << APMBCS[indBCS].freq[ind] << " ; ";
+                konta1++;
             }
         }
     }
@@ -4335,13 +4532,13 @@ void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG 
 
 void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                       detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                      detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq,
+                      detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq,
                       double &pGSup, double &temperatura, double &presiniG, double &tempiniG, double &vazgasG,
                       double &presE, double &tempE, double &titE, double &betaE, double &vazE, int seq, int &indCHK,
                       double *vdPdLH, double *vdPdLF, double *vdTdL, int imprime) {
 
     ostringstream saidaP;
-    saidaP << "relacaoAP.dat";
+    saidaP <<pathPrefixoArqSaida << "relacaoAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::app);
@@ -4422,6 +4619,20 @@ void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, Pr
                 if (imprime == 1)
                     escreveIni << seq << " : " << " indice BCS = " << konta2 << " celula Fonte " << icel << " indice N. Estagios= " << ind << " N. Estagios= " << APBCS[indBCS].nestag[ind] << "\n";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                celula[icel].acsr.multibcs.freqnova = APMBCS[indBCS].freq[ind];
+                if (imprime == 1)
+                    escreveIni << seq << " : " << " indice MultiBCS = " << konta1 << " celula Fonte " << icel << " indice Frequencia= " << ind << " Frequencia= " << APMBCS[indBCS].freq[ind] << "\n";
+                konta1++;
             }
         }
     }
@@ -4886,7 +5097,7 @@ void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, Pr
 
 void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                               detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                              detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq,
+                              detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq,
                               double &pGSup, double &temperatura, double &presiniG, double &tempiniG, double &vazgasG,
                               double &presE, double &tempE, double &titE, double &betaE, double &vazE, int seq, int &indCHK,
                               double *vdPdLH, double *vdPdLF, double *vdTdL) {
@@ -4949,6 +5160,18 @@ void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *cel
                 ind = sequenciaAP[seq].BCSnestag[konta2];
                 celula[icel].acsr.bcs.nestag = APBCS[indBCS].nestag[ind];
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                celula[icel].acsr.multibcs.freqnova = APMBCS[indBCS].freq[ind];
+                konta1++;
             }
         }
     }
@@ -5309,10 +5532,11 @@ void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *cel
 
 void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                                       detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                                      detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq, int seq) {
+                                      detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs,
+									  detBVOL *bvol, detDPREQ *dpreq, int seq) {
 
     ostringstream saidaP;
-    saidaP << "variaveisInteresseAP.dat";
+    saidaP <<pathPrefixoArqSaida << "variaveisInteresseAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::app);
@@ -5473,6 +5697,18 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
                 celula[icel].acsr.bcs.nestag = APBCS[indBCS].nestag[ind];
                 escreveIni << seq << " : " << " indice BCS = " << konta2 << " celula Fonte " << icel << " indice N. Estagios= " << ind << " N. Estagios= " << APBCS[indBCS].nestag[ind] << "\n";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                escreveIni << "   " << APMBCS[indBCS].freq[ind] << " ; ";
+                konta1++;
             }
         }
     }
@@ -5711,13 +5947,13 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
 
 void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                           detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                          detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq,
+                          detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq,
                           double &pGSup, double &temperatura, double &presiniG, double &tempiniG, double &vazgasG,
                           double &presE, double &tempE, double &titE, double &betaE, double &vazE, int seq, int &indCHK,
                           double *vdPdLH, double *vdPdLF, double *vdTdL, int imprime) {
 
     ostringstream saidaP;
-    saidaP << "relacaoAP.dat";
+    saidaP <<pathPrefixoArqSaida << "relacaoAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::app);
@@ -5934,6 +6170,20 @@ void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG
                 if (imprime == 1)
                     escreveIni << seq << " : " << " indice BCS = " << konta2 << " celula Fonte " << icel << " indice N. Estagios= " << ind << " N. Estagios= " << APBCS[indBCS].nestag[ind] << "\n";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                celula[icel].acsr.multibcs.freqnova = APMBCS[indBCS].freq[ind];
+                if (imprime == 1)
+                    escreveIni << seq << " : " << " indice MultiBCS = " << konta1 << " celula Fonte " << icel << " indice Frequencia= " << ind << " Frequencia= " << APMBCS[indBCS].freq[ind] << "\n";
+                konta1++;
             }
         }
     }
@@ -6258,7 +6508,7 @@ void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG
 
 void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                                   detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                                  detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq,
+                                  detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq,
                                   double &pGSup, double &temperatura, double &presiniG, double &tempiniG, double &vazgasG,
                                   double &presE, double &tempE, double &titE, double &betaE, double &vazE, int seq, int &indCHK,
                                   double *vdPdLH, double *vdPdLF, double *vdTdL) {
@@ -6429,6 +6679,18 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
                 ind = sequenciaAP[seq].BCSnestag[konta2];
                 celula[icel].acsr.bcs.nestag = APBCS[indBCS].nestag[ind];
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                celula[icel].acsr.multibcs.freqnova = APMBCS[indBCS].freq[ind];
+                konta1++;
             }
         }
     }
@@ -6677,73 +6939,111 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
     }
 }
 
-void APara::tabelaGenericaCabecalho() {
+void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 
-    // Saídas inerentes das BHPs - IMEX e Eclipse
+    // SaÃ­das inerentes das BHPs - IMEX e Eclipse
 
-    // variável vfp (deve-se entrar no .json com os valores de 0 ou 1, descritos como segue)
+    // variÃ¡vel vfp (deve-se entrar no .json com os valores de 0 ou 1, descritos como segue)
     // 0-para solver IMEX
     // 1-para solver Eclipse
     // vfp=0; //chris
 
     ostringstream saidaP1;
     if (vfp == 0)
-        saidaP1 << "bhpsIMEX.imx";
+        saidaP1 <<pathPrefixoArqSaida << (saidaTemperatura ? "whtsIMEX.imx" : "bhpsIMEX.imx");
+    else saidaP1 <<pathPrefixoArqSaida << "vazio0";
     string tmp1 = saidaP1.str();
     ofstream escreveIni1(tmp1.c_str(), ios_base::out);
 
     ostringstream saidaP2;
     if (vfp == 1)
-        saidaP2 << "bhpsEclipse.ecp";
+        saidaP2 <<pathPrefixoArqSaida << (saidaTemperatura ? "thtsEclipse.ecp" : "bhpsEclipse.ecp");
+    else saidaP2 <<pathPrefixoArqSaida << "vazio1";
     string tmp2 = saidaP2.str();
     ofstream escreveIni2(tmp2.c_str(), ios_base::out);
 
-    if (vfp == 0) {
-        escreveIni1 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; // add data e horário such as: 12/23/2015 2:47:47 PM
-        escreveIni1 << "\n"
-                    << endl;
-        escreveIni1 << "** IDENTIFICACAO :" << " CSantim10" << endl;
-        escreveIni1 << "** Titulo....... :" << endl; // verificar se é necessário string de entrada
-        escreveIni1 << "** Responsavel.. :" << endl; // verificar se é necessário string de entrada
-        // escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se é necessário string de entrada
-        escreveIni1 << "** Comentario... :" << endl; // verificar se é necessário string de entrada
-        escreveIni1 << "\n"
-                    << endl;
+    ostringstream saidaP3; //alteracao aditivo
+    if (vfp==2)		saidaP3 <<pathPrefixoArqSaida << (saidaTemperatura ? "whtsIMEXnew.imx" : "bhpsIMEXnew.imx");
+    else saidaP3 <<pathPrefixoArqSaida << "vazio2";
+    string tmp3 = saidaP3.str();
+    ofstream escreveIni3(tmp3.c_str(), ios_base::out);
+
+    ostringstream saidaP4;
+    if (vfp==3)		saidaP4 <<pathPrefixoArqSaida << (saidaTemperatura ? "thtsEclipsenew.ecp" : "bhpsEclipsenew.ecp");
+    else saidaP4 <<pathPrefixoArqSaida << "vazio3";
+    string tmp4 = saidaP4.str();
+    ofstream escreveIni4(tmp4.c_str(), ios_base::out);
+
+		//int vfp1=1;
+		if (vfp==0) { //alteracao aditivo
+		//escreveIni1 <<"sequencias da Analise de Sensibilidade para um Tramo "<< "\n";
+		escreveIni1 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; //add data e horÃ¡rio such as: 12/23/2015 2:47:47 PM
+		escreveIni1 << "\n" << endl;
+		//escreveIni1 << "** IDENTIFICACAO :" << " CSantim10" << endl;
+		//escreveIni1 << "** Titulo....... :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
+		//escreveIni1 << "** Responsavel.. :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
+		////escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se Ã© necessÃ¡rio string de entrada
+		//escreveIni1 << "** Comentario... :" << endl;   //verificar se Ã© necessÃ¡rio string de entrada
+		escreveIni1 << "\n" << endl;
+
 
         // celp[i].profundiM e celp[i].profundiF
 
-        escreveIni1 << "** Dados do Fluido " << endl;
-        escreveIni1 << "** Grau API do oleo...... : " << flup[0].API << endl;                                    // add entrada 21.3
-        escreveIni1 << "** Densidade da agua .... : " << flup[0].MasEspAgua(celp[0].pres, celp[0].temp) << endl; // add entrada 1.030
-        escreveIni1 << "** Densidade do gas  .... : " << flup[0].MasEspGas(celp[0].pres, celp[0].temp) << endl;  // add entrada 0.000
-        // escreveIni1 << "** Correlações :" << endl; //add entrada Analise PVT
-        escreveIni1 << "\n"
-                    << endl;
+		escreveIni1 << "** Dados do Fluido " << endl;
+		escreveIni1 << "** Grau API do oleo...... : " << flup[0].API << endl; //add entrada 21.3
+		escreveIni1 << "** Densidade da agua .... : " << flup[0].MasEspAgua(celp[0].pres, celp[0].temp) << endl; //add entrada 1.030
+		escreveIni1 << "** Densidade do gas  .... : " << flup[0].MasEspGas(celp[0].pres, celp[0].temp) << endl; //add entrada 0.000
+		//escreveIni1 << "** CorrelaÃ§Ãµes :" << endl; //add entrada Analise PVT
+		escreveIni1 << "\n" << endl;
 
         // profundidade da BCS i
 
-        if (nAPBCS > 0 && nAPBCS < 10) {
-            escreveIni1 << "** Modo de operacao :" << " Elevacao por BCS " << endl; // add entrada QGI_VALV  = 225600.0
-            for (int i = 0; i < nAPBCS; ++i) {
-                escreveIni1 << "** Profundidade BCS: " << celp[bcs[APBCS[i].indBCS].posicP].profundiM << endl;
-                escreveIni1 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
-            }
-            escreveIni1 << "\n"
-                        << endl;
-        }
+		//cout << " nASBCS " << nASBCS << endl;
+		//cout << " nASFG " << nASFG << endl;
+		if (nAPBCS>0&&nAPBCS<10) {
+			escreveIni1 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
+		for (int i = 0; i < nAPBCS; ++i) {
+		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+		    escreveIni1 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
+		    escreveIni1 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
+		}
+		escreveIni1 << "\n" << endl;
+		}
+		if (nAPMBCS>0&&nAPMBCS<10) {
+			escreveIni1 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
+		for (int i = 0; i < nAPMBCS; ++i) {
+		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+		    escreveIni1 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
+		    escreveIni1 << "** Frequencia da BCS (Hz): " << APMBCS->freq[i] << endl;
+		}
+		escreveIni1 << "\n" << endl;
+		}
 
-        // profundidade da Fonte de Gás i
-        if (nAPFG > 0 && nAPFG < 10) {
-            escreveIni1 << "** Modo de operacao :" << " Elevacao por Injecao de Gas " << endl; // add entrada QGI_VALV  = 225600.0
-            for (int i = 0; i < nAPFG; ++i) {
-                escreveIni1 << "** Profundidade FG: " << celp[fonteg[APFonGas[i].indFG].posicP].profundiM << endl;
-                for (int i = 0; i < APFonGas->parserieVazG; ++i) {
-                    escreveIni1 << "** Vazao de Gas (m3/d): " << APFonGas->vazgas[i] << endl;
-                }
-            }
-            escreveIni1 << "\n"
-                        << endl;
-        }
+//		escreveIni1 << "\n" << endl;
+
+		//}
+		//if (ASFonGas->vazgas[i]!=0) {
+		//escreveIni1 << "** VÃ¡lvula injetora" << endl;
+		//int icel=fonteg[ASFonGas[iFG].indFG].posicP;
+		//int indcelfongas=ASFonGas->indFG;
+		// profundidade da Fonte de GÃ¡s i
+		if (nAPFG>0&&nAPFG<10) {
+			escreveIni1 << "** Modo de operacao :" << " Elevacao por Injecao de Gas " << endl; //add entrada QGI_VALV  = 225600.0
+		for (int i = 0; i < nAPFG; ++i) {
+		    //int icel = fonteg[ ASFonGas[i].indFG ].posicP;
+		    escreveIni1 << "** Profundidade FG: " << celp[fonteg[ APFonGas[i].indFG ].posicP].profundiM << endl;
+		    for (int i = 0; i < APFonGas->parserieVazG; ++i) {
+		        escreveIni1 << "** Vazao de Gas (m3/d): " << APFonGas->vazgas[i] << endl;
+		       /* if (i < ASFonGas->parserieVazG - 1) {
+		            escreveIni2 << " ";
+		        }*/
+		    }
+		}
+		escreveIni1 << "\n" << endl;
+		}
+//		escreveIni1 << "\n" << endl;
+		//}
+		//}
 
         escreveIni1 << "** CURVA DE FVM PARA INJECAO NO FUNDO, COLUNA NOVA" << endl;
         escreveIni1 << "*PTUBE *LIQ 1" << endl;                 // add entrada 1
@@ -6789,22 +7089,328 @@ void APara::tabelaGenericaCabecalho() {
         escreveIni1 << "  " << endl;
         // valores devem vir da entrada  10.82  15.72  25.53  50.05   /
 
-        escreveIni1 << "*" << "BHPTO" << endl;
+        escreveIni1 << "*" << (saidaTemperatura ? "WHT" : "BHPTO") << endl;
         // escreveIni1 << "** " << "QO  " << "WCUT  " << "GOR  " <<  endl; //add BHP1 e no final [kgf/cm2 abs]
 
     }
 
+		else if (vfp==2) { //alteracao aditivo
+
+			//escreveIni1 <<"sequencias da Analise de Sensibilidade para um Tramo "<< "\n";
+			escreveIni3 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; //add data e horÃ¡rio such as: 12/23/2015 2:47:47 PM
+			escreveIni3 << "\n" << endl;
+			//escreveIni1 << "** IDENTIFICACAO :" << " CSantim10" << endl;
+			//escreveIni1 << "** Titulo....... :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
+			//escreveIni1 << "** Responsavel.. :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
+			////escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se Ã© necessÃ¡rio string de entrada
+			//escreveIni1 << "** Comentario... :" << endl;   //verificar se Ã© necessÃ¡rio string de entrada
+			//escreveIni3 << "\n" << endl;
+
+
+			escreveIni3 << "** Dados do Fluido " << endl;
+			escreveIni3 << "** Grau API do oleo...... : " << flup[0].API << endl; //add entrada 21.3
+			escreveIni3 << "** Densidade da agua .... : " << flup[0].MasEspAgua(celp[0].pres, celp[0].temp) << endl; //add entrada 1.030
+			escreveIni3 << "** Densidade do gas  .... : " << flup[0].MasEspGas(celp[0].pres, celp[0].temp) << endl; //add entrada 0.000
+			//escreveIni1 << "** CorrelaÃ§Ãµes :" << endl; //add entrada Analise PVT
+			escreveIni3 << "\n" << endl;
+
+			//for (int i; ncel; i++) {
+			//if (BSW_json.HasMember("BSW")) {
+			//if (listaV.vBSW==1) {
+			//if (ASBCS->freq[i]!=0) {
+			//escreveIni1 << "** VÃ¡lvula injetora" << endl;
+			//int indcelbcs=ASBCS->indBCS;
+			// profundidade da BCS i
+
+			//cout << " nASBCS " << nASBCS << endl;
+			//cout << " nASFG " << nASFG << endl;
+			if (nAPBCS>0&&nAPBCS<10) {
+				escreveIni3 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
+			for (int i = 0; i < nAPBCS; ++i) {
+			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+			    escreveIni3 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
+			    escreveIni3 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
+			}
+			escreveIni3 << "\n" << endl;
+			}
+			if (nAPMBCS>0&&nAPMBCS<10) {
+				escreveIni3 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
+			for (int i = 0; i < nAPMBCS; ++i) {
+			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+			    escreveIni3 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
+			    escreveIni3 << "** Frequencia da BCS (Hz): " << APMBCS->freq[i] << endl;
+			}
+			escreveIni3 << "\n" << endl;
+			}
+
+	//		escreveIni1 << "\n" << endl;
+
+			//}
+			//if (ASFonGas->vazgas[i]!=0) {
+			//escreveIni1 << "** VÃ¡lvula injetora" << endl;
+			//int icel=fonteg[ASFonGas[iFG].indFG].posicP;
+			//int indcelfongas=ASFonGas->indFG;
+			// profundidade da Fonte de GÃ¡s i
+			if (nAPFG>0&&nAPFG<10) {
+				escreveIni3 << "** Modo de operacao :" << " Elevacao por Gas-Lift " << endl; //add entrada QGI_VALV  = 225600.0
+			for (int i = 0; i < nAPFG; ++i) {
+			    //int icel = fonteg[ ASFonGas[i].indFG ].posicP;
+			    escreveIni3 << "** Profundidade Fonte de Gas: " << celp[fonteg[ APFonGas[i].indFG ].posicP].profundiM << endl;
+			    for (int i = 0; i < APFonGas->parserieVazG; ++i) {
+			        escreveIni3 << "** Vazao de Gas (Sm3/d): " << APFonGas->vazgas[i] << endl;
+			       /* if (i < ASFonGas->parserieVazG - 1) {
+			            escreveIni2 << " ";
+			        }*/
+			    }
+			}
+			escreveIni3 << "\n" << endl;
+			}
+	//		escreveIni1 << "\n" << endl;
+			//}
+			//}
+
+			//POÃ‡O PRODUTOR - PTUBE1; 1: 1 POÃ‡O
+			escreveIni3 << "*PTUBE1 1" << endl; //
+			escreveIni3 << "*DEPTH  " << celp[0].profundiM << endl; //add entrada  2688.6
+
+		    //escreveIni3 << "  " << endl;
+
+		    //chris new -> troquei a ordem para o IMEX
+
+			escreveIni3 << "*OIL " ; //PODE SER POR FONTE DE LÃ�QUIDO
+			//double* rate;
+			escreveIni3 << "**";
+		    for (int i = 0; i < APFonLiq->parserieVL; ++i) {
+		        escreveIni3 << "rate(" << i+1 << ")";
+		        if (i < APFonLiq->parserieVL - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+		    escreveIni3 << "        " ;
+		    for (int i = 0; i < APFonLiq->parserieVL; ++i) {
+		        escreveIni3 << APFonLiq->vazliq[i];
+		        if (i < APFonLiq->parserieVL - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+
+
+			escreveIni3 << "*GOR " ; //" tamanho vetor " << ASRGO.parserieRGO << endl;
+			//double* gfr;
+			escreveIni3 << "**";
+		    for (int i = 0; i < APRGO.parserieRGO; ++i) {
+		    	escreveIni3 << "gfr(" << i+1 << ")";
+		        if (i < APRGO.parserieRGO - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+		    escreveIni3 << "        " ;
+		    for (int i = 0; i < APRGO.parserieRGO; ++i) {
+		        escreveIni3 << APRGO.RGO[i];
+		        if (i < APRGO.parserieRGO - 1) {
+		            escreveIni3 << " "; //
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+
+		    //escreveIni1 << "/" << "\n" << endl;
+			//valores devem vir da entrada 10.0 250.0 500.0 750.0 1000.0 1500.0 2000.0   /
+
+			//escreveIni1 << "-- WCUT (0 a 1)" << " tamanho vetor " << ASBSW.parserieBSW << " " << ASBSW.BSW[0] << "," << ASBSW.BSW[1] << endl;
+			escreveIni3 << "*WCUT " ; //" tamanho vetor " << ASBSW.parserieBSW << endl;
+			//double* wfr;
+			escreveIni3 << "**";
+		    for (int i = 0; i < APBSW.parserieBSW; ++i) {
+		    	escreveIni3 << "wfr(" << i+1 << ")";
+		        if (i < APBSW.parserieBSW - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+		    escreveIni3 << "        " ;
+		    for (int i = 0; i < APBSW.parserieBSW; ++i) {
+		        escreveIni3 << APBSW.BSW[i];
+		        if (i < APBSW.parserieBSW - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+
+		    //*ALQ teria segunda linha como add(i). PorÃ©m a informaÃ§Ã£o vem como
+
+			escreveIni3 << "*WHP " ; // " tamanho vetor " << ASPsep.parseriePres << endl; //PSEP
+			//double* whp;
+			escreveIni3 << "**";
+		    for (int i = 0; i < APPsep.parseriePres; ++i) {
+		    	escreveIni3 << "whp(" << i+1 << ")";
+		        if (i < APPsep.parseriePres - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+		    escreveIni3 << "        " ;
+		    for (int i = 0; i < APPsep.parseriePres; ++i) {
+		        escreveIni3 << APPsep.pres[i];
+		        if (i < APPsep.parseriePres - 1) {
+		            escreveIni3 << " ";
+		        }
+		    }
+		    escreveIni3 << "  " << endl;
+			//valores devem vir da entrada  10.82  15.72  25.53  50.05   /
+
+            escreveIni3 << "*" << (saidaTemperatura ? "WHT" : "BHP") << endl;
+		    //escreveIni1 << "** " << "QO  " << "WCUT  " << "GOR  " <<  endl; //add BHP1 e no final [kgf/cm2 abs]
+
+		}
+
+		else if (vfp==3) {
+
+//system("pause");
+				escreveIni4 << "-- Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl;  //add data e horÃ¡rio, such as: 4/9/2009 15:25:21
+				escreveIni4 << "\n";
+                escreveIni4 << (saidaTemperatura ? "-- Tabela de THTs (C) para utilizacao no simulador Eclipse." : "-- Tabela de BHPs para utilizacao no simulador Eclipse.") << endl;
+				escreveIni4 << "-- Tabela gerada pelo simulador Marlim 3." << endl;
+
+				//cout << "nASBCS: " << nAPBCS << endl;
+				if (nAPBCS>0&&nAPBCS<10) {
+				for (int i = 0; i < nAPBCS; ++i) {
+					escreveIni4 << "-- Profundidade Medida BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
+				}
+				}
+				if (nAPMBCS>0&&nAPMBCS<10) {
+				for (int i = 0; i < nAPMBCS; ++i) {
+					escreveIni4 << "-- Profundidade Medida BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
+				}
+				}
+
+				if (nAPFG>0&&nAPFG<10) {
+				for (int i = 0; i < nAPFG; ++i) {
+				    escreveIni4 << "-- Profundidade Medida de injecao de gas (m): " << celp[fonteg[ APFonGas[i].indFG ].posicP].profundiM << endl;
+				}
+				}
+				//escreveIni2 << "-- Profundidade Medida de injeÃ§Ã£o de gÃ¡s (m):" << endl; //add profundidade 2035
+				//add tal variable VFPPROD   --------------
+				escreveIni4 << "VFPPROD" << endl;
+
+				//escreveIni2 << "\n" << endl;
+				//escreveIni2 << "-- N   profundidade canhoneado (m)" << endl;
+				////verificar o que Ã© vetor e o que Ã© entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
+                escreveIni4 << " 1 " << celp[0].profundiM << " LIQ " << " WCT " << " GOR " << " THP " << " ' ' " << " METRIC " << (saidaTemperatura ? " THT " : " BHP ") << "   / Basic data" << endl;
+				////escreveIni2 << " 1 " << celp[0].profundiM << " 'LIQ' " << " 'WCT' " << " 'GOR' " << " 'THP' " << " 'GRAT' " << " 'METRIC' " <<"'BHP'" << "   /" << endl;
+				//escreveIni2 << "-- QLIQ (Sm3/d)" << endl; //" tamanho vetor " << ASFonLiq->parserieVL << endl;
+			    for (int i = 0; i < APFonLiq->parserieVL; ++i) {
+			        escreveIni4 << APFonLiq->vazliq[i];
+			        if (i < APFonLiq->parserieVL - 1) {
+			            escreveIni4 << " ";
+			        }
+			    }
+			   // escreveIni2 << std::endl;
+			    escreveIni4 << "   / " << APFonLiq->parserieVL << " flow val(s) " << endl;
+				////valores devem vir da entrada 10.0 250.0 500.0 750.0 1000.0 1500.0 2000.0   /
+				//escreveIni2 << "-- THP (kgf/cm2)" << endl; //" tamanho vetor " << ASPsep.parseriePres << endl;
+			    for (int i = 0; i < APPsep.parseriePres; ++i) {
+			        escreveIni4 << APPsep.pres[i];
+			        if (i < APPsep.parseriePres - 1) {
+			            escreveIni4 << " ";
+			        }
+			    }
+			    escreveIni4 << "   / " << APPsep.parseriePres << " THP value(s) " << endl;
+			    //escreveIni2 << std::endl;
+			    //escreveIni2 << "/" << "\n" <<endl;
+				//valores devem vir da entrada  10.82  15.72  25.53  50.05   /
+
+				////escreveIni2 << "-- WCUT (0 a 1)" << " tamanho vetor " << ASBSW.parserieBSW << " " << ASBSW.BSW[0] << "," << ASBSW.BSW[1] << endl;
+				//escreveIni2 << "-- WCUT (-)" << endl; // " tamanho vetor " << ASBSW.parserieBSW << endl;
+			    for (int i = 0; i < APBSW.parserieBSW; ++i) {
+			        escreveIni4 << APBSW.BSW[i];
+			        if (i < APBSW.parserieBSW - 1) {
+			            escreveIni4 << "   ";
+			        }
+			    }
+			    escreveIni4 << "   / " << APBSW.parserieBSW << " WFR value(s) " << endl;
+
+				//escreveIni2 << "-- RGO (Sm3/Sm3)" << endl; // " tamanho vetor " << ASRGO.parserieRGO << endl;
+			    for (int i = 0; i < APRGO.parserieRGO; ++i) {
+			        escreveIni4 << APRGO.RGO[i];
+			        if (i < APRGO.parserieRGO - 1) {
+			            escreveIni4 << "   "; //
+			        }
+			    }
+			    escreveIni4 << "   / " << APRGO.parserieRGO << " GFR value(s) " << endl;
+
+			    //escreveIni2 << std::endl;
+			   // escreveIni2 << "/" << "\n" <<endl;
+				//valores devem vir da entrada   0.00   0.10   0.20   0.30   0.40   0.50   0.60   0.70   0.80   0.99   /
+
+			    if (nAPBCS>0&&nAPBCS<10) {
+			    	//escreveIni2 << "-- GRAT (Hz)" << endl;
+				    for (int i = 0; i < APBCS->parserieFreq; ++i) {
+				        escreveIni4 << APBCS->freq[i];
+				        if (i < APBCS->parserieFreq - 1) {
+				            escreveIni4 << " ";
+				        }
+				    }
+		    	    escreveIni4 << "   / " << APBCS->parserieFreq << " ALQ value(s) m3/d " << endl;
+			    }
+			    if (nAPMBCS>0&&nAPMBCS<10) {
+			    	//escreveIni2 << "-- GRAT (Hz)" << endl;
+				    for (int i = 0; i < APMBCS->parserieFreq; ++i) {
+				        escreveIni4 << APMBCS->freq[i];
+				        if (i < APMBCS->parserieFreq - 1) {
+				            escreveIni4 << " ";
+				        }
+				    }
+		    	    escreveIni4 << "   / " << APMBCS->parserieFreq << " ALQ value(s) m3/d " << endl;
+			    }
+			    if (nAPFG>0&&nAPFG<10) {
+			    	//escreveIni2 << "-- GRAT (m3/d)" << endl;
+				    for (int i = 0; i < APFonGas->parserieVazG; ++i) {
+				        escreveIni4 << APFonGas->vazgas[i];
+				        if (i < APFonGas->parserieVazG - 1) {
+				            escreveIni4 << " ";
+				        }
+				    }
+		    	    escreveIni4 << "   / " << APFonGas->parserieVazG  << " ALQ value(s) Hz " << endl;
+			    }
+
+			    //escreveIni2 << "   /" << endl;
+
+			    //escreveIni2 << "   /" << endl;
+
+
+				/*escreveIni2 << "-- Obs:1)Se os ranges das correlaÃ§Ãµes do programa MARLIM 3 forem ultrapassados," << endl;
+				escreveIni2 << "-- o cÃ¡lculo nÃ£o serÃ¡ possÃ­vel e, de acordo com o manual do Eclipse, um" << endl;
+				escreveIni2 << "-- valor padrÃ£o BHP=1.0E+10 Ã© impresso." << endl;*/
+
+				//nÃºmero de colunas da tabela do Eclipse (solver de ReservatÃ³rio) depende do nÃºmero de variÃ¡veis de entrada e de como elas
+			//	escreveIni2 << "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+
+
+
+
+
+		//escreveIni4.close(); //alteracao aditivo
+
+				}
     else if (vfp == 1) {
 
-        escreveIni2 << "** Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; // add data e horário, such as: 4/9/2009 15:25:21
+        escreveIni2 << "** Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; // add data e horÃ¡rio, such as: 4/9/2009 15:25:21
         escreveIni2 << "\n";
-        escreveIni2 << "-- Tabela de BHPs para utilizacao no simulador Eclipse." << endl;
+        escreveIni2 << (saidaTemperatura ? "-- Tabela de THTs (C) para utilizacao no simulador Eclipse." : "-- Tabela de BHPs para utilizacao no simulador Eclipse.") << endl;
         escreveIni2 << "-- Tabela gerada pelo simulador Marlim 3." << endl;
 
-        cout << "nAPBCS: " << nAPBCS << endl;
+        //cout << "nAPBCS: " << nAPBCS << endl;
         if (nAPBCS > 0 && nAPBCS < 10) {
             for (int i = 0; i < nAPBCS; ++i) {
                 escreveIni2 << "-- Profundidade Medida BCS: " << celp[bcs[APBCS[i].indBCS].posicP].profundiM << endl;
+            }
+        }
+        if (nAPMBCS > 0 && nAPMBCS < 10) {
+            for (int i = 0; i < nAPMBCS; ++i) {
+                escreveIni2 << "-- Profundidade Medida BCS: " << celp[bcs[APMBCS[i].indBCS].posicP].profundiM << endl;
             }
         }
 
@@ -6813,14 +7419,14 @@ void APara::tabelaGenericaCabecalho() {
                 escreveIni2 << "-- Profundidade Medida de injecao de gas (m): " << celp[fonteg[APFonGas[i].indFG].posicP].profundiM << endl;
             }
         }
-        // escreveIni2 << "-- Profundidade Medida de injeção de gás (m):" << endl; //add profundidade 2035
+        // escreveIni2 << "-- Profundidade Medida de injeÃ§Ã£o de gÃ¡s (m):" << endl; //add profundidade 2035
         escreveIni2 << "VFPPROD   --------------" << endl;
 
         escreveIni2 << "\n"
                     << endl;
         escreveIni2 << "-- N   profundidade canhoneado (m)" << endl;
-        // verificar o que é vetor e o que é entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
-        escreveIni2 << " 1 " << celp[0].profundiM << " 'LIQ' " << " 'WCT' " << " 'GOR' " << " 'THP' " << " 'GRAT' " << " 'METRIC' " << "'BHP'" << "   /" << endl;
+        // verificar o que Ã© vetor e o que Ã© entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
+        escreveIni2 << " 1 " << celp[0].profundiM << " 'LIQ' " << " 'WCT' " << " 'GOR' " << " 'THP' " << " 'GRAT' " << " 'METRIC' " << (saidaTemperatura ? "'THT'" : "'BHP'") << "   /" << endl;
         escreveIni2 << "-- QLIQ (Sm3/d)" << endl; //" tamanho vetor " << APFonLiq->parserieVL << endl;
         for (int i = 0; i < APFonLiq->parserieVL; ++i) {
             escreveIni2 << APFonLiq->vazliq[i];
@@ -6870,6 +7476,16 @@ void APara::tabelaGenericaCabecalho() {
             }
             escreveIni2 << "   /" << endl;
         }
+        if (nAPMBCS > 0 && nAPMBCS < 10) {
+            escreveIni2 << "-- GRAT (Hz)" << endl;
+            for (int i = 0; i < APMBCS->parserieFreq; ++i) {
+                escreveIni2 << APMBCS->freq[i];
+                if (i < APMBCS->parserieFreq - 1) {
+                    escreveIni2 << " ";
+                }
+            }
+            escreveIni2 << "   /" << endl;
+        }
         if (nAPFG > 0 && nAPFG < 10) {
             escreveIni2 << "-- GRAT (m3/d)" << endl;
             for (int i = 0; i < APFonGas->parserieVazG; ++i) {
@@ -6881,54 +7497,54 @@ void APara::tabelaGenericaCabecalho() {
             escreveIni2 << "   /" << endl;
         }
 
-        // número de colunas da tabela do Eclipse (solver de Reservatório) depende do número de variáveis de entrada e de como elas
+        // nÃºmero de colunas da tabela do Eclipse (solver de ReservatÃ³rio) depende do nÃºmero de variÃ¡veis de entrada e de como elas
         escreveIni2 << "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
     } else {
-        cout << "O valor de vfp deve ser 0-IMEX ou 1-Eclipse" << endl;
+			cout << "O valor de vfp deve ser 0-IMEX, 1-Eclipse, 2-IMEX basico, 3-Eclipse basico" << endl;
     }
 
     ostringstream saidaP;
-    saidaP << "tabelaGenericaAP.dat";
+    saidaP <<pathPrefixoArqSaida << "tabelaGenericaAP.dat";
 
     string tmp = saidaP.str();
-    ofstream escreveIni(tmp.c_str(), ios_base::out);
+    ofstream escreveIni;
+    if (!saidaTemperatura)
+        escreveIni.open(tmp.c_str(), ios_base::out);
 
-    if (vfp == 0)
-        escreveIni1 << "** ";
-    if (vfp == 1)
-        escreveIni2 << "-- ";
+	if (vfp==0) escreveIni1 <<"** ";
+	if (vfp==1) escreveIni2 <<"-- ";
+	if (vfp==2) escreveIni3 <<"**"; //alteracao aditivo
 
-    if (listaV.vpsep == 1) {
-        escreveIni << " Pressao Separador ;";
-        if (vfp == 1)
-            escreveIni2 << "nthp ";
-    }
-    if (listaV.vBSW == 1) {
-        escreveIni << " BSW fluido 0 ;";
-        if (vfp == 0)
-            escreveIni1 << "  GOR  ";
-        if (vfp == 1)
-            escreveIni2 << " nwc ";
-    }
-    if (listaV.vRGO == 1) {
-        escreveIni << " RGO fluido 0 ;";
-        if (vfp == 0)
-            escreveIni1 << " WCUT  ";
-        if (vfp == 1)
-            escreveIni2 << "  nrgo  ";
-    }
-    if (listaV.vfonliq == 1) {
-        int konta1 = 0;
-        int konta2 = 0;
-        int konta3 = 0;
-        int konta4 = 0;
-        for (int iFL = 0; iFL < nAPFL; iFL++) {
-            if (APFonLiq[iFL].parserieTemp > 0) {
-                escreveIni << " indice Fonte Liquido = " << konta1 << " Temperatura ;";
-                konta1++;
-            }
-            if (APFonLiq[iFL].parserieVL > 0) {
+	if(listaV.vpsep==1){
+		escreveIni <<" Pressao Separador ;";
+	//	if (vfp==0) escreveIni1 <<"WHP ";
+		if (vfp==1) escreveIni2 <<"nthp ";
+	}
+	if(listaV.vBSW==1){
+		escreveIni <<" BSW fluido 0 ;";
+		if (vfp==0) escreveIni1 <<"  WCUT  "; //chris new
+		if (vfp==2) escreveIni3 <<"  iwfr  "; //alteracao aditivo
+		if (vfp==1) escreveIni2 <<" nwc ";
+	}
+	if(listaV.vRGO==1){
+		escreveIni<<" RGO fluido 0 ;";
+		if (vfp==0) escreveIni1 <<" GOR  "; //chris new
+		if (vfp==2) escreveIni3 <<" igfr  "; //alteracao aditivo
+		if (vfp==1) escreveIni2 <<"  nrgo  ";
+	}
+	if(listaV.vfonliq==1){
+		int konta1=0;
+		int konta2=0;
+		int konta3=0;
+		int konta4=0;
+	      for (int iFL = 0; iFL < nAPFL; iFL++){
+	    	  if(APFonLiq[iFL].parserieTemp>0){
+				  escreveIni << " indice Fonte Liquido = " << konta1<<
+					" Temperatura ;";
+	    		  konta1++;
+	    	  }
+	    	  if(APFonLiq[iFL].parserieVL>0){
 
                 escreveIni << " indice Fonte Liquido = " << konta2 << " Vazao de Liquido ;";
 
@@ -6936,31 +7552,47 @@ void APara::tabelaGenericaCabecalho() {
                     escreveIni1 << " QLIQ ";
                 }
 
-                konta2++;
-            }
-            if (APFonLiq[iFL].parserieBet > 0) {
-                escreveIni << " indice Fonte Liquido = " << konta3 << " Beta ;";
-                konta3++;
-            }
-            if (APFonLiq[iFL].parserieFlu > 0) {
-                escreveIni << " indice Fonte Liquido = " << konta4 << " Fluido ;";
-                konta4++;
-            }
-        }
-    }
-    if (listaV.vfongas == 1) {
-        int konta1 = 0;
-        int konta2 = 0;
-        int konta3 = 0;
-        for (int iFG = 0; iFG < nAPFG; iFG++) {
-            if (APFonGas[iFG].parserieTemp > 0) {
-                escreveIni << " indice Fonte Gas = " << konta1 << " Temperatura ;";
-                konta1++;
-            }
-            if (APFonGas[iFG].parserieVazG > 0) {
-                escreveIni << " indice Fonte Gas = " << konta2 << " Vazao Gas ;";
-                if (vfp == 0) {
-                }
+				  if (vfp==2)
+									  {
+									  escreveIni3 << " irate   "; //alteracao aditivo
+									  }
+
+				 // system("pause");
+				/*  if (vfp==1)
+					  {
+					  escreveIni2 << "nalq  ";
+					  }*/
+	    		  konta2++;
+	    	  }
+	    	  if(APFonLiq[iFL].parserieBet>0){
+				  escreveIni <<" indice Fonte Liquido = " << konta3<<
+					" Beta ;";
+	    		  konta3++;
+	    	  }
+	    	  if(APFonLiq[iFL].parserieFlu>0){
+				  escreveIni << " indice Fonte Liquido = " << konta4<<
+					" Fluido ;";
+	    		  konta4++;
+	    	  }
+	      }
+	}
+	if(listaV.vfongas==1){
+		int konta1=0;
+		int konta2=0;
+		int konta3=0;
+		for (int iFG = 0; iFG < nAPFG; iFG++){
+	    	  if(APFonGas[iFG].parserieTemp>0){
+				  escreveIni<< " indice Fonte Gas = " << konta1<<
+					" Temperatura ;";
+	    		  konta1++;
+	    	  }
+	    	  if(APFonGas[iFG].parserieVazG>0){
+				  escreveIni << " indice Fonte Gas = " << konta2<<
+					" Vazao Gas ;";
+						  if (vfp==0)
+							  {
+							  //escreveIni1 << " QG ";
+							  }
 
                 if (vfp == 1) {
                     escreveIni2 << "nalq  ";
@@ -7048,6 +7680,23 @@ void APara::tabelaGenericaCabecalho() {
                 konta1++;
             }
             if (APBCS[indBCS].parserieEstag > 0) {
+                escreveIni << " indice BCS = " << konta2 << " N Estagios ;";
+                konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                escreveIni << " indice BCS = " << konta1 << " Frequencia ;";
+                if (vfp == 1) {
+                    escreveIni2 << "nfreq  ";
+                }
+                konta1++;
+            }
+            if (APMBCS[indBCS].parserieEstag > 0) {
                 escreveIni << " indice BCS = " << konta2 << " N Estagios ;";
                 konta2++;
             }
@@ -7254,49 +7903,95 @@ void APara::tabelaGenericaCabecalho() {
     dimensionPSEP = APPsep.parseriePres;
     if (vfp == 0) {
         for (int i = 0; i < dimensionPSEP; i++) {
-            escreveIni1 << " BHP" << i + 1 << "   ";
+            escreveIni1 << (saidaTemperatura ? " WHT" : " BHP") << i + 1 << "   ";
         }
-        escreveIni1 << " [kgf/cm2 absoluta]" << endl;
+        escreveIni1 << (saidaTemperatura ? " [C]" : " [kgf/cm2 absoluta]") << endl;
     }
 
-    if (vfp == 1) {
-        for (int i = 0; i < dimensionQL; i++) {
-            escreveIni2 << "  BHP" << i + 1 << "    ";
-        }
-    }
+	if(vfp==2) { //alteracao aditivo
+	 // for (int i=0;i<dimensionPSEP;i++) {
+		double* bhp;
+		 for (int i=0;i<dimensionPSEP;i++) {
+          escreveIni3 << (saidaTemperatura ? "wht(" : "bhp(") << i+1 << ") " << "   ";
+		 // cout << "i" << endl;
+	  }
+      escreveIni3 << (saidaTemperatura ? " [C]" : " ") << endl; //escreveIni3 << " [kgf/cm2 absoluta]" << endl; //alteracao aditivo
+	}
 
-    // escreveIni2 << "\n" << "--                            kgf/cm2 abs " << endl; //kgf/cm2 abs
-    escreveIni2 << "\n"
-                << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
+	if(vfp==1) {
+	  for (int i=0;i<dimensionQL;i++) {
+          escreveIni2 << (saidaTemperatura ? "  THT" : "  BHP") << i+1 << "    ";
+		  //cout << "i" << endl;
+	  }
+	}
+
+	/*if(vfp==3) {
+	  for (int i=0;i<dimensionQL;i++) {
+		  escreveIni4 << "  BHP" << i+1 << "    ";
+		  //cout << "i" << endl;
+	  }
+	}*/
+
+	//escreveIni2 << "\n" << "--                            kgf/cm2 abs " << endl; //kgf/cm2 abs
+	escreveIni2 << "\n" << "-------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
     escreveIni.close();
 
     escreveIni1.close();
 
     escreveIni2.close();
+	escreveIni3.close(); //alteracao aditivo
+	escreveIni4.close(); //alteracao aditivo
+
 }
 
 void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, ProFlu *flup,
                            detIPR *IPRS, detValv *valv, detFONGAS *fonteg, detFONLIQ *fontel,
-                           detFONMASS *fontem, detFURO *furo, detBCS *bcs, detBVOL *bvol, detDPREQ *dpreq,
+                           detFONMASS *fontem, detFURO *furo, detBCS *bcs, detMultiBCS *mbcs, detBVOL *bvol, detDPREQ *dpreq,
                            double &pGSup, double &temperatura, double &presiniG, double &tempiniG, double &vazgasG,
                            double &presE, double &tempE, double &titE, double &betaE, double &vazE, int seq, int &indCHK,
-                           double *vdPdLH, double *vdPdLF, double *vdTdL, double BHP) {
+                           double *vdPdLH, double *vdPdLF, double *vdTdL, double BHP, double tempSaida) {
+
+    const char *arquivosTemperatura[] = {
+        "whtsIMEX.imx", "thtsEclipse.ecp", "whtsIMEXnew.imx", "thtsEclipsenew.ecp"
+    };
+    ofstream escreveTemp(pathPrefixoArqSaida + arquivosTemperatura[vfp], ios_base::app);
+    auto imprimeIndiceVFP = [&](ostream &arquivoPressao, const char *antes, int indice, const char *depois) {
+        arquivoPressao << antes << indice << depois;
+        escreveTemp << antes << indice << depois;
+    };
+    auto imprimeResultadoVFP = [&](ostream &arquivoPressao, const char *fim) {
+        arquivoPressao << BHP << fim;
+        escreveTemp << tempSaida << fim;
+    };
 
     ostringstream saidaP1;
     if (vfp == 0)
-        saidaP1 << "bhpsIMEX.imx";
+        saidaP1 <<pathPrefixoArqSaida << "bhpsIMEX.imx";
+    else saidaP1 <<pathPrefixoArqSaida << "vazio0";
     string tmp1 = saidaP1.str();
     ofstream escreveIni1(tmp1.c_str(), ios_base::app);
 
     ostringstream saidaP2;
     if (vfp == 1)
-        saidaP2 << "bhpsEclipse.ecp";
+        saidaP2 <<pathPrefixoArqSaida << "bhpsEclipse.ecp";
+    else saidaP2 <<pathPrefixoArqSaida << "vazio1";
     string tmp2 = saidaP2.str();
     ofstream escreveIni2(tmp2.c_str(), ios_base::app);
 
+	ostringstream saidaP3; //alteracao aditivo
+	if (vfp==2)	saidaP3 <<pathPrefixoArqSaida << "bhpsIMEXnew.imx";
+	else saidaP3 <<pathPrefixoArqSaida << "vazio2";
+	string tmp3 = saidaP3.str();
+	ofstream escreveIni3(tmp3.c_str(), ios_base::app);
+
+	ostringstream saidaP4;
+	if (vfp==3)		saidaP4 <<pathPrefixoArqSaida << "bhpsEclipsenew.ecp";
+	else saidaP4 <<pathPrefixoArqSaida << "vazio3";
+	string tmp4 = saidaP4.str();
+	ofstream escreveIni4(tmp4.c_str(), ios_base::app);
     ostringstream saidaP;
-    saidaP << "tabelaGenericaAP.dat";
+    saidaP <<pathPrefixoArqSaida << "tabelaGenericaAP.dat";
 
     string tmp = saidaP.str();
     ofstream escreveIni(tmp.c_str(), ios_base::app);
@@ -7311,7 +8006,9 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
         coluna++;
         escreveIni << pGSup << " ;";
         if (vfp == 1 && chrisao == 0)
-            escreveIni2 << "     " << ind + 1 << " ";
+            imprimeIndiceVFP(escreveIni2, "     ", ind + 1, " ");
+		if (vfp==3&&chrisao==0) 
+			imprimeIndiceVFP(escreveIni4, "", ind + 1, " ");
     }
     if (listaV.vBSW == 1) {
         ind = sequenciaAP[seq].BSW;
@@ -7321,10 +8018,10 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
         saidaBHP[seq][coluna] = flup[0].BSW;
         coluna++;
         escreveIni << flup[0].BSW << " ;";
-        if (vfp == 0 && chrisao == 0)
-            escreveIni1 << "    " << ind + 1 << "  ";
-        if (vfp == 1 && chrisao == 0)
-            escreveIni2 << "    " << ind + 1 << " ";
+        if (vfp==2&&chrisao==0) imprimeIndiceVFP(escreveIni3, "    ", ind + 1, "  ");
+        if (vfp==0&&chrisao==0) imprimeIndiceVFP(escreveIni1, "    ", ind + 1, "  ");
+        if (vfp==1&&chrisao==0) imprimeIndiceVFP(escreveIni2, "    ", ind + 1, " ");
+        if (vfp==3&&chrisao==0) imprimeIndiceVFP(escreveIni4, "    ", ind + 1, " ");
     }
     if (listaV.vRGO == 1) {
         ind = sequenciaAP[seq].RGO;
@@ -7337,10 +8034,10 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
         saidaBHP[seq][coluna] = flup[0].RGO;
         coluna++;
         escreveIni << flup[0].RGO << " ;";
-        if (vfp == 0 && chrisao == 0)
-            escreveIni1 << "    " << ind + 1 << "  ";
-        if (vfp == 1 && chrisao == 0)
-            escreveIni2 << "    " << ind + 1 << " ";
+        if (vfp==2&&chrisao==0) imprimeIndiceVFP(escreveIni3, "    ", ind + 1, "  ");
+        if (vfp==0&&chrisao==0) imprimeIndiceVFP(escreveIni1, "    ", ind + 1, "  ");
+        if (vfp==1&&chrisao==0) imprimeIndiceVFP(escreveIni2, "    ", ind + 1, " ");
+        if (vfp==3&&chrisao==0) imprimeIndiceVFP(escreveIni4, "    ", ind + 1, " ");
     }
     if (listaV.vfonliq == 1) {
         int konta1 = 0;
@@ -7367,7 +8064,8 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
                 coluna++;
                 escreveIni << APFonLiq[iFL].vazliq[ind] << " ;";
                 if (vfp == 0 && chrisao == 0)
-                    escreveIni1 << "     " << ind + 1 << "     ";
+                    imprimeIndiceVFP(escreveIni1, "     ", ind + 1, "     ");
+					 if (vfp==2&&chrisao==0) imprimeIndiceVFP(escreveIni3, "    ", ind + 1, "      ");
                 konta2++;
             }
             if (APFonLiq[iFL].parserieBet > 0) {
@@ -7409,8 +8107,8 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
                 saidaBHP[seq][coluna] = APFonGas[iFG].vazgas[ind];
                 coluna++;
                 escreveIni << APFonGas[iFG].vazgas[ind] << " ;";
-                if (vfp == 1 && chrisao == 0)
-                    escreveIni2 << "    " << ind + 1 << "     ";
+                if (vfp==1&&chrisao==0) imprimeIndiceVFP(escreveIni2, "    ", ind + 1, "     ");
+                if (vfp==3&&chrisao==0) imprimeIndiceVFP(escreveIni4, "    ", ind + 1, "     ");
                 konta2++;
             }
             if (APFonGas[iFG].parserieVazC > 0) {
@@ -7434,8 +8132,8 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
                 saidaBHP[seq][coluna] = APBCS[indBCS].freq[ind];
                 coluna++;
                 escreveIni << APBCS[indBCS].freq[ind] << " ;";
-                if (vfp == 1 && chrisao == 0)
-                    escreveIni2 << "    " << ind + 1 << "     ";
+                if (vfp==1&&chrisao==0) imprimeIndiceVFP(escreveIni2, "    ", ind + 1, "     ");
+                if (vfp==3&&chrisao==0) imprimeIndiceVFP(escreveIni4, "    ", ind + 1, "     ");
                 konta1++;
             }
             if (APBCS[indBCS].parserieEstag > 0) {
@@ -7445,6 +8143,23 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
                 coluna++;
                 escreveIni << APBCS[indBCS].nestag[ind] << " ;";
                 konta2++;
+            }
+        }
+    }
+    if (listaV.vmbcs == 1) {
+        int konta1 = 0;
+        int konta2 = 0;
+        for (int indBCS = 0; indBCS < nAPMBCS; indBCS++) {
+            int icel = mbcs[APMBCS[indBCS].indBCS].posicP;
+            if (APMBCS[indBCS].parserieFreq > 0) {
+                ind = sequenciaAP[seq].MBCSfreq[konta1];
+                celula[icel].acsr.multibcs.freq = APMBCS[indBCS].freq[ind];
+                saidaBHP[seq][coluna] = APMBCS[indBCS].freq[ind];
+                coluna++;
+                escreveIni << APMBCS[indBCS].freq[ind] << " ;";
+                if (vfp==1&&chrisao==0) imprimeIndiceVFP(escreveIni2, "    ", ind + 1, "     ");
+                if (vfp==3&&chrisao==0) imprimeIndiceVFP(escreveIni4, "    ", ind + 1, "     ");
+                konta1++;
             }
         }
     }
@@ -7905,6 +8620,45 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
     escreveIni << BHP << "\n";
     escreveIni.close();
 
+
+	//nÃ£o deletar !!!
+	/*double BHP00, BHP11, BHP22, BHP33;
+	double BHP0, BHP1, BHP2, BHP3;
+	if (vfp==0&&chrisao==0) BHP0=saidaBHP[seq][coluna];
+	if (vfp==0&&chrisao==1) BHP1=saidaBHP[seq][coluna];
+	if (vfp==0&&chrisao==2) BHP2=saidaBHP[seq][coluna];
+	if (vfp==0&&chrisao==3) BHP3=saidaBHP[seq][coluna];
+
+	//if (vfp==0&chrisao==0) escreveIni1 <<BHP<< " ";
+	//if (vfp==0&chrisao==1) escreveIni1 <<BHP<< " ";
+	//if (vfp==0&chrisao==2) escreveIni1 <<BHP<< " ";
+	if (vfp==0&&chrisao==3) escreveIni1 <<BHP0<< " " << BHP1 << " " << BHP2 << " " << BHP3 << "\n";
+	escreveIni1.close();
+
+
+	if (vfp==1&&chrisao==0) BHP0=saidaBHP[seq][coluna];
+	if (vfp==1&&chrisao==1) BHP1=saidaBHP[seq][coluna];
+	if (vfp==1&&chrisao==2) BHP2=saidaBHP[seq][coluna];
+	if (vfp==1&&chrisao==3) BHP3=saidaBHP[seq][coluna];
+	//BHP00=BHP0;
+	//cout << "BHP00" << BHP00 << endl;
+	//cout << "BHP0" << BHP0 << endl;
+
+	system("pause");
+	//if (vfp==1&chrisao==0) escreveIni2 <<BHP<< " ";
+	//if (vfp==1&chrisao==1) escreveIni2 <<BHP<< " ";
+	//if (vfp==1&chrisao==2) escreveIni2 <<BHP<< " ";
+	if (vfp==1&&chrisao==3) escreveIni2 <<BHP0<< " " << BHP1 << " " << BHP2 << " " << BHP3 << "\n";
+	escreveIni2.close();*/
+
+	//if (vfp==0&&chrisao==0) escreveIni1 <<BHP<< "   ";
+	//if (vfp==0&&chrisao==1) escreveIni1 <<BHP<< "   ";
+	//if (vfp==0&&chrisao==2) escreveIni1 <<BHP<< "   ";
+	//if (vfp==0&&chrisao==3) escreveIni1 <<BHP<< "   /" << "\n";
+	//escreveIni1.close();
+
+	//if (vfp == 1) {
+		//int contador=0;
     chrisao++;
 
     if (vfp == 0) {
@@ -7912,28 +8666,86 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
         for (int cont = 0; cont < APPsep.parseriePres; ++cont) { //< APFonLiq->parserieVL
 
             if (chrisao == cont)
-                escreveIni1 << BHP << "   ";
+                imprimeResultadoVFP(escreveIni1, "   ");
         }
 
         if (chrisao == APPsep.parseriePres)
-            escreveIni1 << BHP << "   " << "\n";
+            imprimeResultadoVFP(escreveIni1, "   \n");
         if (chrisao == APPsep.parseriePres)
             chrisao = 0;
     }
     escreveIni1.close();
 
+	if (vfp == 2) {
+
+	   for (int cont = 0; cont < APPsep.parseriePres; ++cont) { //< ASFonLiq->parserieVL
+		// for (int cont = 0; cont < ASPsep.parseriePres; ++cont) { //< ASFonLiq->parserieVL
+
+	        //escreveIni1 << ASFonLiq->vazliq[chrisao];
+            if (chrisao==cont) imprimeResultadoVFP(escreveIni3, "   ");
+	    	//contador=contador+1;
+	      //  if (i < ASFonLiq->parserieVL - 1) {
+	       //     escreveIni1 << " ";
+	       // }
+	    }
+
+       if (chrisao == APPsep.parseriePres) imprimeResultadoVFP(escreveIni3, "   \n");
+		if (chrisao==APPsep.parseriePres) chrisao=0;
+	//	 if (chrisao == ASPsep.parseriePres) escreveIni1 << BHP <<  "   " << "\n";
+		//		if (chrisao == ASPsep.parseriePres) chrisao=0;
+
+	    //escreveIni2 << "   /" << "\n";
+		//}
+		/*if (vfp==1&&chrisao==0) escreveIni2 <<BHP<< "   ";
+		if (vfp==1&&chrisao==1) escreveIni2 <<BHP<< "   ";
+		if (vfp==1&&chrisao==2) escreveIni2 <<BHP<< "   ";
+		if (vfp==1&&chrisao==3) escreveIni2 <<BHP<< "   /" << "\n"; */
+
+		//escreveIni1.close();
+
+	}
+	//escreveIni1 << "/" << endl;
+	escreveIni3.close();
     if (vfp == 1) {
 
         for (int cont = 0; cont < APFonLiq->parserieVL; ++cont) { //< APFonLiq->parserieVL
 
             if (chrisao == cont)
-                escreveIni2 << BHP << "   ";
+                imprimeResultadoVFP(escreveIni2, "   ");
         }
 
         if (chrisao == APFonLiq->parserieVL)
-            escreveIni2 << BHP << "   /" << "\n";
+            imprimeResultadoVFP(escreveIni2, "   /\n");
         if (chrisao == APFonLiq->parserieVL)
             chrisao = 0;
     }
     escreveIni2.close();
+	if (vfp == 3) {
+
+	   for (int cont = 0; cont < APFonLiq->parserieVL; ++cont) { //< ASFonLiq->parserieVL
+	  // for (int cont = 0; cont < ASPsep.parseriePres; ++cont) { //< ASFonLiq->parserieVL
+
+	        //escreveIni1 << ASFonLiq->vazliq[chrisao];
+            if (chrisao==cont) imprimeResultadoVFP(escreveIni4, "   ");
+	    	//contador=contador+1;
+	      //  if (i < ASFonLiq->parserieVL - 1) {
+	       //     escreveIni1 << " ";
+	       // }
+	    }
+
+       if (chrisao == APFonLiq->parserieVL) imprimeResultadoVFP(escreveIni4, "   /\n");
+	   if (chrisao==APFonLiq->parserieVL) chrisao=0;
+
+	    //escreveIni2 << "   /" << "\n";
+		//}
+		/*if (vfp==1&&chrisao==0) escreveIni2 <<BHP<< "   ";
+		if (vfp==1&&chrisao==1) escreveIni2 <<BHP<< "   ";
+		if (vfp==1&&chrisao==2) escreveIni2 <<BHP<< "   ";
+		if (vfp==1&&chrisao==3) escreveIni2 <<BHP<< "   /" << "\n"; */
+
+		//escreveIni2.close();
+
+	}
+	escreveIni4.close();
+
 }

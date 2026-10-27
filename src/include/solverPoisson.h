@@ -35,9 +35,9 @@ using namespace std;
 
 class solverP {
   public:
-    dadosP dados;
     Vcr<double> termolivre;
     SparseMtx<double> matglob;
+    dadosP dados;
     malha2d malha;
     int kontaTempo;
     int indCel;

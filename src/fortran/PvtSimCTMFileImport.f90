@@ -59,9 +59,15 @@ module PvtSimCTMFileImport
         integer :: iCpIGCoefDegree
         character(len=200) :: sGarbageLine
         real(c_double), dimension(17) :: oFluidFPROPSValues
+        integer :: iCommaCount
+        integer, allocatable, dimension(:) :: oFluidIPROPSValues
+
+        real(c_double), allocatable, dimension(:) :: oTDep_Peneloux_SRK
+        real(c_double), allocatable, dimension(:) :: oTDep_Peneloux_PR
 
         ! ------------ CONSTANTES:
         integer, parameter :: iPvtSimCTMFileUnit = 1
+        logical, parameter :: bReadEOSFromFluidIPROPSSection = .true.
 
         ! ------------ PROCEDIMENTOS:
 
@@ -236,6 +242,62 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
+            else if((sPvtSimCTMFileLine(1:12) == '<Cpen T SRK>').AND.(.not.bReadOnlyINComp)) then lineType
+
+                ! Ler coeficientes de Peneloux (dependência com a temperatura) para EOS de SRK
+                cPenTSRKUnit: if(sPvtSimCTMFileLine(13:len_trim(sPvtSimCTMFileLine)) == ' cT/R (1/atm)') then
+                    dMultFactor = 82.06d0               ! R em "cm3*atm / (mol*K)" --> levando para "cm3 / (mol*K)"
+                    dMultFactor = dMultFactor * 1.0d-6  ! --> levando para "m3/(mol*K)" (SI)
+                else cPenTSRKUnit
+                    ! Erro! Unidade não reconhecida!
+                    iIER = ERROR_UnrecognizedUnitInExternalFileForMixtureProperties
+                    return                    
+                end if cPenTSRKUnit
+
+                allocate(oTDep_Peneloux_SRK(iNComp), STAT=iMemoryAllocationError)
+
+                if(iMemoryAllocationError.NE.0) then
+                    ! Erro!
+                    iIER = ERROR_ErrorWhileReadingExternalFileForMixtureProperties
+                    return
+                end if
+
+                call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, iNComp, dMultFactor, &
+                    oTDep_Peneloux_SRK, iIER)
+
+                if(iIER.NE.ERROR_EverythingOK) return
+
+                ! 2 DE FEVEREIRO DE 2026: trecho de código lido e conferido. Leitura funcionando (confirmado via debug).
+
+            else if((sPvtSimCTMFileLine(1:11) == '<Cpen T PR>').AND.(.not.bReadOnlyINComp)) then lineType
+
+                ! Ler coeficientes de Peneloux (dependência com a temperatura) para EOS de PR
+                cPenTPRUnit: if(sPvtSimCTMFileLine(12:len_trim(sPvtSimCTMFileLine)) == ' cT/R (1/atm)') then
+                    dMultFactor = 82.06d0               ! R em "cm3*atm / (mol*K)" --> levando para "cm3 / (mol*K)"
+                    dMultFactor = dMultFactor * 1.0d-6  ! --> levando para "m3/(mol*K)" (SI)
+                else cPenTPRUnit
+                    ! Erro! Unidade não reconhecida!
+                    iIER = ERROR_UnrecognizedUnitInExternalFileForMixtureProperties
+                    return   
+                end if cPenTPRUnit
+
+                allocate(oTDep_Peneloux_PR(iNComp), STAT=iMemoryAllocationError)
+
+                if(iMemoryAllocationError.NE.0) then
+                    ! Erro!
+                    iIER = ERROR_ErrorWhileReadingExternalFileForMixtureProperties
+                    return
+                end if
+
+                call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, iNComp, dMultFactor, &
+                    oTDep_Peneloux_PR, iIER)
+
+                if(iIER.NE.ERROR_EverythingOK) return
+
+                ! PR e SRK CONFERIDOS EM 23-OUT-2025. Só falta: (i) testar a leitura de PenT para PR e SRK, e (ii) encaminhar para argumento de saída.
+
+                ! 2 DE FEVEREIRO DE 2026: trecho de código lido e conferido. Leitura funcionando (confirmado via debug)!
+
             else if((sPvtSimCTMFileLine(1:20) == '<Mwn> Number average').AND.(.not.bReadOnlyINComp)) then lineType
 
                 ! Ler das próximas linhas as massas molares:
@@ -335,9 +397,119 @@ module PvtSimCTMFileImport
                     oCpIGCoefs(iCpIGCoefDegree, i) = oCpIGCoefs_Read(i)
                 end do
 
+            else if((sPvtSimCTMFileLine(1:14) == '<Fluid IPROPS>').AND.(.not.bReadOnlyINComp)) then lineType
+
+                ! Ler duas linhas; ficar com a segunda (contém todas as opções separadas por vírgula):
+                read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine
+                read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine
+
+                ! Contar quantas vírgulas existem na linha:
+                iCommaCount = 0
+                commaCountLoop: do i = 1, len_trim(sPvtSimCTMFileLine)
+                    if(sPvtSimCTMFileLine(i:i) == ',') iCommaCount = iCommaCount + 1
+                end do commaCountLoop
+
+                ! Ler todos os valores de "iprops":
+                allocate(oFluidIPROPSValues(iCommaCount+1), STAT=iMemoryAllocationError)
+                read(sPvtSimCTMFileLine, *, IOSTAT=iFileOperationsError) (oFluidIPROPSValues(i), i = 1, iCommaCount+1)
+                
+                ! Ler a Equação de Estado daqui, se for a opção ligada:
+                getEosFromHere: if(bReadEOSFromFluidIPROPSSection) then
+
+                    ! Inicializando:
+                    bUsePengRobinsonKij = .false.
+                    bUseSRKKij = .false.
+
+                    bUsePengRobinsonPeneloux = .false.
+                    bUseSRKPeneloux = .false.
+
+                    treatIPROPSEOS: select case(oFluidIPROPSValues(2))
+
+                        case(1) treatIPROPSEOS
+
+                            ! PVTSIM: SRK PENELOUX
+                            iThermodynamicModel = SRK_PENELOUX
+
+                            bUseSRKKij = .true.
+                            bUseSRKPeneloux = .true.
+
+                        case(2) treatIPROPSEOS
+
+                            ! PVTSIM: PR
+                            iThermodynamicModel = PENG_ROBINSON_PENELOUX
+
+                            bUsePengRobinsonKij = .true.
+
+                        case(3) treatIPROPSEOS
+
+                            ! PVTSIM: SRK
+                            iThermodynamicModel = SRK_PENELOUX
+
+                            bUseSRKKij = .true.
+
+                        case(4) treatIPROPSEOS
+
+                            ! PVTSIM: PR PENELOUX
+                            iThermodynamicModel = PENG_ROBINSON_PENELOUX
+
+                            bUsePengRobinsonKij = .true.
+                            bUsePengRobinsonPeneloux = .true.
+
+                        case(5) treatIPROPSEOS
+
+                            ! PVTSIM: PR78
+                            iThermodynamicModel = PENG_ROBINSON_78_PENELOUX
+
+                            bUsePengRobinsonKij = .true.
+
+                        case(6) treatIPROPSEOS
+
+                            ! PVTSIM: PR 78 PENELOUX
+                            iThermodynamicModel = PENG_ROBINSON_78_PENELOUX
+
+                            bUsePengRobinsonKij = .true.
+                            bUsePengRobinsonPeneloux = .true.
+
+                        case(7) treatIPROPSEOS
+
+                            ! PVTSIM: SRK PENELOUX T
+                            iThermodynamicModel = -1        ! EOS mapeada, mas ainda não implementada
+
+                            ! Apagar quando implementar:
+                            iIER = ERROR_UnrecognizedEOSInExternalFileForMixtureProperties
+                            return
+
+                        case(8) treatIPROPSEOS
+
+                            ! PVTSIM: PR PENELOUX T
+                            iThermodynamicModel = -1        ! EOS mapeada, mas ainda não implementada
+
+                            ! Apagar quando implementar:
+                            iIER = ERROR_UnrecognizedEOSInExternalFileForMixtureProperties
+                            return
+
+                        case(9) treatIPROPSEOS
+
+                            ! PVTSIM: PR 78 PENELOUX T
+                            iThermodynamicModel = -1        ! EOS mapeada, mas ainda não implementada
+
+                            ! Apagar quando implementar:
+                            iIER = ERROR_UnrecognizedEOSInExternalFileForMixtureProperties
+                            return                           
+
+                        case default treatIPROPSEOS
+
+                            ! Equação de Estado inválida!
+                            iIER = ERROR_UnrecognizedEOSInExternalFileForMixtureProperties
+                            return
+
+                    end select treatIPROPSEOS
+
+                end if getEosFromHere
+
             !else if((sPvtSimCTMFileLine(1:20) == '<Fluid ExtraInfo CT>').AND.(.not.bReadOnlyINComp)) then lineType
             !   19/02/2021 - linha acima comentada e substituída pela abaixo.
-            else if((sPvtSimCTMFileLine(1:16) == '<Fluid Extra CT>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:16) == '<Fluid Extra CT>').AND.(.not.bReadOnlyINComp).AND.(.not.bReadEOSFromFluidIPROPSSection)) then lineType
 
                 ! Ler da próxima linha a Equação de Estado:
                 read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine
@@ -398,6 +570,7 @@ module PvtSimCTMFileImport
         end do readLoop
 
         ! ------------------ Retornar os devidos coeficientes de "Peneloux":
+        oTIndep_Peneloux(:) = 0.0d0
         if(bUsePengRobinsonPeneloux) then
             do i = 1, iNComp
                 oTIndep_Peneloux(i) = oTIndep_Peneloux_PR(i)

@@ -16,6 +16,10 @@ obj/
 modules/
 target/
 
+# Desktop application artifacts
+*.dmg
+*.sha256
+
 # Executaveis/artefatos compilados
 src/Marlim3
 marlim3/Marlim3*
@@ -40,6 +44,11 @@ pip-log.txt
 pip-delete-this-directory.txt
 *.manifest
 *.spec
+!marlim3_desktop/packaging/*.spec
+
+# Conversor FLOWedit: planilhas e logs de conversão (podem conter dados confidenciais)
+*[Ff][Ll][Oo][Ww][Ee][Dd][Ii][Tt]*.[Xx][Ll][Ss][Mm]
+Log_ConversaoFLOWedit_MARLIM3.txt
 
 # Python cache, testes e tipagem
 __pycache__/
@@ -67,6 +76,8 @@ dmypy.json
 .env
 .env.local
 .venv
+.venv-preview/
+.marlim-dependencies/
 env/
 venv/
 ENV/
@@ -104,6 +115,7 @@ output/
 # Documentacao gerada
 docs/_build/
 docs/build/
+docs/schemas/generated/
 site/
 
 # IDEs e editores
@@ -156,3 +168,7 @@ regression_output/
 # Versionamento interno
 versao.h
 versao.h.bak
+*.code-workspace
+
+# Self-hosted runners
+actions-runner

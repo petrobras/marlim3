@@ -4,3 +4,6 @@ include marlim3/Marlim3
 include marlim3/Marlim3.exe
 include marlim3/translations.json
 include marlim3/_conversores/_conversor_mr2/_resources/templateMR2toMRT.json
+recursive-include assets *
+recursive-include gui *.py *.toml
+recursive-include marlim3_desktop *.py *.md *.png *.ico *.icns *.spec *.desktop *.xml

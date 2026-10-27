@@ -69,6 +69,7 @@ class TransCal {
     double fluxIni;
     double fluxFim;
     double resGlob;
+    double resGlobAxiSim;
     Vcr<double> localvet;
     FullMtx<double> localmat;
     double dimExt;
@@ -180,11 +181,13 @@ class TransCal {
     double hInt(double resanul = 0, double diaRef = -1);
     double condParede(double resanul = 0);
     double condParedeLocal(double resanul = 0);
+    void calcResGlobAxiSim(double resanul = 0);
     double transperm(double resanul = 0);
-    void transcel(int icam, int idisc);
-    double transtrans();
+    void transcel(int icam, int idisc, int newman=0, double qcal=0.);
+    double transtrans(int newman=0, double qcal=0.);
     double transperm2D();  // Steady-state heat transfer for a buried pipeline
     double transtrans2D(); // Transient heat transfer for a buried pipeline
+    void transtransAxiSim(double cal);
     void FeiticoDoTempo();
     FullMtx<double> perfil();
     double psia(const double p) const { return (p * 0.9678411) * 14.69595; } // Converts pressure from kgf/cm² to psia

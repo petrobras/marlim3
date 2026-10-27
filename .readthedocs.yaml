@@ -7,8 +7,11 @@ build:
     python: "3.12"
 
   jobs:
-    pre_install:
-      - pip install mkdocs-material pymdown-extensions mkdocs-jupyter
+    install:
+      - pip install "uv==0.13.1"
+      - python scripts/dependencies.py sync --mode public --only-group docs --no-install-project --environment "$READTHEDOCS_VIRTUALENV_PATH" --inexact
+    pre_build:
+      - python schema_to_markdown.py --batch
 
 mkdocs:
   configuration: mkdocs.yml

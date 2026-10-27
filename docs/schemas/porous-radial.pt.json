@@ -1,0 +1,834 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/petrobras/marlim3/blob/main/docs/schemas/porous-radial.pt.json",
+  "title": "Marlim3 — Radial Porous Medium Input (Portuguese keys)",
+  "description": "JSON de entrada do modelo de meio poroso radial (reservatório) do Marlim3, resolvido pela equação de Poisson/difusão. Chaves em português (o motor lê diretamente estas chaves, sem tradução).",
+  "type": "object",
+  "properties": {
+    "malha": {
+      "type": "object",
+      "description": "Definição da malha de elementos finitos do meio poroso.",
+      "properties": {
+        "tipoArquivo": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Tipo de arquivo de malha. 0 -> pares de arquivos de elementos e nós; 1 -> arquivo único de malha (formato UNV)."
+        },
+        "elemento": {
+          "type": "string",
+          "description": "Nome do arquivo de elementos da malha (tipoArquivo = 0) ou do arquivo único de malha (tipoArquivo = 1)."
+        },
+        "no": {
+          "type": "string",
+          "description": "Nome do arquivo de nós da malha. Válido apenas para tipoArquivo = 0."
+        },
+        "dxMalhaRegular": {
+          "type": "number",
+          "description": "Espaçamento da malha regular na direção X.",
+          "unit": "m"
+        },
+        "dyMalhaRegular": {
+          "type": "number",
+          "description": "Espaçamento da malha regular na direção Y.",
+          "unit": "m"
+        }
+      }
+    },
+    "tempo": {
+      "type": "object",
+      "description": "Configuração temporal e parâmetros globais da simulação do meio poroso.",
+      "properties": {
+        "threadLocal": {
+          "type": "integer",
+          "description": "Número de threads usadas na solução local do meio poroso."
+        },
+        "modeloOleo": {
+          "type": "integer",
+          "description": "Modelo de óleo. Define como a compressibilidade/densidade do óleo é tratada no meio poroso."
+        },
+        "acop": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Indica se o meio poroso está acoplado a um poço (1) ou é resolvido isoladamente (0). Quando acoplado, exige anguloAcoplamento, centroX, centroY, ipLocal, material, secaoTransversal e pW."
+        },
+        "relax": {
+          "type": "number",
+          "description": "Parâmetro de relaxação do avanço no tempo (resolução implícita)."
+        },
+        "anguloAcoplamento": {
+          "type": "number",
+          "description": "Ângulo de acoplamento entre o meio poroso e o poço. Válido para acop = 1.",
+          "unit": "degree"
+        },
+        "centroX": {
+          "type": "number",
+          "description": "Coordenada X do centro do poço no domínio do meio poroso. Válido para acop = 1.",
+          "unit": "m"
+        },
+        "centroY": {
+          "type": "number",
+          "description": "Coordenada Y do centro do poço no domínio do meio poroso. Válido para acop = 1.",
+          "unit": "m"
+        },
+        "modeloFluidoTabelaFlash": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Se 1, a simulação utiliza tabela flash para as propriedades do fluido."
+        },
+        "modeloFluidoComposicional": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Se 1, a simulação utiliza o modelo composicional. Considerado apenas quando modeloFluidoTabelaFlash = 0."
+        },
+        "tabP": {
+          "type": "integer",
+          "description": "Indicador do uso da tabela Z (fator de compressibilidade). Considerado apenas para o caso black oil (modeloFluidoTabelaFlash = 0 e modeloFluidoComposicional = 0). Quando maior que zero, exige o objeto tabelaZ."
+        },
+        "correcaoDenGasLivreBlackOil": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "Correção da densidade do gás livre no modelo black oil."
+        },
+        "miniTabDinAtraso": {
+          "type": "integer",
+          "description": "Atraso da mini-tabela dinâmica. Válido apenas para o caso composicional (modeloFluidoTabelaFlash = 0 e modeloFluidoComposicional = 1)."
+        },
+        "miniTabDinDp": {
+          "type": "integer",
+          "description": "Passo de pressão da mini-tabela dinâmica (lido como inteiro pelo motor). Válido apenas para o caso composicional (modeloFluidoTabelaFlash = 0 e modeloFluidoComposicional = 1)."
+        },
+        "miniTabDinDt": {
+          "type": "integer",
+          "description": "Passo de temperatura da mini-tabela dinâmica (lido como inteiro pelo motor). Válido apenas para o caso composicional (modeloFluidoTabelaFlash = 0 e modeloFluidoComposicional = 1)."
+        },
+        "pvtsimArq": {
+          "type": "string",
+          "description": "Nome do arquivo PVTSim (.ctm) com as propriedades do fluido. Válido para os casos tabela flash e composicional."
+        },
+        "aguaConata": {
+          "type": "number",
+          "description": "Saturação de água conata (que fica eternamente presa no meio poroso e não escoa), influenciando o volume disponível do meio poroso."
+        },
+        "ipLocal": {
+          "type": "number",
+          "description": "IP da IPR linear local definida em torno do diâmetro do poço (usada para definir a CC Richardson no poço, já que o problema é difusivo). Válido para acop = 1."
+        },
+        "temperaturaReservatorio": {
+          "type": "number",
+          "description": "Temperatura do reservatório (os modelos são isotérmicos).",
+          "unit": "degC"
+        },
+        "espessuraReservatorio": {
+          "type": "number",
+          "description": "Espessura do reservatório na direção Z (do poço).",
+          "unit": "m"
+        },
+        "datumReferencia": {
+          "type": "number",
+          "description": "Cota de referência (datum) usada nas correções hidrostáticas do meio poroso.",
+          "unit": "m"
+        },
+        "pressaoReferencia": {
+          "type": "number",
+          "description": "Pressão usada para calcular a expansão volumétrica do meio poroso.",
+          "unit": "kgf/cm2"
+        },
+        "tmax": {
+          "type": "number",
+          "description": "Tempo máximo da simulação.",
+          "unit": "s"
+        },
+        "perm": {
+          "type": "boolean",
+          "description": "Indica se o cálculo permanente (regime estacionário) está habilitado."
+        },
+        "trans": {
+          "type": "boolean",
+          "description": "Indica se o cálculo transiente está habilitado. Quando true, exige dtMax e tempoImp."
+        },
+        "dtMax": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Passos de tempo máximos associados à série da chave tempo. Deve ter a mesma dimensão de tempo.",
+          "unit": "s"
+        },
+        "tempo": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Tempos que definem a evolução dos passos de tempo dtMax.",
+          "unit": "s"
+        },
+        "tempoImp": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Tempos de impressão das informações do processo transiente.",
+          "unit": "s"
+        },
+        "tempoSatAPoc": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Tempos associados aos valores de satAPoc. Deve ter a mesma dimensão de satAPoc.",
+          "unit": "s"
+        },
+        "satAPoc": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Saturação de água no poço ao longo do tempo."
+        },
+        "solverMat": {
+          "type": "integer",
+          "description": "Seleção do solver do sistema linear (matricial)."
+        },
+        "rankLU": {
+          "type": "integer",
+          "description": "Rank da decomposição LU. Valores maiores ou iguais a zero habilitam a coloração (corLU)."
+        },
+        "corLU": {
+          "type": "boolean",
+          "description": "Habilita a coloração da decomposição LU. Considerado apenas quando rankLU >= 0."
+        }
+      }
+    },
+    "kRelOA": {
+      "type": "object",
+      "description": "Curva de permeabilidade relativa óleo-água.",
+      "properties": {
+        "satA": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Saturação de água."
+        },
+        "kRelA": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Permeabilidade relativa da água."
+        },
+        "kRelOA": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Permeabilidade relativa do óleo na curva óleo-água."
+        }
+      }
+    },
+    "kRelOG": {
+      "type": "object",
+      "description": "Curva de permeabilidade relativa óleo-gás.",
+      "properties": {
+        "satG": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Saturação de gás."
+        },
+        "kRelG": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Permeabilidade relativa do gás."
+        },
+        "kRelOG": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Permeabilidade relativa do óleo na curva óleo-gás."
+        }
+      }
+    },
+    "pcOA": {
+      "type": "object",
+      "description": "Curva de pressão capilar óleo-água.",
+      "properties": {
+        "satA": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Saturação de água."
+        },
+        "pcOA": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Pressão capilar óleo/água.",
+          "unit": "psi"
+        }
+      }
+    },
+    "tabelaZ": {
+      "type": "object",
+      "description": "Parâmetros da tabela do fator de compressibilidade Z. Exigido quando tempo.tabP > 0.",
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+          "description": "Indica se a tabela Z está ativa."
+        },
+        "nPontos": {
+          "type": "integer",
+          "description": "Número de pontos da tabela em cada direção (pressão e temperatura)."
+        },
+        "pressaoMaxima": {
+          "type": "number",
+          "description": "Pressão máxima da tabela.",
+          "unit": "kgf/cm2"
+        },
+        "pressaoMinima": {
+          "type": "number",
+          "description": "Pressão mínima da tabela.",
+          "unit": "kgf/cm2"
+        },
+        "temperaturaMaxima": {
+          "type": "number",
+          "description": "Temperatura máxima da tabela.",
+          "unit": "degC"
+        },
+        "temperaturaMinima": {
+          "type": "number",
+          "description": "Temperatura mínima da tabela.",
+          "unit": "degC"
+        }
+      }
+    },
+    "fluidoComplementar": {
+      "type": "object",
+      "description": "Objeto contendo informações sobre o fluido complementar, que é o terceiro fluido em fase líquida além dos hidrocarbonetos e da água. Este fluido é inerte, não possui capacidade de se dissolver no gás e não escorrega em relação à mistura de hidrocarbonetos. Exemplos incluem colchão de glicol ou etanol, inibidor químico e fluido de completação (como água salgada).",
+      "properties": {
+        "ativo": {
+          "type": "boolean",
+          "description": "Indica se o fluido está ou não ativo."
+        },
+        "massaEspecifica": {
+          "type": "number",
+          "description": "Massa específica do líquido nas condições standard.",
+          "unit": "kg/m3"
+        },
+        "compP": {
+          "type": "number",
+          "description": "Compressibilidade do líquido.",
+          "unit": "1/Pa"
+        },
+        "compT": {
+          "type": "number",
+          "description": "Expansividade térmica do líquido.",
+          "unit": "1/K"
+        },
+        "tensup": {
+          "type": "number",
+          "description": "Tensão superficial do líquido.",
+          "unit": "N/m"
+        },
+        "calorEspecifico": {
+          "type": "number",
+          "description": "Calor específico do líquido.",
+          "unit": "J/kg.K"
+        },
+        "condutividade": {
+          "type": "number",
+          "description": "Condutividade do líquido.",
+          "unit": "W/m.K"
+        },
+        "temp1": {
+          "type": "number",
+          "description": "Temperatura do ponto 1 do ASTM.",
+          "unit": "degC"
+        },
+        "visc1": {
+          "type": "number",
+          "description": "Viscosidade do ponto 1 do ASTM.",
+          "unit": "cP"
+        },
+        "temp2": {
+          "type": "number",
+          "description": "Temperatura do ponto 2 do ASTM.",
+          "unit": "degC"
+        },
+        "visc2": {
+          "type": "number",
+          "description": "Viscosidade do ponto 2 do ASTM.",
+          "unit": "cP"
+        },
+        "salinidade": {
+          "type": "number",
+          "description": "Salinidade da água quando o fluido complementar é água ou fluido de completação.",
+          "unit": "g/(kg água)"
+        },
+        "tipoF": {
+          "type": "integer",
+          "enum": [0, 1, 2],
+          "default": 0,
+          "description": "Tipo de fluido. 0 -> fluido complementar padrão (que requer todas as informações exceto a salinidade); 1 -> água (neste caso, só é preciso informar a salinidade); 2 -> análogo ao tipo 0, mas internamente calcula-se o redutor de atrito."
+        }
+      }
+    },
+    "fluidosProducao": {
+      "type": "object",
+      "description": "Fluido de produção do meio poroso (objeto único, não uma lista). Há três tipos possíveis: black oil, tabela flash e composicional, definidos por tempo.modeloFluidoTabelaFlash e tempo.modeloFluidoComposicional.",
+      "properties": {
+          "ativo": {
+            "type": "boolean",
+            "description": "Indica se o fluido está ou não ativo."
+          },
+          "id": {
+            "type": "integer",
+            "description": "Inteiro de identificação do fluido."
+          },
+          "api": {
+            "type": "number",
+            "description": "Grau API do óleo. Válido apenas para black oil."
+          },
+          "rgo": {
+            "type": "number",
+            "description": "Razão gás-óleo. Válido para os três tipos de fluido.",
+            "unit": "Sm3/Sm3"
+          },
+          "densidadeGas": {
+            "type": "number",
+            "description": "Densidade relativa do gás em relação ao ar nas condições standard. Válido para black oil (e consequentemente também para o composicional)."
+          },
+          "bsw": {
+            "type": "number",
+            "description": "Basic Sediment and Water. Válido para os três tipos de fluido.",
+            "unit": "m^3/m^3",
+            "default": 0
+          },
+          "densidadeAgua": {
+            "type": "number",
+            "description": "Densidade relativa da água em relação à água pura com rho = 1000 kg/m^3. Válido para os três tipos de fluido.",
+            "default": 1
+          },
+          "tipoEmul": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0, 1, 2, 3, 4, 5, 6, 7],
+            "description": "Indicador de correlação de emulsão para modificação da viscosidade do óleo. 0 -> viscosidade de mistura óleo-água; 1 -> Woeflin fraco; 2 -> Woeflin médio; 3 -> Woeflin forte; 4 -> exponencial; 5 -> Pal Rhodes; 6 -> par BSW x multiplicador informado pelo usuário; 7 -> viscosidade de óleo abaixo do BSW de saturação."
+          },
+          "coefAModeloExp": {
+            "type": "number",
+            "description": "Parâmetro 'a' do modelo de emulsão 4 (exponencial)."
+          },
+          "coefBModeloExp": {
+            "type": "number",
+            "description": "Parâmetro 'b' do modelo de emulsão 4 (exponencial)."
+          },
+          "PHI100": {
+            "type": "number",
+            "description": "Multiplicador de emulsão do modelo de emulsão 5 (Pal Rhodes)."
+          },
+          "bswCorte": {
+            "type": "number",
+            "default": 1,
+            "description": "BSW de inversão da emulsão."
+          },
+          "BSWVec": {
+            "type": "array",
+            "description": "Vetor com os BSW informados pelo usuário no modelo de emulsão 6.",
+            "items": { "type": "number" }
+          },
+          "emulVec": {
+            "type": "array",
+            "description": "Vetor com os multiplicadores de emulsão informados pelo usuário no modelo de emulsão 6.",
+            "items": { "type": "number" }
+          },
+          "fracCO2": {
+            "type": "number",
+            "default": 0,
+            "description": "Fração molar de CO2 no fluido. Válido para black oil (e consequentemente também para o composicional)."
+          },
+          "correlacaoCritica": {
+            "type": "integer",
+            "enum": [0, 1, 2],
+            "default": 1,
+            "description": "Indicador da correlação para o cálculo da pressão e temperatura críticas do gás. As correlações 1 e 2 são mais adequadas para casos com CO2. Válido para black oil (e consequentemente também para o composicional)."
+          },
+          "modeloRsPb": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0, 1, 2, 3, 4],
+            "description": "Correlação de Razão e Solubilidade (RS); 0 -> Vázquez e Beggs, 1 -> Lasater, 2 -> Standing, 3 -> Glaso, 4 -> Lívia Fulchignoni. Válido apenas para black oil."
+          },
+          "modeloOleoMorto": {
+            "type": "integer",
+            "default": 3,
+            "enum": [0, 1, 2, 3, 4, 5, 6, 7],
+            "description": "Modelo de óleo morto para cálculo de viscosidade. 0 -> ASTM; 1 -> Beggs&Robinson; 2 -> Beggs&Robinson Modificado; 3 -> Glaso; 4 -> Kartoatmodjo_Schmidt; 5 -> Petrosky_Farshad; 6 -> Beal; 7 -> tabela com pares de viscosidade x temperatura."
+          },
+          "temp1": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido pelo método ASTM, a temperatura do ponto 1.",
+            "unit": "degC"
+          },
+          "visc1": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido pelo método ASTM, a viscosidade do ponto 1.",
+            "unit": "cP"
+          },
+          "temp2": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido pelo método ASTM, a temperatura do ponto 2.",
+            "unit": "degC"
+          },
+          "visc2": {
+            "type": "number",
+            "description": "Para o cálculo da viscosidade do líquido pelo método ASTM, a viscosidade do ponto 2.",
+            "unit": "cP"
+          },
+          "tempOleoMorto": {
+            "type": "array",
+            "description": "Pontos de temperatura do par temperatura x viscosidade, quando o modelo de óleo morto é 7.",
+            "items": { "type": "number" }
+          },
+          "viscOleoMorto": {
+            "type": "array",
+            "description": "Pontos de viscosidade do par temperatura x viscosidade, quando o modelo de óleo morto é 7.",
+            "items": { "type": "number" }
+          },
+          "modeloOleoVivo": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0, 1, 2],
+            "description": "Modelo de óleo vivo para cálculo de viscosidade. 0 -> Beggs_Robinson; 1 -> Kartoatmodjo_Schmidt; 2 -> Petrosky_Farshad."
+          },
+          "modeloOleoSubSaturado": {
+            "type": "integer",
+            "default": 0,
+            "enum": [0, 1, 2, 3, 4],
+            "description": "Modelo de óleo subsaturado para cálculo de viscosidade. 0 -> Vasquez and Beggs; 1 -> Kartoatmodjo_Schmidt; 2 -> Petrosky_Farshad; 3 -> Beal; 4 -> Khan."
+          },
+          "correcaoDenGas": {
+            "type": "integer",
+            "enum": [0, 1],
+            "description": "Correção da densidade do gás. Quando habilitada, usa valores críticos genéricos em vez dos calculados a partir das propriedades do fluido."
+          },
+          "pvtsimArq": {
+            "type": "string",
+            "description": "Nome do arquivo PVTSim (.ctm) específico deste fluido. Válido para os casos tabela flash e composicional."
+          },
+          "modeloViscBlackOil": {
+            "type": "integer",
+            "enum": [0, 1],
+            "default": 0,
+            "description": "Para o caso tabela flash, se 1 usa as correlações de viscosidade black oil; se 0, usa as viscosidades informadas na tabela."
+          },
+          "modeloAguaBlackOil": {
+            "type": "integer",
+            "enum": [0, 1],
+            "default": 1,
+            "description": "Para o caso tabela flash, se 1 usa as correlações de água do black oil para o coeficiente Joule-Thompson; se 0, usa o coeficiente informado na tabela."
+          },
+          "fracMolarUsuario": {
+            "type": "boolean",
+            "default": false,
+            "description": "Indica se o usuário informa a composição do fluido em fracMolar. Se false, a informação é buscada no arquivo .ctm de pvtsimArq. Válido apenas para simulações composicionais."
+          },
+          "fracMolar": {
+            "type": "array",
+            "description": "Frações molares dos pseudocomponentes (mesma sequência do arquivo .ctm de pvtsimArq). Válido apenas para simulações composicionais.",
+            "items": { "type": "number" }
+          },
+          "RGOCompUsuario": {
+            "type": "boolean",
+            "default": false,
+            "description": "Se true, no caso composicional, corrige as frações molares originais para se adequar ao valor de 'rgo'."
+          }
+      }
+    },
+    "CC": {
+      "type": "object",
+      "description": "Condições de contorno do domínio do meio poroso.",
+      "properties": {
+        "Dirichlet": {
+          "type": "array",
+          "description": "Condições de contorno de Dirichlet (valor prescrito) por rótulo de fronteira.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rotulo": {
+                "type": "integer",
+                "description": "Rótulo numérico da fronteira. Usado quando a malha é do tipo par elemento/nó (tipoArquivo = 0)."
+              },
+              "rotuloSTR": {
+                "type": "string",
+                "description": "Rótulo textual da fronteira. Usado quando a malha é do tipo arquivo único (tipoArquivo = 1)."
+              },
+              "tempo": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Tempos associados aos valores prescritos. Deve ter a mesma dimensão de valor.",
+                "unit": "s"
+              },
+              "valor": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Valores de pressão prescritos ao longo do tempo.",
+                "unit": "kgf/cm2"
+              },
+              "valorSat": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Valores de saturação de água prescritos ao longo do tempo. Se ausente, adota a água conata."
+              }
+            }
+          }
+        },
+        "Richardson": {
+          "type": "array",
+          "description": "Condições de contorno de Richardson (fluxo com valor e coeficiente ambiente) por rótulo de fronteira.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rotulo": {
+                "type": "integer",
+                "description": "Rótulo numérico da fronteira. Usado quando a malha é do tipo par elemento/nó (tipoArquivo = 0)."
+              },
+              "rotuloSTR": {
+                "type": "string",
+                "description": "Rótulo textual da fronteira. Usado quando a malha é do tipo arquivo único (tipoArquivo = 1)."
+              },
+              "tempo": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Tempos associados aos valores. Deve ter a mesma dimensão de valorAmb.",
+                "unit": "s"
+              },
+              "valorAmb": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Valores ambientes (de referência) da condição de Richardson ao longo do tempo."
+              },
+              "hAmb": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Coeficientes de transferência ambiente associados à condição de Richardson ao longo do tempo."
+              },
+              "valorSat": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Valores de saturação de água associados ao longo do tempo. Se ausente, adota a água conata."
+              }
+            }
+          }
+        },
+        "VonNewman": {
+          "type": "array",
+          "description": "Condições de contorno de Von Neumann (fluxo prescrito) por rótulo de fronteira.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "rotulo": {
+                "type": "integer",
+                "description": "Rótulo numérico da fronteira. Usado quando a malha é do tipo par elemento/nó (tipoArquivo = 0)."
+              },
+              "rotuloSTR": {
+                "type": "string",
+                "description": "Rótulo textual da fronteira. Usado quando a malha é do tipo arquivo único (tipoArquivo = 1)."
+              },
+              "tempo": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Tempos associados aos valores prescritos. Deve ter a mesma dimensão de valor.",
+                "unit": "s"
+              },
+              "valor": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Valores de fluxo prescritos ao longo do tempo."
+              },
+              "valorSat": {
+                "type": "array",
+                "items": { "type": "number" },
+                "description": "Valores de saturação de água prescritos ao longo do tempo. Se ausente, adota a água conata."
+              }
+            }
+          }
+        },
+        "acoplamento": {
+          "type": "integer",
+          "description": "Rótulo da fronteira de acoplamento com o poço. Válido para tempo.acop = 1."
+        },
+        "satAcop": {
+          "type": "number",
+          "description": "Saturação de água na fronteira de acoplamento. Válido para tempo.acop = 1. Se ausente, adota a água conata."
+        }
+      }
+    },
+    "prop": {
+      "type": "array",
+      "description": "Propriedades do meio poroso por região retangular do domínio (delimitada por xmin/xmax e ymin/ymax).",
+      "items": {
+        "type": "object",
+        "properties": {
+          "xmax": {
+            "type": "number",
+            "description": "Limite superior da região na direção X.",
+            "unit": "m"
+          },
+          "xmin": {
+            "type": "number",
+            "description": "Limite inferior da região na direção X.",
+            "unit": "m"
+          },
+          "ymax": {
+            "type": "number",
+            "description": "Limite superior da região na direção Y.",
+            "unit": "m"
+          },
+          "ymin": {
+            "type": "number",
+            "description": "Limite inferior da região na direção Y.",
+            "unit": "m"
+          },
+          "permeabilidadeY": {
+            "type": "number",
+            "description": "Permeabilidade na direção Y.",
+            "unit": "mD"
+          },
+          "permeabilidadeX": {
+            "type": "number",
+            "description": "Permeabilidade na direção X.",
+            "unit": "mD"
+          },
+          "porosidade": {
+            "type": "number",
+            "description": "Porosidade de referência da região."
+          },
+          "compressibilidadeRocha": {
+            "type": "number",
+            "description": "Compressibilidade do meio poroso na região.",
+            "unit": "[kgf/cm2]^(-1)"
+          }
+        }
+      }
+    },
+    "CI": {
+      "type": "array",
+      "description": "Condições iniciais por região retangular do domínio (delimitada por xmin/xmax e ymin/ymax), com gradientes prescritos.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "xmax": {
+            "type": "number",
+            "description": "Limite superior da região na direção X.",
+            "unit": "m"
+          },
+          "xmin": {
+            "type": "number",
+            "description": "Limite inferior da região na direção X.",
+            "unit": "m"
+          },
+          "ymax": {
+            "type": "number",
+            "description": "Limite superior da região na direção Y.",
+            "unit": "m"
+          },
+          "ymin": {
+            "type": "number",
+            "description": "Limite inferior da região na direção Y.",
+            "unit": "m"
+          },
+          "Dxmax": {
+            "type": "number",
+            "description": "Gradiente do campo na direção X no limite superior de X."
+          },
+          "Dxmin": {
+            "type": "number",
+            "description": "Gradiente do campo na direção X no limite inferior de X."
+          },
+          "Dymax": {
+            "type": "number",
+            "description": "Gradiente do campo na direção Y no limite superior de Y."
+          },
+          "Dymin": {
+            "type": "number",
+            "description": "Gradiente do campo na direção Y no limite inferior de Y."
+          },
+          "pressao": {
+            "type": "number",
+            "description": "Pressão inicial na região.",
+            "unit": "kgf/cm2"
+          },
+          "satAgua": {
+            "type": "number",
+            "description": "Saturação de água inicial na região."
+          }
+        }
+      }
+    },
+    "material": {
+      "type": "array",
+      "description": "Materiais das camadas da seção transversal do poço acoplado. Válido para tempo.acop = 1.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "permeabilidadeY": {
+            "type": "number",
+            "description": "Permeabilidade do material (aplicada às direções X e Y).",
+            "unit": "mD"
+          },
+          "porosidade": {
+            "type": "number",
+            "description": "Porosidade do material."
+          },
+          "compressibilidadeRocha": {
+            "type": "number",
+            "description": "Compressibilidade do material.",
+            "unit": "[kgf/cm2]^(-1)"
+          }
+        }
+      }
+    },
+    "secaoTransversal": {
+      "type": "object",
+      "description": "Seção transversal do poço acoplado ao meio poroso. Válido para tempo.acop = 1.",
+      "properties": {
+        "diametroInterno": {
+          "type": "number",
+          "description": "Diâmetro interno da seção transversal (diâmetro do poço).",
+          "unit": "m"
+        },
+        "zInterno": {
+          "type": "number",
+          "description": "Cota da posição mais extrema do meio poroso em relação ao poço.",
+          "unit": "m"
+        },
+        "zPoco": {
+          "type": "number",
+          "description": "Cota do poço.",
+          "unit": "m"
+        },
+        "camadas": {
+          "type": "array",
+          "description": "Camadas concêntricas da seção transversal, definidas por espessura radial.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "espessura": {
+                "type": "number",
+                "description": "Espessura radial da camada.",
+                "unit": "m"
+              },
+              "discretizacao": {
+                "type": "integer",
+                "description": "Número de discretizações da camada para os cálculos de troca de calor."
+              },
+              "idMaterial": {
+                "type": "integer",
+                "description": "Índice (na array material) do material que compõe a camada."
+              }
+            }
+          }
+        }
+      }
+    },
+    "pW": {
+      "type": "object",
+      "description": "Condição no poço (well) acoplado ao meio poroso. Válido para tempo.acop = 1.",
+      "properties": {
+        "tempo": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Tempos associados aos valores no poço. Deve ter a mesma dimensão de valor.",
+          "unit": "s"
+        },
+        "valor": {
+          "type": "array",
+          "items": { "type": "number" },
+          "description": "Valores prescritos no poço ao longo do tempo.",
+          "unit": "kgf/cm2"
+        }
+      }
+    }
+  }
+}

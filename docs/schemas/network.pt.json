@@ -1,0 +1,183 @@
+{
+     "$schema": "http://json-schema.org/draft-07/schema#",
+     "$id": "https://github.com/petrobras/marlim3/blob/main/docs/schemas/network.pt.json",
+     "title": "Marlim3 — Network Input (Portuguese keys)",
+     "description": "JSON de entrada de uma rede (m\u00faltiplos tramos conectados) do Marlim3, com chaves em portugu\u00eas.",
+     "type": "object",
+     "properties": {
+       "versao": {
+         "type": "string",
+         "pattern": "^\\d+\\.\\d+\\.\\d+$",
+         "examples": ["3.0.0", "3.1.6"],
+         "description": "Versão do software referenciada por este JSON."
+       },
+       "configuracaoInicial": {
+         "type": "object",
+         "description": "Parâmetros globais de solução da rede, que se sobrepõem aos parâmetros dos tramos individuais.",
+         "properties": {
+           "ParametroInicial": {
+             "type": "number",
+             "description": "Holdup de chute inicial. Para auxiliar na partida da simulação, utiliza-se estimativas grosseiras de vazão e hidrostática compartilhadas por toda a rede. Este holdup, portanto, é importante para estimar a porção hidrostática. Varia de 0 a 1."
+         },
+         "Relaxacao": {
+           "type": "number",
+           "default": 0.5,
+           "description": "Para pontos de convergência e divergência de tramos, especifica o parâmetro de relaxação R para atualização, de uma iteração para a próxima, da pressão compartilhada nos nós em que os tramos se encontram. Isto é, P_{it+1} = R*P_{it} + (1-R)*P_{it+1}. Útil para casos em que o comportamento do sistema é muito não linear, em especial no começo da simulação, quando podem ocorrer atualizações de pressão abruptas e instáveis. Casos típicos incluem os que usam condições de contorno do tipo IPR."
+         },
+         "ChuteNos": {
+           "type": "boolean",
+           "default": false,
+           "description": "Se true, o usuário deve informar estimativas iniciais de pressões a montante e jusante de todos os tramos, com exceções dos tramos mais a jusante."
+         },
+         "Transiente": {
+           "type": "boolean",
+           "default": false,
+           "description": "Indica se a simulação será permanente ou transiente. Sobrepõe-se ao parâmetro configuracaoInicial: {transiente} dos tramos solteiros que compõem o sistema."
+         },
+         "fluidoRede": {
+           "type": "integer",
+           "enum": [0, 1],
+           "description": "0: rede dominada por gás; 1: rede dominada por líquido."
+         },
+         "modeloTabelaDinamica": {
+           "type": "boolean",
+           "default": false,
+           "description": "Se true, calcula uma tabela montada a posteriori da simulação black oil usando o modelo composicional, para os vários trechos de composição distintas, aproveitando o mapeamento de P e T oferecido pelo resultado inicial da simulação black oil. Válido apenas quando se usa modelos composicionais em regime permanente. Pode acelerar significativamente o tempo computacional, em particular no caso de redes, por evitar o cálculo repetitivo de flashs a cada iteração. Sobrepõe-se ao parâmetro configuracaoInicial: {modeloTabelaDinamica} dos tramos solteiros que compõem o sistema."
+         },
+         "TempoSimulacao": {
+           "type": "number",
+           "unit": "s",
+           "description": "Tempo total de simulação. Válido apenas para simulações transientes. Sobrepõe-se ao parâmetro tempo: {tempoFinal} dos tramos solteiros que compõem o sistema."
+         },
+         "threadRede": {
+           "type": "integer",
+           "description": "Número de threads usadas na solução da rede para contextos em que é possível paralelizar a solução.",
+           "default": 1
+         },
+         "apenasPreProc": {
+           "type": "boolean",
+           "default": false,
+           "description": "Executa apenas o pré-processamento para isolamento das redes internas que compõem o sistema, a configuração de uma rede permite trechos não conectados, como se fossem redes isoladas, ou até mesmo tramos isolados sem conexão com o resto da rede, estas redes internas definem este conjunto de sistemas isolados dentro da rede principal, sem efetuar a simulação."
+         },
+         "Injecao": {
+           "type": "boolean",
+           "default": false,
+           "description": "Indicativo de rede de injeção (ex: sistema pig-back). Nesse caso, a simulação será obrigatoriamente permanente e o modelo usado é o do poço injetor, mais simples."
+         },
+         "AnelGL": {
+           "type": "boolean",
+           "default": false,
+           "description": "Indicativo de anel de gas-lift, arranjo em que uma única tubulação proveniente da plataforma pode bifurcar-se, em diversos pontos, em linhas de serviço que atenderão a diferentes poços."
+         },
+         "tipoModeloDrift": {
+           "type": "boolean",
+           "default": true,
+           "description": "Seleciona o modelo de escoamento usado na solução da rede. Quando true, habilita o tratamento por drift-flux; do contrário, utiliza o modelo padrão."
+         },
+         "limiteConvergencia": {
+           "type": "number",
+           "description": "Critério de convergência (tolerância) para o laço iterativo de solução da rede."
+         },
+         "fonteRedeParalela": {
+           "type": "boolean",
+           "default": false,
+           "description": "Indica que a rede possui fontes recíprocas (2 tramos paralelos conectados por válvulas ou orifícios, as fontes são definidas pelo escoamento que atravessa estas válvulas de um tramo para o outro). Quando true, o campo de mesmo nome na raiz descreve os pares de nós conectados. Observação: as fontes nos tramos paralelos responsáveis por esta conexão são sempre do tipo fontePressao, o diferencial de pressão entre os dois tramos definirá a vazão nestas fontes do tipo fontePressao"
+         }
+         }
+       },
+       "Arquivos": {
+         "type": "array",
+         "description": "Sequência de arquivos JSON dos tramos solteiros que compõem a rede.",
+         "items": {
+           "type": "string"
+         }
+       },
+       "Conexao": {
+         "type": "array",
+         "description": "Os itens dessa array especificam as conexões de cada tramo individual, ordenados da mesma maneira que informado no campo configuracaoInicial: {Arquivos}.",
+         "items": {
+           "type": "object",
+           "description": "Conexões de cada tramo.",
+           "properties": {
+             "PressaoImposta": {
+               "type": "boolean",
+               "default": false,
+               "description": "Impõe a utilização da pressão à jusante no JSON específicado no json do tramo em separador->pressao ao invés de atualizar por meio da resolução da rede."
+             },
+             "ativo": {
+               "type": "boolean",
+               "default": true,
+               "description": "Indica se o tramo está ativo na montagem da rede, se false, o tramo é descartado da rede após o pré-processamento."
+             },
+             "derivaPrincipal": {
+               "type": "integer",
+               "description": "Índice do tramo principal do qual este tramo deriva, usado para topologias com ramificações."
+             },
+             "tramoPrimario": {
+               "type": "boolean",
+               "description": "Específico para o caso de redes paralelas. Indica se o tramo é o primário em um par de tramos que compartilham uma conexão (por exemplo, em arranjos de fonte recíproca)."
+             },
+             "permanente": {
+               "type": "integer",
+               "enum": [0, 1],
+               "default": 1,
+               "description": "Na simulação permanente, se 0, indica que o tramo não é utilizado. Válido também para o transiente, já que este modo utiliza como condição inicial a solução do modo permanente. Neste caso, a condição inicial do tramo é a informada pelo usuário no JSON específico."
+             },
+             "PressaoMontante": {
+               "type": "number",
+               "unit": "kgf/cm2",
+               "description": "Estimativa inicial da pressão a montante para o caso configuracaoInicial: {ChuteNos: true}."
+             },
+             "PressaoJusante": {
+               "type": "number",
+               "unit": "kgf/cm2",
+               "description": "Estimativa inicial da pressão a jusante para o caso configuracaoInicial: {ChuteNos: true}."
+             },
+             "reverso": {
+               "type": "integer",
+               "default": 0,
+               "enum": [0, 1],
+               "description": "Se 1, inverte o sentido do escoamento e geometria do tramo em relação ao informado no JSON do tramo."
+             },
+             "coletores": {
+               "type": "array",
+               "description": "Índices dos tramos coletores (a jusante) associados a este tramo."
+             },
+             "afluentes": {
+               "type": "array",
+               "description": "Índices dos tramos afluentes (a montante) associados a este tramo."
+             },
+             "bloqueio": {
+               "type": "integer",
+               "description": "Para tramos com dois coletores, indica o índice do coletor bloqueado. Essa funcionalidade foi designada para representação de manifolds em que seja possível alinhamento dos tramos com uma linha de produção e uma linha de teste, conforme apresentado na figura a seguir. Sendo assim, é possível bloquear o fluxo de um dos tramos coletores. Só funciona para tramos que possuem exatamente dois coletores."
+             },
+             "Anel": {
+               "type": "boolean",
+               "description": "Para casos de anel de gas-lift (configuracaoInicial: {anelGL: true}), indica que o tramo é o anel (gasoduto que alimenta as demais linhas de gás)."
+             },
+             "ComprimentoAnel": {
+               "type": "number",
+               "description": "Para casos de anel de gas-lift (configuracaoInicial: {anelGL: true}), indica a posição em que o tramo se conecta ao gasoduto (anel). Válido para todos os tramos que não sejam o gasoduto (ou seja, Anel: false)."
+             }
+           }
+         }
+       },
+       "fonteRedeParalela": {
+         "type": "array",
+         "description": "Descreve os pares de fontes conectadas em uma rede paralela (fontes recíprocas). Válido quando configuracaoInicial: {fonteRedeParalela: true}.",
+         "items": {
+           "type": "object",
+           "properties": {
+             "idNoPrimario": {
+               "type": "integer",
+               "description": "Índice da fonte do tramo primário que fará a conexão recíproca."
+             },
+             "idNoSecundario": {
+               "type": "integer",
+               "description": "Índice da fonte do tramo secundário que fará a conexão recíproca."
+             }
+           }
+         }
+       }
+     }
+   }

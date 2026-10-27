@@ -261,6 +261,9 @@ class elem2d {
     double *dtCFL;
     double CFLC;
 
+    int acopD;
+    double **fluxTface; // Temperature gradients at the faces.
+
     ProFluColVF flucVF; // Fluid-property model used by the volume-fraction formulation.
 
     Vcr<double> TLUV;          // Right-hand-side vector of the coupled momentum system.
@@ -281,7 +284,7 @@ class elem2d {
      * Construct and initialize a two-dimensional finite-volume element.
      */
     elem2d(varGlob1D *Vvg1dSP = 0, double **xcoor = 0, int **noEle = 0, int *tipo = 0, double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0, int i = 0,
-           double vdt = 0., int vperm = 1, int vtrans = 0, ProFluColVF vflucVF = ProFluColVF(),
+           double vdt = 0., int vperm = 1, int vtrans = 0, ProFluColVF vflucVF = ProFluColVF(),int vacopd=0,
            double vpres = 0., double vu = 0., double vv = 0., double vt = 0., double vfluxCal = 0., double vcond = 0., double vcp = 0.,
            double vrho = 0., double vvisc = 0., double vbeta = 0.);
 
@@ -332,6 +335,7 @@ class elem2d {
                 delete[] gradUface[i];
                 delete[] gradVface[i];
                 delete[] cel2D.vecSDif[i];
+                delete[] fluxTface[i];
             }
             delete[] cel2D.centroideFace;
             delete[] cel2D.coordVert;
@@ -411,6 +415,7 @@ class elem2d {
             delete[] cel2D.difuPres;
             delete[] cel2D.difuPresRC;
             delete[] cel2D.vecSDif;
+            delete[] fluxTface;
             for (int i = 0; i < cel2D.nvert; i++) {
                 delete[] cel2D.BMedF[i];
             }

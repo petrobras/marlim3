@@ -37,6 +37,10 @@ class BomCentSub {
     double Evis;
     int correcHI;
     double fracTermMotorEfic;
+    double dpB;
+    double potB;
+    double potBT;
+    double potTermo;
 
     double FalsaCorda(int, double, double, double delta = 0.000001, double epsn = 0.000001, int maxit = 100) const; // Calculo de zero de fun��o apenas para calculo de zero na FNDran
 

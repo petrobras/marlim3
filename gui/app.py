@@ -22,6 +22,20 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+LOGO_PATH = PROJECT_ROOT / "assets" / "branding" / "logo.svg"
+
+
+def _discover_demo_files(demos_dir):
+    if not demos_dir.exists():
+        return []
+
+    demo_paths = [
+        path
+        for path in demos_dir.rglob("*")
+        if path.is_file() and path.suffix.lower() == ".mr3"
+    ]
+    return sorted(path.relative_to(demos_dir).as_posix() for path in demo_paths)
+
 
 def _kill_sim_on_exit():
     """Kill simulation subprocess when Streamlit app stops."""
@@ -331,9 +345,8 @@ def _sanitize_json(obj):
 
 with st.sidebar:
     # Logo
-    _logo_path = PROJECT_ROOT / "img" / "logo_marlim3.svg"
-    if _logo_path.exists():
-        st.image(str(_logo_path), use_container_width=True)
+    if LOGO_PATH.exists():
+        st.image(str(LOGO_PATH), use_container_width=True)
     else:
         st.title("Marlim3")
     st.markdown(
@@ -443,15 +456,21 @@ with st.sidebar:
         # Load demo files into work dir
         demos_dir = PROJECT_ROOT / "demos"
         if demos_dir.exists():
-            demo_files = sorted([f.name for f in demos_dir.glob("*.json")])
+            demo_files = _discover_demo_files(demos_dir)
             if demo_files:
                 selected_demo = st.selectbox("Load a demo", ["(none)"] + demo_files)
                 if selected_demo != "(none)" and st.button("Load Demo"):
                     import shutil as _shutil_demo
-                    _src = demos_dir / selected_demo
-                    _dst = os.path.join(work_dir, selected_demo)
+                    _src = demos_dir / Path(selected_demo)
+                    _loaded_name = Path(selected_demo).name
+                    _dst = os.path.join(work_dir, _loaded_name)
+                    if _src.parent != demos_dir:
+                        # each demo folder holds the model and its auxiliary files
+                        for _aux in _src.parent.iterdir():
+                            if _aux.is_file():
+                                _shutil_demo.copy2(str(_aux), os.path.join(work_dir, _aux.name))
                     _shutil_demo.copy2(str(_src), _dst)
-                    st.session_state["loaded_file"] = selected_demo
+                    st.session_state["loaded_file"] = _loaded_name
                     with open(_dst, "r", encoding="utf-8") as _df:
                         st.session_state["json_data"] = json.load(_df)
                     st.session_state["data_version"] += 1
@@ -493,6 +512,7 @@ with st.sidebar:
                 import shutil
                 import time as _time
                 import gc
+                from marlim3._process import hidden_process_kwargs
 
                 # Write sanitized JSON into work directory
                 work_dir = st.session_state["work_dir"]
@@ -529,6 +549,7 @@ with st.sidebar:
                     stderr=subprocess.STDOUT,
                     text=True,
                     cwd=work_dir,
+                    **hidden_process_kwargs(),
                 )
                 st.session_state["_sim_pid"] = process.pid
                 for line in iter(process.stdout.readline, ""):

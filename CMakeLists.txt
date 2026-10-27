@@ -31,12 +31,24 @@ endif()
 
 project(Marlim3 VERSION ${MARLIM3_VERSION} LANGUAGES CXX Fortran)
 
+if(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+    set(MARLIM_GNU_FORTRAN_RUNTIME_LIBS gfortran)
+    execute_process(
+        COMMAND "${CMAKE_Fortran_COMPILER}" "-print-file-name=libquadmath.a"
+        OUTPUT_VARIABLE MARLIM_QUADMATH_STATIC
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if(IS_ABSOLUTE "${MARLIM_QUADMATH_STATIC}" AND EXISTS "${MARLIM_QUADMATH_STATIC}")
+        list(APPEND MARLIM_GNU_FORTRAN_RUNTIME_LIBS quadmath)
+    endif()
+endif()
+
 option(MARLIM_STATIC_GNU_RUNTIMES "Prefer static GNU runtimes where supported" ON)
 option(MARLIM_MINGW_STATIC "Build a fully static executable with MinGW" ON)
 set(MARLIM_FORTRAN_LIBS "" CACHE STRING "Additional Fortran runtime libraries to link explicitly")
 set(MARLIM_GCC_STATIC_LIB_DIR "" CACHE PATH "Directory containing static GNU runtime libraries for macOS builds")
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -78,10 +90,12 @@ configure_file(
 file(GLOB CXX_SOURCES ${SRCDIR}/*.cpp)
 set(F90_SOURCES
     ${FSRCDIR}/Constants.f90
+    ${FSRCDIR}/DebugFacilities.f90
     ${FSRCDIR}/Newton.f90
     ${FSRCDIR}/PvtSimWAXFileImport.f90
     ${FSRCDIR}/PvtSimCTMFileImport.f90
     ${FSRCDIR}/VLECalculations.f90
+    ${FSRCDIR}/BlackOilModels.f90
     ${FSRCDIR}/PhaseProperties.f90
     ${FSRCDIR}/Obsoletes.f90
     ${FSRCDIR}/FlashExtras.f90
@@ -158,7 +172,7 @@ if(MARLIM_LINUX_STATIC_RUNTIMES)
     # Link GNU runtimes statically; keep pthread/dl dynamic for static libgomp dependencies.
     target_link_options(Marlim3 PRIVATE -static-libgcc -static-libstdc++)
     target_link_libraries(Marlim3 PRIVATE
-        -Wl,-Bstatic gfortran quadmath gomp -Wl,-Bdynamic
+        -Wl,-Bstatic ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS} gomp -Wl,-Bdynamic
         -Wl,--push-state,-Bdynamic pthread dl -Wl,--pop-state)
 
 elseif(MARLIM_MACOS_STATIC_RUNTIMES)
@@ -226,7 +240,7 @@ elseif(MARLIM_STATIC_GNU_RUNTIMES AND MINGW
     endif()
 
 elseif(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    target_link_libraries(Marlim3 PRIVATE gfortran quadmath)
+    target_link_libraries(Marlim3 PRIVATE ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS})
 endif()
 
 if(MARLIM_FORTRAN_LIBS)
@@ -234,8 +248,15 @@ if(MARLIM_FORTRAN_LIBS)
 endif()
 
 set_source_files_properties(${FSRCDIR}/Newton.f90            PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
+set_source_files_properties(${FSRCDIR}/PvtSimCTMFileImport.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
+set_source_files_properties(${FSRCDIR}/PvtSimWAXFileImport.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
 set_source_files_properties(${FSRCDIR}/VLECalculations.f90   PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
+set_source_files_properties(${FSRCDIR}/BlackOilModels.f90    PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
+set_source_files_properties(${FSRCDIR}/ViscosityCalculationModule.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
 set_source_files_properties(${FSRCDIR}/PhaseProperties.f90   PROPERTIES OBJECT_DEPENDS "${FSRCDIR}/VLECalculations.f90;${FSRCDIR}/Constants.f90")
+set_source_files_properties(${FSRCDIR}/FlashExtras.f90       PROPERTIES OBJECT_DEPENDS "${FSRCDIR}/VLECalculations.f90;${FSRCDIR}/Newton.f90;${FSRCDIR}/DebugFacilities.f90")
+set_source_files_properties(${FSRCDIR}/BlackOilFromCompositional.f90 PROPERTIES OBJECT_DEPENDS "${FSRCDIR}/VLECalculations.f90;${FSRCDIR}/PhaseProperties.f90;${FSRCDIR}/FlashExtras.f90")
+set_source_files_properties(${FSRCDIR}/MarlimComposicional.f90 PROPERTIES OBJECT_DEPENDS "${FSRCDIR}/VLECalculations.f90;${FSRCDIR}/PvtSimCTMFileImport.f90;${FSRCDIR}/PhaseProperties.f90;${FSRCDIR}/BlackOilFromCompositional.f90;${FSRCDIR}/FlashExtras.f90;${FSRCDIR}/PvtSimWAXFileImport.f90")
 
 set_target_properties(Marlim3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 if(APPLE)
@@ -253,3 +274,62 @@ add_custom_command(TARGET Marlim3 POST_BUILD
 )
 
 install(TARGETS Marlim3 DESTINATION bin)
+
+# ------------------------------------------------------------------------------
+# Optional C++ unit tests
+#
+# Disabled by default so the engine build and the release workflow are
+# unaffected. Enable explicitly:
+#     cmake -S . -B build -DMARLIM_BUILD_TESTS=ON
+#     cmake --build build --target test_friction_factor
+#     ctest --test-dir build --output-on-failure
+# ------------------------------------------------------------------------------
+option(MARLIM_BUILD_TESTS "Build the C++ unit tests" OFF)
+
+if(MARLIM_BUILD_TESTS)
+    enable_testing()
+
+    add_executable(test_inlet_boundary_initialization
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_inlet_boundary_initialization.cpp
+    )
+    target_include_directories(test_inlet_boundary_initialization PRIVATE
+        ${INCDIR}
+        ${LIBDIR}
+    )
+    add_test(NAME inlet_boundary_initialization
+        COMMAND test_inlet_boundary_initialization)
+
+    # Reuse the engine sources without the entry point, so the test binary can
+    # define its own main().
+    set(MARLIM_TEST_CXX_SOURCES ${CXX_SOURCES})
+    list(REMOVE_ITEM MARLIM_TEST_CXX_SOURCES ${SRCDIR}/Num4Main.cpp)
+
+    add_executable(test_friction_factor
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_friction_factor.cpp
+        ${MARLIM_TEST_CXX_SOURCES}
+        ${F90_SOURCES}
+    )
+
+    target_include_directories(test_friction_factor PRIVATE
+        ${INCDIR}
+        ${LIBDIR}
+        ${MODDIR}
+    )
+
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(test_friction_factor PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+
+    if(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+        target_link_libraries(test_friction_factor PRIVATE ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS})
+    endif()
+
+    if(MARLIM_FORTRAN_LIBS)
+        target_link_libraries(test_friction_factor PRIVATE ${MARLIM_FORTRAN_LIBS})
+    endif()
+
+    set_target_properties(test_friction_factor PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+    add_test(NAME friction_factor COMMAND test_friction_factor)
+endif()

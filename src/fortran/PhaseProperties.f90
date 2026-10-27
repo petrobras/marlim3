@@ -379,7 +379,7 @@ module PhaseProperties
         dPhaseDensity = -100.0d0
 
         ! O método selecionado é uma Equação de Estado Cúbica?
-        bUsingCubicEOS = (iDensityCalculationMethod.EQ.PENG_ROBINSON_78_PENELOUX).or.(iDensityCalculationMethod.EQ.SRK_PENELOUX)
+        bUsingCubicEOS = (iDensityCalculationMethod.EQ.PENG_ROBINSON_78_PENELOUX).or.(iDensityCalculationMethod.EQ.SRK_PENELOUX).or.(iDensityCalculationMethod.EQ.PENG_ROBINSON_PENELOUX)
 
         ! Proceder de acordo com o método selecionado:
         whichMethod: if(bUsingCubicEOS) then
@@ -578,7 +578,7 @@ module PhaseProperties
         bZAndDerivZWithTCalculated = .false.
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
-        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX)
+        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
 
         ! Proceder de acordo com o modelo termodinâmico selecionado:
         whichEnthalpyModel: if(bThermodynamicModelIsCubicEOS) then
@@ -716,7 +716,7 @@ module PhaseProperties
         ! ------------------ PROCEDIMENTOS E CÁLCULOS:
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
-        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX)
+        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
 
         whichThermoModel: if(bThermodynamicModelIsCubicEOS) then
 
@@ -945,6 +945,12 @@ module PhaseProperties
 
             bEOSIsPengRobinsonOrSRK = .true.
 
+        else if(iCubicEOSModel.EQ.PENG_ROBINSON_PENELOUX) then EOSDependent
+
+            dCubicEOSGammaA = 0.45724d0
+
+            bEOSIsPengRobinsonOrSRK = .true.
+
         else if(iCubicEOSModel.EQ.SRK_PENELOUX) then EOSDependent
 
             dCubicEOSGammaA = 0.42748d0
@@ -1010,6 +1016,11 @@ module PhaseProperties
                 else
                     oFW(i) = 0.379642d0 + (1.48503d0 * oW(i)) - (0.164423d0 * (oW(i) ** 2.0d0)) + (0.016666d0 * (oW(i) ** 3.0d0))
                 end if
+
+            else if(iCubicEOSModel.EQ.PENG_ROBINSON_PENELOUX) then whichFWFormula
+
+                ! "fW" por PR
+                oFW(i) = 0.37464d0 + (1.54226d0 * oW(i)) - (0.26992d0 * (oW(i) ** 2.0d0))
 
             else if(iCubicEOSModel.EQ.SRK_PENELOUX) then whichFWFormula
 

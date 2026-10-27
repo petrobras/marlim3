@@ -202,7 +202,7 @@ JSON_entrada_configuracaoInicial_condicaoVazPres::JSON_entrada_configuracaoInici
 	contents["ativo"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_ativo>();
 	contents["pressao"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_pressao>();
 	contents["temperatura"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura>();
-	contents["Vazao Massica"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass>();
+	contents["VazMass"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass>();
 	contents["razaoBeta"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta>();
 	contents["tempo"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres_tempo>();
 }
@@ -220,7 +220,7 @@ JSON_entrada_configuracaoInicial_condicaoVazPres_temperatura& JSON_entrada_confi
 }
 
 JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass& JSON_entrada_configuracaoInicial_condicaoVazPres::VazMass(){
-	return static_cast<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass&>(*contents["Vazao Massica"].get());
+	return static_cast<JSON_entrada_configuracaoInicial_condicaoVazPres_VazMass&>(*contents["VazMass"].get());
 }
 
 JSON_entrada_configuracaoInicial_condicaoVazPres_razaoBeta& JSON_entrada_configuracaoInicial_condicaoVazPres::razaoBeta(){
@@ -324,7 +324,7 @@ JSON_entrada_configuracaoInicial_Formacao_TempoProducao& JSON_entrada_configurac
 }
 
 JSON_entrada_configuracaoInicial::JSON_entrada_configuracaoInicial(){
-	contents["origemGeometria"] = make_shared<JSON_entrada_configuracaoInicial_origemGeometria>();
+	//contents["origemGeometria"] = make_shared<JSON_entrada_configuracaoInicial_origemGeometria>();
 	contents["sentidoGeometriaSegueEscoamento"] = make_shared<JSON_entrada_configuracaoInicial_sentidoGeometriaSegueEscoamento>();
 	contents["saidaClassica"] = make_shared<JSON_entrada_configuracaoInicial_saidaClassica>();
 	contents["linhaGas"] = make_shared<JSON_entrada_configuracaoInicial_linhaGas>();
@@ -367,7 +367,7 @@ JSON_entrada_configuracaoInicial::JSON_entrada_configuracaoInicial(){
 	contents["Avancado"] = make_shared<JSON_entrada_configuracaoInicial_Avancado>();
 	contents["condicaoPressao"] = make_shared<JSON_entrada_configuracaoInicial_condicaoPressao>();
 	contents["condicaoVazPres"] = make_shared<JSON_entrada_configuracaoInicial_condicaoVazPres>();
-	contents["correlacoesEscorregamento"] = make_shared<JSON_entrada_configuracaoInicial_correlacoesEscorregamento>();
+	//contents["correlacoesEscorregamento"] = make_shared<JSON_entrada_configuracaoInicial_correlacoesEscorregamento>();
 	contents["correlacoesPorArranjo"] = make_shared<JSON_entrada_configuracaoInicial_correlacoesPorArranjo>();
 	contents["Formacao"] = make_shared<JSON_entrada_configuracaoInicial_Formacao>();
 	contents["tipoFluido"] = make_shared<JSON_entrada_configuracaoInicial_tipoFluido>();
@@ -383,12 +383,17 @@ JSON_entrada_configuracaoInicial::JSON_entrada_configuracaoInicial(){
 	contents["tipoModeloDrift"] = make_shared<JSON_entrada_configuracaoInicial_tipoModeloDrift>();
 	contents["modoDifus3D"] = make_shared<JSON_entrada_configuracaoInicial_modoDifus3D>();
 	contents["threadP3D"] = make_shared<JSON_entrada_configuracaoInicial_threadP3D>();
-	contents["modoDifus3DArq"] = make_shared<JSON_entrada_configuracaoInicial_modoDifus3DJson>();
+	contents["modoDifus3DJson"] = make_shared<JSON_entrada_configuracaoInicial_modoDifus3DJson>();
+	contents["pocoTermAxiSim"] = make_shared<JSON_entrada_configuracaoInicial_pocoTermAxiSim>();
+	contents["pocoAxiSimJson"] = make_shared<JSON_entrada_configuracaoInicial_pocoAxiSimJson>();
+	contents["anulAxiSim"] = make_shared<JSON_entrada_configuracaoInicial_anulAxiSim>();
+	contents["imprimeInventario"] = make_shared<JSON_entrada_configuracaoInicial_imprimeInventario>();
+	contents["fatorFric"] = make_shared<JSON_entrada_configuracaoInicial_fatorFric>();
 }
 
-JSON_entrada_configuracaoInicial_origemGeometria& JSON_entrada_configuracaoInicial::origemGeometria(){
-	return static_cast<JSON_entrada_configuracaoInicial_origemGeometria&>(*contents["origemGeometria"].get());
-}
+//JSON_entrada_configuracaoInicial_origemGeometria& JSON_entrada_configuracaoInicial::origemGeometria(){
+	//return static_cast<JSON_entrada_configuracaoInicial_origemGeometria&>(*contents["origemGeometria"].get());
+//}
 
 JSON_entrada_configuracaoInicial_sentidoGeometriaSegueEscoamento& JSON_entrada_configuracaoInicial::sentidoGeometriaSegueEscoamento(){
 	return static_cast<JSON_entrada_configuracaoInicial_sentidoGeometriaSegueEscoamento&>(*contents["sentidoGeometriaSegueEscoamento"].get());
@@ -559,9 +564,9 @@ JSON_entrada_configuracaoInicial_condicaoVazPres& JSON_entrada_configuracaoInici
 	return static_cast<JSON_entrada_configuracaoInicial_condicaoVazPres&>(*contents["condicaoVazPres"].get());
 }
 
-JSON_entrada_configuracaoInicial_correlacoesEscorregamento& JSON_entrada_configuracaoInicial::correlacoesEscorregamento(){
-	return static_cast<JSON_entrada_configuracaoInicial_correlacoesEscorregamento&>(*contents["correlacoesEscorregamento"].get());
-}
+//JSON_entrada_configuracaoInicial_correlacoesEscorregamento& JSON_entrada_configuracaoInicial::correlacoesEscorregamento(){
+	//return static_cast<JSON_entrada_configuracaoInicial_correlacoesEscorregamento&>(*contents["correlacoesEscorregamento"].get());
+//}
 
 JSON_entrada_configuracaoInicial_correlacoesPorArranjo& JSON_entrada_configuracaoInicial::correlacoesPorArranjo(){
 	return static_cast<JSON_entrada_configuracaoInicial_correlacoesPorArranjo&>(*contents["correlacoesPorArranjo"].get());
@@ -624,7 +629,27 @@ JSON_entrada_configuracaoInicial_threadP3D& JSON_entrada_configuracaoInicial::th
 }
 
 JSON_entrada_configuracaoInicial_modoDifus3DJson& JSON_entrada_configuracaoInicial::modoDifus3DJson(){
-	return static_cast<JSON_entrada_configuracaoInicial_modoDifus3DJson&>(*contents["modoDifus3DArq"].get());
+	return static_cast<JSON_entrada_configuracaoInicial_modoDifus3DJson&>(*contents["modoDifus3DJson"].get());
+}
+
+JSON_entrada_configuracaoInicial_pocoTermAxiSim& JSON_entrada_configuracaoInicial::pocoTermAxiSim(){
+	return static_cast<JSON_entrada_configuracaoInicial_pocoTermAxiSim&>(*contents["pocoTermAxiSim"].get());
+}
+
+JSON_entrada_configuracaoInicial_pocoAxiSimJson& JSON_entrada_configuracaoInicial::pocoAxiSimJson(){
+	return static_cast<JSON_entrada_configuracaoInicial_pocoAxiSimJson&>(*contents["pocoAxiSimJson"].get());
+}
+
+JSON_entrada_configuracaoInicial_anulAxiSim& JSON_entrada_configuracaoInicial::anulAxiSim(){
+	return static_cast<JSON_entrada_configuracaoInicial_anulAxiSim&>(*contents["anulAxiSim"].get());
+}
+
+JSON_entrada_configuracaoInicial_imprimeInventario& JSON_entrada_configuracaoInicial::imprimeInventario(){
+	return static_cast<JSON_entrada_configuracaoInicial_imprimeInventario&>(*contents["imprimeInventario"].get());
+}
+
+JSON_entrada_configuracaoInicial_fatorFric& JSON_entrada_configuracaoInicial::fatorFric(){
+	return static_cast<JSON_entrada_configuracaoInicial_fatorFric&>(*contents["fatorFric"].get());
 }
 
 
@@ -666,6 +691,8 @@ JSON_entrada_parafina::JSON_entrada_parafina(){
 	contents["arquivoWax"] = make_shared<JSON_entrada_parafina_arquivoWax>();
 	contents["usuarioPorosidade"] = make_shared<JSON_entrada_parafina_usuarioPorosidade>();
 	contents["porosidade"] = make_shared<JSON_entrada_parafina_porosidade>();
+	contents["TIACusuarioAtiva"] = make_shared<JSON_entrada_parafina_TIACusuarioAtiva>();
+	contents["TIACusuario"] = make_shared<JSON_entrada_parafina_TIACusuario>();
 	contents["usuarioC2C3"] = make_shared<JSON_entrada_parafina_usuarioC2C3>();
 	contents["c2"] = make_shared<JSON_entrada_parafina_c2>();
 	contents["c3"] = make_shared<JSON_entrada_parafina_c3>();
@@ -673,10 +700,11 @@ JSON_entrada_parafina::JSON_entrada_parafina(){
 	contents["alteraViscFlu"] = make_shared<JSON_entrada_parafina_alteraViscFlu>();
 	contents["difus"] = make_shared<JSON_entrada_parafina_difus>();
 	contents["rugosidade"] = make_shared<JSON_entrada_parafina_rugosidade>();
-	contents["multiplicadorViscosidade"] = make_shared<JSON_entrada_parafina_multVis>();
+	contents["multVis"] = make_shared<JSON_entrada_parafina_multVis>();
 	contents["DmultipWax"] = make_shared<JSON_entrada_parafina_DmultipWax>();
 	contents["EmultipWax"] = make_shared<JSON_entrada_parafina_EmultipWax>();
 	contents["FmultipWax"] = make_shared<JSON_entrada_parafina_FmultipWax>();
+	contents["ponderaCond"] = make_shared<JSON_entrada_parafina_ponderaCond>();
 }
 
 JSON_entrada_parafina_arquivoWax& JSON_entrada_parafina::arquivoWax(){
@@ -689,6 +717,14 @@ JSON_entrada_parafina_usuarioPorosidade& JSON_entrada_parafina::usuarioPorosidad
 
 JSON_entrada_parafina_porosidade& JSON_entrada_parafina::porosidade(){
 	return static_cast<JSON_entrada_parafina_porosidade&>(*contents["porosidade"].get());
+}
+
+JSON_entrada_parafina_TIACusuario& JSON_entrada_parafina::TIACusuario(){
+	return static_cast<JSON_entrada_parafina_TIACusuario&>(*contents["TIACusuario"].get());
+}
+
+JSON_entrada_parafina_TIACusuarioAtiva& JSON_entrada_parafina::TIACusuarioAtiva(){
+	return static_cast<JSON_entrada_parafina_TIACusuarioAtiva&>(*contents["TIACusuarioAtiva"].get());
 }
 
 JSON_entrada_parafina_usuarioC2C3& JSON_entrada_parafina::usuarioC2C3(){
@@ -720,7 +756,7 @@ JSON_entrada_parafina_rugosidade& JSON_entrada_parafina::rugosidade(){
 }
 
 JSON_entrada_parafina_multVis& JSON_entrada_parafina::multVis(){
-	return static_cast<JSON_entrada_parafina_multVis&>(*contents["multiplicadorViscosidade"].get());
+	return static_cast<JSON_entrada_parafina_multVis&>(*contents["multVis"].get());
 }
 
 JSON_entrada_parafina_DmultipWax& JSON_entrada_parafina::DmultipWax(){
@@ -735,9 +771,14 @@ JSON_entrada_parafina_FmultipWax& JSON_entrada_parafina::FmultipWax(){
 	return static_cast<JSON_entrada_parafina_FmultipWax&>(*contents["FmultipWax"].get());
 }
 
+JSON_entrada_parafina_ponderaCond& JSON_entrada_parafina::ponderaCond(){
+	return static_cast<JSON_entrada_parafina_ponderaCond&>(*contents["ponderaCond"].get());
+}
+
 
 JSON_entrada_fluidoGas::JSON_entrada_fluidoGas(){
 	contents["ativo"] = make_shared<JSON_entrada_fluidoGas_ativo>();
+	contents["linhaServComposicional"] = make_shared<JSON_entrada_fluidoGas_linhaServComposicional>();
 	contents["usaTabelaFlash"] = make_shared<JSON_entrada_fluidoGas_usaTabelaFlash>();
 	contents["densidadeGas"] = make_shared<JSON_entrada_fluidoGas_densidadeGas>();
 	contents["fracCO2"] = make_shared<JSON_entrada_fluidoGas_fracCO2>();
@@ -748,6 +789,10 @@ JSON_entrada_fluidoGas::JSON_entrada_fluidoGas(){
 
 JSON_entrada_fluidoGas_ativo& JSON_entrada_fluidoGas::ativo(){
 	return static_cast<JSON_entrada_fluidoGas_ativo&>(*contents["ativo"].get());
+}
+
+JSON_entrada_fluidoGas_linhaServComposicional& JSON_entrada_fluidoGas::linhaServComposicional(){
+	return static_cast<JSON_entrada_fluidoGas_linhaServComposicional&>(*contents["linhaServComposicional"].get());
 }
 
 JSON_entrada_fluidoGas_usaTabelaFlash& JSON_entrada_fluidoGas::usaTabelaFlash(){
@@ -803,6 +848,7 @@ JSON_entrada_fluidosProducao_Item::JSON_entrada_fluidosProducao_Item(){
 	contents["modeloOleoSubSaturado"] = make_shared<JSON_entrada_fluidosProducao_Item_modeloOleoSubSaturado>();
 	contents["modeloViscBlackOil"] = make_shared<JSON_entrada_fluidosProducao_Item_modeloViscBlackOil>();
 	contents["modeloAguaBlackOil"] = make_shared<JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil>();
+	contents["modeloCondBlackOil"] = make_shared<JSON_entrada_fluidosProducao_Item_modeloCondBlackOil>();
 	contents["fracMolarUsuario"] = make_shared<JSON_entrada_fluidosProducao_Item_fracMolarUsuario>();
 	contents["fracMolar"] = make_shared<JSON_entrada_fluidosProducao_Item_fracMolar>();
 	contents["RGOCompUsuario"] = make_shared<JSON_entrada_fluidosProducao_Item_RGOCompUsuario>();
@@ -920,6 +966,10 @@ JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil& JSON_entrada_fluidosProduc
 	return static_cast<JSON_entrada_fluidosProducao_Item_modeloAguaBlackOil&>(*contents["modeloAguaBlackOil"].get());
 }
 
+JSON_entrada_fluidosProducao_Item_modeloCondBlackOil& JSON_entrada_fluidosProducao_Item::modeloCondBlackOil(){
+	return static_cast<JSON_entrada_fluidosProducao_Item_modeloCondBlackOil&>(*contents["modeloCondBlackOil"].get());
+}
+
 JSON_entrada_fluidosProducao_Item_fracMolarUsuario& JSON_entrada_fluidosProducao_Item::fracMolarUsuario(){
 	return static_cast<JSON_entrada_fluidosProducao_Item_fracMolarUsuario&>(*contents["fracMolarUsuario"].get());
 }
@@ -945,7 +995,7 @@ JSON_entrada_fluidoComplementar::JSON_entrada_fluidoComplementar(){
 	contents["temp2"] = make_shared<JSON_entrada_fluidoComplementar_temp2>();
 	contents["visc2"] = make_shared<JSON_entrada_fluidoComplementar_visc2>();
 	contents["salinidade"] = make_shared<JSON_entrada_fluidoComplementar_salinidade>();
-	contents["tipoFluido"] = make_shared<JSON_entrada_fluidoComplementar_tipoF>();
+	contents["tipoF"] = make_shared<JSON_entrada_fluidoComplementar_tipoF>();
 }
 
 JSON_entrada_fluidoComplementar_ativo& JSON_entrada_fluidoComplementar::ativo(){
@@ -997,7 +1047,7 @@ JSON_entrada_fluidoComplementar_salinidade& JSON_entrada_fluidoComplementar::sal
 }
 
 JSON_entrada_fluidoComplementar_tipoF& JSON_entrada_fluidoComplementar::tipoF(){
-	return static_cast<JSON_entrada_fluidoComplementar_tipoF&>(*contents["tipoFluido"].get());
+	return static_cast<JSON_entrada_fluidoComplementar_tipoF&>(*contents["tipoF"].get());
 }
 
 JSON_entrada_valvula_Item::JSON_entrada_valvula_Item(){
@@ -1011,6 +1061,26 @@ JSON_entrada_valvula_Item::JSON_entrada_valvula_Item(){
 	contents["cd"] = make_shared<JSON_entrada_valvula_Item_cd>();
 	contents["x1"] = make_shared<JSON_entrada_valvula_Item_x1>();
 	contents["cv1"] = make_shared<JSON_entrada_valvula_Item_cv1>();
+
+	contents["caixaValvula"] = make_shared<JSON_entrada_valvula_Item_caixaValvula>();
+	contents["compCaixa"] = make_shared<JSON_entrada_valvula_Item_compCaixa>();
+	contents["indSecTrans"] = make_shared<JSON_entrada_valvula_Item_indSecTrans>();
+	contents["formac"] = make_shared<JSON_entrada_valvula_Item_formac>();
+	contents["lito"] = make_shared<JSON_entrada_valvula_Item_lito>();
+	contents["ambiente"] = make_shared<JSON_entrada_valvula_Item_ambiente>();
+	contents["velAmbiente"] = make_shared<JSON_entrada_valvula_Item_velAmbiente>();
+	contents["tempAmbiente"] = make_shared<JSON_entrada_valvula_Item_tempAmbiente>();
+	contents["indFluido"] = make_shared<JSON_entrada_valvula_Item_indFluido>();
+	contents["aberturaMon"] = make_shared<JSON_entrada_valvula_Item_aberturaMon>();
+	contents["tempoAberturaMon"] = make_shared<JSON_entrada_valvula_Item_tempoAberturaMon>();
+	contents["aberturaJus"] = make_shared<JSON_entrada_valvula_Item_aberturaJus>();
+	contents["tempoAberturaJus"] = make_shared<JSON_entrada_valvula_Item_tempoAberturaJus>();
+
+	contents["temperaturaFonte"] = make_shared<JSON_entrada_valvula_Item_temperaturaFonte>();
+	contents["massLiqP"] = make_shared<JSON_entrada_valvula_Item_massLiqP>();
+	contents["massGas"] = make_shared<JSON_entrada_valvula_Item_massGas>();
+	contents["massLiqC"] = make_shared<JSON_entrada_valvula_Item_massLiqC>();
+	contents["tempoFonte"] = make_shared<JSON_entrada_valvula_Item_tempoFonte>();
 }
 
 JSON_entrada_valvula_Item_ativo& JSON_entrada_valvula_Item::ativo(){
@@ -1051,6 +1121,78 @@ JSON_entrada_valvula_Item_x1& JSON_entrada_valvula_Item::x1(){
 
 JSON_entrada_valvula_Item_cv1& JSON_entrada_valvula_Item::cv1(){
 	return static_cast<JSON_entrada_valvula_Item_cv1&>(*contents["cv1"].get());
+}
+
+JSON_entrada_valvula_Item_caixaValvula& JSON_entrada_valvula_Item::caixaValvula(){
+	return static_cast<JSON_entrada_valvula_Item_caixaValvula&>(*contents["caixaValvula"].get());
+}
+
+JSON_entrada_valvula_Item_compCaixa& JSON_entrada_valvula_Item::compCaixa(){
+	return static_cast<JSON_entrada_valvula_Item_compCaixa&>(*contents["compCaixa"].get());
+}
+
+JSON_entrada_valvula_Item_indSecTrans& JSON_entrada_valvula_Item::indSecTrans(){
+	return static_cast<JSON_entrada_valvula_Item_indSecTrans&>(*contents["indSecTrans"].get());
+}
+
+JSON_entrada_valvula_Item_formac& JSON_entrada_valvula_Item::formac(){
+	return static_cast<JSON_entrada_valvula_Item_formac&>(*contents["formac"].get());
+}
+
+JSON_entrada_valvula_Item_lito& JSON_entrada_valvula_Item::lito(){
+	return static_cast<JSON_entrada_valvula_Item_lito&>(*contents["lito"].get());
+}
+
+JSON_entrada_valvula_Item_ambiente& JSON_entrada_valvula_Item::ambiente(){
+	return static_cast<JSON_entrada_valvula_Item_ambiente&>(*contents["ambiente"].get());
+}
+
+JSON_entrada_valvula_Item_velAmbiente& JSON_entrada_valvula_Item::velAmbiente(){
+	return static_cast<JSON_entrada_valvula_Item_velAmbiente&>(*contents["velAmbiente"].get());
+}
+
+JSON_entrada_valvula_Item_tempAmbiente& JSON_entrada_valvula_Item::tempAmbiente(){
+	return static_cast<JSON_entrada_valvula_Item_tempAmbiente&>(*contents["tempAmbiente"].get());
+}
+
+JSON_entrada_valvula_Item_indFluido& JSON_entrada_valvula_Item::indFluido(){
+	return static_cast<JSON_entrada_valvula_Item_indFluido&>(*contents["indFluido"].get());
+}
+
+JSON_entrada_valvula_Item_aberturaMon& JSON_entrada_valvula_Item::aberturaMon(){
+	return static_cast<JSON_entrada_valvula_Item_aberturaMon&>(*contents["aberturaMon"].get());
+}
+
+JSON_entrada_valvula_Item_tempoAberturaMon& JSON_entrada_valvula_Item::tempoAberturaMon(){
+	return static_cast<JSON_entrada_valvula_Item_tempoAberturaMon&>(*contents["tempoAberturaMon"].get());
+}
+
+JSON_entrada_valvula_Item_aberturaJus& JSON_entrada_valvula_Item::aberturaJus(){
+	return static_cast<JSON_entrada_valvula_Item_aberturaJus&>(*contents["aberturaJus"].get());
+}
+
+JSON_entrada_valvula_Item_tempoAberturaJus& JSON_entrada_valvula_Item::tempoAberturaJus(){
+	return static_cast<JSON_entrada_valvula_Item_tempoAberturaJus&>(*contents["tempoAberturaJus"].get());
+}
+
+JSON_entrada_valvula_Item_temperaturaFonte& JSON_entrada_valvula_Item::temperaturaFonte(){
+	return static_cast<JSON_entrada_valvula_Item_temperaturaFonte&>(*contents["temperaturaFonte"].get());
+}
+
+JSON_entrada_valvula_Item_massLiqP& JSON_entrada_valvula_Item::massLiqP(){
+	return static_cast<JSON_entrada_valvula_Item_massLiqP&>(*contents["massLiqP"].get());
+}
+
+JSON_entrada_valvula_Item_massGas& JSON_entrada_valvula_Item::massGas(){
+	return static_cast<JSON_entrada_valvula_Item_massGas&>(*contents["massGas"].get());
+}
+
+JSON_entrada_valvula_Item_massLiqC& JSON_entrada_valvula_Item::massLiqC(){
+	return static_cast<JSON_entrada_valvula_Item_massLiqC&>(*contents["massLiqC"].get());
+}
+
+JSON_entrada_valvula_Item_tempoFonte& JSON_entrada_valvula_Item::tempoFonte(){
+	return static_cast<JSON_entrada_valvula_Item_tempoFonte&>(*contents["tempoFonte"].get());
 }
 
 JSON_entrada_fonteLiquido_Item::JSON_entrada_fonteLiquido_Item(){
@@ -1255,9 +1397,9 @@ JSON_entrada_fonteGasLift_Item::JSON_entrada_fonteGasLift_Item(){
 	contents["tipoValvula"] = make_shared<JSON_entrada_fonteGasLift_Item_tipoValvula>();
 	contents["diametroOrificio"] = make_shared<JSON_entrada_fonteGasLift_Item_diametroOrificio>();
 	contents["cdvgl"] = make_shared<JSON_entrada_fonteGasLift_Item_cdvgl>();
-	contents["frecupera"] = make_shared<JSON_entrada_fonteGasLift_Item_frecupera>();
+	//contents["frecupera"] = make_shared<JSON_entrada_fonteGasLift_Item_frecupera>();
 	contents["cdvLiq"] = make_shared<JSON_entrada_fonteGasLift_Item_cdvLiq>();
-	contents["frecuperaLiq"] = make_shared<JSON_entrada_fonteGasLift_Item_frecuperaLiq>();
+	//contents["frecuperaLiq"] = make_shared<JSON_entrada_fonteGasLift_Item_frecuperaLiq>();
 	contents["razaoArea"] = make_shared<JSON_entrada_fonteGasLift_Item_razaoArea>();
 	contents["pressaoCalibracao"] = make_shared<JSON_entrada_fonteGasLift_Item_pressaoCalibracao>();
 	contents["temperaturaCalibracao"] = make_shared<JSON_entrada_fonteGasLift_Item_temperaturaCalibracao>();
@@ -1296,17 +1438,17 @@ JSON_entrada_fonteGasLift_Item_cdvgl& JSON_entrada_fonteGasLift_Item::cdvgl(){
 	return static_cast<JSON_entrada_fonteGasLift_Item_cdvgl&>(*contents["cdvgl"].get());
 }
 
-JSON_entrada_fonteGasLift_Item_frecupera& JSON_entrada_fonteGasLift_Item::frecupera(){
-	return static_cast<JSON_entrada_fonteGasLift_Item_frecupera&>(*contents["frecupera"].get());
-}
+//JSON_entrada_fonteGasLift_Item_frecupera& JSON_entrada_fonteGasLift_Item::frecupera(){
+//	return static_cast<JSON_entrada_fonteGasLift_Item_frecupera&>(*contents["frecupera"].get());
+//}
 
 JSON_entrada_fonteGasLift_Item_cdvLiq& JSON_entrada_fonteGasLift_Item::cdvLiq(){
 	return static_cast<JSON_entrada_fonteGasLift_Item_cdvLiq&>(*contents["cdvLiq"].get());
 }
 
-JSON_entrada_fonteGasLift_Item_frecuperaLiq& JSON_entrada_fonteGasLift_Item::frecuperaLiq(){
-	return static_cast<JSON_entrada_fonteGasLift_Item_frecuperaLiq&>(*contents["frecuperaLiq"].get());
-}
+//JSON_entrada_fonteGasLift_Item_frecuperaLiq& JSON_entrada_fonteGasLift_Item::frecuperaLiq(){
+	//return static_cast<JSON_entrada_fonteGasLift_Item_frecuperaLiq&>(*contents["frecuperaLiq"].get());
+//}
 
 JSON_entrada_fonteGasLift_Item_razaoArea& JSON_entrada_fonteGasLift_Item::razaoArea(){
 	return static_cast<JSON_entrada_fonteGasLift_Item_razaoArea&>(*contents["razaoArea"].get());
@@ -1643,7 +1785,7 @@ JSON_entrada_dutosProducao_Item::JSON_entrada_dutosProducao_Item(){
 	contents["difusTerm2DJSON"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm2DJSON>();
 	contents["difusTerm3D"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3D>();
 	contents["difusTerm3DFE"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3DFE>();
-	contents["difusTerm3DRotulo"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3DAcop>();
+	contents["difusTerm3DAcop"] = make_shared<JSON_entrada_dutosProducao_Item_difusTerm3DAcop>();
 	contents["xCoor"] = make_shared<JSON_entrada_dutosProducao_Item_xCoor>();
 	contents["yCoor"] = make_shared<JSON_entrada_dutosProducao_Item_yCoor>();
 	contents["nCelulas_XY"] = make_shared<JSON_entrada_dutosProducao_Item_nCelulas_XY>();
@@ -1763,7 +1905,7 @@ JSON_entrada_dutosProducao_Item_difusTerm3DFE& JSON_entrada_dutosProducao_Item::
 }
 
 JSON_entrada_dutosProducao_Item_difusTerm3DAcop& JSON_entrada_dutosProducao_Item::difusTerm3DAcop(){
-	return static_cast<JSON_entrada_dutosProducao_Item_difusTerm3DAcop&>(*contents["difusTerm3DRotulo"].get());
+	return static_cast<JSON_entrada_dutosProducao_Item_difusTerm3DAcop&>(*contents["difusTerm3DAcop"].get());
 }
 
 JSON_entrada_dutosServico_Item_condicoesIniciais::JSON_entrada_dutosServico_Item_condicoesIniciais(){
@@ -2033,6 +2175,9 @@ JSON_entrada_hidrato_ModeloTurner::JSON_entrada_hidrato_ModeloTurner(){ //hydval
 	contents["estruturaHidratos"] = make_shared<JSONString>();
 	contents["rd"] = make_shared<JSON_entrada_hidrato_ModeloTurner_rd>();
 	contents["rp"] = make_shared<JSON_entrada_hidrato_ModeloTurner_rp>();
+	contents["cTurneraprox"] = make_shared<JSON_entrada_hidrato_ModeloTurner_cTurneraprox>(); //alteracao hidratos modelo 3
+	contents["tlimitArea"] = make_shared<JSON_entrada_hidrato_ModeloTurner_tlimitArea>(); //alteracao hidratos modelo 3
+	contents["Alimit"] = make_shared<JSON_entrada_hidrato_ModeloTurner_Alimit>(); //alteracao hidratos modelo 3
 }
 
 
@@ -2051,6 +2196,18 @@ JSON_entrada_hidrato_ModeloTurner_rd& JSON_entrada_hidrato_ModeloTurner::rd(){
 
 JSON_entrada_hidrato_ModeloTurner_rp& JSON_entrada_hidrato_ModeloTurner::rp(){
 	return static_cast<JSON_entrada_hidrato_ModeloTurner_rp&>(*contents["rp"].get()); //hydvaloritem
+}
+
+JSON_entrada_hidrato_ModeloTurner_cTurneraprox& JSON_entrada_hidrato_ModeloTurner::cTurneraprox(){
+	return static_cast<JSON_entrada_hidrato_ModeloTurner_cTurneraprox&>(*contents["cTurneraprox"].get()); //alteracao hidratos modelo 3
+}
+
+JSON_entrada_hidrato_ModeloTurner_tlimitArea& JSON_entrada_hidrato_ModeloTurner::tlimitArea(){
+	return static_cast<JSON_entrada_hidrato_ModeloTurner_tlimitArea&>(*contents["tlimitArea"].get()); //alteracao hidratos modelo 3
+}
+
+JSON_entrada_hidrato_ModeloTurner_Alimit& JSON_entrada_hidrato_ModeloTurner::Alimit(){
+	return static_cast<JSON_entrada_hidrato_ModeloTurner_Alimit&>(*contents["Alimit"].get()); //alteracao hidratos modelo 3
 }
 
 JSON_entrada_hidrato::JSON_entrada_hidrato(){
@@ -2108,6 +2265,14 @@ JSON_entrada_ipr_Item::JSON_entrada_ipr_Item(){
 	contents["tempoii"] = make_shared<JSON_entrada_ipr_Item_tempoii>();
 	contents["indFluidoPro"] = make_shared<JSON_entrada_ipr_Item_indFluidoPro>();
 	contents["indiFluidoPro"] = make_shared<JSON_entrada_ipr_Item_indiFluidoPro>();
+	//////////////////////////////////////////////////////////////////////////////////////
+	contents["ICV"] = make_shared<JSON_entrada_ipr_Item_ICV>();
+	contents["curvaCV"] = make_shared<JSON_entrada_ipr_Item_curvaCV>();
+	contents["tempoICV"] = make_shared<JSON_entrada_ipr_Item_tempoICV>();
+	contents["abertura"] = make_shared<JSON_entrada_ipr_Item_abertura>();
+	contents["cd"] = make_shared<JSON_entrada_ipr_Item_cd>();
+	contents["x1"] = make_shared<JSON_entrada_ipr_Item_x1>();
+	contents["cv1"] = make_shared<JSON_entrada_ipr_Item_cv1>();
 }
 
 JSON_entrada_ipr_Item_ativo& JSON_entrada_ipr_Item::ativo(){
@@ -2174,34 +2339,63 @@ JSON_entrada_ipr_Item_indFluidoPro& JSON_entrada_ipr_Item::indFluidoPro(){
 JSON_entrada_ipr_Item_indiFluidoPro& JSON_entrada_ipr_Item::indiFluidoPro(){
 	return static_cast<JSON_entrada_ipr_Item_indiFluidoPro&>(*contents["indiFluidoPro"].get());
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-JSON_entrada_fonteChoke::JSON_entrada_fonteChoke(){
-	contents["ativo"] = make_shared<JSON_entrada_fonteChoke_ativo>();
-	contents["tempo"] = make_shared<JSON_entrada_fonteChoke_tempo>();
-	contents["abertura"] = make_shared<JSON_entrada_fonteChoke_abertura>();
-	contents["coeficienteDescarga"] = make_shared<JSON_entrada_fonteChoke_coeficienteDescarga>();
-	contents["modelo"] = make_shared<JSON_entrada_fonteChoke_modelo>();
+JSON_entrada_ipr_Item_ICV& JSON_entrada_ipr_Item::ICV(){
+	return static_cast<JSON_entrada_ipr_Item_ICV&>(*contents["ICV"].get());
 }
 
-JSON_entrada_fonteChoke_ativo& JSON_entrada_fonteChoke::ativo(){
-	return static_cast<JSON_entrada_fonteChoke_ativo&>(*contents["ativo"].get());
+JSON_entrada_ipr_Item_curvaCV& JSON_entrada_ipr_Item::curvaCV(){
+	return static_cast<JSON_entrada_ipr_Item_curvaCV&>(*contents["curvaCV"].get());
 }
 
-JSON_entrada_fonteChoke_tempo& JSON_entrada_fonteChoke::tempo(){
-	return static_cast<JSON_entrada_fonteChoke_tempo&>(*contents["tempo"].get());
+JSON_entrada_ipr_Item_tempoICV& JSON_entrada_ipr_Item::tempoICV(){
+	return static_cast<JSON_entrada_ipr_Item_tempoICV&>(*contents["tempoICV"].get());
 }
 
-JSON_entrada_fonteChoke_abertura& JSON_entrada_fonteChoke::abertura(){
-	return static_cast<JSON_entrada_fonteChoke_abertura&>(*contents["abertura"].get());
+JSON_entrada_ipr_Item_abertura& JSON_entrada_ipr_Item::abertura(){
+	return static_cast<JSON_entrada_ipr_Item_abertura&>(*contents["abertura"].get());
 }
 
-JSON_entrada_fonteChoke_coeficienteDescarga& JSON_entrada_fonteChoke::coeficienteDescarga(){
-	return static_cast<JSON_entrada_fonteChoke_coeficienteDescarga&>(*contents["coeficienteDescarga"].get());
+JSON_entrada_ipr_Item_cd& JSON_entrada_ipr_Item::cd(){
+	return static_cast<JSON_entrada_ipr_Item_cd&>(*contents["cd"].get());
 }
 
-JSON_entrada_fonteChoke_modelo& JSON_entrada_fonteChoke::modelo(){
-	return static_cast<JSON_entrada_fonteChoke_modelo&>(*contents["modelo"].get());
+JSON_entrada_ipr_Item_x1& JSON_entrada_ipr_Item::x1(){
+	return static_cast<JSON_entrada_ipr_Item_x1&>(*contents["x1"].get());
 }
+
+JSON_entrada_ipr_Item_cv1& JSON_entrada_ipr_Item::cv1(){
+	return static_cast<JSON_entrada_ipr_Item_cv1&>(*contents["cv1"].get());
+}
+
+//JSON_entrada_fonteChoke::JSON_entrada_fonteChoke(){
+	//contents["ativo"] = make_shared<JSON_entrada_fonteChoke_ativo>();
+	//contents["tempo"] = make_shared<JSON_entrada_fonteChoke_tempo>();
+	//contents["abertura"] = make_shared<JSON_entrada_fonteChoke_abertura>();
+	//contents["coeficienteDescarga"] = make_shared<JSON_entrada_fonteChoke_coeficienteDescarga>();
+	//contents["modelo"] = make_shared<JSON_entrada_fonteChoke_modelo>();
+//}
+
+//JSON_entrada_fonteChoke_ativo& JSON_entrada_fonteChoke::ativo(){
+	//return static_cast<JSON_entrada_fonteChoke_ativo&>(*contents["ativo"].get());
+//}
+
+//JSON_entrada_fonteChoke_tempo& JSON_entrada_fonteChoke::tempo(){
+	//return static_cast<JSON_entrada_fonteChoke_tempo&>(*contents["tempo"].get());
+//}
+
+//JSON_entrada_fonteChoke_abertura& JSON_entrada_fonteChoke::abertura(){
+	//return static_cast<JSON_entrada_fonteChoke_abertura&>(*contents["abertura"].get());
+//}
+
+//JSON_entrada_fonteChoke_coeficienteDescarga& JSON_entrada_fonteChoke::coeficienteDescarga(){
+	//return static_cast<JSON_entrada_fonteChoke_coeficienteDescarga&>(*contents["coeficienteDescarga"].get());
+//}
+
+//JSON_entrada_fonteChoke_modelo& JSON_entrada_fonteChoke::modelo(){
+	//return static_cast<JSON_entrada_fonteChoke_modelo&>(*contents["modelo"].get());
+//}
 
 JSON_entrada_bcs_Item::JSON_entrada_bcs_Item(){
 	contents["ativo"] = make_shared<JSON_entrada_bcs_Item_ativo>();
@@ -2505,11 +2699,31 @@ JSON_entrada_master1::JSON_entrada_master1(){
 	contents["ativo"] = make_shared<JSON_entrada_master1_ativo>();
 	contents["curvaCV"] = make_shared<JSON_entrada_master1_curvaCV>();
 	contents["razaoAreaAtiva"] = make_shared<JSON_entrada_master1_razaoAreaAtiva>();
+	contents["cd"] = make_shared<JSON_entrada_master1_cd>();
 	contents["comprimentoMedido"] = make_shared<JSON_entrada_master1_comprimentoMedido>();
 	contents["tempo"] = make_shared<JSON_entrada_master1_tempo>();
 	contents["abertura"] = make_shared<JSON_entrada_master1_abertura>();
 	contents["x1"] = make_shared<JSON_entrada_master1_x1>();
 	contents["cv1"] = make_shared<JSON_entrada_master1_cv1>();
+
+	contents["caixaValvula"] = make_shared<JSON_entrada_master1_caixaValvula>();
+	contents["compCaixa"] = make_shared<JSON_entrada_master1_compCaixa>();
+	contents["indSecTrans"] = make_shared<JSON_entrada_master1_indSecTrans>();
+	contents["formac"] = make_shared<JSON_entrada_master1_formac>();
+	contents["lito"] = make_shared<JSON_entrada_master1_lito>();
+	contents["ambiente"] = make_shared<JSON_entrada_master1_ambiente>();
+	contents["velAmbiente"] = make_shared<JSON_entrada_master1_velAmbiente>();
+	contents["tempAmbiente"] = make_shared<JSON_entrada_master1_tempAmbiente>();
+	contents["indFluido"] = make_shared<JSON_entrada_master1_indFluido>();
+	contents["aberturaMon"] = make_shared<JSON_entrada_master1_aberturaMon>();
+	contents["tempoAberturaMon"] = make_shared<JSON_entrada_master1_tempoAberturaMon>();
+	contents["aberturaJus"] = make_shared<JSON_entrada_master1_aberturaJus>();
+	contents["tempoAberturaJus"] = make_shared<JSON_entrada_master1_tempoAberturaJus>();
+	contents["temperaturaFonte"] = make_shared<JSON_entrada_master1_temperaturaFonte>();
+	contents["massLiqP"] = make_shared<JSON_entrada_master1_massLiqP>();
+	contents["massGas"] = make_shared<JSON_entrada_master1_massGas>();
+	contents["massLiqC"] = make_shared<JSON_entrada_master1_massLiqC>();
+	contents["tempoFonte"] = make_shared<JSON_entrada_master1_tempoFonte>();
 }
 
 JSON_entrada_master1_ativo& JSON_entrada_master1::ativo(){
@@ -2522,6 +2736,10 @@ JSON_entrada_master1_curvaCV& JSON_entrada_master1::curvaCV(){
 
 JSON_entrada_master1_razaoAreaAtiva& JSON_entrada_master1::razaoAreaAtiva(){
 	return static_cast<JSON_entrada_master1_razaoAreaAtiva&>(*contents["razaoAreaAtiva"].get());
+}
+
+JSON_entrada_master1_cd& JSON_entrada_master1::cd(){
+	return static_cast<JSON_entrada_master1_cd&>(*contents["cd"].get());
 }
 
 JSON_entrada_master1_comprimentoMedido& JSON_entrada_master1::comprimentoMedido(){
@@ -2544,11 +2762,97 @@ JSON_entrada_master1_cv1& JSON_entrada_master1::cv1(){
 	return static_cast<JSON_entrada_master1_cv1&>(*contents["cv1"].get());
 }
 
+JSON_entrada_master1_caixaValvula& JSON_entrada_master1::caixaValvula(){
+	return static_cast<JSON_entrada_master1_caixaValvula&>(*contents["caixaValvula"].get());
+}
+
+JSON_entrada_master1_compCaixa& JSON_entrada_master1::compCaixa(){
+	return static_cast<JSON_entrada_master1_compCaixa&>(*contents["compCaixa"].get());
+}
+
+JSON_entrada_master1_indSecTrans& JSON_entrada_master1::indSecTrans(){
+	return static_cast<JSON_entrada_master1_indSecTrans&>(*contents["indSecTrans"].get());
+}
+
+JSON_entrada_master1_formac& JSON_entrada_master1::formac(){
+	return static_cast<JSON_entrada_master1_formac&>(*contents["formac"].get());
+}
+
+JSON_entrada_master1_lito& JSON_entrada_master1::lito(){
+	return static_cast<JSON_entrada_master1_lito&>(*contents["lito"].get());
+}
+
+JSON_entrada_master1_ambiente& JSON_entrada_master1::ambiente(){
+	return static_cast<JSON_entrada_master1_ambiente&>(*contents["ambiente"].get());
+}
+
+JSON_entrada_master1_velAmbiente& JSON_entrada_master1::velAmbiente(){
+	return static_cast<JSON_entrada_master1_velAmbiente&>(*contents["velAmbiente"].get());
+}
+
+JSON_entrada_master1_tempAmbiente& JSON_entrada_master1::tempAmbiente(){
+	return static_cast<JSON_entrada_master1_tempAmbiente&>(*contents["tempAmbiente"].get());
+}
+
+JSON_entrada_master1_indFluido& JSON_entrada_master1::indFluido(){
+	return static_cast<JSON_entrada_master1_indFluido&>(*contents["indFluido"].get());
+}
+
+JSON_entrada_master1_aberturaMon& JSON_entrada_master1::aberturaMon(){
+	return static_cast<JSON_entrada_master1_aberturaMon&>(*contents["aberturaMon"].get());
+}
+
+JSON_entrada_master1_tempoAberturaMon& JSON_entrada_master1::tempoAberturaMon(){
+	return static_cast<JSON_entrada_master1_tempoAberturaMon&>(*contents["tempoAberturaMon"].get());
+}
+
+JSON_entrada_master1_aberturaJus& JSON_entrada_master1::aberturaJus(){
+	return static_cast<JSON_entrada_master1_aberturaJus&>(*contents["aberturaJus"].get());
+}
+
+JSON_entrada_master1_tempoAberturaJus& JSON_entrada_master1::tempoAberturaJus(){
+	return static_cast<JSON_entrada_master1_tempoAberturaJus&>(*contents["tempoAberturaJus"].get());
+}
+
+JSON_entrada_master1_temperaturaFonte& JSON_entrada_master1::temperaturaFonte(){
+	return static_cast<JSON_entrada_master1_temperaturaFonte&>(*contents["temperaturaFonte"].get());
+}
+
+JSON_entrada_master1_massLiqP& JSON_entrada_master1::massLiqP(){
+	return static_cast<JSON_entrada_master1_massLiqP&>(*contents["massLiqP"].get());
+}
+
+JSON_entrada_master1_massGas& JSON_entrada_master1::massGas(){
+	return static_cast<JSON_entrada_master1_massGas&>(*contents["massGas"].get());
+}
+
+JSON_entrada_master1_massLiqC& JSON_entrada_master1::massLiqC(){
+	return static_cast<JSON_entrada_master1_massLiqC&>(*contents["massLiqC"].get());
+}
+
+JSON_entrada_master1_tempoFonte& JSON_entrada_master1::tempoFonte(){
+	return static_cast<JSON_entrada_master1_tempoFonte&>(*contents["tempoFonte"].get());
+}
+
 JSON_entrada_master2::JSON_entrada_master2(){
 	contents["ativo"] = make_shared<JSON_entrada_master2_ativo>();
 	contents["comprimentoMedido"] = make_shared<JSON_entrada_master2_comprimentoMedido>();
 	contents["tempo"] = make_shared<JSON_entrada_master2_tempo>();
 	contents["abertura"] = make_shared<JSON_entrada_master2_abertura>();
+
+	contents["caixaValvula"] = make_shared<JSON_entrada_master2_caixaValvula>();
+	contents["compCaixa"] = make_shared<JSON_entrada_master2_compCaixa>();
+	contents["indSecTrans"] = make_shared<JSON_entrada_master2_indSecTrans>();
+	contents["formac"] = make_shared<JSON_entrada_master2_formac>();
+	contents["lito"] = make_shared<JSON_entrada_master2_lito>();
+	contents["ambiente"] = make_shared<JSON_entrada_master2_ambiente>();
+	contents["velAmbiente"] = make_shared<JSON_entrada_master2_velAmbiente>();
+	contents["tempAmbiente"] = make_shared<JSON_entrada_master2_tempAmbiente>();
+	contents["indFluido"] = make_shared<JSON_entrada_master2_indFluido>();
+	contents["aberturaMon"] = make_shared<JSON_entrada_master2_aberturaMon>();
+	contents["tempoAberturaMon"] = make_shared<JSON_entrada_master2_tempoAberturaMon>();
+	contents["aberturaJus"] = make_shared<JSON_entrada_master2_aberturaJus>();
+	contents["tempoAberturaJus"] = make_shared<JSON_entrada_master2_tempoAberturaJus>();
 }
 
 JSON_entrada_master2_ativo& JSON_entrada_master2::ativo(){
@@ -2565,6 +2869,58 @@ JSON_entrada_master2_tempo& JSON_entrada_master2::tempo(){
 
 JSON_entrada_master2_abertura& JSON_entrada_master2::abertura(){
 	return static_cast<JSON_entrada_master2_abertura&>(*contents["abertura"].get());
+}
+
+JSON_entrada_master2_caixaValvula& JSON_entrada_master2::caixaValvula(){
+	return static_cast<JSON_entrada_master2_caixaValvula&>(*contents["caixaValvula"].get());
+}
+
+JSON_entrada_master2_compCaixa& JSON_entrada_master2::compCaixa(){
+	return static_cast<JSON_entrada_master2_compCaixa&>(*contents["compCaixa"].get());
+}
+
+JSON_entrada_master2_indSecTrans& JSON_entrada_master2::indSecTrans(){
+	return static_cast<JSON_entrada_master2_indSecTrans&>(*contents["indSecTrans"].get());
+}
+
+JSON_entrada_master2_formac& JSON_entrada_master2::formac(){
+	return static_cast<JSON_entrada_master2_formac&>(*contents["formac"].get());
+}
+
+JSON_entrada_master2_lito& JSON_entrada_master2::lito(){
+	return static_cast<JSON_entrada_master2_lito&>(*contents["lito"].get());
+}
+
+JSON_entrada_master2_ambiente& JSON_entrada_master2::ambiente(){
+	return static_cast<JSON_entrada_master2_ambiente&>(*contents["ambiente"].get());
+}
+
+JSON_entrada_master2_velAmbiente& JSON_entrada_master2::velAmbiente(){
+	return static_cast<JSON_entrada_master2_velAmbiente&>(*contents["velAmbiente"].get());
+}
+
+JSON_entrada_master2_tempAmbiente& JSON_entrada_master2::tempAmbiente(){
+	return static_cast<JSON_entrada_master2_tempAmbiente&>(*contents["tempAmbiente"].get());
+}
+
+JSON_entrada_master2_indFluido& JSON_entrada_master2::indFluido(){
+	return static_cast<JSON_entrada_master2_indFluido&>(*contents["indFluido"].get());
+}
+
+JSON_entrada_master2_aberturaMon& JSON_entrada_master2::aberturaMon(){
+	return static_cast<JSON_entrada_master2_aberturaMon&>(*contents["aberturaMon"].get());
+}
+
+JSON_entrada_master2_tempoAberturaMon& JSON_entrada_master2::tempoAberturaMon(){
+	return static_cast<JSON_entrada_master2_tempoAberturaMon&>(*contents["tempoAberturaMon"].get());
+}
+
+JSON_entrada_master2_aberturaJus& JSON_entrada_master2::aberturaJus(){
+	return static_cast<JSON_entrada_master2_aberturaJus&>(*contents["aberturaJus"].get());
+}
+
+JSON_entrada_master2_tempoAberturaJus& JSON_entrada_master2::tempoAberturaJus(){
+	return static_cast<JSON_entrada_master2_tempoAberturaJus&>(*contents["tempoAberturaJus"].get());
 }
 
 JSON_entrada_pig_Item::JSON_entrada_pig_Item(){
@@ -2612,9 +2968,11 @@ JSON_entrada_pig_Item_cdPig& JSON_entrada_pig_Item::cdPig(){
 
 JSON_entrada_fontePressao_Item::JSON_entrada_fontePressao_Item(){
 	contents["ativo"] = make_shared<JSON_entrada_fontePressao_Item_ativo>();
+	contents["recircula"] = make_shared<JSON_entrada_fontePressao_Item_recircula>();
 	contents["id"] = make_shared<JSON_entrada_fontePressao_Item_id>();
 	contents["TipoAbertura"] = make_shared<JSON_entrada_fontePressao_Item_TipoAbertura>();
 	contents["comprimentoMedido"] = make_shared<JSON_entrada_fontePressao_Item_comprimentoMedido>();
+	contents["comprimentoMedidoRecircula"] = make_shared<JSON_entrada_fontePressao_Item_comprimentoMedidoRecircula>();
 	contents["beta"] = make_shared<JSON_entrada_fontePressao_Item_beta>();
 	contents["titAmb"] = make_shared<JSON_entrada_fontePressao_Item_titAmb>();
 	contents["cd"] = make_shared<JSON_entrada_fontePressao_Item_cd>();
@@ -2626,11 +2984,15 @@ JSON_entrada_fontePressao_Item::JSON_entrada_fontePressao_Item(){
 	contents["indiFluidoPro"] = make_shared<JSON_entrada_fontePressao_Item_indiFluidoPro>();
 	contents["check"] = make_shared<JSON_entrada_fontePressao_Item_check>();
 	contents["tempoChk"] = make_shared<JSON_entrada_fontePressao_Item_tempoChk>();
-	contents["ambienteGas"] = make_shared<JSON_entrada_fontePressao_Item_ambGas>();
+	contents["ambGas"] = make_shared<JSON_entrada_fontePressao_Item_ambGas>();
 }
 
 JSON_entrada_fontePressao_Item_ativo& JSON_entrada_fontePressao_Item::ativo(){
 	return static_cast<JSON_entrada_fontePressao_Item_ativo&>(*contents["ativo"].get());
+}
+
+JSON_entrada_fontePressao_Item_recircula& JSON_entrada_fontePressao_Item::recircula(){
+	return static_cast<JSON_entrada_fontePressao_Item_recircula&>(*contents["recircula"].get());
 }
 
 JSON_entrada_fontePressao_Item_id& JSON_entrada_fontePressao_Item::id(){
@@ -2643,6 +3005,10 @@ JSON_entrada_fontePressao_Item_TipoAbertura& JSON_entrada_fontePressao_Item::Tip
 
 JSON_entrada_fontePressao_Item_comprimentoMedido& JSON_entrada_fontePressao_Item::comprimentoMedido(){
 	return static_cast<JSON_entrada_fontePressao_Item_comprimentoMedido&>(*contents["comprimentoMedido"].get());
+}
+
+JSON_entrada_fontePressao_Item_comprimentoMedidoRecircula& JSON_entrada_fontePressao_Item::comprimentoMedidoRecircula(){
+	return static_cast<JSON_entrada_fontePressao_Item_comprimentoMedidoRecircula&>(*contents["comprimentoMedidoRecircula"].get());
 }
 
 JSON_entrada_fontePressao_Item_beta& JSON_entrada_fontePressao_Item::beta(){
@@ -2690,7 +3056,7 @@ JSON_entrada_fontePressao_Item_tempoChk& JSON_entrada_fontePressao_Item::tempoCh
 }
 
 JSON_entrada_fontePressao_Item_ambGas& JSON_entrada_fontePressao_Item::ambGas(){
-	return static_cast<JSON_entrada_fontePressao_Item_ambGas&>(*contents["ambienteGas"].get());
+	return static_cast<JSON_entrada_fontePressao_Item_ambGas&>(*contents["ambGas"].get());
 }
 
 JSON_entrada_tendP_Item::JSON_entrada_tendP_Item(){
@@ -2750,7 +3116,7 @@ JSON_entrada_tendP_Item::JSON_entrada_tendP_Item(){
 	contents["mlFonte"] = make_shared<JSON_entrada_tendP_Item_mlFonte>();
 	contents["mgFonte"] = make_shared<JSON_entrada_tendP_Item_mgFonte>();
 	contents["mcFonte"] = make_shared<JSON_entrada_tendP_Item_mcFonte>();
-	contents["tempChokeJusante"] = make_shared<JSON_entrada_tendP_Item_tempChokeJus>();
+	contents["tempChokeJus"] = make_shared<JSON_entrada_tendP_Item_tempChokeJus>();
 	contents["deltaPBomba"] = make_shared<JSON_entrada_tendP_Item_deltaPBomba>();
 	contents["potenciaBomba"] = make_shared<JSON_entrada_tendP_Item_potenciaBomba>();
 
@@ -2770,6 +3136,9 @@ JSON_entrada_tendP_Item::JSON_entrada_tendP_Item(){
 	contents["inventarioLiq"] = make_shared<JSON_entrada_tendP_Item_inventarioLiq>();
 
 	contents["subResfria"] = make_shared<JSON_entrada_tendP_Item_subResfria>();
+
+	contents["presAnulICV"] = make_shared<JSON_entrada_tendP_Item_presAnulICV>();
+	contents["caixaValvula"] = make_shared<JSON_entrada_tendP_Item_caixaValvula>();
 }
 
 JSON_entrada_tendP_Item_ativo& JSON_entrada_tendP_Item::ativo(){
@@ -2997,7 +3366,7 @@ JSON_entrada_tendP_Item_mcFonte& JSON_entrada_tendP_Item::mcFonte(){
 }
 
 JSON_entrada_tendP_Item_tempChokeJus& JSON_entrada_tendP_Item::tempChokeJus(){
-	return static_cast<JSON_entrada_tendP_Item_tempChokeJus&>(*contents["tempChokeJusante"].get());
+	return static_cast<JSON_entrada_tendP_Item_tempChokeJus&>(*contents["tempChokeJus"].get());
 }
 
 JSON_entrada_tendP_Item_deltaPBomba& JSON_entrada_tendP_Item::deltaPBomba(){
@@ -3058,6 +3427,14 @@ JSON_entrada_tendP_Item_inventarioLiq& JSON_entrada_tendP_Item::inventarioLiq(){
 
 JSON_entrada_tendP_Item_subResfria& JSON_entrada_tendP_Item::subResfria(){
 	return static_cast<JSON_entrada_tendP_Item_subResfria&>(*contents["subResfria"].get());
+}
+
+JSON_entrada_tendP_Item_presAnulICV& JSON_entrada_tendP_Item::presAnulICV(){
+	return static_cast<JSON_entrada_tendP_Item_presAnulICV&>(*contents["presAnulICV"].get());
+}
+
+JSON_entrada_tendP_Item_caixaValvula& JSON_entrada_tendP_Item::caixaValvula(){
+	return static_cast<JSON_entrada_tendP_Item_caixaValvula&>(*contents["caixaValvula"].get());
 }
 
 JSON_entrada_tendTransP_Item::JSON_entrada_tendTransP_Item(){
@@ -3380,6 +3757,7 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["ativo"] = make_shared<JSON_entrada_perfilProducao_ativo>();
 	contents["tempo"] = make_shared<JSON_entrada_perfilProducao_tempo>();
 	contents["pressao"] = make_shared<JSON_entrada_perfilProducao_pressao>();
+	contents["pressaoFronteira"] = make_shared<JSON_entrada_perfilProducao_pressaoFront>();
 	contents["temperatura"] = make_shared<JSON_entrada_perfilProducao_temperatura>();
 	contents["holdup"] = make_shared<JSON_entrada_perfilProducao_holdup>();
 	contents["FVH"] = make_shared<JSON_entrada_perfilProducao_FVH>();
@@ -3390,6 +3768,7 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["ul"] = make_shared<JSON_entrada_perfilProducao_ul>();
 	contents["arra"] = make_shared<JSON_entrada_perfilProducao_arra>();
 	contents["viscosidadeLiquido"] = make_shared<JSON_entrada_perfilProducao_viscosidadeLiquido>();
+	contents["viscosidadeOleoMorto"] = make_shared<JSON_entrada_perfilProducao_viscosidadeOleoMorto>();
 	contents["viscosidadeGas"] = make_shared<JSON_entrada_perfilProducao_viscosidadeGas>();
 	contents["rhog"] = make_shared<JSON_entrada_perfilProducao_rhog>();
 	contents["rhol"] = make_shared<JSON_entrada_perfilProducao_rhol>();
@@ -3408,7 +3787,11 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["masstrans"] = make_shared<JSON_entrada_perfilProducao_masstrans>();
 	contents["cpgas"] = make_shared<JSON_entrada_perfilProducao_cpgas>();
 	contents["cpliq"] = make_shared<JSON_entrada_perfilProducao_cpliq>();
+	contents["condgas"] = make_shared<JSON_entrada_perfilProducao_condgas>();
+	contents["condliq"] = make_shared<JSON_entrada_perfilProducao_condliq>();
+	contents["condoleo"] = make_shared<JSON_entrada_perfilProducao_condoleo>();
 	contents["QLstd"] = make_shared<JSON_entrada_perfilProducao_QLstd>();
+	contents["QOstd"] = make_shared<JSON_entrada_perfilProducao_QOstd>();
 	contents["QLWstd"] = make_shared<JSON_entrada_perfilProducao_QLWstd>();
 	contents["QLstdTotal"] = make_shared<JSON_entrada_perfilProducao_QLstdTotal>();
 	contents["QGstd"] = make_shared<JSON_entrada_perfilProducao_QGstd>();
@@ -3439,7 +3822,7 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["pseudoLiquido"] = make_shared<JSON_entrada_perfilProducao_pseudoLiquido>();
 	contents["pseudoGas"] = make_shared<JSON_entrada_perfilProducao_pseudoGas>();
 	contents["pseudoMist"] = make_shared<JSON_entrada_perfilProducao_pseudoMist>();
-	contents["tempoResiLiqComp"] = make_shared<JSON_entrada_perfilProducao_TResi>();
+	contents["TResi"] = make_shared<JSON_entrada_perfilProducao_TResi>();
 	contents["RedutorAtrito"] = make_shared<JSON_entrada_perfilProducao_RedutorAtrito>();
 	contents["angulo"] = make_shared<JSON_entrada_perfilProducao_angulo>();
 	contents["diametroInterno"] = make_shared<JSON_entrada_perfilProducao_diametroInterno>();
@@ -3447,6 +3830,7 @@ JSON_entrada_perfilProducao::JSON_entrada_perfilProducao(){
 	contents["subResfria"] = make_shared<JSON_entrada_perfilProducao_subResfria>();
 	contents["dadosParafina"] = make_shared<JSON_entrada_perfilProducao_dadosParafina>();
 	contents["correlacaoBB"] = make_shared<JSON_entrada_perfilProducao_correlacaoBB>();
+	contents["titulo"] = make_shared<JSON_entrada_perfilProducao_titulo>();
 }
 
 JSON_entrada_perfilProducao_ativo& JSON_entrada_perfilProducao::ativo(){
@@ -3459,6 +3843,10 @@ JSON_entrada_perfilProducao_tempo& JSON_entrada_perfilProducao::tempo(){
 
 JSON_entrada_perfilProducao_pressao& JSON_entrada_perfilProducao::pressao(){
 	return static_cast<JSON_entrada_perfilProducao_pressao&>(*contents["pressao"].get());
+}
+
+JSON_entrada_perfilProducao_pressaoFront& JSON_entrada_perfilProducao::pressaoFront(){
+	return static_cast<JSON_entrada_perfilProducao_pressaoFront&>(*contents["pressaoFronteira"].get());
 }
 
 JSON_entrada_perfilProducao_temperatura& JSON_entrada_perfilProducao::temperatura(){
@@ -3500,6 +3888,10 @@ JSON_entrada_perfilProducao_arra& JSON_entrada_perfilProducao::arra(){
 
 JSON_entrada_perfilProducao_viscosidadeLiquido& JSON_entrada_perfilProducao::viscosidadeLiquido(){
 	return static_cast<JSON_entrada_perfilProducao_viscosidadeLiquido&>(*contents["viscosidadeLiquido"].get());
+}
+
+JSON_entrada_perfilProducao_viscosidadeOleoMorto& JSON_entrada_perfilProducao::viscosidadeOleoMorto(){
+	return static_cast<JSON_entrada_perfilProducao_viscosidadeOleoMorto&>(*contents["viscosidadeOleoMorto"].get());
 }
 
 JSON_entrada_perfilProducao_viscosidadeGas& JSON_entrada_perfilProducao::viscosidadeGas(){
@@ -3574,8 +3966,24 @@ JSON_entrada_perfilProducao_cpliq& JSON_entrada_perfilProducao::cpliq(){
 	return static_cast<JSON_entrada_perfilProducao_cpliq&>(*contents["cpliq"].get());
 }
 
+JSON_entrada_perfilProducao_condgas& JSON_entrada_perfilProducao::condgas(){
+	return static_cast<JSON_entrada_perfilProducao_condgas&>(*contents["condgas"].get());
+}
+
+JSON_entrada_perfilProducao_condliq& JSON_entrada_perfilProducao::condliq(){
+	return static_cast<JSON_entrada_perfilProducao_condliq&>(*contents["condliq"].get());
+}
+
+JSON_entrada_perfilProducao_condoleo& JSON_entrada_perfilProducao::condoleo(){
+	return static_cast<JSON_entrada_perfilProducao_condoleo&>(*contents["condoleo"].get());
+}
+
 JSON_entrada_perfilProducao_QLstd& JSON_entrada_perfilProducao::QLstd(){
 	return static_cast<JSON_entrada_perfilProducao_QLstd&>(*contents["QLstd"].get());
+}
+
+JSON_entrada_perfilProducao_QOstd& JSON_entrada_perfilProducao::QOstd(){
+	return static_cast<JSON_entrada_perfilProducao_QOstd&>(*contents["QOstd"].get());
 }
 
 JSON_entrada_perfilProducao_QLWstd& JSON_entrada_perfilProducao::QLWstd(){
@@ -3699,7 +4107,7 @@ JSON_entrada_perfilProducao_pseudoMist& JSON_entrada_perfilProducao::pseudoMist(
 }
 
 JSON_entrada_perfilProducao_TResi& JSON_entrada_perfilProducao::TResi(){
-	return static_cast<JSON_entrada_perfilProducao_TResi&>(*contents["tempoResiLiqComp"].get());
+	return static_cast<JSON_entrada_perfilProducao_TResi&>(*contents["TResi"].get());
 }
 
 JSON_entrada_perfilProducao_RedutorAtrito& JSON_entrada_perfilProducao::RedutorAtrito(){
@@ -3728,6 +4136,10 @@ JSON_entrada_perfilProducao_dadosParafina& JSON_entrada_perfilProducao::dadosPar
 
 JSON_entrada_perfilProducao_correlacaoBB& JSON_entrada_perfilProducao::correlacaoBB(){
 	return static_cast<JSON_entrada_perfilProducao_correlacaoBB&>(*contents["correlacaoBB"].get());
+}
+
+JSON_entrada_perfilProducao_titulo& JSON_entrada_perfilProducao::titulo(){
+	return static_cast<JSON_entrada_perfilProducao_titulo&>(*contents["titulo"].get());
 }
 
 JSON_entrada_perfilServico::JSON_entrada_perfilServico(){
@@ -4033,7 +4445,7 @@ JSON_entrada_chokeInj_coeficienteDescarga& JSON_entrada_chokeInj::coeficienteDes
 
 JSON_entrada_CondicaoContPocInjec::JSON_entrada_CondicaoContPocInjec(){
 	contents["ativo"] = make_shared<JSON_entrada_CondicaoContPocInjec_ativo>();
-	contents["usuario"] = make_shared<JSON_entrada_CondicaoContPocInjec_usuario>();
+	//contents["usuario"] = make_shared<JSON_entrada_CondicaoContPocInjec_usuario>();
 	contents["tipoFluido"] = make_shared<JSON_entrada_CondicaoContPocInjec_tipoFluido>();
 	contents["salinidade"] = make_shared<JSON_entrada_CondicaoContPocInjec_salinidade>();
 	contents["arquivoPvtsim"] = make_shared<JSON_entrada_CondicaoContPocInjec_arquivoPvtsim>();
@@ -4048,9 +4460,9 @@ JSON_entrada_CondicaoContPocInjec_ativo& JSON_entrada_CondicaoContPocInjec::ativ
 	return static_cast<JSON_entrada_CondicaoContPocInjec_ativo&>(*contents["ativo"].get());
 }
 
-JSON_entrada_CondicaoContPocInjec_usuario& JSON_entrada_CondicaoContPocInjec::usuario(){
-	return static_cast<JSON_entrada_CondicaoContPocInjec_usuario&>(*contents["usuario"].get());
-}
+//JSON_entrada_CondicaoContPocInjec_usuario& JSON_entrada_CondicaoContPocInjec::usuario(){
+	//return static_cast<JSON_entrada_CondicaoContPocInjec_usuario&>(*contents["usuario"].get());
+//}
 
 JSON_entrada_CondicaoContPocInjec_tipoFluido& JSON_entrada_CondicaoContPocInjec::tipoFluido(){
 	return static_cast<JSON_entrada_CondicaoContPocInjec_tipoFluido&>(*contents["tipoFluido"].get());
@@ -4158,8 +4570,8 @@ JSON_entrada::JSON_entrada(){
 	contents["fonteLiquido"] = make_shared<JSON_entrada_fonteLiquido>();
 	contents["fonteMassa"] = make_shared<JSON_entrada_fonteMassa>();
 	contents["fonteGas"] = make_shared<JSON_entrada_fonteGas>();
-	contents["poroRadial"] = make_shared<JSON_entrada_fontePoroRadial>();
-	contents["poro2D"] = make_shared<JSON_entrada_fontePoro2D>();
+	contents["fontePoroRadial"] = make_shared<JSON_entrada_fontePoroRadial>();
+	contents["fontePoro2D"] = make_shared<JSON_entrada_fontePoro2D>();
 	contents["fonteGasLift"] = make_shared<JSON_entrada_fonteGasLift>();
 	contents["material"] = make_shared<JSON_entrada_material>();
 	contents["secaoTransversal"] = make_shared<JSON_entrada_secaoTransversal>();
@@ -4168,7 +4580,7 @@ JSON_entrada::JSON_entrada(){
 	contents["dutosServico"] = make_shared<JSON_entrada_dutosServico>();
 	contents["hidrato"] = make_shared<JSON_entrada_hidrato>();
 	contents["ipr"] = make_shared<JSON_entrada_ipr>();
-	contents["fonteChoke"] = make_shared<JSON_entrada_fonteChoke>();
+	//contents["fonteChoke"] = make_shared<JSON_entrada_fonteChoke>();
 	contents["bcs"] = make_shared<JSON_entrada_bcs>();
 	contents["multibcs"] = make_shared<JSON_entrada_multibcs>();
 	contents["bombaVolumetrica"] = make_shared<JSON_entrada_bombaVolumetrica>();
@@ -4246,11 +4658,11 @@ JSON_entrada_fonteGas& JSON_entrada::fonteGas(){
 }
 
 JSON_entrada_fontePoroRadial& JSON_entrada::fontePoroRadial(){
-	return static_cast<JSON_entrada_fontePoroRadial&>(*contents["poroRadial"].get());
+	return static_cast<JSON_entrada_fontePoroRadial&>(*contents["fontePoroRadial"].get());
 }
 
 JSON_entrada_fontePoro2D& JSON_entrada::fontePoro2D(){
-	return static_cast<JSON_entrada_fontePoro2D&>(*contents["poro2D"].get());
+	return static_cast<JSON_entrada_fontePoro2D&>(*contents["fontePoro2D"].get());
 }
 
 JSON_entrada_fonteGasLift& JSON_entrada::fonteGasLift(){
@@ -4285,9 +4697,9 @@ JSON_entrada_ipr& JSON_entrada::ipr(){
 	return static_cast<JSON_entrada_ipr&>(*contents["ipr"].get());
 }
 
-JSON_entrada_fonteChoke& JSON_entrada::fonteChoke(){
-	return static_cast<JSON_entrada_fonteChoke&>(*contents["fonteChoke"].get());
-}
+//JSON_entrada_fonteChoke& JSON_entrada::fonteChoke(){
+	//return static_cast<JSON_entrada_fonteChoke&>(*contents["fonteChoke"].get());
+//}
 
 JSON_entrada_bcs& JSON_entrada::bcs(){
 	return static_cast<JSON_entrada_bcs&>(*contents["bcs"].get());

@@ -95,6 +95,8 @@ class solv2D {
     int equilterm;
     int impliAcopTerm;
     int iteraTerm;
+    int acopD;
+    double velPreParada;
     solv2D() {
         nomeArquivoEntrada = "";
         nomeArquivoLog = "";
@@ -115,6 +117,8 @@ class solv2D {
         solverMat = 0;
         impliAcopTerm = 0;
         iteraTerm = 200;
+        acopD=0;
+        velPreParada=0.;
     };
     solv2D(string vnomeArquivoEntrada, string vnomeArquivoLog, varGlob1D *Vvg1dSP = 0) {
         nomeArquivoEntrada = vnomeArquivoEntrada;
@@ -136,6 +140,8 @@ class solv2D {
         solverMat = 0;
         impliAcopTerm = 0;
         iteraTerm = 200;
+        acopD=0;
+        velPreParada=0.;
     };
     ~solv2D() {
         if ((*vg1dSP).acop == 1) {
@@ -176,6 +182,7 @@ class solv2D {
     double velMed(malha2dVF &malha);
     double tempMedParede(malha2dVF &malha);
     double areaMedParede(malha2dVF &malha, double &condMed);
+    void atualizaTParede(TransCal& transfer, double Tint, double viscint, double delt, int viscvar);
     void resolve();
 };
 

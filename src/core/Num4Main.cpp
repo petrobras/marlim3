@@ -104,7 +104,7 @@ using namespace std;
 
 #define ARQUIVO_RELATORIO_PERFIS "resultado.log"
 
-const char *saidaTexto[15] = {"                          Post Coitum Omine Animal Triste Est                   ",
+const char *saidaTexto[16] = {"                          Post Coitum Omine Animal Triste Est                   ",
                               "           'Ouca-me. O fim quase nunca esta longe, em nenhum momento!'          ",
                               "      So nos curamos de um sofrimento depois de o haver suportado ate o fim.    ",
                               "                   Infeliz e o espirito ansioso pelo futuro.                    ",
@@ -118,8 +118,9 @@ const char *saidaTexto[15] = {"                          Post Coitum Omine Anima
                               "                 Nao importa o quanto voce va devagar, desde que nao pare                ",
                               "Um simulador que resolve uma parada de producao, comeca avancando pequenos incrementos de tempo",
                               "                            Nada e permanente, exceto a mudanca                           ",
-                              "                  Uma jornada de mil quilometros come�a com um unico passo                "};
-const char *saidaSubTexto[15] = {
+                              "                  Uma jornada de mil quilometros comeca com um unico passo                ",
+"Seja paciente. Espere ate que a lama assente e a agua fique limpa. Permaneça imovel ate que a acao correta suja por si so"};
+const char *saidaSubTexto[16] = {
     "                         Galeno de Pergamo do Transiente Longo                          ",
     "                     J. California Cooper depois da simulacao divergir                  ",
     "                                Marcel Proust no CrossFit                               ",
@@ -134,7 +135,8 @@ const char *saidaSubTexto[15] = {
     "                             Confucio vendo a simulacao emperrar                       ",
     "                               Confucio das simulacoes sem fim                         ",
     "          Heraclito de Efeso vendo tudo mudar a cada incremento de tempo                ",
-    "    Lao-Tse tomando coragem para simular um caso de parafinacao em dutos de producao    "};
+    "    Lao-Tse tomando coragem para simular um caso de parafinacao em dutos de producao    ",
+    "            Lao-Tse, vendo o incremento de tempo ficar cada vez menor                   "};
 
 detTempo tempVF;
 detProp prop;
@@ -592,7 +594,7 @@ void preProcRede(Rede &arqRede, int narq) {
 void WriteSnapShot(SProd &sis, double porc = 10, int tramo = -1) {
 
     srand(time(NULL));
-    int frase = rand() % 15;
+    int frase = rand() % 16;
 
     if (sis.arq.HISEP == 0) {
         ostringstream saidaS;
@@ -8013,6 +8015,8 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
             saida = permanenteSimples(sistem1, chute);
         }
     }
+    if ((*sistem1.vg1dSP).chaverede == 0 && sistem1.arq.transiente == 1 && sistem1.arq.AP == 0)
+    sistem1.arq.resumoPermanente(sistem1.celula, sistem1.celulaG, sistem1.pGSup, sistem1.presiniG, sistem1.indTramo);
     // impressão de perfis apos a obtencao de solucao permanente
     if ((*sistem1.vg1dSP).chaverede == 0 && sistem1.arq.transiente == 0 && sistem1.arq.AP == 0) { // impŕessao de perfis e tendencias, quando a opcao transiente
         // nao esta ativa
@@ -8080,7 +8084,7 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
         }
         if (sistem1.arq.saidaClassica == 1) {
             srand(time(NULL));
-            int frase = rand() % 15;
+            int frase = rand() % 16;
             escreveIni << "*******************************************************************************" << endl;
             escreveIni << "                                  UFA!!!!!!!!                                  " << endl;
             escreveIni << saidaTexto[frase] << endl;
@@ -8181,35 +8185,39 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
 }
 
 void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidacaoJson_t validacaoJson, SProd &sistem1) {
-    // metodo em que e feita a sequencia de simulacoes de analise de sensibilidade, observando que a analise de sensibilidade e
+    // metodo em que e feita a sequencia de simulacoes de analise parametrica, observando que a analise parametrica e
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
-                      sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.fonteg); // construtor do sistema de analise de sensibilidade, ver a classe LerAP. Neste cosntrutor é lido um arquivo
-    // json onde se esta registradoas variaveis que estao envolvidas na analise de sensibilidade e os valores que se
-    // testara destas variaveis na analise de sensibilidade
+                      sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
+    // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
+    // testara destas variaveis na analise parametrica
     int imprime = 0;
     struct varSaida {
         double presIni;
         double tempFim;
+        double tempSaida;
         int falha;
     };
     std::vector<std::pair<int, varSaida>> dadosAP;
 
-    if (analisePara.vfp == 1)
+    if (analisePara.vfp == 1 || analisePara.vfp == 3)
         analisePara.cabecalhoAP(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                 sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq);
-    else if (analisePara.vfp == 0)
+                                sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,sistem1.arq.multiBcs,
+								sistem1.arq.bvol, sistem1.arq.dpreq);
+    else if (analisePara.vfp == 0 || analisePara.vfp == 2)
         analisePara.cabecalhoAPImex(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                     sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                    sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq);
+                                    sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,sistem1.arq.multiBcs,
+									sistem1.arq.bvol, sistem1.arq.dpreq);
 
     ostringstream saidaAP;
-    saidaAP << "sucessoAP.dat"; // criacao de arquivo com relatorio de quais pontos de analise de sensibilidade tiveram sucesso e quais falharam
+    saidaAP << pathPrefixoArqSaida << "sucessoAP.dat"; // criacao de arquivo com relatorio de quais pontos de analise parametrica tiveram sucesso e quais falharam
 
     string tmpAP = saidaAP.str();
     ofstream escreveAP(tmpAP.c_str(), ios_base::out);
     escreveAP << "relatorio de falhas da Analise Parametrica para um Tramo " << endl;
+    escreveAP << "Numero de combinacoes da Analise Parametrica "<< analisePara.nVariaveis<< endl;
     escreveAP.close();
     int indfalha[analisePara.nVariaveis];
     sistem1.kimpT = 1;
@@ -8237,6 +8245,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     vg1dTramo = new varGlob1D[analisePara.nVariaveis];
     for (int iSeq = 0; iSeq < analisePara.nVariaveis; iSeq++)vg1dTramo[iSeq] = (*sistem1.vg1dSP);
     for (int iSeq = 0; iSeq < analisePara.nVariaveis; iSeq++) {
+    	indfalha[iSeq]=0;
         vg1dTramo[iSeq].sequenciaAP = iSeq;
         string nomeArquivoLogAP = nomeArquivoLog;
         nomeArquivoLogAP.erase(nomeArquivoLogAP.size() - 4);
@@ -8269,7 +8278,16 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     		}
     	}
     }
-
+    int resolvido[analisePara.nVariaveis];
+    double presFundo[analisePara.nVariaveis];
+    double QGFundo[analisePara.nVariaveis];
+    double QLFundo[analisePara.nVariaveis];
+    for(int iSeq=0;iSeq<analisePara.nVariaveis;iSeq++){
+        resolvido[iSeq]=0;
+        presFundo[iSeq]=0;
+        QGFundo[iSeq]=0;
+        QLFundo[iSeq]=0;
+    }
     #pragma omp parallel for num_threads(analisePara.nthrdAP)
 	for(int iSeq=0;iSeq<analisePara.nVariaveis;iSeq++){//laco onde e calculado o permanente de cada combinacao
 		//algumas variaveis ja se encontram na condicao correta para se apolicar no sistema de simulacao,
@@ -8289,23 +8307,23 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         // criar objeto de simulacao
         // construtor do objeto que representa o tramo
 
-        if (analisePara.vfp == 1){
+        if (analisePara.vfp == 1 || analisePara.vfp == 3){
             analisePara.selecaoAPsemImpre(sistem2.ncelGas, sistem2.chokeSup, sistem2.celula, sistem2.celulaG,
                                           sistem2.arq.flup,
                                           sistem2.arq.IPRS, sistem2.arq.valv, sistem2.arq.fonteg,
                                           sistem2.arq.fontel, sistem2.arq.fontem, sistem2.arq.furo, sistem2.arq.bcs,
-                                          sistem2.arq.bvol, sistem2.arq.dpreq,
+										  sistem2.arq.multiBcs,sistem2.arq.bvol, sistem2.arq.dpreq,
                                           sistem2.pGSup, sistem2.temperatura, sistem2.presiniG, sistem2.tempiniG, vazgasG,
                                           presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem2.arq.correcao.dPdLHidro, sistem2.arq.correcao.dPdLFric,
                                           sistem2.arq.correcao.dTdL);
 
         }
-        else if (analisePara.vfp == 0){
+        else if (analisePara.vfp == 0 || analisePara.vfp == 2){
             analisePara.selecaoAPImexsemImpre(sistem2.ncelGas, sistem2.chokeSup, sistem2.celula, sistem2.celulaG,
                                               sistem2.arq.flup,
                                               sistem2.arq.IPRS, sistem2.arq.valv, sistem2.arq.fonteg,
                                               sistem2.arq.fontel, sistem2.arq.fontem, sistem2.arq.furo, sistem2.arq.bcs,
-                                              sistem2.arq.bvol, sistem2.arq.dpreq,
+											  sistem2.arq.multiBcs,sistem2.arq.bvol, sistem2.arq.dpreq,
                                               sistem2.pGSup, sistem2.temperatura, sistem2.presiniG, sistem2.tempiniG, vazgasG,
                                               presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem2.arq.correcao.dPdLHidro, sistem2.arq.correcao.dPdLFric,
                                               sistem2.arq.correcao.dTdL);
@@ -8313,7 +8331,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         }
         // variavei que precisam de um pos processamento para se encaixar na condicao de simulacao
         if (sistem2.arq.lingas > 0 && analisePara.listaV.vgasinj == 1 && analisePara.APGasInj.parserieVazGas > 0) {
-            // caso tenha linha de gas e analise de sensibilidade para vazao de injecao, a entrada no json e em stdM3,
+            // caso tenha linha de gas e analise parametrica para vazao de injecao, a entrada no json e em stdM3,
             // mas no simulador, deve ser atualizada para a vazao massica
             if (sistem2.arq.gasinj.tipoCC == 1) {
                 sistem2.celulaG[0].massfonteCH = vazgasG * (sistem2.arq.flug.Deng * 1.225) / 86400;
@@ -8324,7 +8342,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
             sistem2.arq.chokep.abertura[0] = analisePara.APCHK.abertura[indChk];
         }
         if (sistem2.arq.ConContEntrada == 1 && analisePara.listaV.vpresent == 1) {
-            // carregando os valores de analise de senisbilidadepara condicao de contorno a montante de pressao
+            // carregando os valores de analise parametrica para condicao de contorno a montante de pressao
             if (analisePara.APpEntrada.parseriePres > 0)
                 sistem2.presE = presE;
             if (analisePara.APpEntrada.parserieBet > 0)
@@ -8334,7 +8352,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
             if (analisePara.APpEntrada.parserieTit > 0)
                 sistem2.titE = titE;
         } else if (sistem2.arq.ConContEntrada == 2 && analisePara.listaV.vvazpresent == 1) {
-            // carregando os valores de analise de senisbilidadepara condicao de contorno a montante de vazao e pressao
+            // carregando os valores de analise parametrica para condicao de contorno a montante de vazao e pressao
             if (analisePara.APvpEntrada.parseriePres > 0)
                 sistem2.presE = presE;
             if (analisePara.APvpEntrada.parserieBet > 0)
@@ -8350,7 +8368,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
                 sistem2.celula[0].acsr.injm.MassP = vazE - vazC - sistem2.celula[0].acsr.injm.MassG;
             }
         } else if (sistem2.arq.pocinjec == 1 && analisePara.listaV.vpocinj == 1) {
-            // carregando os valores de analise de senisbilidade para condicao de contorno a montante de vazao, poco injetor
+            // carregando os valores de analise parametrica para condicao de contorno a montante de vazao, poco injetor
             sistem2.arq.condpocinj.presfundo = presE;
             if (sistem2.arq.flashCompleto == 0) {
                 sistem2.celula[0].acsr.injl.temp = tempE;
@@ -8361,54 +8379,119 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
             }
         }
 		#pragma omp critical
-			cout<<"Resolvendo Sequencia "<<iSeq<<" da analise de sensibilidade"<< endl;
+			cout<<"Resolvendo Sequencia "<<iSeq<<" da analise parametrica"<< endl;
+			double chuteSeq1=-1;
+			double chuteSeq2=-1;
+			double chuteSeq3=-1;
+			double chuteSeq1b=-1;
 		falha=SolveTramoSolteiro(sistem2,chute);
 		if(fabs(falha)>(0.9e10) && chute!=-1){
-			falha=SolveTramoSolteiro(sistem2);
+				falha=SolveTramoSolteiro(sistem2);
+		}
+		if(iSeq>0 && fabs(falha)>(0.9e10)){
+			if(indfalha[iSeq-1]==1){
+	    		if(sistem2.arq.ConContEntrada==0)chuteSeq1=presFundo[iSeq-1];
+	    		else{
+	    			if(sistem2.celula[0].acsr.tipo==1)
+	    				chuteSeq1=QGFundo[iSeq-1];
+	    			else if(sistem2.celula[0].acsr.tipo==2)
+	    				chuteSeq1=QLFundo[iSeq-1];
+	    		}
+	    		falha=SolveTramoSolteiro(sistem2,chuteSeq1);
+			}
+		}
+		if(iSeq<analisePara.nVariaveis-1 && fabs(falha)>(0.9e10)){
+			if(indfalha[iSeq+1]==1){
+		    	if(sistem2.arq.ConContEntrada==0)chuteSeq2=presFundo[iSeq+1];
+		    	else{
+		    		if(sistem2.celula[0].acsr.tipo==1)
+		    			chuteSeq2=QGFundo[iSeq+1];
+		    		else if(sistem2.celula[0].acsr.tipo==2)
+		    			chuteSeq2=QLFundo[iSeq+1];
+		    	}
+		    	if(chuteSeq2!=-1)falha=SolveTramoSolteiro(sistem2,chuteSeq2);
+			}
+		}
+		if(fabs(falha)>(0.9e10) && iSeq>1){
+			if(indfalha[iSeq-2]==1){
+		    		if(sistem2.arq.ConContEntrada==0)chuteSeq1b=presFundo[iSeq-2];
+		    		else{
+		    			if(sistem2.celula[0].acsr.tipo==1)
+		    				chuteSeq1b=QGFundo[iSeq-2];
+		    			else if(sistem2.celula[0].acsr.tipo==2)
+		    				chuteSeq1b=QLFundo[iSeq-2];
+		    		}
+		    		falha=SolveTramoSolteiro(sistem2,chuteSeq1b);
+				}
+		}
+		if(fabs(falha)>(0.9e10)){
+			int testaI=0;
+			while((indfalha[testaI]!=1 || testaI!=iSeq-1 || testaI!=iSeq+1 || testaI!=iSeq-2) &&
+					testaI<analisePara.nVariaveis)testaI++;
+			if(indfalha[testaI]==1){
+		    	if(sistem2.arq.ConContEntrada==0)chuteSeq3=presFundo[testaI];
+		    	else{
+		    		if(sistem2.celula[0].acsr.tipo==1)
+		    			chuteSeq3=QGFundo[testaI];
+		    		else if(sistem2.celula[0].acsr.tipo==2)
+		    			chuteSeq3=QLFundo[testaI];
+		    	}
+		    	if(chuteSeq3!=-1)falha=SolveTramoSolteiro(sistem2,chuteSeq3);
+			}
 		}
 		if(fabs(falha)>1e9){
-			//caso ocorre uma falha nma busca da solucao para um caso da analise de sensibilidade
+			//caso ocorre uma falha nma busca da solucao para um caso da analise parametrica
 			#pragma omp critical
-				cout<<"----------------------------- falha no caso -------------------------------"<<endl;
+				cout<<"----------------------------- falha no caso "<<iSeq<<" -------------------------------"<<endl;
 		}
 
-        if (fabs(falha) < 1e9)
+        if (fabs(falha) < 1e9){
+			double presSeq=sistem2.celula[0].pres;
+			double tempSeq=sistem2.celula[0].temp;
             indfalha[iSeq] = 1;
+            resolvido[iSeq]=1;
+            presFundo[iSeq]=presSeq;
+            QGFundo[iSeq]=sistem2.celula[0].QG*86400*sistem1.celula[0].flui.MasEspGas(presSeq, tempSeq)/(sistem2.celula[0].flui.Deng*1.229);
+            QLFundo[iSeq]=sistem2.celula[0].QL*86400*sistem1.celula[0].flui.MasEspLiq(presSeq, tempSeq)/(sistem2.celula[0].flui.MasEspLiq(1.0, 20));
+        }
         else
             indfalha[iSeq] = -1;
 
         varSaida tempSaida;
         tempSaida.presIni = sistem2.celula[0].pres;
         tempSaida.tempFim = sistem2.celula[sistem2.ncel].temp;
+        tempSaida.tempSaida = analisePara.tipoAP != 0 && indfalha[iSeq] > 0 ? sistem2.temperaturaSaida() : -1e10;
         tempSaida.falha = indfalha[iSeq];
 		#pragma omp critical
 			dadosAP.emplace_back(iSeq,tempSaida);
-        // impressão dos perfis e tendencias da analise de sensibilidade, caso sem construcao de tabela de pressao de fundo
-        sistem2.arq.imprimeProfile(sistem2.celula, sistem2.flut, 0, sistem2.indTramo);
-        sistem2.arq.resumoPermanente(sistem2.celula, sistem2.celulaG, sistem2.pGSup,
+        // impressão dos perfis e tendencias da analise parametrica, caso sem construcao de tabela de pressao de fundo
+        if(analisePara.tipoAP == 0 && analisePara.imprimePerfil==1){
+        	sistem2.arq.imprimeProfile(sistem2.celula, sistem2.flut, 0, sistem2.indTramo);
+        	sistem2.arq.resumoPermanente(sistem2.celula, sistem2.celulaG, sistem2.pGSup,
                                      sistem2.presiniG, sistem2.indTramo);
-        if(sistem2.arq.nintermi>0)sistem2.arq.resumoIntermitencia(sistem2.celula, sistem2.indTramo);
-        if(sistem2.arq.nCelUnit>0){
-        	for(int iCelUni=0; iCelUni<sistem2.arq.nCelUnit; iCelUni++)
-        	sistem2.arq.relatorioCelulaUnitaria(sistem2.celula,sistem2.arq.celUnit[iCelUni].posicP, sistem2.indTramo);
-        }
-        // enterramento
-        for (int j = 0; j <= sistem2.ncel; j++) {
-            if (sistem2.celula[j].calor.difus2D == 1) {
-                sistem2.celula[j].calor.poisson2D.imprimePermanente(sistem2.indTramo);
-            }
-        }
-        sistem2.kimpT = 1;
-        for (int i = 0; i < sistem2.arq.ntendp; i++) {
-            sistem2.arq.imprimeTrend(sistem2.celula, sistem2.MatTrendP[i], 0, i, 0);
-            sistem2.ImprimeTrendP(i);
-        }
-        if (sistem2.arq.lingas == 1) {
-            sistem2.arq.imprimeProfileG(sistem2.celulaG, sistem2.flutG, 0, sistem2.indTramo);
-            for (int i = 0; i < sistem2.arq.ntendg; i++) {
-                sistem2.arq.imprimeTrendG(sistem2.celulaG, sistem2.MatTrendG[i], 0, i, 0, 0);
-                sistem2.ImprimeTrendG(i);
-            }
+        	if(sistem2.arq.nintermi>0)sistem2.arq.resumoIntermitencia(sistem2.celula, sistem2.indTramo);
+        	if(sistem2.arq.nCelUnit>0){
+        		for(int iCelUni=0; iCelUni<sistem2.arq.nCelUnit; iCelUni++)
+        			sistem2.arq.relatorioCelulaUnitaria(sistem2.celula,sistem2.arq.celUnit[iCelUni].posicP, sistem2.indTramo);
+        	}
+        	// enterramento
+        	for (int j = 0; j <= sistem2.ncel; j++) {
+            	if (sistem2.celula[j].calor.difus2D == 1) {
+                	sistem2.celula[j].calor.poisson2D.imprimePermanente(sistem2.indTramo);
+            	}
+        	}
+        	sistem2.kimpT = 1;
+        	for (int i = 0; i < sistem2.arq.ntendp; i++) {
+            	sistem2.arq.imprimeTrend(sistem2.celula, sistem2.MatTrendP[i], 0, i, 0);
+            	sistem2.ImprimeTrendP(i);
+        	}
+        	if (sistem2.arq.lingas == 1) {
+            	sistem2.arq.imprimeProfileG(sistem2.celulaG, sistem2.flutG, 0, sistem2.indTramo);
+            	for (int i = 0; i < sistem2.arq.ntendg; i++) {
+                	sistem2.arq.imprimeTrendG(sistem2.celulaG, sistem2.MatTrendG[i], 0, i, 0, 0);
+                	sistem2.ImprimeTrendG(i);
+            	}
+        	}
         }
         (*sistem2.vg1dSP).contaExit = 0;
     }
@@ -8434,17 +8517,19 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         double vazE;
         int indChk;
         imprime = 1;
-        if (analisePara.vfp == 1) // analise de sensibilidade para problemas padrao ou para a curva de fundo Eclipse
+        if (analisePara.vfp == 1 || analisePara.vfp == 3) // analise parametrica para problemas padrao ou para a curva de fundo Eclipse
             analisePara.selecaoAP(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                   sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                  sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                  sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+								  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                   sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                   presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
                                   sistem1.arq.correcao.dTdL, imprime);
-        else if (analisePara.vfp == 0) // anaslise de sensibilidade para curva de pressao de fundo Imex
+        else if (analisePara.vfp == 0 || analisePara.vfp == 2) // analise parametrica para curva de pressao de fundo Imex
             analisePara.selecaoAPImex(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                       sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                      sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                      sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+									  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                       sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                       presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
                                       sistem1.arq.correcao.dTdL, imprime);
@@ -8456,32 +8541,33 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         ofstream escreveVarInt(varInt.c_str(), ios_base::app);
         escreveVarInt << iSeq << " ; " << dadosAP[iSeq].second.falha << " ; " << dadosAP[iSeq].second.presIni << " ; " << dadosAP[iSeq].second.tempFim << " ; ";
         escreveVarInt.close();
-        if (analisePara.vfp == 1)
+        if (analisePara.vfp == 1 || analisePara.vfp == 3)
             analisePara.imprimeVarInteresseAP(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG,
                                               sistem1.arq.flup,
                                               sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
                                               sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
-                                              sistem1.arq.bvol, sistem1.arq.dpreq, iSeq);
-        else if (analisePara.vfp == 0)
+											  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq, iSeq);
+        else if (analisePara.vfp == 0 || analisePara.vfp == 2)
             analisePara.imprimeVarInteresseAPImex(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG,
                                                   sistem1.arq.flup,
                                                   sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
                                                   sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
-                                                  sistem1.arq.bvol, sistem1.arq.dpreq, iSeq);
+												  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq, iSeq);
 
         if (analisePara.tipoAP != 0) {
             // caso de construcao de tabela VFP:
             double BHP;
             if (indfalha[iSeq] >0)
-                BHP = sistem1.celula[0].pres;
+                BHP = dadosAP[iSeq].second.presIni;
             else
                 BHP = -1e10;
             analisePara.tabelaGenerica(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                        sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                       sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                       sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+									   sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                        sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                        presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
-                                       sistem1.arq.correcao.dTdL, BHP);
+                                       sistem1.arq.correcao.dTdL, BHP, dadosAP[iSeq].second.tempSaida);
         }
 
     }
@@ -8521,16 +8607,16 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 }
 
 void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoValidacaoJson_t validacaoJson, SProd &sistem1) {
-    // metodo em que e feita a sequencia de simulacoes de analise de sensibilidade, observando que a analise de sensibilidade e
+    // metodo em que e feita a sequencia de simulacoes de analise parametrica, observando que a analise parametrica e
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
-                      sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.fonteg); // construtor do sistema de analise de sensibilidade, ver a classe LerAP. Neste cosntrutor é lido um arquivo
-    // json onde se esta registradoas variaveis que estao envolvidas na analise de sensibilidade e os valores que se
-    // testara destas variaveis na analise de sensibilidade
+                      sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
+    // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
+    // testara destas variaveis na analise parametrica
     int imprime = 0;
 
     ostringstream saidaAP;
-    saidaAP << "sucessoAP.dat"; // criacao de arquivo com relatorio de quais pontos de analise de sensibilidade tiveram sucesso e quais falharam
+    saidaAP << "sucessoAP.dat"; // criacao de arquivo com relatorio de quais pontos de analise parametrica tiveram sucesso e quais falharam
 
     string tmpAP = saidaAP.str();
     ofstream escreveAP(tmpAP.c_str(), ios_base::out);
@@ -8550,7 +8636,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
     int indfalha[analisePara.nVariaveis];
     if (analisePara.vfp != 1 || analisePara.tipoAP != 0) {
         logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                   "Parâmetros inadequados para a analise de sensibilidade em paralelo",
+                   "Parâmetros inadequados para a analise parametrica em paralelo",
                    "", "");
     }
     SProd sistem2[analisePara.nVariaveis];
@@ -8579,13 +8665,13 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
                                       sistem2[iSeq].arq.flup,
                                       sistem2[iSeq].arq.IPRS, sistem2[iSeq].arq.valv, sistem2[iSeq].arq.fonteg,
                                       sistem2[iSeq].arq.fontel, sistem2[iSeq].arq.fontem, sistem2[iSeq].arq.furo, sistem2[iSeq].arq.bcs,
-                                      sistem2[iSeq].arq.bvol, sistem2[iSeq].arq.dpreq,
+									  sistem2[iSeq].arq.multiBcs,sistem2[iSeq].arq.bvol, sistem2[iSeq].arq.dpreq,
                                       sistem2[iSeq].pGSup, sistem2[iSeq].temperatura, sistem2[iSeq].presiniG, sistem2[iSeq].tempiniG, vazgasG,
                                       presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem2[iSeq].arq.correcao.dPdLHidro, sistem2[iSeq].arq.correcao.dPdLFric,
                                       sistem2[iSeq].arq.correcao.dTdL);
         // variavei que precisam de um pos processamento para se encaixar na condicao de simulacao
         if (sistem2[iSeq].arq.lingas > 0 && analisePara.listaV.vgasinj == 1 && analisePara.APGasInj.parserieVazGas > 0) {
-            // caso tenha linha de gas e analise de sensibilidade para vazao de injecao, a entrada no json e em stdM3,
+            // caso tenha linha de gas e analise parametrica para vazao de injecao, a entrada no json e em stdM3,
             // mas no simulador, deve ser atualizada para a vazao massica
             if (sistem2[iSeq].arq.gasinj.tipoCC == 1) {
                 sistem2[iSeq].celulaG[0].massfonteCH = vazgasG * (sistem2[iSeq].arq.flug.Deng * 1.225) / 86400;
@@ -8596,7 +8682,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
             sistem2[iSeq].arq.chokep.abertura[0] = analisePara.APCHK.abertura[indChk];
         }
         if (sistem2[iSeq].arq.ConContEntrada == 1 && analisePara.listaV.vpresent == 1) {
-            // carregando os valores de analise de senisbilidadepara condicao de contorno a montante de pressao
+            // carregando os valores de analise parametrica para condicao de contorno a montante de pressao
             if (analisePara.APpEntrada.parseriePres > 0)
                 sistem2[iSeq].presE = presE;
             if (analisePara.APpEntrada.parserieBet > 0)
@@ -8606,7 +8692,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
             if (analisePara.APpEntrada.parserieTit > 0)
                 sistem2[iSeq].titE = titE;
         } else if (sistem2[iSeq].arq.ConContEntrada == 2 && analisePara.listaV.vvazpresent == 1) {
-            // carregando os valores de analise de senisbilidadepara condicao de contorno a montante de vazao e pressao
+            // carregando os valores de analise parametrica para condicao de contorno a montante de vazao e pressao
             if (analisePara.APvpEntrada.parseriePres > 0)
                 sistem2[iSeq].presE = presE;
             if (analisePara.APvpEntrada.parserieBet > 0)
@@ -8622,7 +8708,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
                 sistem2[iSeq].celula[0].acsr.injm.MassP = vazE - vazC - sistem2[iSeq].celula[0].acsr.injm.MassG;
             }
         } else if (sistem2[iSeq].arq.pocinjec == 1 && analisePara.listaV.vpocinj == 1) {
-            // carregando os valores de analise de senisbilidade para condicao de contorno a montante de vazao, poco injetor
+            // carregando os valores de analise parametrica para condicao de contorno a montante de vazao, poco injetor
             sistem2[iSeq].arq.condpocinj.presfundo = presE;
             if (sistem2[iSeq].arq.flashCompleto == 0) {
                 sistem2[iSeq].celula[0].acsr.injl.temp = tempE;
@@ -8632,11 +8718,11 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
                 sistem2[iSeq].celula[0].acsr.injg.QGas = vazE;
             }
         }
-        cout << "Resolvendo Sequencia " << iSeq << " da analise de sensibilidade" << endl;
+        cout << "Resolvendo Sequencia " << iSeq << " da analise parametrica" << endl;
         (*sistem2[iSeq].vg1dSP).sequenciaAP = iSeq;
         falha = SolveTramoSolteiro(sistem2[iSeq]);
         if (fabs(falha) > 0.9e10) {
-            // caso ocorre uma falha nma busca da solucao para um caso da analise de sensibilidade
+            // caso ocorre uma falha nma busca da solucao para um caso da analise parametrica
             cout << "----------------------------- falha no caso -------------------------------" << endl;
         }
 
@@ -8645,7 +8731,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
         else
             indfalha[iSeq] = -1;
 
-        // impressão dos perfis e tendencias da analise de sensibilidade, caso sem construcao de tabela de pressao de fundo
+        // impressão dos perfis e tendencias da analise parametrica, caso sem construcao de tabela de pressao de fundo
         sistem2[iSeq].arq.imprimeProfile(sistem2[iSeq].celula, sistem2[iSeq].flut, 0, sistem2[iSeq].indTramo);
         sistem2[iSeq].arq.resumoPermanente(sistem2[iSeq].celula, sistem2[iSeq].celulaG, sistem2[iSeq].pGSup,
                                            sistem2[iSeq].presiniG, sistem2[iSeq].indTramo);
@@ -8687,17 +8773,19 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
         double vazE;
         int indChk;
         imprime = 1;
-        if (analisePara.vfp == 1) // analise de sensibilidade para problemas padrao ou para a curva de fundo Eclipse
+        if (analisePara.vfp == 1) // analise parametrica para problemas padrao ou para a curva de fundo Eclipse
             analisePara.selecaoAP(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                   sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                  sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                  sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+								  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                   sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                   presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
                                   sistem1.arq.correcao.dTdL, imprime);
-        else if (analisePara.vfp == 0) // anaslise de sensibilidade para curva de pressao de fundo Imex
+        else if (analisePara.vfp == 0) // analise parametrica para curva de pressao de fundo Imex
             analisePara.selecaoAPImex(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                       sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                      sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                      sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+									  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                       sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                       presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
                                       sistem1.arq.correcao.dTdL, imprime);
@@ -8738,12 +8826,12 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
 }
 
 void leituraAP(string nomeArquivoAP, SProd &sistem1) {
-    // metodo em que e feita a sequencia de simulacoes de analise de sensibilidade, observando que a analise de sensibilidade e
+    // metodo em que e feita a sequencia de simulacoes de analise parametrica, observando que a analise parametrica e
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
-                      sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.fonteg); // construtor do sistema de analise de sensibilidade, ver a classe LerAP. Neste cosntrutor é lido um arquivo
-    // json onde se esta registradoas variaveis que estao envolvidas na analise de sensibilidade e os valores que se
-    // testara destas variaveis na analise de sensibilidade
+                      sistem1.arq.flup, sistem1.arq.bcs,sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
+    // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
+    // testara destas variaveis na analise parametrica
     double vazgasG;
     double presE;
     double tempE;
@@ -8754,33 +8842,36 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
     int imprime = 1;
 
     ostringstream saidaAP;
-    saidaAP << "sucessoAP.dat"; // criacao de arquivo com relatorio de quais pontos de analise de sensibilidade tiveram sucesso e quais falharam
+    saidaAP << "sucessoAP.dat"; // criacao de arquivo com relatorio de quais pontos de analise parametrica tiveram sucesso e quais falharam
 
     string tmpAP = saidaAP.str();
     ofstream escreveAP(tmpAP.c_str(), ios_base::out);
     escreveAP << "relatório de falhas da Analise Parametrica para um Tramo " << endl;
+    escreveAP << "Numero de combinacoes da Analise Parametrica "<< analisePara.nVariaveis<< endl;
     escreveAP.close();
     double falha = 0.;
     for (int iSeq = 0; iSeq < analisePara.nVariaveis; iSeq++) { // laco onde e calculado o permanente de cada combinacao
         // algumas variaveis ja se encontram na condicao correta para se apolicar no sistema de simulacao,
         // outras precisam de um "pos procesaamento"
-        if (analisePara.vfp == 1) // analise de sensibilidade para problemas padrao ou para a curva de fundo Eclipse
+        if (analisePara.vfp == 1 || analisePara.vfp == 3) // analise parametrica para problemas padrao ou para a curva de fundo Eclipse
             analisePara.selecaoAP(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                   sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                  sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                  sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+								  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                   sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                   presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
                                   sistem1.arq.correcao.dTdL, imprime);
-        else if (analisePara.vfp == 0) // anaslise de sensibilidade para curva de pressao de fundo Imex
+        else if (analisePara.vfp == 0 || analisePara.vfp == 2) // analise parametrica para curva de pressao de fundo Imex
             analisePara.selecaoAPImex(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                       sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                      sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                      sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+									  sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                       sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                       presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
                                       sistem1.arq.correcao.dTdL, imprime);
         // variavei que precisam de um pos processamento para se encaixar na condicao de simulacao
         if (sistem1.arq.lingas > 0 && analisePara.listaV.vgasinj == 1 && analisePara.APGasInj.parserieVazGas > 0) {
-            // caso tenha linha de gas e analise de sensibilidade para vazao de injecao, a entrada no json e em stdM3,
+            // caso tenha linha de gas e analise parametrica para vazao de injecao, a entrada no json e em stdM3,
             // mas no simulador, deve ser atualizada para a vazao massica
             if (sistem1.arq.gasinj.tipoCC == 1) {
                 sistem1.celulaG[0].massfonteCH = vazgasG * (sistem1.arq.flug.Deng * 1.225) / 86400;
@@ -8791,7 +8882,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
             sistem1.arq.chokep.abertura[0] = analisePara.APCHK.abertura[indChk];
         }
         if (sistem1.arq.ConContEntrada == 1 && analisePara.listaV.vpresent == 1) {
-            // carregando os valores de analise de senisbilidadepara condicao de contorno a montante de pressao
+            // carregando os valores de analise parametrica para condicao de contorno a montante de pressao
             if (analisePara.APpEntrada.parseriePres > 0)
                 sistem1.presE = presE;
             if (analisePara.APpEntrada.parserieBet > 0)
@@ -8801,7 +8892,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
             if (analisePara.APpEntrada.parserieTit > 0)
                 sistem1.titE = titE;
         } else if (sistem1.arq.ConContEntrada == 2 && analisePara.listaV.vvazpresent == 1) {
-            // carregando os valores de analise de senisbilidadepara condicao de contorno a montante de vazao e pressao
+            // carregando os valores de analise parametrica para condicao de contorno a montante de vazao e pressao
             if (analisePara.APvpEntrada.parseriePres > 0)
                 sistem1.presE = presE;
             if (analisePara.APvpEntrada.parserieBet > 0)
@@ -8817,7 +8908,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
                 sistem1.celula[0].acsr.injm.MassP = vazE - vazC - sistem1.celula[0].acsr.injm.MassG;
             }
         } else if (sistem1.arq.pocinjec == 1 && analisePara.listaV.vpocinj == 1) {
-            // carregando os valores de analise de senisbilidade para condicao de contorno a montante de vazao, poco injetor
+            // carregando os valores de analise parametrica para condicao de contorno a montante de vazao, poco injetor
             sistem1.arq.condpocinj.presfundo = presE;
             if (sistem1.arq.flashCompleto == 0) {
                 sistem1.celula[0].acsr.injl.temp = tempE;
@@ -8828,14 +8919,14 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
             }
         }
         double chute = -1.;
-        cout << "Resolvendo Sequencia " << iSeq << " da analise de sensibilidade" << endl;
+        cout << "Resolvendo Sequencia " << iSeq << " da analise parametrica" << endl;
         (*sistem1.vg1dSP).sequenciaAP = iSeq;
         if (iSeq == 0 || sistem1.arq.ConContEntrada == 2 || sistem1.arq.pocinjec == 1) {
-            // se for o primeiro caso da analise de sensibilidade, não se usa nenhum valor para o chute, chute=-1
+            // se for o primeiro caso da analise parametrica, não se usa nenhum valor para o chute, chute=-1
             chute = -1.;
             falha = SolveTramoSolteiro(sistem1, chute);
         } else {
-            // para os casos de analise de sensibilidade subsequentes, se usa o valor da solução da analise de sensibilidade anterior como chute
+            // para os casos de analise parametrica subsequentes, se usa o valor da solução da analise parametrica anterior como chute
             int tipoChute = sistem1.arq.ConContEntrada;
             if (tipoChute == 0) {
                 chute = sistem1.celula[0].pres;
@@ -8861,7 +8952,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
             }
         }
         if (fabs(falha) > 0.9e10) {
-            // caso ocorre uma falha nma busca da solucao para um caso da analise de sensibilidade
+            // caso ocorre uma falha nma busca da solucao para um caso da analise parametrica
             cout << "----------------------------- falha no caso -------------------------------" << endl;
         }
 
@@ -8877,8 +8968,8 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
 
         escreveAP.close();
 
-        if (analisePara.tipoAP == 0) {
-            // impressão dos perfis e tendencias da analise de sensibilidade, caso sem construcao de tabela de pressao de fundo
+        if (analisePara.tipoAP == 0 && analisePara.imprimePerfil==1) {
+            // impressão dos perfis e tendencias da analise parametrica, caso sem construcao de tabela de pressao de fundo
             sistem1.arq.imprimeProfile(sistem1.celula, sistem1.flut, 0, sistem1.indTramo);
             sistem1.arq.resumoPermanente(sistem1.celula, sistem1.celulaG, sistem1.pGSup, sistem1.presiniG, sistem1.indTramo);
             if(sistem1.arq.nintermi>0)sistem1.arq.resumoIntermitencia(sistem1.celula, sistem1.indTramo);
@@ -8917,10 +9008,11 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
                 BHP = -1e10;
             analisePara.tabelaGenerica(sistem1.ncelGas, sistem1.chokeSup, sistem1.celula, sistem1.celulaG, sistem1.arq.flup,
                                        sistem1.arq.IPRS, sistem1.arq.valv, sistem1.arq.fonteg,
-                                       sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs, sistem1.arq.bvol, sistem1.arq.dpreq,
+                                       sistem1.arq.fontel, sistem1.arq.fontem, sistem1.arq.furo, sistem1.arq.bcs,
+									   sistem1.arq.multiBcs,sistem1.arq.bvol, sistem1.arq.dpreq,
                                        sistem1.pGSup, sistem1.temperatura, sistem1.presiniG, sistem1.tempiniG, vazgasG,
                                        presE, tempE, titE, betaE, vazE, iSeq, indChk, sistem1.arq.correcao.dPdLHidro, sistem1.arq.correcao.dPdLFric,
-                                       sistem1.arq.correcao.dTdL, BHP);
+                                       sistem1.arq.correcao.dTdL, BHP, fabs(falha) < 1e9 ? sistem1.temperaturaSaida() : -1e10);
         }
         (*sistem1.vg1dSP).contaExit = 0;
     }
@@ -9790,6 +9882,7 @@ void solveRedeProd(SProd *malha, Rede &arqRede, int narq,
                         malha[i].celula[j].betPigEini = malha[i].celula[j].betPigE;
                         malha[i].celula[j].betPigDini = malha[i].celula[j].betPigD;
 
+
                         malha[i].celula[j].rpC = malha[i].celula[j].rpCi =
                             malha[i].celula[j].flui.MasEspLiq(malha[i].celula[j].pres, malha[i].celula[j].temp);
                         malha[i].celula[j].rgC = malha[i].celula[j].rgCi =
@@ -9806,6 +9899,36 @@ void solveRedeProd(SProd *malha, Rede &arqRede, int narq,
                         malha[i].celula[j].mipC = malha[i].celula[j].flui.ViscOleo(malha[i].celula[j].pres, malha[i].celula[j].temp);
                         malha[i].celula[j].migC = malha[i].celula[j].flui.ViscGas(malha[i].celula[j].pres, malha[i].celula[j].temp);
                         malha[i].celula[j].micC = malha[i].celula[j].fluicol.VisFlu(malha[i].celula[j].pres, malha[i].celula[j].temp);
+                        if (malha[i].arq.tabelaDinamica == 1) {
+                        	malha[i].arq.tabelaDinamica = 0;
+                            for (int j = 0; j <= malha[i].ncel; j++) {
+                            	malha[i].celula[j].flui.tabelaDinamica = 0;
+                                if (malha[i].celula[j].acsr.tipo == 1)
+                                	malha[i].celula[j].acsr.injg.FluidoPro.tabelaDinamica = 0;
+                                else if (malha[i].celula[j].acsr.tipo == 2)
+                                	malha[i].celula[j].acsr.injl.FluidoPro.tabelaDinamica = 0;
+                                else if (malha[i].celula[j].acsr.tipo == 3)
+                                	malha[i].celula[j].acsr.ipr.FluidoPro.tabelaDinamica = 0;
+                                else if (malha[i].celula[j].acsr.tipo == 15) {
+                                	malha[i].celula[j].acsr.radialPoro.flup.tabelaDinamica = 0;
+                                    int ncelRad = malha[i].celula[j].acsr.radialPoro.ncel;
+                                    for (int k = 0; k < ncelRad; k++) {
+                                    	malha[i].celula[j].acsr.radialPoro.celula[k].flup.tabelaDinamica = 0;
+                                    }
+                                } else if (malha[i].celula[j].acsr.tipo == 16) {
+                                	malha[i].celula[j].acsr.poroso2D.dados.flup.tabelaDinamica = 0;
+                                    int ncelRad = malha[i].celula[j].acsr.poroso2D.dados.transfer.ncel;
+                                    for (int k = 0; k < ncelRad; k++) {
+                                    	malha[i].celula[j].acsr.poroso2D.dados.transfer.celula[k].flup.tabelaDinamica = 0;
+                                    }
+                                    int ncelEle = malha[i].celula[j].acsr.poroso2D.malha.nele;
+                                    for (int k = 0; k < ncelEle; k++) {
+                                    	malha[i].celula[j].acsr.poroso2D.malha.mlh2d[k].flup.tabelaDinamica = 0;
+                                    }
+                                } else if (malha[i].celula[j].acsr.tipo == 10)
+                                	malha[i].celula[j].acsr.injm.FluidoPro.tabelaDinamica = 0;
+                            }
+                        }
 
                         if (j > 0) {
                             malha[i].celula[j - 1].rpR = malha[i].celula[j - 1].rpRi = malha[i].celula[j].rpC;
@@ -9892,7 +10015,7 @@ void solveRedeProd(SProd *malha, Rede &arqRede, int narq,
         string tmp = saidaRede.str();
         ofstream escreveIni(tmp.c_str(), ios_base::app);
         srand(time(NULL));
-        int frase = rand() % 15;
+        int frase = rand() % 16;
         escreveIni << "                                  Rede interna = " << nrede << endl;
         escreveIni << "*******************************************************************************" << endl;
         escreveIni << "                                  UFA!!!!!!!!                                  " << endl;
@@ -10707,7 +10830,7 @@ void TransAnel(int narq, int nfontes, int *indfonte, int *indtramo, int *posicfo
                 if (malha[i].celula[celpos[i]].alf < 0.05 && razMast[i] <= malha[i].arq.master1.razareaativ)
                     malha[i].celula[celpos[i]].alf = 0.05;
                 if (i != indAnel)
-                    malha[i].renovaterm();
+                    malha[i].renovaterm(0);
                 malha[i].SolveAcopPV();
                 if (kontaAcop == 1 * modeloCompletoGlob)
                     malha[i].renova();
@@ -11202,7 +11325,7 @@ void SolveRedeParalelaTrans(SProd *malha, Rede &arqRede, int nrede) {
                 }
 
                 malha[i].calcCCpres();
-                malha[i].renovaterm();
+                malha[i].renovaterm(0);
                 if (malha[i].celula[malha[i].ncel].alf < 0.05 && malha[i].masChkSup == 1)
                     malha[i].celula[malha[i].ncel].alf = 0.05;
                 // caso varias valvulas
@@ -11605,6 +11728,36 @@ void RedeParalela(SProd *malha, Rede &arqRede, int narq,
                 malha[i].celula[j].mipC = malha[i].celula[j].flui.ViscOleo(malha[i].celula[j].pres, malha[i].celula[j].temp);
                 malha[i].celula[j].migC = malha[i].celula[j].flui.ViscGas(malha[i].celula[j].pres, malha[i].celula[j].temp);
                 malha[i].celula[j].micC = malha[i].celula[j].fluicol.VisFlu(malha[i].celula[j].pres, malha[i].celula[j].temp);
+                if (malha[i].arq.tabelaDinamica == 1) {
+                	malha[i].arq.tabelaDinamica = 0;
+                    for (int j = 0; j <= malha[i].ncel; j++) {
+                    	malha[i].celula[j].flui.tabelaDinamica = 0;
+                        if (malha[i].celula[j].acsr.tipo == 1)
+                        	malha[i].celula[j].acsr.injg.FluidoPro.tabelaDinamica = 0;
+                        else if (malha[i].celula[j].acsr.tipo == 2)
+                        	malha[i].celula[j].acsr.injl.FluidoPro.tabelaDinamica = 0;
+                        else if (malha[i].celula[j].acsr.tipo == 3)
+                        	malha[i].celula[j].acsr.ipr.FluidoPro.tabelaDinamica = 0;
+                        else if (malha[i].celula[j].acsr.tipo == 15) {
+                        	malha[i].celula[j].acsr.radialPoro.flup.tabelaDinamica = 0;
+                            int ncelRad = malha[i].celula[j].acsr.radialPoro.ncel;
+                            for (int k = 0; k < ncelRad; k++) {
+                            	malha[i].celula[j].acsr.radialPoro.celula[k].flup.tabelaDinamica = 0;
+                            }
+                        } else if (malha[i].celula[j].acsr.tipo == 16) {
+                        	malha[i].celula[j].acsr.poroso2D.dados.flup.tabelaDinamica = 0;
+                            int ncelRad = malha[i].celula[j].acsr.poroso2D.dados.transfer.ncel;
+                            for (int k = 0; k < ncelRad; k++) {
+                            	malha[i].celula[j].acsr.poroso2D.dados.transfer.celula[k].flup.tabelaDinamica = 0;
+                            }
+                            int ncelEle = malha[i].celula[j].acsr.poroso2D.malha.nele;
+                            for (int k = 0; k < ncelEle; k++) {
+                            	malha[i].celula[j].acsr.poroso2D.malha.mlh2d[k].flup.tabelaDinamica = 0;
+                            }
+                        } else if (malha[i].celula[j].acsr.tipo == 10)
+                        	malha[i].celula[j].acsr.injm.FluidoPro.tabelaDinamica = 0;
+                    }
+                }
 
                 if (j > 0) {
                     malha[i].celula[j - 1].rpR = malha[i].celula[j - 1].rpRi = malha[i].celula[j].rpC;
@@ -11626,7 +11779,9 @@ void RedeParalela(SProd *malha, Rede &arqRede, int narq,
                 }
             }
         }
-
+        (*vG1d).modoTransiente = 1;
+         (*malha[iP].vg1dSP).modoTransiente = 1;
+         (*malha[iS].vg1dSP).modoTransiente = 1;
         SolveRedeParalelaTrans(malha, arqRede, nrede);
     }
 }
@@ -11925,6 +12080,36 @@ void RedeAnelGL(SProd *malha, Rede &arqRede, int narq,
             malha[i].celula[j].mipC = malha[i].celula[j].flui.ViscOleo(malha[i].celula[j].pres, malha[i].celula[j].temp);
             malha[i].celula[j].migC = malha[i].celula[j].flui.ViscGas(malha[i].celula[j].pres, malha[i].celula[j].temp);
             malha[i].celula[j].micC = malha[i].celula[j].fluicol.VisFlu(malha[i].celula[j].pres, malha[i].celula[j].temp);
+            if (malha[i].arq.tabelaDinamica == 1) {
+            	malha[i].arq.tabelaDinamica = 0;
+                for (int j = 0; j <= malha[i].ncel; j++) {
+                	malha[i].celula[j].flui.tabelaDinamica = 0;
+                    if (malha[i].celula[j].acsr.tipo == 1)
+                    	malha[i].celula[j].acsr.injg.FluidoPro.tabelaDinamica = 0;
+                    else if (malha[i].celula[j].acsr.tipo == 2)
+                    	malha[i].celula[j].acsr.injl.FluidoPro.tabelaDinamica = 0;
+                    else if (malha[i].celula[j].acsr.tipo == 3)
+                    	malha[i].celula[j].acsr.ipr.FluidoPro.tabelaDinamica = 0;
+                    else if (malha[i].celula[j].acsr.tipo == 15) {
+                    	malha[i].celula[j].acsr.radialPoro.flup.tabelaDinamica = 0;
+                        int ncelRad = malha[i].celula[j].acsr.radialPoro.ncel;
+                        for (int k = 0; k < ncelRad; k++) {
+                        	malha[i].celula[j].acsr.radialPoro.celula[k].flup.tabelaDinamica = 0;
+                        }
+                    } else if (malha[i].celula[j].acsr.tipo == 16) {
+                    	malha[i].celula[j].acsr.poroso2D.dados.flup.tabelaDinamica = 0;
+                        int ncelRad = malha[i].celula[j].acsr.poroso2D.dados.transfer.ncel;
+                        for (int k = 0; k < ncelRad; k++) {
+                        	malha[i].celula[j].acsr.poroso2D.dados.transfer.celula[k].flup.tabelaDinamica = 0;
+                        }
+                        int ncelEle = malha[i].celula[j].acsr.poroso2D.malha.nele;
+                        for (int k = 0; k < ncelEle; k++) {
+                        	malha[i].celula[j].acsr.poroso2D.malha.mlh2d[k].flup.tabelaDinamica = 0;
+                        }
+                    } else if (malha[i].celula[j].acsr.tipo == 10)
+                    	malha[i].celula[j].acsr.injm.FluidoPro.tabelaDinamica = 0;
+                }
+            }
 
             if (j > 0) {
                 malha[i].celula[j - 1].rpR = malha[i].celula[j - 1].rpRi = malha[i].celula[j].rpC;
@@ -12061,7 +12246,7 @@ double cicloRedeInj(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo
                                 qlmistStd += (Qcomp[k] * malha[i].celula[0].fluicol.MasEspFlu(pres, temp[k]) / malha[i].celula[0].fluicol.MasEspFlu(1.001, 15.));
                             } else {
                                 Mgas[k] = malha[ind].celula[fim].MC - malha[ind].celula[fim].Mliqini;
-                                Qliq[k] = malha[ind].celula[fim + 1].QG;
+                                Qliq[k]=Qgas[k] = malha[ind].celula[fim + 1].QG;
                                 Qcomp[k] = 0.;
                                 cpmist += (Mgas[k] * cpl[k]);
                                 tempmist += (Mgas[k] * cpl[k]) * temp[k];
@@ -12501,7 +12686,7 @@ int main(int argc, char **argv) {
      * Processamento dos argumentos de entrada
      */
     srand(time(NULL));
-    int frase = rand() % 15;
+    int frase = rand() % 16;
 
     // percorrer a lista de parametros de entrada
     for (int i = 1; i < argc; ++i) {
@@ -12648,6 +12833,12 @@ int main(int argc, char **argv) {
     signal(SIGSEGV, signalHandler);
     // register signal SIGTERM and signal handler (A termination request sent to the program)
     signal(SIGTERM, signalHandler);
+
+    // Apagar arquivo de "debug do modulo composicional FORTRAN" caso exista:
+
+        const std::string debugFileName = "Composicional_Debug.txt";
+
+        std::remove(debugFileName.c_str());
 
     /*
      * Processamento da simulacao
@@ -12927,12 +13118,12 @@ int main(int argc, char **argv) {
                     SolveTramoSolteiro(sistem1, sistem1.arq.chutePerm); // solucao simples de permanente para um tramo simples
                 else {
     			ostringstream arquivoAPtemp;
-    			arquivoAPtemp<<pathPrefixoArqSaida<<sistem1.arq.arquivoAP;
+    			arquivoAPtemp<<pathArqEntrada<<sistem1.arq.arquivoAP;
     			string arquivoAP = arquivoAPtemp.str();
     			if(sistem1.arq.paralelAP==0)
-    				leituraAP(arquivoAP, sistem1);//solucao de analise de sensibilidade para tramo simples
+    				leituraAP(arquivoAP, sistem1);//solucao de analise parametrica para tramo simples
     			else
-    				leituraAPparalelo(arquivoAP, nomeArquivoLog, validacaoJson, sistem1);//solucao de analise de sensibilidade para tramo simples
+    				leituraAPparalelo(arquivoAP, nomeArquivoLog, validacaoJson, sistem1);//solucao de analise parametrica para tramo simples
                 }
 
             } else if (sistem1.arq.perm == 2) { // quando a condicao de contorno nao e o resultado de um regime permanente mas a "foto" em algum momento de
@@ -12996,6 +13187,7 @@ int main(int argc, char **argv) {
                     sistem1.celula[i].mipC = sistem1.celula[i].flui.ViscOleo(sistem1.celula[i].pres, sistem1.celula[i].temp);
                     sistem1.celula[i].migC = sistem1.celula[i].flui.ViscGas(sistem1.celula[i].pres, sistem1.celula[i].temp);
                     sistem1.celula[i].micC = sistem1.celula[i].fluicol.VisFlu(sistem1.celula[i].pres, sistem1.celula[i].temp);
+                    sistem1.celula[i].flui.tabelaDinamica=0;
 
                     if (i > 0) {
                         sistem1.celula[i - 1].rpR = sistem1.celula[i - 1].rpRi = sistem1.celula[i].rpC;
@@ -13116,7 +13308,7 @@ int main(int argc, char **argv) {
                 cout << saidaTexto[frase] << endl;
                 cout << saidaSubTexto[frase] << endl;
                 cout << "*******************************************************************************" << endl;
-            } else if (sistem1.arq.saidaTela == 1)
+            } else
                 cout << "                                  FIM                                  " << endl;
 
             nowGlobFim = time(0);

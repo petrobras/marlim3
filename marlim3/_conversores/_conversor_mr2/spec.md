@@ -506,7 +506,7 @@ No MRT:
     - `DUKLER_EATON_FLANIGAN` → `13`
     - `DUKLER_MINAMI_I` → `14`
     - `DUKLER_MINAMI_II` → `15`
-    - `SHOHAM` → `6` (placeholder, não implementada ainda)
+    - `SHOHAM` → `16`
     
   Se a correlação não for encontrada ou o campo não existir no XML de entrada (comum em unidades de poço), usa-se o valor padrão `6` (BEGGS_BRILL).
 

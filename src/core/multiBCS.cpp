@@ -20,6 +20,8 @@ multiBomCentSub::multiBomCentSub(int vnBCS ,BomCentSub* BCStemp ,int* nestagParc
 		nestagParc= new int[nBCS];
 		nestag=0;
 		flui=vflui;
+		flui.multbcs=1;
+		flui.tabelaDinamica=0;
 		fluicol=vfluiCol;
 		for(int i=0; i<nBCS;i++){
 			nestagParcFab[i]=nestagParcFabtemp[i];
@@ -179,6 +181,9 @@ void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, doub
     double presIni=pres;
     double betaIni=beta;
 
+
+	flui.multbcs=1;
+	flui.tabelaDinamica=0;
     ProFlu fluiL=flui;
     ProFlu fluiG=flui;
 
@@ -224,6 +229,18 @@ void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, doub
     	fluiL.Deng=razDengD*flui.Deng;
     	fluiL.RenovaFluido();
     }
+    else  if(equilTerm==0 && flui.flashCompleto==2){
+        for (int kfrac = 0; kfrac < flui.npseudo; kfrac++) {
+            fluiG.fracMol[kfrac] = flui.oCalculatedVapComposition[kfrac];
+            fluiG.oCalculatedLiqComposition[kfrac] = 0.;
+            fluiL.fracMol[kfrac] = flui.oCalculatedLiqComposition[kfrac];
+            fluiL.oCalculatedVapComposition[kfrac] = 0.;
+        }
+    	fluiG.atualizaPropComp(pres, temp,flui.dCalculatedBeta,fluiG.oCalculatedLiqComposition,
+    						flui.oCalculatedVapComposition,0);
+    	fluiL.atualizaPropComp(pres, temp,flui.dCalculatedBeta,flui.oCalculatedLiqComposition,
+    						fluiL.oCalculatedVapComposition,0);
+    }
 
 	cpl=cplIni;
 	cpg=cpgIni;
@@ -249,9 +266,12 @@ void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, doub
 
     	    temp+=(1.-BCSinterno[iCurva].Evis/100.)*vpotB/coefdxT;
 
-    	    if(flui.flashCompleto==2 && equilTerm==1)
+    	    if(flui.flashCompleto==2 && equilTerm==1){
     	    	flui.atualizaPropComp(pres, temp,flui.dCalculatedBeta,flui.oCalculatedLiqComposition,
     	    						flui.oCalculatedVapComposition,0);
+    	    	fluiG=flui;
+    	    	fluiL=flui;
+    	    }
 
     	    double tit0= fluiL.FracMassHidra(pres, temp);
 

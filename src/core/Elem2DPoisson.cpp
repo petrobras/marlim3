@@ -854,6 +854,8 @@ void elem2dPoisson::calcGradGreen(){
 			}
 			else if(vn==1){
 
+				//tempF[i]=cel2D.tempC+ccTVN[i]*cel2D.modE[i]/cel2D.cond;
+
 				double gradMed [cel2D.dim];
 				for(int j=0; j<cel2D.dim;j++){
 					gradMed[j]=cel2D.gradGreenT[j];

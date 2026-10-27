@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Marlim3
+Comment=Transient multiphase flow simulator
+Exec=Marlim3-desktop-linux-x64
+Icon=br.com.petrobras.marlim3
+Terminal=false
+Categories=Science;Engineering;
+StartupWMClass=br.com.petrobras.marlim3

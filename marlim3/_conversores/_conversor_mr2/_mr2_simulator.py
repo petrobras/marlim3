@@ -10,6 +10,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from ..._process import hidden_process_kwargs
+
 
 class Mr2Simulator:
     """Runs the legacy MR2 binary to generate simulation results."""
@@ -93,6 +95,7 @@ class Mr2Simulator:
                 capture_output=True,
                 text=True,
                 encoding='latin-1',
+                **hidden_process_kwargs(),
             )
 
             if process.returncode != 0:

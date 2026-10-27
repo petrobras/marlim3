@@ -1,0 +1,794 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://petrobras.com/marlim3/schemas/leituraAP.pt.json",
+  "title": "Entrada de Análise Paramétrica do Marlim 3",
+  "description": "Define varreduras de parâmetros para simulações automatizadas em regime permanente. Não é compatível com o modo transiente.",
+  "type": "object",
+  "properties": {
+    "nthread": {
+      "type": "integer",
+      "default": 1,
+      "minimum": 1,
+      "description": "Número de threads para modo de execução em paralelo caso ativado no arquivo de de entrada em configuracaoInicial>paralelizaAP:true"
+    },
+    "tipoAP": {
+      "type": "integer",
+      "enum": [0, 1],
+      "default": 0,
+      "description": "Modo de saída. 0: padrão — todas as seções disponíveis, saída completa de perfil/tendência/sumário por caso. 1: tabelas VFP — restrito às obrigatórias (FonteLiquido, psep, RGO-fluido0, BSW-fluido0) mais opcionais FonteGas ou BCS; nenhuma saída de perfil/tendência/sumário é gravada."
+    },
+    "vfp": {
+      "type": "integer",
+      "enum": [0, 1, 2, 3],
+      "default": 1,
+      "description": "Seletor de tabela VFP. 0, 2: formato CMG (IMEX/GEM). 1, 3: formato Eclipse."
+    },
+    "imprimePerfil": {
+      "type": "boolean",
+      "default": true,
+      "description": "Ativa/desativa a saída de perfil e tendência por caso. Só tem efeito quando tipoAP=0 (modo padrão). No modo VFP (tipoAP=1) nenhuma saída de perfil, tendência ou sumário é gravada — esta configuração é ignorada."
+    },
+
+    "IPR": {
+      "type": "array",
+      "description": "Varreduras de parâmetros da Curva de Influxo (IPR). Cada elemento seleciona uma IPR específica pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO — varreduras de IPR não são tipicamente usadas para geração de tabelas VFP.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceIPR": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual IPR modificar."
+          },
+          "presEstatica": {
+            "type": "array",
+            "description": "Valores de pressão estática do reservatório a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "tempRes": {
+            "type": "array",
+            "description": "Valores de temperatura do reservatório a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "IP": {
+            "type": "array",
+            "description": "Valores de índice de produtividade a varrer. Válido para tipos de IPR 0 (linear) e 1 (Vogel combinado).",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "II": {
+            "type": "array",
+            "description": "Valores de índice de injetividade a varrer. Válido para todos os tipos de IPR. Necessário para casos de fluxo reverso e poços injetores.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "qMax": {
+            "type": "array",
+            "description": "Valores de vazão máxima a varrer. Válido para tipo de IPR 2 (Vogel).",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "fluido": {
+            "type": "array",
+            "description": "Valores de índice de fluido a varrer. Seleciona entre os fluidos de produção definidos no JSON de entrada principal. Funciona com todos os tipos de modelo de fluido (black-oil, tabela PVTSim e composicional).",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceIPR"],
+        "anyOf": [
+          { "required": ["presEstatica"] },
+          { "required": ["tempRes"] },
+          { "required": ["IP"] },
+          { "required": ["II"] },
+          { "required": ["qMax"] },
+          { "required": ["fluido"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "GasLift": {
+      "type": "object",
+      "description": "Varreduras de parâmetros da condição de contorno de injeção de gas-lift (instância única). [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO — use FonteGas para varreduras de gas-lift em tabelas VFP.",
+      "properties": {
+        "vazGas": {
+          "type": "array",
+          "description": "Valores de vazão de injeção de gás a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "presInj": {
+          "type": "array",
+          "description": "Valores de pressão de injeção a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "temperatura": {
+          "type": "array",
+          "description": "Valores de temperatura de injeção a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        }
+      },
+      "anyOf": [
+        { "required": ["vazGas"] },
+        { "required": ["presInj"] },
+        { "required": ["temperatura"] }
+      ],
+      "additionalProperties": false
+    },
+
+    "psep": {
+      "type": "object",
+      "description": "Varredura de parâmetro de pressão do separador (instância única). [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: OBRIGATÓRIA — dimensão de varredura chave para a tabela BHP.",
+      "properties": {
+        "pressao": {
+          "type": "array",
+          "description": "Valores de pressão do separador a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        }
+      },
+      "required": ["pressao"],
+      "additionalProperties": false
+    },
+
+    "choke": {
+      "type": "object",
+      "description": "Varreduras de parâmetros do choke de superfície (instância única). [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO — não é tipicamente necessário para geração de tabelas VFP.",
+      "properties": {
+        "abertura": {
+          "type": "array",
+          "description": "Valores de fração de abertura do choke a varrer (razão entre área livre da válvula e área do tubo).",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        },
+        "CD": {
+          "type": "array",
+          "description": "Valores de coeficiente de descarga do choke a varrer.",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 1
+        }
+      },
+      "anyOf": [
+        { "required": ["abertura"] },
+        { "required": ["CD"] }
+      ],
+      "additionalProperties": false
+    },
+
+    "FonteLiquido": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de fonte de líquido. Cada elemento seleciona uma fonte de líquido específica pelo índice. [MODO PADRÃO]: Opcional — varre a vazão de líquido em uma fonte. [MODO VFP (tipoAP=1)]: OBRIGATÓRIA — pelo menos um elemento com 'vazLiq' é necessário. O simulador usa APFonLiq[0].parserieVL para dimensionar a tabela de saída BHP e irá falhar sem ele. Nenhuma saída de perfil/tendência/sumário é gravada no modo VFP.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceFL": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual fonte de líquido modificar."
+          },
+          "temperatura": {
+            "type": "array",
+            "description": "Valores de temperatura da fonte a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "vazLiq": {
+            "type": "array",
+            "description": "Valores de vazão volumétrica de líquido a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "beta": {
+            "type": "array",
+            "description": "Valores da razão de fluido complementar (beta) a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "fluido": {
+            "type": "array",
+            "description": "Valores de índice de fluido a varrer. Seleciona entre os fluidos de produção definidos no JSON de entrada principal. Funciona com todos os tipos de modelo de fluido (black-oil, tabela PVTSim e composicional).",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceFL"],
+        "anyOf": [
+          { "required": ["temperatura"] },
+          { "required": ["vazLiq"] },
+          { "required": ["beta"] },
+          { "required": ["fluido"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "FonteGas": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de fonte de gás. Cada elemento seleciona uma fonte de gás específica pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: OPCIONAL — pode ser usada para varrer taxas de gas-lift como uma dimensão adicional da tabela VFP. No máximo uma entre FonteGas ou BCS pode ser habilitada por execução VFP; usar ambas simultaneamente não é recomendado.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceFG": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual fonte de gás modificar."
+          },
+          "temperatura": {
+            "type": "array",
+            "description": "Valores de temperatura da fonte a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "vazGas": {
+            "type": "array",
+            "description": "Valores de vazão de gás a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "vazComp": {
+            "type": "array",
+            "description": "Valores de vazão de fluido complementar (impureza) a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceFG"],
+        "anyOf": [
+          { "required": ["temperatura"] },
+          { "required": ["vazGas"] },
+          { "required": ["vazComp"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "FonteMassa": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de fonte de massa. Cada elemento seleciona uma fonte de massa específica pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceFM": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual fonte de massa modificar."
+          },
+          "temperatura": {
+            "type": "array",
+            "description": "Valores de temperatura da fonte a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "vazaoProd": {
+            "type": "array",
+            "description": "Valores de vazão mássica total de produção a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "VazaoComp": {
+            "type": "array",
+            "description": "Valores de vazão mássica de fluido complementar a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "VazaoGas": {
+            "type": "array",
+            "description": "Valores de vazão mássica de gás a varrer (válido quando thermType = 1).",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "fluido": {
+            "type": "array",
+            "description": "Valores de índice de fluido a varrer. Seleciona entre os fluidos de produção definidos no JSON de entrada principal. Funciona com todos os tipos de modelo de fluido (black-oil, tabela PVTSim e composicional).",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceFM"],
+        "anyOf": [
+          { "required": ["temperatura"] },
+          { "required": ["vazaoProd"] },
+          { "required": ["VazaoComp"] },
+          { "required": ["VazaoGas"] },
+          { "required": ["fluido"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "BCS": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de Fonte de Condição de Contorno (bomba BCS/ESP). Cada elemento seleciona um ESP específico pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: OPCIONAL — pode ser usada para varrer frequência do ESP como uma dimensão adicional da tabela VFP. No máximo uma entre FonteGas ou BCS pode ser habilitada por execução VFP; usar ambas simultaneamente não é recomendado.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceBCS": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual ESP modificar."
+          },
+          "frequencia": {
+            "type": "array",
+            "description": "Valores de frequência rotacional do ESP a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "estagio": {
+            "type": "array",
+            "description": "Número de estágios da bomba a varrer.",
+            "items": { "type": "integer", "minimum": 1 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceBCS"],
+        "anyOf": [
+          { "required": ["frequencia"] },
+          { "required": ["estagio"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "MultiBCS": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de Múltiplas Fontes de Condição de Contorno (multi-ESP). Cada elemento seleciona um MultiBCS específico pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceMBCS": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual MultiBCS modificar."
+          },
+          "frequencia": {
+            "type": "array",
+            "description": "Valores de frequência rotacional do ESP a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceMBCS", "frequencia"],
+        "additionalProperties": false
+      }
+    },
+
+    "BVol": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de bomba volumétrica (deslocamento positivo). Cada elemento seleciona uma bomba específica pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceBVol": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual bomba volumétrica modificar."
+          },
+          "frequencia": {
+            "type": "array",
+            "description": "Valores de frequência rotacional da bomba a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "capacidade": {
+            "type": "array",
+            "description": "Valores de capacidade volumétrica da câmara da bomba a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "fatorPoli": {
+            "type": "array",
+            "description": "Valores de fator politrópico a varrer (define o aumento de temperatura devido à compressão).",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceBVol"],
+        "anyOf": [
+          { "required": ["frequencia"] },
+          { "required": ["capacidade"] },
+          { "required": ["fatorPoli"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "DP": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de incremento de pressão localizado (Delta P). Cada elemento seleciona um elemento de perda de pressão específico pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceDP": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual elemento de perda de pressão modificar."
+          },
+          "deltapressao": {
+            "type": "array",
+            "description": "Valores de incremento de pressão a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceDP", "deltapressao"],
+        "additionalProperties": false
+      }
+    },
+
+    "dPdLHidro": {
+      "type": "array",
+      "description": "Varreduras de fator de correção de perda de pressão hidrostática. Cada elemento seleciona uma correção específica pelo índice. [MODO PADRÃO]: Opcional — usado para calibração de modelo. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indicedPdLHidro": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual fator de correção hidrostática modificar."
+          },
+          "fator": {
+            "type": "array",
+            "description": "Valores de fator de correção a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        },
+        "required": ["indicedPdLHidro", "fator"],
+        "additionalProperties": false
+      }
+    },
+
+    "dPdLFric": {
+      "type": "array",
+      "description": "Varreduras de fator de correção de perda de pressão por atrito. Cada elemento seleciona uma correção específica pelo índice. [MODO PADRÃO]: Opcional — usado para calibração de modelo. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indicedPdLFric": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual fator de correção de atrito modificar."
+          },
+          "fator": {
+            "type": "array",
+            "description": "Valores de fator de correção a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        },
+        "required": ["indicedPdLFric", "fator"],
+        "additionalProperties": false
+      }
+    },
+
+    "dTdL": {
+      "type": "array",
+      "description": "Varreduras de fator de correção de gradiente de temperatura. Cada elemento seleciona uma correção específica pelo índice. [MODO PADRÃO]: Opcional — usado para calibração de modelo. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indicedTdL": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual fator de correção de temperatura modificar."
+          },
+          "fator": {
+            "type": "array",
+            "description": "Valores de fator de correção a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        },
+        "required": ["indicedTdL", "fator"],
+        "additionalProperties": false
+      }
+    },
+
+    "Valvula": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de válvula (bifásica, ex. DHSV ou VGL). Cada elemento seleciona uma válvula específica pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceValvula": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual válvula modificar."
+          },
+          "abertura": {
+            "type": "array",
+            "description": "Valores de fração de abertura da válvula a varrer (razão entre área livre e área do tubo).",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "CD": {
+            "type": "array",
+            "description": "Valores de coeficiente de descarga da válvula a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceValvula"],
+        "anyOf": [
+          { "required": ["abertura"] },
+          { "required": ["CD"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "Vazamento": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de vazamento/entrada (fonte de pressão). Cada elemento seleciona um vazamento específico pelo índice. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceVazamento": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual vazamento/fonte de pressão modificar."
+          },
+          "abertura": {
+            "type": "array",
+            "description": "Valores de tamanho da abertura a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "CD": {
+            "type": "array",
+            "description": "Valores de coeficiente de descarga a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "beta": {
+            "type": "array",
+            "description": "Valores da razão de fluido complementar a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "pressao": {
+            "type": "array",
+            "description": "Valores de pressão externa a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "temperatura": {
+            "type": "array",
+            "description": "Valores de temperatura externa a varrer.",
+            "items": { "type": "number" },
+            "minItems": 1
+          },
+          "fluido": {
+            "type": "array",
+            "description": "Valores de índice de fluido a varrer. Seleciona entre os fluidos de produção definidos no JSON de entrada principal. Funciona com todos os tipos de modelo de fluido (black-oil, tabela PVTSim e composicional).",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceVazamento"],
+        "anyOf": [
+          { "required": ["abertura"] },
+          { "required": ["CD"] },
+          { "required": ["beta"] },
+          { "required": ["pressao"] },
+          { "required": ["temperatura"] },
+          { "required": ["fluido"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "secaoTransversal": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de geometria da seção transversal. Cada elemento seleciona uma seção transversal específica pelo índice. [MODO PADRÃO]: Opcional — usado para estudos de sensibilidade geométrica. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceSec": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual seção transversal modificar."
+          },
+          "DiamIntMaior": {
+            "type": "array",
+            "description": "Valores de diâmetro interno maior (externo) a varrer. Para fluxo anular, é o maior diâmetro da área de fluxo anular.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "DiamIntMenor": {
+            "type": "array",
+            "description": "Valores de diâmetro interno menor a varrer. Para fluxo não anular, é o diâmetro interno da seção.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          },
+          "Rugosidade": {
+            "type": "array",
+            "description": "Valores de rugosidade absoluta a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceSec"],
+        "anyOf": [
+          { "required": ["DiamIntMaior"] },
+          { "required": ["DiamIntMenor"] },
+          { "required": ["Rugosidade"] }
+        ],
+        "additionalProperties": false
+      }
+    },
+
+    "Condutividade": {
+      "type": "array",
+      "description": "Varreduras de parâmetros de condutividade térmica equivalente. Cada elemento seleciona um material específico pelo índice. [MODO PADRÃO]: Opcional — usado para estudos de sensibilidade térmica. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "indiceMat": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Índice iniciando em zero que identifica qual material modificar."
+          },
+          "condutividade": {
+            "type": "array",
+            "description": "Valores de condutividade térmica a varrer.",
+            "items": { "type": "number", "minimum": 0 },
+            "minItems": 1
+          }
+        },
+        "required": ["indiceMat", "condutividade"],
+        "additionalProperties": false
+      }
+    },
+
+    "pentrada": {
+      "type": "object",
+      "description": "Varreduras de parâmetros de condição de contorno de pressão na entrada (instância única). [MODO PADRÃO]: Opcional — usado para estudos de sistema orientado pela entrada. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "properties": {
+        "pressao": {
+          "type": "array",
+          "description": "Valores de pressão de entrada a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "temperatura": {
+          "type": "array",
+          "description": "Valores de temperatura de entrada a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "titulo": {
+          "type": "array",
+          "description": "Valores de título (fração de vapor) do fluido a varrer.",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 1
+        },
+        "beta": {
+          "type": "array",
+          "description": "Valores da razão de fluido complementar (beta) a varrer.",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        }
+      },
+      "anyOf": [
+        { "required": ["pressao"] },
+        { "required": ["temperatura"] },
+        { "required": ["titulo"] },
+        { "required": ["beta"] }
+      ],
+      "additionalProperties": false
+    },
+
+    "vazpentrada": {
+      "type": "object",
+      "description": "Varreduras de parâmetros de condição de contorno de vazão-pressão na entrada (instância única). Determina o sistema inteiramente pelo lado da entrada. [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "properties": {
+        "pressao": {
+          "type": "array",
+          "description": "Valores de pressão de entrada a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "temperatura": {
+          "type": "array",
+          "description": "Valores de temperatura de entrada a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "vazMass": {
+          "type": "array",
+          "description": "Valores de vazão mássica a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "beta": {
+          "type": "array",
+          "description": "Valores da razão de fluido complementar (beta) a varrer.",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        }
+      },
+      "anyOf": [
+        { "required": ["pressao"] },
+        { "required": ["temperatura"] },
+        { "required": ["vazMass"] },
+        { "required": ["beta"] }
+      ],
+      "additionalProperties": false
+    },
+
+    "RGO-fluido0": {
+      "type": "object",
+      "description": "Varredura de parâmetro de Razão Gás-Óleo para o fluido índice 0 (instância única). [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: OBRIGATÓRIA — dimensão de varredura chave para a tabela BHP.",
+      "properties": {
+        "RGO": {
+          "type": "array",
+          "description": "Valores de RGO a varrer.",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        }
+      },
+      "required": ["RGO"],
+      "additionalProperties": false
+    },
+
+    "BSW-fluido0": {
+      "type": "object",
+      "description": "Varredura de parâmetro de BSW (teor de água) para o fluido índice 0 (instância única). [MODO PADRÃO]: Opcional. [MODO VFP (tipoAP=1)]: OBRIGATÓRIA — dimensão de varredura chave para a tabela BHP.",
+      "properties": {
+        "BSW": {
+          "type": "array",
+          "description": "Valores de BSW (fração de água) a varrer. Faixa válida: 0 a 1.",
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "minItems": 1
+        }
+      },
+      "required": ["BSW"],
+      "additionalProperties": false
+    },
+
+    "pocoInjetor": {
+      "type": "object",
+      "description": "Varreduras de parâmetros de condição de contorno de poço injetor (instância única). [MODO PADRÃO]: Opcional — usado para estudos de poços injetores. [MODO VFP (tipoAP=1)]: NÃO RECOMENDADO.",
+      "properties": {
+        "pressaoInj": {
+          "type": "array",
+          "description": "Valores de pressão de injeção a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "pressaoFinal": {
+          "type": "array",
+          "description": "Valores de pressão final/de fundo a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "temperatura": {
+          "type": "array",
+          "description": "Valores de temperatura de injeção a varrer.",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "vazao": {
+          "type": "array",
+          "description": "Valores de vazão de injeção a varrer.",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 1
+        }
+      },
+      "anyOf": [
+        { "required": ["pressaoInj"] },
+        { "required": ["pressaoFinal"] },
+        { "required": ["temperatura"] },
+        { "required": ["vazao"] }
+      ],
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

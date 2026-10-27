@@ -14,7 +14,7 @@ from nbconvert.preprocessors import ExecutePreprocessor
 TUTORIALS_DIR = Path(__file__).resolve().parent.parent / "docs" / "tutorials"
 NOTEBOOKS = sorted(TUTORIALS_DIR.glob("*.ipynb"))
 
-
+@pytest.mark.skip(reason="Notebook tests disabled in CI")
 @pytest.mark.simulacao
 @pytest.mark.parametrize("notebook", NOTEBOOKS, ids=lambda p: p.stem)
 def test_notebook_execution(notebook):

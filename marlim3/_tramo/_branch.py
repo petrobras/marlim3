@@ -16,8 +16,8 @@ import json
 import os
 import re
 import shutil
-import platform
 import subprocess
+import sys
 import time
 from contextlib import nullcontext
 from threading import Thread
@@ -25,6 +25,7 @@ from threading import Thread
 import pandas as pd
 
 from .._download import get_executable_path
+from .._process import process_group_kwargs
 from .._conversores._conversor_marlim3_tplppl import convert_to_ppl_tpl
 from .._output_headers import CANONICAL_TIME_COLUMN, normalize_time_column, parse_trend_headers
 from .._plots._plots_perfis import _plotar_perfis, _plotar_perfis_animados
@@ -42,6 +43,10 @@ from ._keys import (
 
 def _is_empty(d):
     return all(v is None or v == {} for v in d.values())
+
+
+# Removed on purpose in 82df1ce; input versioning is tracked separately.
+_LEGACY_KEYS = {'version', 'jsonVersion', 'versao', 'versaoJson', 'versaoJSON'}
 
 
 def _sanitize_filename(filename):
@@ -80,7 +85,13 @@ class Branch:
         are also translated PT→EN so the user can build models fully in PT.
         All dict/list values are wrapped in bilingual containers for
         transparent PT/EN nested access.
+        Tuples are coerced to list so that a trailing comma
+        (e.g. ``branch.perfilProducao = {...},``) does not silently bypass
+        translation.
         """
+        # Coerce tuples to list (guards against trailing-comma assignment)
+        if isinstance(value, tuple):
+            value = list(value)
         en_name = _PT_TO_EN.get(name)
         if en_name is not None and en_name != name:
             # Translate nested PT keys/values by wrapping in a dict
@@ -122,10 +133,15 @@ class Branch:
                  masterValve=None,
                  masterValve2=None,
                  esp=None,
+                 multiESP=None,
                  volumetricPump=None,
                  pressureDrop=None,
+                 heatSource=None,
                  pig=None,
                  wax=None,
+                 hydrate=None,
+                 severeSlugging=None,
+                 unitCellDetail=None,
                  productionProfile=None,
                  serviceProfile=None,
                  productionTrend=None,
@@ -173,10 +189,15 @@ class Branch:
         self.masterValve2   = masterValve2
 
         self.esp            = esp            if esp            is not None else []
+        self.multiESP       = multiESP       if multiESP       is not None else []
         self.volumetricPump = volumetricPump if volumetricPump is not None else []
         self.pressureDrop   = pressureDrop   if pressureDrop   is not None else []
+        self.heatSource     = heatSource     if heatSource     is not None else []
         self.pig            = pig            if pig            is not None else []
         self.wax            = wax            if wax            is not None else {}
+        self.hydrate        = hydrate        if hydrate        is not None else {}
+        self.severeSlugging = severeSlugging if severeSlugging is not None else []
+        self.unitCellDetail = unitCellDetail if unitCellDetail is not None else []
 
         self.productionProfile       = productionProfile       if productionProfile       is not None else {}
         self.serviceProfile          = serviceProfile          if serviceProfile          is not None else {}
@@ -189,6 +210,9 @@ class Branch:
         self.screenConfig               = screenConfig               if screenConfig               is not None else []
 
         self.json_entrada_keys = set(self.__dict__.keys())
+
+        # Top-level sections without a dedicated attribute, kept so they reach the engine.
+        self.extraSections = {}
 
         self.resultados = {}
         self.nome_tramo = name
@@ -224,6 +248,9 @@ class Branch:
             }
             filtered_data = {k: v for k, v in filtered_data.items() if v is not None}
 
+        for key, value in (getattr(self, 'extraSections', None) or {}).items():
+            filtered_data.setdefault(key, value)
+
         if language == 'pt':
             filtered_data.pop('language', None)
             filtered_data = _translate_en_to_pt(filtered_data)
@@ -240,7 +267,7 @@ class Branch:
         if is_string:
             data = json_input
         else:
-            with open(json_input, 'r') as fh:
+            with open(json_input, 'r', encoding='utf-8') as fh:
                 data = json.load(fh)
             if not hasattr(self, 'label'):
                 if json_input.endswith('.json'):
@@ -293,10 +320,15 @@ class Branch:
         self.masterValve2    = d.get('masterValve2')
 
         self.esp             = d.get('esp',             [])
+        self.multiESP        = d.get('multiESP',        [])
         self.volumetricPump  = d.get('volumetricPump',  [])
         self.pressureDrop    = d.get('pressureDrop',    [])
+        self.heatSource      = d.get('heatSource',      [])
         self.pig             = d.get('pig',             [])
         self.wax             = d.get('wax')             or {}
+        self.hydrate         = d.get('hydrate')         or {}
+        self.severeSlugging  = d.get('severeSlugging',  [])
+        self.unitCellDetail  = d.get('unitCellDetail',  [])
 
         self.productionProfile         = d.get('productionProfile')
         self.serviceProfile            = d.get('serviceProfile')
@@ -307,6 +339,10 @@ class Branch:
         self.crossProductionTrend      = d.get('crossProductionTrend')
         self.crossServiceTrend         = d.get('crossServiceTrend')
         self.screenConfig               = d.get('screenConfig')
+        self.extraSections = {
+            k: v for k, v in d.items()
+            if k not in self.json_entrada_keys and k not in _LEGACY_KEYS
+        }
 
     def from_mr2(self, mr2_path, pvt_path=None, mr2_binary_path=None,
                  simula_mr2=False):
@@ -326,6 +362,29 @@ class Branch:
                 nome = nome[:-4]
             self.label = nome
 
+    def from_flowedit(self, source='file', path=None, json_template=None,
+                      fluid_model=None, fluid_model_path=None,
+                      keep_flowedit_xy=True, write_log=False):
+        from .._conversores._conversor_flowedit import converter_flowedit_para_json
+
+        data = converter_flowedit_para_json(
+            excel_path=path,
+            json_template_dict=json_template,
+            fluid_model=fluid_model,
+            fluid_model_path=fluid_model_path,
+            keep_flowedit_xy=keep_flowedit_xy,
+            write_log=write_log,
+        )
+        self.from_json(data, is_string=True)
+
+        if not hasattr(self, 'label') or not self.label:
+            nome = os.path.basename(path)
+            for ext in ('.xlsm', '.xlsx', '.xls'):
+                if nome.endswith(ext):
+                    nome = nome[:-len(ext)]
+                    break
+            self.label = nome
+
     def simulate(self, kind='PRODUTOR',
                  label='marlim3_model',
                  directory='marlim3_resultados',
@@ -333,7 +392,8 @@ class Branch:
                  simulation_id=None,
                  websocket_handler=None,
                  tracker=None,
-                 sanitized=False):
+                 sanitized=False,
+                 language='en'):
         if label != 'marlim3_model':
             self.label = label
 
@@ -369,22 +429,23 @@ class Branch:
                         self.time['snapshotFile'] = _sanitize_filename(
                             str(self.time['snapshotFile']))
 
-            self.to_json(label)
+            self.to_json(label, language=language)
 
+            cmd = [str(executavel), "-d", directory, "-i", filename]
             if self.system == 'INJETOR':
-                cmd = f'"{executavel}" -d "{directory}" -i "{filename}" -s INJETOR'
-            else:
-                cmd = f'"{executavel}" -d "{directory}" -i "{filename}"'
+                cmd.extend(["-s", "INJETOR"])
 
-            if platform.system() == "Windows":
-                process = subprocess.Popen(
-                    cmd, shell=True,
-                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            popen_options = process_group_kwargs()
+            if sys.platform.startswith("win"):
+                popen_options.update(
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                )
+            process = subprocess.Popen(cmd, **popen_options)
+            if sys.platform.startswith("win"):
                 stdout, _ = process.communicate()
                 print(stdout)
-            else:
-                process = subprocess.Popen(cmd, shell=True,
-                                           preexec_fn=os.setsid)
 
             if tracker:
                 tracker.process_pid = process.pid
@@ -506,7 +567,9 @@ class Branch:
             return None
 
         for root, dirs, files in os.walk(directory):
-            for filename in files:
+            dirs.sort()
+            # natural order: os.walk order depends on the filesystem
+            for filename in sorted(files, key=lambda name: [int(n) for n in re.findall(r'\d+', name)]):
                 if filename.startswith(prefix) and filename.endswith('.dat'):
                     file_path = os.path.join(root, filename)
                     df = pd.read_csv(file_path, sep=';', skiprows=0, header=1)

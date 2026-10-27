@@ -1054,8 +1054,8 @@ module VLECalculations
         ! ------------------ CÁLCULOS:
 
         ! Verificar quanto ao uso de Equações de Estado Cúbicas:
-        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX)
-        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX)
+        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.(iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
+        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.(iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
         bBothPhaseModelsAreCubicEOS = (bLiquidPhaseModelIsCubicEOS.AND.bVaporPhaseModelIsCubicEOS)
 
         ! Bolha? Orvalho?
@@ -1561,8 +1561,8 @@ module VLECalculations
         ! ------------------ CÁLCULOS:
 
         ! Proceder de acordo com os modelos selecionados para cada fase:
-        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX)
-        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX)
+        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.(iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
+        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.(iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
         bBothPhaseModelsAreCubicEOS = (bLiquidPhaseModelIsCubicEOS.AND.bVaporPhaseModelIsCubicEOS)
         bCalculateKiFromWilsonCorr = (iLiqPhaseModel.EQ.WILSON_EQCONST_CORRELATION).AND.(iVapPhaseModel.EQ.WILSON_EQCONST_CORRELATION)
 
@@ -1758,6 +1758,24 @@ module VLECalculations
 
             end do PR78Pen
 
+         else if(iCubicEOSModel.EQ.PENG_ROBINSON_PENELOUX) then whichEOS
+
+            ! EOS CÚBICA = "PR Peneloux"
+
+            PRPen: do i = 1, iNComp
+
+                dFw = 0.37464d0 + (1.54226d0 * oW(i)) - (0.26992d0 * (oW(i) ** 2.0d0))
+
+                dA = 0.45724d0 * (dR ** 2.0d0) * (oTc(i) ** 2.0d0) / oPc(i)
+
+                dA = dA * ((1.0d0 + dFw * (1.0d0 - sqrt(dFlashTemperature / oTc(i)))) ** 2.0d0)
+
+                dB = 0.077796d0 * dR * oTc(i) / oPc(i)
+
+                oCubicEOSaParameters(i) = dA
+                oCubicEOSbParameters(i) = dB
+
+            end do PRPen
 
          else if(iCubicEOSModel.EQ.SRK_PENELOUX) then whichEOS
 
@@ -1893,6 +1911,18 @@ module VLECalculations
                 ! Peng-Robinson!
                 dSigma = 1.0d0 + sqrt(2.0d0)
                 dEpsilon = 1.0d0 - sqrt(2.0d0)
+            
+            else if(iCubicEOSModel.EQ.PENG_ROBINSON_PENELOUX) then whichEOS
+
+                ! Peng-Robinson!
+                dSigma = 1.0d0 + sqrt(2.0d0)
+                dEpsilon = 1.0d0 - sqrt(2.0d0)
+
+                ! NOTA (05/03/2026): Uma possível fonte para estas constantes é a pág 75 do livro "Thermodynamic Models: Fundamentals
+                !                    and Computational Aspects", de M. Michelsen e J. Mollerup, 2a edição. IMPORTANTE: em comparação
+                !                    com esta referência bibliográfica, constata-se que as constantes acima estão atribuídas na ordem
+                !                    contrária às da equação de SRK (abaixo). Vale a pena conferir isto, especialmente se o emprego deste
+                !                    código (inexistente até o momento) fornecer resultados errados.
 
             else if(iCubicEOSModel.EQ.SRK_PENELOUX) then whichEOS
 
@@ -2200,6 +2230,11 @@ module VLECalculations
 
         ! Proceder de acordo com o modelo especificado:
         whichEOS: if(iCubicEOSModel.EQ.PENG_ROBINSON_78_PENELOUX) then
+
+            dU = 2.0d0
+            dW = -1.0d0
+
+        else if(iCubicEOSModel.EQ.PENG_ROBINSON_PENELOUX) then whichEOS
 
             dU = 2.0d0
             dW = -1.0d0

@@ -22,6 +22,9 @@
 			"bolhaGolfada": 1,
 			"anularChurn": 1
 		},
+		"condicaoPressao": {
+			"ativo": false
+		},
 		"Avancado": {"JTLiquidoSimple": 1},
 		"Formacao": {
 			"TempoProducao": 365.0,
@@ -111,9 +114,6 @@
 					"rotulo": "Clay"
 				}
 			]
-		},
-		"condicaoPressao": {
-			"ativo": false
 		}
 	},
 	"tabela": {
