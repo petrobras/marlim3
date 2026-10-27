@@ -47,6 +47,7 @@ Use the `vscode/askQuestions` tool — do not dump questions as plain chat text.
 
 - Ask **only** what neither the prompt nor the provided documents answer; skip entire batches that are fully covered.
 - **Fast path**: for illustrative or simple requests ("a simple case showing X", "use defaults"), or when the documents answer most of the checklist, skip the batch sequence — take everything else from the safe defaults and go straight to the ADR; the approval question in step 5 is then the only one the user answers.
+- **Complete plan**: when the request brings a detailed plan (inline or in an attached file) that settles every engineering decision — system and mode, fluids, geometry and walls, boundary conditions, equipment, event timeline — ask nothing. Transcribe it into the ADR, fill only the details it leaves open (discretization, numerics, output times, generic acceptance criteria such as convergence) with safe defaults, and skip the approval question in step 5: the plan is the approval. If an engineering decision is missing or inconsistent, ask only about that, and close with the approval question as usual.
 - Batch 3–6 related questions per call; offer concrete options with a "(Recommended)" default and allow free-text.
 - Confirm derived values ("2,500 m flowline at 8″ ID — correct?").
 - Keep interviewing until every ADR section is either user-confirmed or covered by a recorded default. Don't add a separate summary question — the approval in step 5 covers it.
@@ -62,6 +63,6 @@ Pick a short kebab-case `<slug>` and create the session folder `agent_sessions/<
 
 ### 5. Get approval and hand off
 
-Ask for approval in one `vscode/askQuestions` call: the ADR path, the key numbers, and every assumed default, with the options **Approve (Recommended)** and **Request changes** (free text). On changes, update the ADR and ask again. On approval, set the status to `Accepted`; if the user stops without approving, leave it `Proposed`.
+Ask for approval in one `vscode/askQuestions` call: the ADR path, the key numbers, and every assumed default, with the options **Approve (Recommended)** and **Request changes** (free text). On changes, update the ADR and ask again. On approval, set the status to `Accepted`; if the user stops without approving, leave it `Proposed`. For a complete plan (step 3), skip the question and set the status to `Accepted` directly.
 
-Reply with: the session folder and ADR path, the ADR status, a 5-line summary of the planned simulation, and any open risks.
+Reply with: the session folder and ADR path, the ADR status, a 5-line summary of the planned simulation, and any open risks. If the plan was taken as approval, say so and list the assumed defaults.

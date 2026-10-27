@@ -30,12 +30,14 @@ uv run python .github/skills/marlim3-python-api/scripts/check_environment.py
 
 It must print `READY`. If it prints `NOT READY`, or fails in any other way (e.g., uv refusing to run because its version doesn't match the one the project pins), **stop the pipeline — do not start the interview**. Tell the user exactly what the check reported (verbatim), what is missing, and how to fix it (the output says how; see also [Before you start](../README-agents.md#before-you-start)), and ask them to repeat the request once it is fixed. When it passes, tell every subagent you invoke that the preflight passed.
 
-### Phase 1 — Plan (gate: user approval, inside the interview)
+### Phase 1 — Plan (gate: an approved ADR)
 
-Invoke **marlim3-planner** with the user's request verbatim plus any context files the user pointed at (for a revision of an earlier case, also pass that case's session folder). The planner interviews the user (only the gaps), creates the session folder (or reuses the one you passed), writes the ADR there, and asks the user to approve it as its last question. When it returns:
+**Skip this phase** when the user points at a session folder whose ADR is already approved (status `Accepted`, `Implemented`, or `Verified`) and asks only to implement it: open the ADR to confirm the status, show its path, and go straight to Phase 2 with that folder. If the user also wants changes, it is a revision — run this phase.
+
+Otherwise, invoke **marlim3-planner** with the user's request verbatim plus any context files the user pointed at (for a revision of an earlier case, also pass that case's session folder). The planner interviews the user (only the gaps), creates the session folder (or reuses the one you passed), writes the ADR there, and asks the user to approve it as its last question — unless the request brings a complete plan: then it asks nothing, and the plan itself is the approval. When it returns:
 
 1. Show the session folder, the ADR path, and the planner's summary to the user.
-2. If the ADR is `Accepted`, go straight to Phase 2 — do not ask for approval again. Otherwise stop and relay what the user still wants changed (re-invoke the planner with that feedback). Only an `Accepted` ADR moves forward.
+2. If the ADR is `Accepted`, go straight to Phase 2 — do not ask for approval again. Otherwise stop and relay what the user still wants changed (re-invoke the planner with that feedback). A `Proposed` ADR never moves forward.
 
 ### Phase 2 — Implement
 
@@ -53,7 +55,7 @@ Invoke **marlim3-qa** with the session folder, the ADR path, and the specialist'
 
 ### Phase 5 — Final report
 
-Summarize for the user: what was simulated, the session folder, the ADR and QA report paths, implementation files, test results, QA verdict, and how to run the case (`uv run pytest agent_sessions/<session>/test_<slug>.py -v` or via `marlim3.Branch`).
+Summarize for the user: what was simulated, the session folder, the ADR and QA report paths, implementation files, test results, QA verdict, and how to run the case (`uv run pytest agent_sessions/<session>/test_<slug>.py -v` or via `marlim3.Branch`). If the ADR was accepted from a complete plan (no approval question), also list its assumed defaults — the user hasn't reviewed them yet.
 
 ## Delegation rules
 
