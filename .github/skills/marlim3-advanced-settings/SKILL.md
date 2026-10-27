@@ -9,7 +9,7 @@ description: Use when tuning Marlim3 solver behavior, performance, or special mo
 
 ## Authoritative files
 
-- [docs/user-guide/general.md](../../../docs/user-guide/general.md) — every flag below with defaults and warnings (**read this**)
+- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) — every flag below with defaults and warnings (open only for what this skill doesn't cover)
 - [docs/tutorials/4_black_box_correlations.ipynb](../../../docs/tutorials/4_black_box_correlations.ipynb) — black-box correlation usage
 
 ## Physics & correlation selection (`initialConfig`)
@@ -42,7 +42,7 @@ description: Use when tuning Marlim3 solver behavior, performance, or special mo
 
 ## Special features
 
-- `sensitivityAnalysis` (PT `AS`) + `parallelizeSA` — steady-state sensitivity study driven by an auxiliary `leituraAS.json` (see [demos/leituraAP.json](../../../demos/leituraAP.json) for the related parametric format).
+- `parametricAnalysis` (PT `AP`) + `parametricAnalysisFile` (PT `arquivoAP`, default `leituraAP.json`) + `parallelizePA` (PT `paralelizaAP`) — steady-state parametric analysis driven by an auxiliary JSON file (schema [docs/schemas/leituraAP.pt.json](../../../docs/schemas/leituraAP.pt.json); example [demos/2zones-2GLVs-2-Check-PA/leituraAP.json](../../../demos/2zones-2GLVs-2-Check-PA/leituraAP.json)).
 - `waxMode` + top-level `wax` object — wax deposition.
 - `diffusion3dMode` + `diffusion3dJson` + `diffusion3dThreads` — 3D thermal diffusion coupled to 1D flow.
 - `severeSlugging` top-level object — severe-slugging detection.

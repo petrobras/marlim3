@@ -7,9 +7,9 @@ description: Use when closing a Marlim3 model with boundary conditions and inflo
 
 ## Authoritative files
 
-- [docs/user-guide/boundary-conditions.md](../../../docs/user-guide/boundary-conditions.md) — closure strategies and BC objects (**read this**)
-- [docs/user-guide/accessories.md](../../../docs/user-guide/accessories.md) — source objects (`ipr`, `liquidSource`, `massSource`, `gasSource`, `pressureSource`)
-- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — IPR + separator + gasInj working example
+- [docs/single-branch-model-reference/boundary-conditions.md](../../../docs/single-branch-model-reference/boundary-conditions.md) — closure strategies and BC objects (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/accessories.md](../../../docs/single-branch-model-reference/accessories.md) — source objects (`ipr`, `liquidSource`, `massSource`, `gasSource`, `pressureSource`)
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — IPR + separator + gasInj working example
 
 ## Closure strategy (pick exactly one inlet approach)
 

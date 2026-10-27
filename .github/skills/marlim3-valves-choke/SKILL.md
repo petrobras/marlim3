@@ -7,9 +7,9 @@ description: Use when adding flow restrictions or events to a Marlim3 simulation
 
 ## Authoritative files
 
-- [docs/user-guide/accessories.md](../../../docs/user-guide/accessories.md) — all devices below (**read this**)
-- [docs/user-guide/boundary-conditions.md](../../../docs/user-guide/boundary-conditions.md) — `surfaceChoke`, `injectionChoke` context
-- [demos/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3](../../../demos/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3) — shutdown with valves + PIG
+- [docs/single-branch-model-reference/accessories.md](../../../docs/single-branch-model-reference/accessories.md) — all devices below (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/boundary-conditions.md](../../../docs/single-branch-model-reference/boundary-conditions.md) — `surfaceChoke`, `injectionChoke` context
+- [demos/extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3](../../../demos/extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3) — shutdown with valves + PIG
 
 ## Common pattern
 

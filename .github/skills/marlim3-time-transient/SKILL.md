@@ -7,8 +7,8 @@ description: Use when configuring steady-state vs transient mode, initial-condit
 
 ## Authoritative files
 
-- [docs/user-guide/time.md](../../../docs/user-guide/time.md) — full time-block reference with examples (**read this**)
-- [docs/user-guide/general.md](../../../docs/user-guide/general.md) §2, §12 — simulation-mode flags and unloading
+- [docs/single-branch-model-reference/time.md](../../../docs/single-branch-model-reference/time.md) — full time-block reference with examples (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) §2, §12 — simulation-mode flags and unloading
 - [docs/tutorials/5_temperature_pulse.ipynb](../../../docs/tutorials/5_temperature_pulse.ipynb) — complete transient walkthrough
 
 ## Mode selection — `initialConfig`

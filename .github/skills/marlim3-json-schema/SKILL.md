@@ -7,17 +7,20 @@ description: Use when creating, reading, or validating a Marlim3 simulation inpu
 
 Marlim3 simulations are defined in a single JSON file (conventionally `.mr3`). The Python API (`marlim3.Branch`) and the C++ engine both consume this format.
 
-## Authoritative files — read these before generating input
+## Authoritative files — consult on demand
+
+The schemas are large (EN ~157 KB, PT ~203 KB): search them for the field you need, never read them whole.
 
 | File | What it defines |
 |------|-----------------|
-| [docs/schema_branch.json](../../../docs/schema_branch.json) | Full JSON Schema, **English keys** (recommended format) |
-| [docs/schema_tramo.json](../../../docs/schema_tramo.json) | Full JSON Schema, Portuguese keys |
-| [docs/reference/json-schema.md](../../../docs/reference/json-schema.md) | Human-readable top-level catalog + units |
+| [docs/schemas/branch.en.json](../../../docs/schemas/branch.en.json) | Full JSON Schema, **English keys** (recommended format) |
+| [docs/schemas/branch.pt.json](../../../docs/schemas/branch.pt.json) | Full JSON Schema, Portuguese keys |
+| [docs/single-branch-model-reference/json-schema.md](../../../docs/single-branch-model-reference/json-schema.md) | Human-readable top-level catalog + units |
 | [marlim3/translations.json](../../../marlim3/translations.json) | EN ↔ PT key/value mapping (single source of truth) |
 | [docs/dev-guide/translations.md](../../../docs/dev-guide/translations.md) | How the bilingual system works |
-| [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) | Working English-keyed example (well + gas-lift line) |
-| `demos/pt-br/*.mr3` | Working Portuguese-keyed examples |
+| [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) | Working English-keyed example (well + gas-lift line) |
+| `demos/<case>/` | One folder per case: the Portuguese model, its hand-written English twin, and auxiliary files (listed in [demos/manifest.json](../../../demos/manifest.json)) |
+| [docs/single-branch-model-reference/migration.md](../../../docs/single-branch-model-reference/migration.md) | Discontinued keys the engine now rejects — never write them |
 
 ## Language rules
 
@@ -92,13 +95,14 @@ Additional structural rules:
 - `servicePipe`, `gasInj`, `gasLiftSource`, `serviceProfile`, `serviceTrend` all require `initialConfig.gasLine: true`.
 - `initialConfig.transient: true` requires `time.finalTime`.
 
-## Validation snippet
+## Validation — `check_case.py`
 
-```python
-import json, jsonschema
-schema = json.load(open("docs/schema_branch.json"))   # EN keys; use schema_tramo.json for PT
-data = json.load(open("my_case.mr3"))
-jsonschema.validate(data, schema)                     # raises on violation
+Run the bundled [check_case.py](scripts/check_case.py) on every case before handing it over (it never runs the simulator):
+
+```bash
+uv run python .github/skills/marlim3-json-schema/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
 ```
 
-`jsonschema` is available via the `gui` dependency group: `uv sync --group gui`.
+It reports everything in one run — every schema violation (EN or PT schema, chosen by the `language` marker), unknown keys (typos the schema lets through), loading errors from `marlim3.Branch`, and the cross-reference and structural rules above — and exits with status 1 on any ERROR. `jsonschema` already ships with the project environment (marlim3 depends on nbformat, which depends on it), so no extra dependency group is needed.
+
+Some demos predate the current schema (lowercase `layerMeasurementType`, `gasFluid.criticalCorrelation: 0`, legacy keys such as `frecupera`): when a demo and the checker disagree, follow the checker.

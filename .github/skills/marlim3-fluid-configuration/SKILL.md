@@ -7,10 +7,10 @@ description: Use when defining fluids for a Marlim3 simulation — production fl
 
 ## Authoritative files
 
-- [docs/user-guide/fluids.md](../../../docs/user-guide/fluids.md) — full field catalog and model-applicability tables (**read this**)
-- [docs/user-guide/general.md](../../../docs/user-guide/general.md) §6 — fluid model flags in `initialConfig`
-- [demos/PVTSIM-MARLIM.tab](../../../demos/PVTSIM-MARLIM.tab) — example PVT table file
-- [docs/schema_branch.json](../../../docs/schema_branch.json) — field-level schema (`productionFluid`, `gasFluid`, `complementaryFluid`, `compTable`)
+- [docs/single-branch-model-reference/fluids.md](../../../docs/single-branch-model-reference/fluids.md) — full field catalog and model-applicability tables (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) §6 — fluid model flags in `initialConfig`
+- [demos/extended-ESP-pumpEfic/PVTSIM-MARLIM.tab](../../../demos/extended-ESP-pumpEfic/PVTSIM-MARLIM.tab) — example PVT table file
+- [docs/schemas/branch.en.json](../../../docs/schemas/branch.en.json) — field-level schema (`productionFluid`, `gasFluid`, `complementaryFluid`, `compTable`)
 
 ## Choosing the thermodynamic model (flags in `initialConfig`)
 
@@ -20,7 +20,7 @@ description: Use when defining fluids for a Marlim3 simulation — production fl
 | Flash table | `true` | ignored | `.tab` | tabulated PVT from PVTsim/Multiflash |
 | Compositional | `false` | `true` | `.ctm` | rich gas / condensate, composition changes |
 
-The PVT file must sit next to the input JSON when the executable runs (tests copy `PVTSIM-MARLIM.tab` into the run directory).
+The PVT file must sit next to the input JSON when the executable runs: keep it in the session folder next to the case (tests copy it into the run directory).
 
 ## Production fluid — `productionFluid` (array, ≥1 entry)
 

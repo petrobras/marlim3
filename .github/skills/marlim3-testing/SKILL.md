@@ -1,30 +1,29 @@
 ---
 name: marlim3-testing
-description: Use when writing or running tests for Marlim3 simulations — repo pytest conventions (simulacao/regressao markers, executable skip guard, tmp_path pattern), the test-suite layout, how to add a test for a new simulation case, and the regression-reference workflow.
+description: Use when writing or running tests for Marlim3 simulations — repo pytest conventions (simulacao marker, executable skip guard, tmp_path pattern), the test-suite layout, the test file for a session case (agent_sessions/<session>/test_<slug>.py), and the manifest-based regression workflow.
 ---
 
 # Marlim3 Testing Conventions
 
 ## Authoritative files
 
-- [tests/README.md](../../../tests/README.md) — suite overview and regression workflow (**read this**)
+- [tests/README.md](../../../tests/README.md) — suite overview, demos manifest, and reference workflow (open only for what this skill doesn't cover)
 - [tests/test_configure_simulation.py](../../../tests/test_configure_simulation.py) — the template for new simulation tests (fixtures + tmp_path + markers)
-- [tests/test_demos_steady_state.py](../../../tests/test_demos_steady_state.py) — pattern for running `.mr3` files with auxiliary files
+- [tests/test_demos_steady_state.py](../../../tests/test_demos_steady_state.py) — runs every case in [demos/manifest.json](../../../demos/manifest.json) (with its auxiliary files) through `marlim3.testing`
 - [tests/test_marlim3.py](../../../tests/test_marlim3.py) — unit-test patterns (no executable needed)
-- [tests/test_regression.py](../../../tests/test_regression.py) + [tests/update_regression_references.py](../../../tests/update_regression_references.py) — regression comparison
-- [pyproject.toml](../../../pyproject.toml) — pytest config and marker definitions
+- [marlim3/testing.py](../../../marlim3/testing.py) — manifest runner: runs cases and compares them with `demos/<case>/reference/`
+- [pyproject.toml](../../../pyproject.toml) — pytest config and marker definition
 
 ## Commands
 
 ```bash
-uv run pytest tests/ -v                      # full suite
-uv run pytest tests/test_marlim3.py -v       # unit tests only (no executable)
-uv run pytest -m simulacao -v                # simulation tests (need executable)
-uv run pytest -m regressao -v                # regression tests
-uv run pytest tests/test_my_case.py -v       # a single new test file
+uv run pytest tests/ -v                                    # full suite
+uv run pytest tests/ -m "not simulacao"                    # no executable required
+uv run pytest -m simulacao -v                              # simulation tests (need executable)
+uv run pytest agent_sessions/<session>/test_<slug>.py -v   # a session's tests
 ```
 
-Registered markers (defined in [pyproject.toml](../../../pyproject.toml)): `simulacao` (runs the simulator, requires compiled executable) and `regressao` (compares against stored references). Unmarked tests must run without the executable.
+Registered marker (defined in [pyproject.toml](../../../pyproject.toml)): `simulacao` (runs the simulator, requires compiled executable). Unmarked tests must run without the executable. Session tests live outside `testpaths` (`tests/`), so the main suite never collects them — run them by path.
 
 ## Mandatory pattern for simulation tests
 
@@ -53,33 +52,35 @@ def _simular(caso, label, tmp_path):
         os.chdir(original_cwd)
 ```
 
-4. Copy any auxiliary files (PVT `.tab`/`.ctm`, snapshots) into the run directory first — see the `DEMOS` dict pattern in [tests/test_demos_steady_state.py](../../../tests/test_demos_steady_state.py).
+4. Copy any auxiliary files (PVT `.tab`/`.ctm`, snapshots) from the session folder into the run directory first — the demo runner (`run_case` in [marlim3/testing.py](../../../marlim3/testing.py)) does the same with each manifest entry's `aux` files.
 5. Assert on results: `resultados` non-empty, expected keys present, DataFrame non-empty, plus the physical acceptance criteria from the ADR (e.g., pressure monotonicity, value ranges).
 
-## Test template for a new simulation case `<slug>`
+## Test template for a session case `<slug>`
 
-Create `tests/test_<slug>.py`:
+Create `agent_sessions/<session>/test_<slug>.py`, next to the case:
 
 ```python
-"""Integration test for the <slug> simulation (see docs/<slug>.adr.md)."""
-import json, os
+"""Integration test for the <slug> simulation (see <slug>.adr.md in this folder)."""
+import os
+
 import pandas as pd
 import pytest
+
 import marlim3
 from marlim3._download import executable_exists
 
-CASE = os.path.join(os.path.dirname(__file__), "..", "simulations", "<slug>", "<slug>.mr3")
+CASE = os.path.join(os.path.dirname(__file__), "<slug>.mr3")
 
 skip_sem_executavel = pytest.mark.skipif(
     not executable_exists(), reason="Executável Marlim3 não encontrado")
 
 
-def test_input_loads_and_cross_references():        # no executable needed
+def test_input_loads():                              # no executable needed
     caso = marlim3.Branch()
     caso.from_json(CASE)
-    cs_ids = {c["id"] for c in caso.crossSection}
-    assert all(p["crossSectionId"] in cs_ids for p in caso.productionPipe)
-    # ...one assert per ADR cross-reference rule...
+    assert caso.productionPipe
+    # ...ADR-specific invariants (line totals, key positions); generic
+    # cross-references are covered by check_case.py (marlim3-json-schema skill)...
 
 
 @skip_sem_executavel
@@ -99,8 +100,8 @@ def test_simulation_runs(tmp_path):
     # ...ADR acceptance criteria asserts...
 ```
 
-Steady-state variants of transient cases: set `caso.initialConfig["transient"] = False` to keep CI fast (the demos test does exactly this).
+Steady-state variants of transient cases: set `caso.initialConfig["transient"] = False` to keep runs fast (the demo runner does the same for manifest cases with `steady_state: true`).
 
-## Regression references (only for cases promoted to [demos/](../../../demos))
+## Promoting a session case to the demos (manual, outside the pipeline)
 
-References live in [tests/comparison/](../../../tests/comparison)`/<model-name>/` (`perfilProducao.csv`, `tendP_*.csv`, …). Update via `python tests/update_regression_references.py [--force|model names]`, diff the CSVs to confirm changes are intended, and commit them. Register new demos in the `DEMOS` dict of [tests/test_demos_steady_state.py](../../../tests/test_demos_steady_state.py) with their auxiliary files.
+Session cases are not regression cases, and agents never write outside the session folder. Promoting one is a deliberate human decision: create `demos/<case>/` with the Portuguese model, its hand-written English twin, and the auxiliary files; register it in [demos/manifest.json](../../../demos/manifest.json) (`model`, `native`, `languages`, `aux`); generate the references with `uv run python -m marlim3.testing demos/manifest.json <case>/<model>.mr3`; inspect the CSV diff; and commit `demos/<case>/reference/` — see [tests/README.md](../../../tests/README.md).

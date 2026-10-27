@@ -7,10 +7,10 @@ description: Use when defining pipe wall materials, radial cross-section geometr
 
 ## Authoritative files
 
-- [docs/user-guide/materials.md](../../../docs/user-guide/materials.md) — material types and properties (**read this**)
-- [docs/user-guide/cross-sections.md](../../../docs/user-guide/cross-sections.md) — radial geometry and layers (**read this**)
-- [docs/user-guide/rock-formation.md](../../../docs/user-guide/rock-formation.md) — formation thermal properties
-- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — realistic well/flowline/riser cross-sections
+- [docs/single-branch-model-reference/materials.md](../../../docs/single-branch-model-reference/materials.md) — material types and properties (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/cross-sections.md](../../../docs/single-branch-model-reference/cross-sections.md) — radial geometry and layers (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/rock-formation.md](../../../docs/single-branch-model-reference/rock-formation.md) — formation thermal properties
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — realistic well/flowline/riser cross-sections
 
 ## Materials — `material` (top-level array)
 

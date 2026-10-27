@@ -8,4 +8,5 @@ extend-exclude =
     .venv-*,
     __pycache__,
     *.egg-info,
-    saida_testes
+    saida_testes,
+    agent_sessions
