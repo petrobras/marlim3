@@ -446,6 +446,9 @@ class RegressionService:
         job = {"id": str(uuid.uuid4()), "kind": kind, "status": "running", "message": "", "log": [],
                "started_at": datetime.now(timezone.utc).isoformat(), "finished_at": ""}
         with self.jobs_lock:
+            # A page reload loses the client's job handle; the server must still refuse overlapping jobs.
+            if any(item["status"] == "running" for item in self.jobs.values()):
+                raise ValueError("A build or run is already in progress; wait for it to finish")
             self.jobs[job["id"]] = job
         return job
 
@@ -475,8 +478,8 @@ class RegressionService:
             job["terminal"] = job["terminal"][-5000:]
 
     def build(self) -> dict:
-        self.workflow.update(compiled=False)
         job = self._new_job("build")
+        self.workflow.update(compiled=False)
 
         def worker() -> None:
             def output(stream: str, value: str) -> None:
@@ -884,6 +887,7 @@ def main() -> None:
     url = f"http://127.0.0.1:{server.server_port}"
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
+    print(f"Regression Tool running at {url} (Ctrl+C to stop)", flush=True)
     process = _open_app(url)
     try:
         if process:

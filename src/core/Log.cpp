@@ -100,6 +100,9 @@ void Logger::changeResultadoSimulacao(const string nomeArquivoEntrada, const str
 
 void Logger::log(const log_t tipo, const string codigo, const string complemento,
                  const string propriedade, const string causa, const int linha) {
+    // Called from the parallel parametric analysis: counters and event vectors must change together.
+#pragma omp critical(marlim_logger)
+    {
     switch (tipo) {
     case LOGGER_INFO:
         // incrementar o total de informacoes
@@ -125,6 +128,7 @@ void Logger::log(const log_t tipo, const string codigo, const string complemento
     this->stResultadoSimulacao.evento.propriedades.push_back(propriedade);
     this->stResultadoSimulacao.evento.causas.push_back(causa);
     this->stResultadoSimulacao.evento.linhas.push_back(linha);
+    }
 }
 
 void Logger::log(const log_t tipo, const string codigo, const string complemento,

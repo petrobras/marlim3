@@ -58,6 +58,7 @@ button:disabled { opacity: .45; cursor: not-allowed !important; }
 .test-row.selected { background: linear-gradient(90deg, #0c3159, #102841); }
 .check-box { width: 17px; height: 17px; border-radius: 4px; border: 1px solid #718094; display: grid; place-items: center; }
 .check-box.checked { background: #409df6; border-color: #6eb7ff; color: white; }
+.test-row.select-all { position: sticky; top: 0; z-index: 1; height: 40px; background: var(--panel); border-bottom-color: #314052; color: #9aa9ba; }
 .test-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .test-status { width: 18px; height: 18px; border: 2px solid #647182; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 0; }
 .test-status svg { display: block; flex: 0 0 auto; }
@@ -72,6 +73,7 @@ button:disabled { opacity: .45; cursor: not-allowed !important; }
 .group { padding: 6px 10px; border-radius: 5px; background: #0b2238; border: 1px solid #246399; color: #50a7f3; font-size: 12px; cursor: pointer; }
 .group-1 { background: #0c302f; border-color: #27766f; color: #42d1c9; }
 .group-2 { background: #33290e; border-color: #7c6220; color: #f0bb36; }
+.group.active { box-shadow: 0 0 0 2px currentColor; font-weight: 600; }
 .left-actions { padding: 14px; display: grid; gap: 10px; }
 .left-actions button { height: 40px; font-size: 14px; background: #0d1722; }
 .test-summary { padding: 10px 15px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: #c6d0db; }

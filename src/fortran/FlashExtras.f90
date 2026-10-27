@@ -312,12 +312,6 @@ module FlashExtras
 
                 end if isLLEOrNot
 
-                ! PAREI AQUI EM 03/09/2026
-                ! --> o ajuste desta subrotina aqui está todo pronto, não precisa ver de novo! Prosseguir!
-                ! --> inclusive o "call" acima 100% conferido
-                ! --> "só" resta adicionar os novos argumentos desta rotina em suas chamadas.
-                ! --> IMAGINO que no caso de Black-Oil, já deve dar pra fazer isso sem maiores impactos, não?
-
             end if checkIfVLEIsLLE
             ! ---------> Fim das providências adicionais para verificar se o "VLE" é na verdade um LLE.
 
@@ -328,6 +322,16 @@ module FlashExtras
         end if whichThermoCond
 
         ! -----------------> Escrever no arquivo de Debug:
+        if(.false.) then
+            call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
+            write(sDebugFileLine, '("Serão retornadas as seguintes composições molares:")')
+            call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
+            do i = 1, iNComp
+                write(sDebugFileLine, '(A, I2, A, F13.7, A, I2, A, F13.7)') 'x(', i, ') = ', oLiqComposition(i), &
+                    '      y(', i, ') = ', oVapComposition(i)
+                call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
+            end do
+        end if
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
         write(sDebugFileLine, '("SAINDO DA SUBROTINA CalculateMixtureThermodynamicCondition_V3")')
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
@@ -462,8 +466,6 @@ module FlashExtras
             return
         end if isTwoPhaseSol
 
-        ! PAREI AQUI EM 01-SET-2026; verifiquei tudo até aqui! Prosseguir verificando daqui!
-
         ! Calcular massas molares:
         call CalculateMolecularWeightsAndVaporMassFraction(iThermodynamicCondition, iNComp, oMW, oZ, oLiqPhaseComposition, &
             oVapPhaseComposition, dMolarBeta, &
@@ -579,8 +581,6 @@ module FlashExtras
             end do
         end if
         ! -----> Fim da escrita no arquivo de Debug
-
-        ! SUBROTINA 100% verificada em 03/09/2026
 
     end subroutine CheckVLESolutionForPossibleLLE
 

@@ -16174,7 +16174,8 @@ void Ler::geraevento(int inic, int extrem) {
 		}
 	}
 	if (((*vg1dSP).chaverede == 0 || inic == 1) && ConContEntrada == 1) {
-		for (int i = 0; i < CCPres.parserie; i++) {
+		// reads [i + 1]: stop one short, as the chokep event loop above does (j < chokep.parserie - 1)
+		for (int i = 0; i < CCPres.parserie - 1; i++) {
 			if ((fabs(CCPres.pres[i] - CCPres.pres[i + 1]) > 1e-15)
 					|| (fabs(CCPres.temperatura[i] - CCPres.temperatura[i + 1])
 							> 1e-15)
@@ -16197,7 +16198,8 @@ void Ler::geraevento(int inic, int extrem) {
 		}
 	}
 	if (((*vg1dSP).chaverede == 0 || inic == 1) && ConContEntrada == 2) {
-		for (int i = 0; i < CCVPres.parserie; i++) {
+		// reads [i + 1]: stop one short, as the chokep event loop above does (j < chokep.parserie - 1)
+		for (int i = 0; i < CCVPres.parserie - 1; i++) {
 			if ((fabs(CCVPres.pres[i] - CCVPres.pres[i + 1]) > 1e-15)
 					|| (fabs(CCVPres.temperatura[i] - CCVPres.temperatura[i + 1])
 							> 1e-15)
