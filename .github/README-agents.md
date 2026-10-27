@@ -10,8 +10,9 @@ flowchart TD
     O --> E{Environment ready?<br/>check_environment.py}
     E -- no --> X([Stops and reports what is missing])
     E -- yes --> P[marlim3-planner<br/>asks only the gaps]
+    E -- yes, ADR already approved --> S
     P --> ADR["session/slug.adr.md"]
-    ADR --> G{User approves the ADR?<br/>last interview question}
+    ADR --> G{ADR approved?<br/>last interview question<br/>or a complete plan}
     G -- revise --> P
     G -- yes --> S[marlim3-specialist<br/>implements, check_case.py, tests]
     S --> IMPL["session/slug.mr3<br/>session/test_slug.py"]
@@ -27,8 +28,8 @@ flowchart TD
 ## Step by step
 
 1. Invoke the `marlim3` agent (or `marlim3-planner` directly) and describe the simulation you want: system type, fluids, geometry, transient event, etc. The `marlim3` agent first checks the environment (see [Before you start](#before-you-start)); if something is missing, it stops and tells you what and how to fix it.
-2. The planner reads any documents you attach (data sheets, genkey files, …) and asks only what they don't answer, in batches (scope, fluids, geometry and thermal, boundary conditions and equipment, events and outputs). For simple or illustrative requests ("a simple case showing a lazy-wave riser") it skips the batches and uses safe defaults. Anything you don't answer becomes a default recorded in the ADR.
-3. The planner creates the session folder and writes the complete plan to `<slug>.adr.md` there, with a cross-reference table, deliverables and acceptance criteria. Its last question asks you to approve it, listing the key numbers and every assumed default — this is the only approval step.
+2. The planner reads any documents you attach (data sheets, genkey files, …) and asks only what they don't answer, in batches (scope, fluids, geometry and thermal, boundary conditions and equipment, events and outputs). For simple or illustrative requests ("a simple case showing a lazy-wave riser") it skips the batches and uses safe defaults. If you bring a complete plan (inline or attached) that settles every engineering decision — system, fluids, geometry and walls, boundary conditions, equipment, events — it asks nothing at all. Anything you don't answer becomes a default recorded in the ADR.
+3. The planner creates the session folder and writes the complete plan to `<slug>.adr.md` there, with a cross-reference table, deliverables and acceptance criteria. Its last question asks you to approve it, listing the key numbers and every assumed default — this is the only approval step. A complete plan counts as that approval: the ADR is accepted without the question, and the final report lists what was assumed.
 4. The specialist reads the ADR and generates `<slug>.mr3` (English keys, with `"language": "en"`), the optional Python script and the `test_<slug>.py` suite in the same folder, following the repository conventions (`simulacao` marker, executable guard, `tmp_path`). Before delivering, it runs `check_case.py` (schema, unknown keys, cross-references, arrays and positions, all reported at once) and the tests.
 5. The QA independently checks everything (ADR conformance, the automated checks, physical plausibility, test execution) and writes the final report to `<slug>.qa.md` with a PASS, PASS WITH WARNINGS or FAIL verdict.
 6. On a FAIL, the orchestrator returns the findings to the specialist (at most 2 cycles) and re-runs the QA. At the end, you receive the summary with all paths and results.
@@ -117,7 +118,7 @@ flowchart LR
 
 ## Tips
 
-- For a quick result, attach the documents you have or ask for defaults ("a simple case showing X, use defaults"): the planner then goes straight to the approval question.
-- To only plan (without implementing), call `marlim3-planner` directly. To implement an already approved ADR, call `marlim3-specialist` passing its session folder. To audit an existing case, call `marlim3-qa`.
+- For a quick result, attach the documents you have or ask for defaults ("a simple case showing X, use defaults"): the planner then goes straight to the approval question. With a complete plan, it skips that question too.
+- To only plan (without implementing), call `marlim3-planner` directly. To implement an already approved ADR, give its session folder to `marlim3`: it skips planning and goes straight to implementation and QA. To audit an existing case, call `marlim3-qa`.
 - Tests with the `simulacao` marker require the compiled executable and are skipped automatically without it (see [tests/README.md](../tests/README.md)). A skipped test is not a passing test.
 - Run a finished case with `uv run pytest agent_sessions/<session>/test_<slug>.py -v` or via `marlim3.Branch().from_json(...)`. Check any `.mr3` with `uv run python .github/skills/marlim3-json-schema/scripts/check_case.py <file>`.

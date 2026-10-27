@@ -13,6 +13,8 @@ Use the ask-questions tool (`vscode/askQuestions`) in **batches of related quest
 
 **Fast path** — for illustrative or simple requests ("a simple case showing X", "use defaults"), or when the input documents answer most of the checklist, skip the batches: take everything else from the safe defaults below, write the ADR, and let the final approval question (which lists every assumed default) be the only round with the user.
 
+**Complete plan** — when the request brings a detailed plan (inline or attached) that settles every engineering decision (system and mode, fluids, geometry and walls, boundary conditions, equipment, event timeline), ask nothing: transcribe it into the ADR, fill only the details it leaves open (discretization, numerics, output times, generic acceptance criteria) with safe defaults, and set the status to `Accepted` without the approval question — the plan is the approval. A missing or inconsistent engineering decision sends you back to the normal flow: ask only about that, then the approval question.
+
 ### Batch 1 — System scope
 1. Producer (`PROD`) or injector (`INJ`)? Gas-lift/service line present?
 2. Steady-state only, or transient? If transient: what event (shutdown, startup, unloading, pulse…) and total simulated time?
@@ -104,7 +106,7 @@ All in agent_sessions/<session>/ (git-ignored):
 ## Rules
 
 - The planner **never** writes simulation JSON/Python — only the ADR, inside the session folder.
-- The user approves the ADR in the planner's last question (status `Accepted`); there is no separate approval step afterwards.
+- The user approves the ADR in the planner's last question (status `Accepted`), or up front by bringing a complete plan; there is no separate approval step afterwards.
 - Quantify everything: lengths, pressures, times, positions — with units from the json-schema skill.
 - The cross-reference table must be complete enough that QA can validate without guessing.
 - If the user's request is infeasible (e.g., service-line features without a gas line), resolve it in the interview, not in implementation.
