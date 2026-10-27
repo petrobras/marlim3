@@ -7,7 +7,8 @@ description: Use when writing Python code that builds or runs Marlim3 simulation
 
 ## Authoritative files
 
-- [README.md](../../../README.md) — canonical scripting example and CLI usage (**read this**)
+- [marlim3/README.md](../../../marlim3/README.md) — API guide: bilingual interface and a worked scripting example (open only for what this skill doesn't cover)
+- [docs/getting-started.md](../../../docs/getting-started.md) — installation, developer setup, CLI usage, and building from source
 - [marlim3/_tramo/_branch.py](../../../marlim3/_tramo/_branch.py) — `Branch` implementation (`simulate`, `to_json`, `from_json`, plotting)
 - [marlim3/_tramo/_keys.py](../../../marlim3/_tramo/_keys.py) — bilingual key system
 - [docs/tutorials/](../../../docs/tutorials/index.md) — 5 notebook walkthroughs (steady, nodal, gas-lift, correlations, transient)
@@ -55,7 +56,7 @@ case.plot_profiles()
 5. On failure, raises with the `FALHA` entry parsed from `simulacao.log` — always read that log when debugging.
 6. Auxiliary files (`.tab`/`.ctm` PVT, snapshots) must be in the CWD at run time.
 
-Executable availability: `from marlim3._download import executable_exists, get_executable_path`. On import, the package tries to resolve/download the executable (skippable via `MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1`).
+Executable availability: `from marlim3._download import executable_exists, get_executable_path`. On import, the package tries to resolve/download the executable (skippable via `MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1`). The agents' environment preflight is [scripts/check_environment.py](scripts/check_environment.py) — `uv run python .github/skills/marlim3-python-api/scripts/check_environment.py` prints `READY`, or `NOT READY` with the fix (exit 1), without downloading or building anything.
 
 ## Post-processing
 
@@ -77,4 +78,4 @@ uv run python my_script.py              # run anything inside the env
 ./Marlim3 -d ./output -i case.mr3 -s CONVECNAT   # natural convection
 ```
 
-Build from source if needed (see [README.md](../../../README.md#compilation)): `cmake --preset gcc-release && cmake --build --preset gcc-release -j$(nproc)` — the executable is auto-copied into `marlim3/`.
+Build from source if needed (see [docs/getting-started.md](../../../docs/getting-started.md#building-from-source)): `cmake --preset gcc-release && cmake --build --preset gcc-release -j$(nproc)` — the executable is auto-copied into `marlim3/`; then `MARLIM3_SKIP_BUILD=1 uv sync --locked`.

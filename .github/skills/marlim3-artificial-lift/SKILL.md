@@ -7,9 +7,9 @@ description: Use when adding artificial lift to a Marlim3 simulation — gas-lif
 
 ## Authoritative files
 
-- [docs/user-guide/accessories.md](../../../docs/user-guide/accessories.md) — gas-lift valves, ESP, volumetric pump, pressure drop (**read this**)
-- [docs/user-guide/general.md](../../../docs/user-guide/general.md) §12 — gas-lift unloading (`initialCondition: 3`)
-- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — gas-lift valve example; [demos/extended-ESP-pumpEfic.mr3](../../../demos/extended-ESP-pumpEfic.mr3), [demos/MultiESP.mr3](../../../demos/MultiESP.mr3) — ESP examples
+- [docs/single-branch-model-reference/accessories.md](../../../docs/single-branch-model-reference/accessories.md) — gas-lift valves, ESP, volumetric pump, pressure drop (open only for what this skill doesn't cover)
+- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) §12 — gas-lift unloading (`initialCondition: 3`)
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — gas-lift valve example; [demos/extended-ESP-pumpEfic/extended-ESP-pumpEfic.mr3](../../../demos/extended-ESP-pumpEfic/extended-ESP-pumpEfic.mr3), [demos/MultiESP/MultiESP.mr3](../../../demos/MultiESP/MultiESP.mr3) — ESP examples
 - [docs/tutorials/3-gas_lift.ipynb](../../../docs/tutorials/3-gas_lift.ipynb) — gas-lift optimization workflow
 
 ## Gas-lift valve — `gasLiftSource` (array; requires `gasLine: true` + `servicePipe` + `gasInj` + `gasFluid`)
@@ -18,7 +18,7 @@ Connects service line to production line:
 
 - Positioning: `prodMeasuredLength` (PT `comprimentoMedidoProducao`) on the production line; `serviceMeasuredLength` on the service line — or `annulusColumnFlag: true` (PT `colunaEanular`) to infer the service tap at the same elevation.
 - `valveType`: **0 orifice** (`orificeDiameter` [m]), **1 pressure-calibrated** (`outerDiameter` port + `calibrationPressure` [**psi**] + `calibrationTemperature` [**°F**]), **2 Venturi**.
-- Coefficients: `vglDischCoef` (PT `cdvgl`), `liquidDischCoef`, `areaRatio`. (`recoveryFactor` appears in demos and [marlim3/translations.json](../../../marlim3/translations.json) but not in the public schema — treat as engine-internal.)
+- Coefficients: `vglDischCoef` (PT `cdvgl`), `liquidDischCoef`, `areaRatio`. (Older models, including some demos, still carry `recoveryFactor` (PT `frecupera`); it is no longer in the schema nor in [marlim3/translations.json](../../../marlim3/translations.json) — never write it.)
 
 Typical: orifice 4–8 mm, `areaRatio` ~0.1. Verify both tap positions fall inside their line lengths and are elevation-consistent.
 

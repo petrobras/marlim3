@@ -7,9 +7,9 @@ description: Use when building the axial geometry of a Marlim3 simulation — pr
 
 ## Authoritative files
 
-- [docs/user-guide/pipes.md](../../../docs/user-guide/pipes.md) — segment fields and both examples (**read this**)
-- [demos/simplifiedProduction.mr3](../../../demos/simplifiedProduction.mr3) — full well + flowline + riser + service line in XY mode
-- [docs/user-guide/cross-sections.md](../../../docs/user-guide/cross-sections.md) — the radial geometry referenced by `crossSectionId`
+- [docs/single-branch-model-reference/pipes.md](../../../docs/single-branch-model-reference/pipes.md) — segment fields and both examples (open only for what this skill doesn't cover)
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — full well + flowline + riser + service line in XY mode
+- [docs/single-branch-model-reference/cross-sections.md](../../../docs/single-branch-model-reference/cross-sections.md) — the radial geometry referenced by `crossSectionId`
 
 ## Segments — `productionPipe` / `servicePipe` (arrays)
 

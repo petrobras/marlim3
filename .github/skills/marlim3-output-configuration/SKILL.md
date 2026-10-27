@@ -7,10 +7,10 @@ description: Use when configuring Marlim3 simulation outputs — spatial profile
 
 ## Authoritative files
 
-- [docs/user-guide/results.md](../../../docs/user-guide/results.md) — output objects and variable flags (**read this**)
+- [docs/single-branch-model-reference/results.md](../../../docs/single-branch-model-reference/results.md) — output objects and variable flags (open only for what this skill doesn't cover)
 - [marlim3/_output_headers.py](../../../marlim3/_output_headers.py) — canonical result-column names (EN/PT)
 - [marlim3/_tramo/_branch.py](../../../marlim3/_tramo/_branch.py) — `_process_profiles` / `_process_trends` (how `.dat` files become DataFrames)
-- [tests/comparison/](../../../tests/comparison/) — reference CSVs showing real output shapes
+- [demos/simplifiedProduction/reference/](../../../demos/simplifiedProduction/reference/) — reference CSVs showing real output shapes (every demo case has one)
 
 ## Profiles — snapshot along the line (`productionProfile` / `serviceProfile`, objects)
 

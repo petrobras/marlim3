@@ -1,11 +1,11 @@
 ---
 name: marlim3-qa-checklist
-description: Use when verifying a Marlim3 simulation implementation against its ADR — the full validation checklist (plan conformance, schema validation, ID cross-references, array consistency, physical plausibility, tests), and the QA report template written to docs/<slug>.qa.md.
+description: Use when verifying a Marlim3 simulation implementation against its ADR — the full validation checklist (plan conformance, schema validation, ID cross-references, array consistency, physical plausibility, tests), and the QA report template written to the session folder (agent_sessions/<session>/<slug>.qa.md).
 ---
 
 # Marlim3 QA Checklist & Report
 
-QA compares the implementation (`.mr3` / Python / tests) against its ADR at `docs/<slug>.adr.md` and produces `docs/<slug>.qa.md`. QA **reports**; it does not fix (small, unambiguous typos may be flagged with a suggested patch).
+QA compares the implementation (`.mr3` / Python / tests) against its ADR at `agent_sessions/<session>/<slug>.adr.md` and produces `agent_sessions/<session>/<slug>.qa.md`. QA **reports**; it does not fix (small, unambiguous typos may be flagged with a suggested patch).
 
 ## 1. Plan conformance
 
@@ -14,17 +14,15 @@ QA compares the implementation (`.mr3` / Python / tests) against its ADR at `doc
 - [ ] No unauthorized additions — extra accessories/settings not in the ADR are findings.
 - [ ] Assumed defaults in the ADR match what the implementation actually uses.
 
-## 2. Schema validation (run it, don't eyeball)
+## 2. Schema validation — run the checker, don't eyeball
+
+One command covers sections 2–4 and most of 5: the schema (every violation at once, EN or PT by the `language` marker), unknown keys (typos the schema would let through), loading through `marlim3.Branch`, ID references and duplicates, paired and monotonic arrays, positions within the lines, and plausibility ranges. Run it instead of scripting checks by hand:
 
 ```bash
-uv run --group gui python -c "
-import json, jsonschema
-schema = json.load(open('docs/schema_branch.json'))     # schema_tramo.json for PT files
-data = json.load(open('simulations/<slug>/<slug>.mr3'))
-jsonschema.validate(data, schema); print('SCHEMA OK')"
+uv run python .github/skills/marlim3-json-schema/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
 ```
 
-Also load it through the API (catches key typos — unknown keys silently pass JSON but die in the engine): `marlim3.Branch().from_json(path)` then spot-check translated attributes.
+Each ERROR it prints is an ERROR finding; review each WARNING. The lists below document what it covers — items marked *(manual)* are not automated.
 
 ## 3. Cross-references (validate each per the table in [marlim3-json-schema](../marlim3-json-schema/SKILL.md))
 
@@ -36,7 +34,7 @@ Also load it through the API (catches key typos — unknown keys silently pass J
 ## 4. Array consistency
 
 - [ ] All paired schedules equal length (`time`/`pressure`, `time`/`opening`, `times`/`maxDT`, ESP curves, IPR `*Time` pairs).
-- [ ] Time arrays monotonic, starting at 0; profile output times ≤ `time.finalTime`.
+- [ ] Time arrays monotonic; schedules start at 0 and profile output times ≤ `time.finalTime` *(manual)*.
 - [ ] `measuredPosition` profiles span 0→1; openings within [0, 1].
 
 ## 5. Physical plausibility
@@ -55,21 +53,21 @@ Also load it through the API (catches key typos — unknown keys silently pass J
 | Insulation conductivity | ≥ 0.02 W/(m·°C) (flag lower) |
 | Trend `dt` | > 0 in transient |
 
-Also: total line lengths match the ADR topology; cell sizes reasonable (1–200 m); `compTable` grid covers reservoir-to-separator P/T envelope.
+The checker flags API, GOR, BSW, gas density, inner diameter, roughness, angle, and insulation conductivity; pressures, temperatures, and trend `dt` are *(manual)*. Also *(manual)*: total line lengths match the ADR topology; cell sizes reasonable (1–200 m); `compTable` grid covers reservoir-to-separator P/T envelope.
 
 ## 6. Execute
 
-- [ ] Run the case's tests: `uv run pytest tests/test_<slug>.py -v` (and `-m simulacao` if the executable is available). Record pass/fail/skips verbatim.
+- [ ] Run the case's tests: `uv run pytest agent_sessions/<session>/test_<slug>.py -v` (the `simulacao` test runs when the executable is available). Record pass/fail/skips verbatim.
 - [ ] If the simulation ran: inspect `simulacao.log` for `FALHA` entries; confirm expected result keys/DataFrames exist; check ADR acceptance criteria against actual numbers.
-- [ ] Confirm no repo pollution: no stray output directories, `.mr3` files at repo root, or modified unrelated files (`git status`).
+- [ ] Confirm nothing was written outside the session folder: `git status` lists no files created by the pipeline (the folder itself is git-ignored), and no stray run outputs sit in the repo root — git ignores result folders, `*.log`, and `*.dat`, so `git status` alone won't show those.
 
-## Report template — write to `docs/<slug>.qa.md`
+## Report template — write to `agent_sessions/<session>/<slug>.qa.md`
 
 ```markdown
 # QA Report: <title>
 
 - **Status**: PASS | PASS WITH WARNINGS | FAIL
-- **ADR**: docs/<slug>.adr.md
+- **ADR**: agent_sessions/<session>/<slug>.adr.md
 - **Implementation**: <files reviewed, with commit/state>
 - **Date**: <YYYY-MM-DD>
 

@@ -1,6 +1,6 @@
 ---
 name: marlim3-planning-interview
-description: Use when planning a Marlim3 simulation from a user's natural-language request — how to interview the user with structured questions, which decisions must be captured, safe engineering defaults, and the ADR (Architecture Decision Record) template written to docs/<slug>.adr.md that drives implementation.
+description: Use when planning a Marlim3 simulation from a user's natural-language request — how to interview the user with structured questions, which decisions must be captured, safe engineering defaults, and the ADR (Architecture Decision Record) template written to the session folder agent_sessions/<session>/<slug>.adr.md that drives implementation.
 ---
 
 # Marlim3 Planning Interview & ADR Authoring
@@ -9,12 +9,14 @@ The planner turns a request like "simulate a shutdown of a gas-lifted well" into
 
 ## Interview protocol
 
-Use the ask-questions tool (`vscode/askQuestions`) in **batches of related questions** (3–6 per batch), offering concrete options with a recommended default plus free-text. Never assume silently: anything not answered must appear in the ADR's "Assumed defaults" table. Ask in this order, skipping domains the request already answers:
+Use the ask-questions tool (`vscode/askQuestions`) in **batches of related questions** (3–6 per batch), offering concrete options with a recommended default plus free-text. Never assume silently: anything not answered must appear in the ADR's "Assumed defaults" table. Ask in this order, skipping domains the request already answers.
+
+**Fast path** — for illustrative or simple requests ("a simple case showing X", "use defaults"), or when the input documents answer most of the checklist, skip the batches: take everything else from the safe defaults below, write the ADR, and let the final approval question (which lists every assumed default) be the only round with the user.
 
 ### Batch 1 — System scope
 1. Producer (`PROD`) or injector (`INJ`)? Gas-lift/service line present?
 2. Steady-state only, or transient? If transient: what event (shutdown, startup, unloading, pulse…) and total simulated time?
-3. Deliverable: `.mr3` JSON file, Python script, or both? Where to save (default: `simulations/<slug>/`)?
+3. Deliverable: `.mr3` JSON file, Python script, or both? (Everything is saved in the session folder.)
 
 ### Batch 2 — Fluids
 4. Fluid model: black-oil (default) / flash table (.tab) / compositional (.ctm)? PVT file available?
@@ -49,9 +51,11 @@ Use the ask-questions tool (`vscode/askQuestions`) in **batches of related quest
 | Discretization | 50–125 m cells, refined near equipment |
 | Numerics | all `initialConfig` defaults; `pressureTable: true` for long transients |
 
-## ADR file convention
+## Session folder & ADR file convention
 
-Write to **`docs/<slug>.adr.md`** where `<slug>` is short-kebab-case (e.g., `docs/glw-shutdown-8h.adr.md`). One ADR per simulation.
+Every pipeline run works in its own git-ignored session folder, **`agent_sessions/<session>/`**, where `<session>` is `<YYYY-MM-DD>-<slug>` (today's date) and `<slug>` is short-kebab-case — e.g., `agent_sessions/2026-10-27-glw-shutdown-8h/`. If the folder already exists, append `-2`, `-3`, …; when revising an existing ADR, reuse its folder. Write the ADR to **`agent_sessions/<session>/<slug>.adr.md`**. One ADR per session; every deliverable lives next to it, never elsewhere in the repository.
+
+The session folder is git-ignored, so workspace search may skip it: list the folder and open its files by explicit path.
 
 ## ADR template
 
@@ -85,9 +89,10 @@ Proposed | Accepted | Implemented | Verified
 <Every ID link: pipe→crossSection, layer→material, source→fluid, formationId, measured lengths vs line totals.>
 
 ## Deliverables
-- simulations/<slug>/<slug>.mr3           (and/or build script simulations/<slug>/build_model.py)
-- tests/test_<slug>.py                    (pytest, marker `simulacao`)
-- docs/<slug>.qa.md                       (QA report, written by QA)
+All in agent_sessions/<session>/ (git-ignored):
+- <slug>.mr3              (and/or build script build_model.py; auxiliary files copied alongside)
+- test_<slug>.py          (pytest, marker `simulacao`)
+- <slug>.qa.md            (QA report, written by QA)
 
 ## Acceptance criteria
 <Checkable statements the QA agent will verify.>
@@ -98,7 +103,8 @@ Proposed | Accepted | Implemented | Verified
 
 ## Rules
 
-- The planner **never** writes simulation JSON/Python — only the ADR.
+- The planner **never** writes simulation JSON/Python — only the ADR, inside the session folder.
+- The user approves the ADR in the planner's last question (status `Accepted`); there is no separate approval step afterwards.
 - Quantify everything: lengths, pressures, times, positions — with units from the json-schema skill.
 - The cross-reference table must be complete enough that QA can validate without guessing.
 - If the user's request is infeasible (e.g., service-line features without a gas line), resolve it in the interview, not in implementation.

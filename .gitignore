@@ -172,3 +172,6 @@ versao.h.bak
 
 # Self-hosted runners
 actions-runner
+
+# Sessoes dos agentes de simulacao (.github/agents): ADRs, modelos, testes e relatorios gerados
+agent_sessions/
