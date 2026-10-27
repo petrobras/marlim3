@@ -148,7 +148,7 @@ class Network:
         if is_string:
             data = json_input
         else:
-            with open(json_input, 'r') as file:
+            with open(json_input, 'r', encoding='utf-8') as file:
                 data = json.load(file)
             if not hasattr(self, 'label'):
                 if json_input.endswith('.json'):

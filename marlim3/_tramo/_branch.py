@@ -267,7 +267,7 @@ class Branch:
         if is_string:
             data = json_input
         else:
-            with open(json_input, 'r') as fh:
+            with open(json_input, 'r', encoding='utf-8') as fh:
                 data = json.load(fh)
             if not hasattr(self, 'label'):
                 if json_input.endswith('.json'):
