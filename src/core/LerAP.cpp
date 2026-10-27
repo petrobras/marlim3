@@ -348,6 +348,8 @@ void APara::parse_IPR(Value &IPR_json) {
                         sort(APIPR[iIPR].qMax.begin(), APIPR[iIPR].qMax.end());
                 } else
                     APIPR[iIPR].parserieqMax = 0;
+                if (combinacao && APIPR[iIPR].parserieqMax > 0)
+                    nVariaveis *= APIPR[iIPR].parserieqMax;
                 if (IPR_json[iIPR].HasMember("II")) {
                     dim++;
                     APIPR[iIPR].parserieJP = tamanhoSerie(IPR_json[iIPR]["II"], chaveJson + "/" + to_string(iIPR) + "/II");
@@ -1544,7 +1546,7 @@ void APara::parse_injecPoco(Value &injecP_json) {
         APPInj.parserieTemp = 0;
     if (combinacao && APPInj.parserieTemp > 0)
         nVariaveis *= APPInj.parserieTemp;
-    if (injecP_json.HasMember("temperatura")) {
+    if (injecP_json.HasMember("vazao")) {
         dim++;
         APPInj.parserieVaz = tamanhoSerie(injecP_json["vazao"], chaveJson + "/vazao");
         for (int ifreq = 0; ifreq < APPInj.parserieVaz; ifreq++) {
@@ -1563,7 +1565,7 @@ void APara::parse_injecPoco(Value &injecP_json) {
                    "#/pocoInjetorEntrada", "multiplas variaveis");
     }
 
-    listaV.vvazpresent = 1;
+    listaV.vpocinj = 1;
 }
 
 void APara::lerArq() {
@@ -3854,10 +3856,10 @@ void APara::cabecalhoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, 
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
+        if (APPInj.parseriePresFundo > 0) {
             escreveIni << " Pressao a Jusante; ";
         }
-        if (APPInj.parseriePresFundo > 0) {
+        if (APPInj.parseriePresI > 0) {
             escreveIni << " Pressao a Montante; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -4215,10 +4217,10 @@ void APara::cabecalhoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celul
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
+        if (APPInj.parseriePresFundo > 0) {
             escreveIni << " Pressao a Jusante; ";
         }
-        if (APPInj.parseriePresFundo > 0) {
+        if (APPInj.parseriePresI > 0) {
             escreveIni << " Pressao a Montante; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -4551,7 +4553,7 @@ void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG 
                 konta2++;
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 escreveIni << "   " << APGeom[iG].rug[ind] << " ; ";
                 konta3++;
             }
@@ -4628,12 +4630,12 @@ void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG 
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             escreveIni << " : " << APPInj.presinj[ind] << " ; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -5076,7 +5078,7 @@ void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, Pr
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 if (imprime == 1)
                     escreveIni << seq << " : " << " indice Secao Transversal = " << konta3 << " secao transversal " << igeo << " indice Rugosidade = " << ind << " Rugosidade= " << APGeom[iG].rug[ind] << "\n";
@@ -5186,14 +5188,14 @@ void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, Pr
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
+        if (APPInj.parseriePresFundo > 0) {
+            ind = sequenciaAP[seq].PIpresfundo;
             presE = APPInj.presfundo[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Jusante = " << ind << " Pres Jusante= " << presE << "\n";
         }
-        if (APPInj.parseriePresFundo > 0) {
-            ind = sequenciaAP[seq].PIpresfundo;
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Montante = " << ind << " Pres Montante= " << pGSup << "\n";
@@ -5551,7 +5553,7 @@ void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *cel
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 konta3++;
                 atualizaGeom(ncelG, celula, celulaG, igeo, 2, APGeom[iG].rug[ind]);
@@ -5631,12 +5633,12 @@ void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *cel
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            presE = APPInj.presfundo[ind];
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            presE = APPInj.presfundo[ind];
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
         }
         if (APPInj.parserieTemp > 0) {
@@ -5844,10 +5846,10 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
     }
     if (listaV.vdpH == 1) {
         int konta1 = 0;
-        for (int indBCS = 0; indBCS < nAPDP; indBCS++) {
-            if (APDP[indBCS].parserieDP > 0) {
-                ind = sequenciaAP[seq].DPdp[konta1];
-                escreveIni << "   " << APDP[indBCS].dp[ind] << " ; ";
+        for (int indBCS = 0; indBCS < nAPdPdLH; indBCS++) {
+            if (APdPdLH[indBCS].parserieDPHidro > 0) {
+                ind = sequenciaAP[seq].DPdLH[konta1];
+                escreveIni << "   " << APdPdLH[indBCS].dPHidro[ind] << " ; ";
                 konta1++;
             }
         }
@@ -5967,7 +5969,7 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
                 konta2++;
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 escreveIni << "   " << APGeom[iG].rug[ind] << " ; ";
                 konta3++;
             }
@@ -6044,12 +6046,12 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             escreveIni << " : " << APPInj.presinj[ind] << " ; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -6487,7 +6489,7 @@ void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 if (imprime == 1)
                     escreveIni << seq << " : " << " indice Secao Transversal = " << konta3 << " secao transversal " << igeo << " indice Rugosidade = " << ind << " Rugosidade= " << APGeom[iG].rug[ind] << "\n";
@@ -6597,14 +6599,14 @@ void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
+        if (APPInj.parseriePresFundo > 0) {
+            ind = sequenciaAP[seq].PIpresfundo;
             presE = APPInj.presfundo[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Jusante = " << ind << " Pres Jusante= " << presE << "\n";
         }
-        if (APPInj.parseriePresFundo > 0) {
-            ind = sequenciaAP[seq].PIpresfundo;
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Montante = " << ind << " Pres Montante= " << pGSup << "\n";
@@ -6960,7 +6962,7 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 konta3++;
                 atualizaGeom(ncelG, celula, celulaG, igeo, 2, APGeom[iG].rug[ind]);
@@ -7040,12 +7042,12 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            presE = APPInj.presfundo[ind];
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            presE = APPInj.presfundo[ind];
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
         }
         if (APPInj.parserieTemp > 0) {
@@ -7125,7 +7127,8 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		for (int i = 0; i < nAPBCS; ++i) {
 		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 		    escreveIni1 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
-		    escreveIni1 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
+		    escreveIni1 << "** Frequencia da BCS (Hz): "
+		                << (APBCS[i].parserieFreq > 0 ? APBCS[i].freq.front() : bcs[APBCS[i].indBCS].freq[0]) << endl;
 		}
 		escreveIni1 << "\n" << endl;
 		}
@@ -7134,7 +7137,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		for (int i = 0; i < nAPMBCS; ++i) {
 		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 		    escreveIni1 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
-		    escreveIni1 << "** Frequencia da BCS (Hz): " << APMBCS->freq[i] << endl;
+		    escreveIni1 << "** Frequencia da BCS (Hz): " << APMBCS[i].freq.front() << endl;
 		}
 		escreveIni1 << "\n" << endl;
 		}
@@ -7249,7 +7252,8 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			for (int i = 0; i < nAPBCS; ++i) {
 			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 			    escreveIni3 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
-			    escreveIni3 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
+			    escreveIni3 << "** Frequencia da BCS (Hz): "
+			                << (APBCS[i].parserieFreq > 0 ? APBCS[i].freq.front() : bcs[APBCS[i].indBCS].freq[0]) << endl;
 			}
 			escreveIni3 << "\n" << endl;
 			}
@@ -7258,7 +7262,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			for (int i = 0; i < nAPMBCS; ++i) {
 			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 			    escreveIni3 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
-			    escreveIni3 << "** Frequencia da BCS (Hz): " << APMBCS->freq[i] << endl;
+			    escreveIni3 << "** Frequencia da BCS (Hz): " << APMBCS[i].freq.front() << endl;
 			}
 			escreveIni3 << "\n" << endl;
 			}
@@ -8003,10 +8007,10 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
+        if (APPInj.parseriePresFundo > 0) {
             escreveIni << " Pres Jusante ;";
         }
-        if (APPInj.parseriePresFundo > 0) {
+        if (APPInj.parseriePresI > 0) {
             escreveIni << " Pres Montante ;";
         }
         if (APPInj.parserieTemp > 0) {
@@ -8585,7 +8589,7 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
                 konta2++;
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 saidaBHP[seq][coluna] = APGeom[iG].rug[ind];
                 coluna++;
                 escreveIni << APGeom[iG].rug[ind] << " ;";
@@ -8706,15 +8710,15 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
+        if (APPInj.parseriePresFundo > 0) {
+            ind = sequenciaAP[seq].PIpresfundo;
             presE = APPInj.presfundo[ind];
             saidaBHP[seq][coluna] = presE;
             coluna++;
             escreveIni << presE << " ;";
         }
-        if (APPInj.parseriePresFundo > 0) {
-            ind = sequenciaAP[seq].PIpresfundo;
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
             saidaBHP[seq][coluna] = pGSup;
             coluna++;

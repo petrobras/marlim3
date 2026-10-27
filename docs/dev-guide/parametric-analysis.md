@@ -164,6 +164,20 @@ The following table lists parameter types that can be swept. Each type maps to a
 
 **Single-instance parameters:** `psep`, `RGO-fluido0`, `BSW-fluido0`, `GasLift`, `choke`, `pentrada`, `vazpentrada`, and `pocoInjetor` are single objects.
 
+For `pocoInjetor`, `pressaoInj` is the upstream injection pressure (`pGSup`),
+and `pressaoFinal` is the downstream bottom-hole pressure (`presE`). Reports
+list downstream pressure before upstream pressure when both are swept.
+Temperature and flow can be swept independently.
+
+`IPR.qMax` contributes its full series length to the Cartesian case count,
+just like the other IPR parameters. Roughness uses its own sequence indices,
+independently of either diameter series. IMEX reports hydrostatic factors
+from `dPdLHidro`, independently of `DP`.
+
+IMEX VFP pump-header metadata uses the first frequency level of each pump's
+own sweep. A BCS stage-only sweep instead reports the first frequency in that
+pump's model time series.
+
 ---
 
 ## The APara Class
