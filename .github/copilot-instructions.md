@@ -13,6 +13,6 @@ This repo ships custom agents in [.github/agents/](agents/marlim3.agent.md) and 
 
 **Session folder.** `<session>` above is `agent_sessions/<YYYY-MM-DD>-<slug>/`: one subfolder per pipeline run inside the git-ignored `agent_sessions/`. Every file the pipeline generates goes there and nowhere else in the repository. Because the folder is git-ignored, workspace search may skip it — list it and open its files by explicit path.
 
-**Keep context small.** Skills are the primary context; open the documents they link only for what a skill doesn't cover. Never read the large references whole — `docs/schemas/branch.en.json` (~157 KB) and the ESP/shutdown demos (80–100 KB): search them for the field or object you need.
+**Keep context small.** Skills are the primary context; open the documents they link only for what a skill doesn't cover. Avoid reading the large references whole — `docs/schemas/branch.en.json` and the ESP/shutdown demos: search them for the field or object you need.
 
 See [README-agents.md](README-agents.md) for the user-facing guide.
