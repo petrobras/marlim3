@@ -13,6 +13,7 @@ QA compares the implementation (`.mr3` / Python / tests) against its ADR at `age
 - [ ] All ADR deliverables exist (input file, script if promised, test file).
 - [ ] No unauthorized additions — extra accessories/settings not in the ADR are findings.
 - [ ] Assumed defaults in the ADR match what the implementation actually uses.
+- [ ] The simulation test runs the delivered `.mr3` as is — no flags outside the schema, no `language=` switch, no in-memory edits besides copying auxiliary files and the steady-state variant *(manual)*.
 
 ## 2. Schema validation — run the checker, don't eyeball
 
@@ -59,6 +60,9 @@ The checker flags API, GOR, BSW, gas density, inner diameter, roughness, angle, 
 
 - [ ] Run the case's tests: `uv run pytest agent_sessions/<session>/test_<slug>.py -v` (the `simulacao` test runs when the executable is available). Record pass/fail/skips verbatim.
 - [ ] If the simulation ran: inspect `simulacao.log` for `FALHA` entries; confirm expected result keys/DataFrames exist; check ADR acceptance criteria against actual numbers.
+- [ ] Each reported number comes from the column that measures it — `stdLiqFlowRate` is dead oil only; the liquid rate is `stdLiqWaterFlowRate` (see [marlim3-output-configuration](../marlim3-output-configuration/SKILL.md)) *(manual)*.
+- [ ] Cross-check the steady state with mass balances: with a linear IPR, liquid = IP × (Pe − Pwf), Pwf read at the first cell; gas/oil ≈ GOR, so gas/liquid ≈ GOR × (1 − BSW). A mismatch usually means a mislabeled column *(manual)*.
+- [ ] Readings at a line end come from the first/last cell: cell-centred values (pressure, temperature) sit half a cell from the boundary. Accept them as the inlet/arrival values even when the ADR names the boundary coordinate — that offset is never a finding, and undocumented outputs must not be used to close it.
 - [ ] Confirm nothing was written outside the session folder: `git status` lists no files created by the pipeline (the folder itself is git-ignored), and no stray run outputs sit in the repo root — git ignores result folders, `*.log`, and `*.dat`, so `git status` alone won't show those.
 
 ## Report template — write to `agent_sessions/<session>/<slug>.qa.md`
