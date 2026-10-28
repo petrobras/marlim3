@@ -37,7 +37,7 @@ Unless the orchestrator told you the preflight already passed, run `uv run pytho
 
 ### 3. Write the test suite
 
-Follow [marlim3-testing](../skills/marlim3-testing/SKILL.md) exactly: a no-executable test that loads the case and asserts the ADR-specific invariants (generic cross-references are covered by the checker in step 4), and a `@pytest.mark.simulacao` test (with the `executable_exists()` skip guard and `tmp_path` chdir pattern) running the case and asserting the ADR acceptance criteria.
+Follow [marlim3-testing](../skills/marlim3-testing/SKILL.md) exactly: a no-executable test that loads the case and asserts the ADR-specific invariants (generic cross-references are covered by the checker in step 4), and a `@pytest.mark.simulacao` test (with the `executable_exists()` skip guard and `tmp_path` chdir pattern) running the case and asserting the ADR acceptance criteria. The simulation test runs the delivered `.mr3` unchanged and labels each number by the column it came from — `stdLiqFlowRate` is dead oil only; a liquid rate needs `stdLiqWaterFlowRate` in the case.
 
 ### 4. Verify before handing off
 

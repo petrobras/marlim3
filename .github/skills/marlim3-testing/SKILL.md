@@ -54,6 +54,8 @@ def _simular(caso, label, tmp_path):
 
 4. Copy any auxiliary files (PVT `.tab`/`.ctm`, snapshots) from the session folder into the run directory first — the demo runner (`run_case` in [marlim3/testing.py](../../../marlim3/testing.py)) does the same with each manifest entry's `aux` files.
 5. Assert on results: `resultados` non-empty, expected keys present, DataFrame non-empty, plus the physical acceptance criteria from the ADR (e.g., pressure monotonicity, value ranges).
+6. Simulate the delivered `.mr3` as is: no flags outside the schema, no `language=` argument, no other in-memory edits — copying auxiliary files (item 4) and the steady-state variant below are the only exceptions. An output the ADR needs belongs in the `.mr3` itself.
+7. Label every number the test prints or asserts by the column it came from — `stdLiqFlowRate` is dead oil only; the liquid rate is `stdLiqWaterFlowRate` (see [marlim3-output-configuration](../marlim3-output-configuration/SKILL.md)).
 
 ## Test template for a session case `<slug>`
 
@@ -62,6 +64,7 @@ Create `agent_sessions/<session>/test_<slug>.py`, next to the case:
 ```python
 """Integration test for the <slug> simulation (see <slug>.adr.md in this folder)."""
 import os
+import shutil
 
 import pandas as pd
 import pytest
@@ -69,7 +72,9 @@ import pytest
 import marlim3
 from marlim3._download import executable_exists
 
-CASE = os.path.join(os.path.dirname(__file__), "<slug>.mr3")
+HERE = os.path.dirname(__file__)
+CASE = os.path.join(HERE, "<slug>.mr3")
+AUX = []  # auxiliary files the ADR lists (PVT .tab/.ctm, snapshots), kept next to the case
 
 skip_sem_executavel = pytest.mark.skipif(
     not executable_exists(), reason="Executável Marlim3 não encontrado")
@@ -88,6 +93,8 @@ def test_input_loads():                              # no executable needed
 def test_simulation_runs(tmp_path):
     caso = marlim3.Branch()
     caso.from_json(CASE)
+    for name in AUX:
+        shutil.copy(os.path.join(HERE, name), tmp_path)
     cwd = os.getcwd()
     try:
         os.chdir(str(tmp_path))
