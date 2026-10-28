@@ -5,9 +5,10 @@ Usage, from the repository root:
     uv run python .github/skills/marlim3-json-schema/scripts/check_case.py <case.mr3>
 
 Checks the JSON schema (every violation, plus keys the schema does not know), loading
-through marlim3.Branch, ID cross-references, gasLine/transient dependencies, paired and
-monotonic arrays, positions along the lines and plausibility ranges. Prints one finding per
-line and exits with status 1 when there is any ERROR. The simulator is never run.
+through marlim3.Branch, ID cross-references, gasLine/transient dependencies, inputs that
+crash the executable, paired and monotonic arrays, positions along the lines and
+plausibility ranges. Prints one finding per line and exits with status 1 when there is
+any ERROR. The simulator is never run.
 """
 import copy
 import json
@@ -187,6 +188,14 @@ def dependency_findings(d):
     return found
 
 
+def crash_findings(d):
+    # Optional in the schema, but the executable reads them unconditionally and crashes
+    # (segmentation fault, no simulacao.log) when they are missing.
+    return [("ERROR", f"ipr[{i}]", "needs ii and iiTime (injectivity index; repeat ip/ipTime if unknown) — "
+             "without them the executable crashes with no simulacao.log")
+            for i, ipr in enumerate(d.get("ipr") or []) if not (ipr.get("ii") and ipr.get("iiTime"))]
+
+
 def _time_schedule(node, path):
     time, found = node.get("time"), []
     if not _numbers(time):
@@ -335,8 +344,8 @@ def main(argv):
         found.append(("ERROR", "(load)", f"marlim3.Branch().from_json failed: {exc}"))
     else:
         data = {k: v for k, v in data.items() if not k.endswith("_reserva")}  # parked sections are not read
-        for check in (duplicate_id_findings, reference_findings, dependency_findings, position_findings,
-                      plausibility_findings, array_findings):
+        for check in (duplicate_id_findings, reference_findings, dependency_findings, crash_findings,
+                      position_findings, plausibility_findings, array_findings):
             found += check(data)
     for severity, where, message in found:
         print(f"{severity:<7} {where}: {message}")
