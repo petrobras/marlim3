@@ -45,6 +45,10 @@ def _is_empty(d):
     return all(v is None or v == {} for v in d.values())
 
 
+# Removed on purpose in 82df1ce; input versioning is tracked separately.
+_LEGACY_KEYS = {'version', 'jsonVersion', 'versao', 'versaoJson', 'versaoJSON'}
+
+
 def _sanitize_filename(filename):
     sanitized = filename.replace(' ', '_')
     sanitized = ''.join(c for c in sanitized if c.isalnum() or c in '_-.')
@@ -129,10 +133,15 @@ class Branch:
                  masterValve=None,
                  masterValve2=None,
                  esp=None,
+                 multiESP=None,
                  volumetricPump=None,
                  pressureDrop=None,
+                 heatSource=None,
                  pig=None,
                  wax=None,
+                 hydrate=None,
+                 severeSlugging=None,
+                 unitCellDetail=None,
                  productionProfile=None,
                  serviceProfile=None,
                  productionTrend=None,
@@ -180,10 +189,15 @@ class Branch:
         self.masterValve2   = masterValve2
 
         self.esp            = esp            if esp            is not None else []
+        self.multiESP       = multiESP       if multiESP       is not None else []
         self.volumetricPump = volumetricPump if volumetricPump is not None else []
         self.pressureDrop   = pressureDrop   if pressureDrop   is not None else []
+        self.heatSource     = heatSource     if heatSource     is not None else []
         self.pig            = pig            if pig            is not None else []
         self.wax            = wax            if wax            is not None else {}
+        self.hydrate        = hydrate        if hydrate        is not None else {}
+        self.severeSlugging = severeSlugging if severeSlugging is not None else []
+        self.unitCellDetail = unitCellDetail if unitCellDetail is not None else []
 
         self.productionProfile       = productionProfile       if productionProfile       is not None else {}
         self.serviceProfile          = serviceProfile          if serviceProfile          is not None else {}
@@ -196,6 +210,9 @@ class Branch:
         self.screenConfig               = screenConfig               if screenConfig               is not None else []
 
         self.json_entrada_keys = set(self.__dict__.keys())
+
+        # Top-level sections without a dedicated attribute, kept so they reach the engine.
+        self.extraSections = {}
 
         self.resultados = {}
         self.nome_tramo = name
@@ -231,6 +248,9 @@ class Branch:
             }
             filtered_data = {k: v for k, v in filtered_data.items() if v is not None}
 
+        for key, value in (getattr(self, 'extraSections', None) or {}).items():
+            filtered_data.setdefault(key, value)
+
         if language == 'pt':
             filtered_data.pop('language', None)
             filtered_data = _translate_en_to_pt(filtered_data)
@@ -247,7 +267,7 @@ class Branch:
         if is_string:
             data = json_input
         else:
-            with open(json_input, 'r') as fh:
+            with open(json_input, 'r', encoding='utf-8') as fh:
                 data = json.load(fh)
             if not hasattr(self, 'label'):
                 if json_input.endswith('.json'):
@@ -300,10 +320,15 @@ class Branch:
         self.masterValve2    = d.get('masterValve2')
 
         self.esp             = d.get('esp',             [])
+        self.multiESP        = d.get('multiESP',        [])
         self.volumetricPump  = d.get('volumetricPump',  [])
         self.pressureDrop    = d.get('pressureDrop',    [])
+        self.heatSource      = d.get('heatSource',      [])
         self.pig             = d.get('pig',             [])
         self.wax             = d.get('wax')             or {}
+        self.hydrate         = d.get('hydrate')         or {}
+        self.severeSlugging  = d.get('severeSlugging',  [])
+        self.unitCellDetail  = d.get('unitCellDetail',  [])
 
         self.productionProfile         = d.get('productionProfile')
         self.serviceProfile            = d.get('serviceProfile')
@@ -314,6 +339,10 @@ class Branch:
         self.crossProductionTrend      = d.get('crossProductionTrend')
         self.crossServiceTrend         = d.get('crossServiceTrend')
         self.screenConfig               = d.get('screenConfig')
+        self.extraSections = {
+            k: v for k, v in d.items()
+            if k not in self.json_entrada_keys and k not in _LEGACY_KEYS
+        }
 
     def from_mr2(self, mr2_path, pvt_path=None, mr2_binary_path=None,
                  simula_mr2=False):
@@ -538,7 +567,9 @@ class Branch:
             return None
 
         for root, dirs, files in os.walk(directory):
-            for filename in files:
+            dirs.sort()
+            # natural order: os.walk order depends on the filesystem
+            for filename in sorted(files, key=lambda name: [int(n) for n in re.findall(r'\d+', name)]):
                 if filename.startswith(prefix) and filename.endswith('.dat'):
                     file_path = os.path.join(root, filename)
                     df = pd.read_csv(file_path, sep=';', skiprows=0, header=1)

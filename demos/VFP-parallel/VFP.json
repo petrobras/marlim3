@@ -1,0 +1,41 @@
+{
+  "nthread": 4,
+  "tipoAP": 1,
+  "vfp": 1,
+  "FonteLiquido": [
+    {
+      "indiceFL": 0,
+      "vazLiq": [
+        2000,
+        4000
+      ]
+    }
+  ],
+  "FonteGas": [
+    {
+      "indiceFG": 0,
+      "vazGas": [
+        0,
+        200000
+      ]
+    }
+  ],
+  "BSW-fluido0": {
+    "BSW": [
+      0,
+      0.5
+    ]
+  },
+  "RGO-fluido0": {
+    "RGO": [
+      100,
+      300
+    ]
+  },
+  "psep": {
+    "pressao": [
+      20,
+      70
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+	"IPR":[
+		{
+	   	"indiceIPR":0,
+	   	"presEstatica":[240, 250]
+		},
+		{
+	   	"indiceIPR":1,
+	   	"IP":[20, 30]
+		}
+	],
+	"psep":{
+	    "pressao":[10,30]
+	},
+	"GasLift":{
+	    "vazGas":[100000,200000]
+	},
+	"choke":{
+	    "abertura":[0.8,0.1]
+	}
+}

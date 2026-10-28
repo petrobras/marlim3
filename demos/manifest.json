@@ -1,8 +1,10 @@
 [
-  {"model": "pt-br/2zonas-2VGLs-2-Check-correcPerfTerm.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]},
-  {"model": "pt-br/BCS-longo-eficMotor.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]},
-  {"model": "pt-br/injec-Liq-TempoResidencia.mr3", "languages": ["pt", "en"]},
-  {"model": "pt-br/parada-longo-Combinado-BCS-GLC-PIG-completo.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]},
-  {"model": "pt-br/producaoSimplificado.mr3", "languages": ["pt", "en"]},
-  {"model": "pt-br/atritoTuboLiso.mr3", "languages": ["pt", "en"]}
+  {"model": "2zones-2GLVs-2-Check-correcThermProf/2zonas-2VGLs-2-Check-correcPerfTerm.mr3", "native": "2zones-2GLVs-2-Check-correcThermProf/2zones-2GLVs-2-Check-correcThermProf.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]},
+  {"model": "extended-ESP-pumpEfic/BCS-longo-eficMotor.mr3", "native": "extended-ESP-pumpEfic/extended-ESP-pumpEfic.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]},
+  {"model": "injec-Liq-ResidenceTime/injec-Liq-TempoResidencia.mr3", "native": "injec-Liq-ResidenceTime/injec-Liq-ResidenceTime.mr3", "languages": ["pt", "en"]},
+  {"model": "extended-shutdown-combined-ESP-CGL-PIG-complete/parada-longo-Combinado-BCS-GLC-PIG-completo.mr3", "native": "extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]},
+  {"model": "simplifiedProduction/producaoSimplificado.mr3", "native": "simplifiedProduction/simplifiedProduction.mr3", "languages": ["pt", "en"]},
+  {"model": "smoothPipeFriction/atritoTuboLiso.mr3", "native": "smoothPipeFriction/smoothPipeFriction.mr3", "languages": ["pt", "en"]},
+  {"model": "2zones-2GLVs-2-Check-PA/2zonas-2VGLs-2-Check-AP.mr3", "native": "2zones-2GLVs-2-Check-PA/2zones-2GLVs-2-Check-PA.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab", "leituraAP.json"]},
+  {"model": "MultiESP/MultiBCS.mr3", "native": "MultiESP/MultiESP.mr3", "languages": ["pt", "en"], "aux": ["PVTSIM-MARLIM.tab"]}
 ]

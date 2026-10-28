@@ -12,7 +12,7 @@ For installation, see [Getting Started](../docs/getting-started.md).
 import marlim3
 
 branch = marlim3.Branch()
-branch.from_json("demos/pt-br/producaoSimplificado.mr3")
+branch.from_json("demos/simplifiedProduction/producaoSimplificado.mr3")
 branch.simulate()
 branch.plot_profiles()
 ```
@@ -29,7 +29,7 @@ matters. Model sections are plain Python lists and dicts:
 import marlim3
 
 branch = marlim3.Branch()
-branch.from_json("demos/pt-br/producaoSimplificado.mr3")
+branch.from_json("demos/simplifiedProduction/producaoSimplificado.mr3")
 
 # raise the water cut and re-run
 branch.productionFluid[0]["bsw"] = 0.30
@@ -48,7 +48,7 @@ import marlim3
 results = {}
 for bsw in (0.0, 0.15, 0.30, 0.45):
     branch = marlim3.Branch()
-    branch.from_json("demos/pt-br/producaoSimplificado.mr3")
+    branch.from_json("demos/simplifiedProduction/producaoSimplificado.mr3")
     branch.productionFluid[0]["bsw"] = bsw
     branch.simulate(label=f"bsw_{bsw:.2f}")
     results[bsw] = branch.resultados["productionProfile"]

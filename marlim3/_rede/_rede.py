@@ -76,6 +76,8 @@ class Network:
         self.layout = layout if layout is not None else {}
 
         self.json_entrada_keys = {"initialConfig", "files", "connection", "layout"}
+        # Top-level sections without a dedicated attribute, kept so they reach the engine.
+        self.extraSections = {}
 
         self.nome_rede = nome_rede
         
@@ -128,6 +130,9 @@ class Network:
 
         filtered_data = {k: v for k, v in filtered_data.items() if v is not None}
 
+        for key, value in (getattr(self, 'extraSections', None) or {}).items():
+            filtered_data.setdefault(key, value)
+
         if language == 'pt':
             filtered_data.pop('language', None)
             filtered_data = _translate_en_to_pt(filtered_data)
@@ -143,7 +148,7 @@ class Network:
         if is_string:
             data = json_input
         else:
-            with open(json_input, 'r') as file:
+            with open(json_input, 'r', encoding='utf-8') as file:
                 data = json.load(file)
             if not hasattr(self, 'label'):
                 if json_input.endswith('.json'):
@@ -161,6 +166,10 @@ class Network:
         self.Arquivos = data.get('files', [])
         self.Conexao = data.get('connection', [])
         self.layout = data.get('layout', {})
+        self.extraSections = {
+            k: v for k, v in data.items()
+            if k not in self.json_entrada_keys and k not in ('language', 'version', 'versao')
+        }
 
         self.tramos = {
             os.path.splitext(nome)[0]: Branch(name=os.path.splitext(nome)[0])

@@ -1,0 +1,964 @@
+{
+  "language": "en",
+  "system": "PROD",
+  "initialConfig": {
+    "parametricAnalysis": true,
+    "parametricAnalysisFile": "VFP.json",
+    "parallelizePA": true,
+    "classicOutput": true,
+    "geometryFollowsFlow": true,
+    "gasLine": false,
+    "screenPrint": false,
+    "thermalEquilibrium": false,
+    "latentHeat": false,
+    "latentHeatCond": true,
+    "pvtFile": "fluidoPOH.tab",
+    "waxMode": false,
+    "flashTableFluidModel": false,
+    "compositionalFluidModel": false,
+    "dynamicTableModel": false,
+    "cpModel": 0,
+    "jtlModel": 0,
+    "pressureTable": false,
+    "AS": false,
+    "trackGOR": false,
+    "trackGasDensity": false,
+    "freeGasDensityCorrectionBO": false,
+    "RsPbTable": false,
+    "fluidProp": 0,
+    "initialFluidId": 0,
+    "gasTable": false,
+    "steadyStateSlip": true,
+    "transientSlip": true,
+    "flowPatternMap": 0,
+    "initialCondition": 1,
+    "steadyStateOrder": 1,
+    "xyMode": true,
+    "hisep": 0,
+    "fluidSalinity": 0,
+    "dischargeControl": false,
+    "fluidType": 0,
+    "steadyGuess": -1,
+    "transient": false,
+    "massTransfer": 0,
+    "checkValve": 0,
+    "advanced": {
+      "monophasicCriterion": 1e-05,
+      "condensationCriterion": 0.001,
+      "regulaFalsiSearchCriterion": 0.1,
+      "despressRate": 0.01,
+      "simplePressureFrontier": true,
+      "massTransferLimit": 10,
+      "relaxChokeTimestep": false,
+      "steadyConvergenceCriterion": 0.001,
+      "accelerateSteadyConvergence": true,
+      "slipBoundaryCell": true,
+      "counterflowCorrectionSteady": false,
+      "columnStabilization": false,
+      "correctSepCondition": true,
+      "strongAnnularColCoupling": 0,
+      "areaChange": 0,
+      "threads": 1,
+      "dynTableMinDelay": 0,
+      "dynTableMinDp": 0,
+      "dynTableMinDt": 0,
+      "matrixThreads": 1,
+      "liquidJTSimple": 0
+    },
+    "pressureCondition": {
+      "active": false,
+      "time": [
+        0
+      ]
+    },
+    "flowRatePressureCondition": {
+      "active": false,
+      "time": [
+        0
+      ]
+    },
+    "correlationsByPattern": {
+      "stratified": 1,
+      "slugBubble": 1,
+      "annularChurn": 1
+    },
+    "formation": {
+      "properties": [
+        {
+          "id": 0,
+          "label": "Rocha t\u00edpica",
+          "active": true,
+          "conductivity": 2.5,
+          "specificHeat": 1250,
+          "density": 2000
+        }
+      ],
+      "productionTime": 365
+    },
+    "driftModel": true,
+    "xProdStart": 0,
+    "yProdStart": 0
+  },
+  "time": {
+    "times": [
+      0
+    ],
+    "maxDT": [
+      1
+    ]
+  },
+  "productionFluid": [
+    {
+      "id": 0,
+      "label": "fluido",
+      "active": true,
+      "bsw": 0.5,
+      "gor": 200,
+      "waterDensity": 1.03,
+      "api": 27,
+      "gasDensity": 0.8,
+      "CO2Fraction": 0,
+      "criticalCorrelation": 1,
+      "RsPbModel": 0,
+      "bswInversion": 1,
+      "emulsionType": 0,
+      "liveOilModel": 0,
+      "undersaturatedOilModel": 0,
+      "deadOilModel": 3,
+      "blackOilViscModel": 0,
+      "blackOilWaterModel": 0
+    }
+  ],
+  "complementaryFluid": {
+    "active": false,
+    "complementaryFluidType": 0
+  },
+  "gasFluid": {
+    "active": true,
+    "CO2Fraction": 0,
+    "criticalCorrelation": 1,
+    "userMolarFraction": false,
+    "gasDensity": 0.7,
+    "useFlashTable": false
+  },
+  "material": [
+    {
+      "id": 0,
+      "label": "ACO",
+      "type": 0,
+      "active": true,
+      "conductivity": 45,
+      "specificHeat": 500,
+      "rho": 7850
+    },
+    {
+      "id": 1,
+      "label": "AISI-304",
+      "type": 0,
+      "active": true,
+      "conductivity": 70,
+      "specificHeat": 460,
+      "rho": 4499.4
+    },
+    {
+      "id": 2,
+      "label": "FABRIC",
+      "type": 0,
+      "active": true,
+      "conductivity": 1,
+      "specificHeat": 2500,
+      "rho": 906.2
+    },
+    {
+      "id": 3,
+      "label": "FIRST-ARMOUR",
+      "type": 0,
+      "active": true,
+      "conductivity": 45,
+      "specificHeat": 460,
+      "rho": 7031
+    },
+    {
+      "id": 4,
+      "label": "HDPE-YELLOW",
+      "type": 0,
+      "active": true,
+      "conductivity": 0.259,
+      "specificHeat": 2300,
+      "rho": 936
+    },
+    {
+      "id": 5,
+      "label": "HS-GLASS-FILAMENT",
+      "type": 0,
+      "active": true,
+      "conductivity": 0.289,
+      "specificHeat": 2000,
+      "rho": 1018
+    },
+    {
+      "id": 6,
+      "label": "PA11-NATURAL",
+      "type": 0,
+      "active": true,
+      "conductivity": 0.195,
+      "specificHeat": 1700,
+      "rho": 1083.3
+    },
+    {
+      "id": 7,
+      "label": "POLIPROPILENO-SOL",
+      "type": 0,
+      "active": true,
+      "conductivity": 0.19,
+      "specificHeat": 2100,
+      "rho": 928
+    },
+    {
+      "id": 8,
+      "label": "SECOND-ARMOUR",
+      "type": 0,
+      "active": true,
+      "conductivity": 45,
+      "specificHeat": 460,
+      "rho": 7035
+    },
+    {
+      "id": 9,
+      "label": "SYNTATIC FOAM",
+      "type": 0,
+      "active": true,
+      "conductivity": 0.11,
+      "specificHeat": 2094,
+      "rho": 400
+    },
+    {
+      "id": 10,
+      "label": "ZETAZ-WIRE",
+      "type": 0,
+      "active": true,
+      "conductivity": 45,
+      "specificHeat": 460,
+      "rho": 6660.4
+    }
+  ],
+  "crossSection": [
+    {
+      "id": 0,
+      "label": "POCO",
+      "active": true,
+      "annular": false,
+      "innerDiameter": 0.147092,
+      "roughness": 0.000178,
+      "layers": [
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.018,
+          "discretization": 1,
+          "materialId": 1
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "label": "RISER",
+      "active": true,
+      "annular": false,
+      "innerDiameter": 0.1651,
+      "roughness": 0.000178,
+      "layers": [
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.018,
+          "discretization": 1,
+          "materialId": 0
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.047,
+          "discretization": 1,
+          "materialId": 7
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "label": "LINHA",
+      "active": true,
+      "annular": false,
+      "innerDiameter": 0.1524,
+      "roughness": 0.000609601,
+      "layers": [
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.01556,
+          "discretization": 1,
+          "materialId": 1
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.01141,
+          "discretization": 1,
+          "materialId": 6
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.01383,
+          "discretization": 1,
+          "materialId": 10
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.00259,
+          "discretization": 1,
+          "materialId": 5
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.00692,
+          "discretization": 1,
+          "materialId": 3
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.00259,
+          "discretization": 1,
+          "materialId": 5
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.00692,
+          "discretization": 1,
+          "materialId": 8
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.00605,
+          "discretization": 1,
+          "materialId": 5
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.04479,
+          "discretization": 1,
+          "materialId": 4
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.01902,
+          "discretization": 1,
+          "materialId": 9
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.00242,
+          "discretization": 1,
+          "materialId": 2
+        },
+        {
+          "layerMeasurementType": "THICKNESS",
+          "thickness": 0.01591,
+          "discretization": 1,
+          "materialId": 4
+        }
+      ]
+    }
+  ],
+  "productionPipe": [
+    {
+      "id": 0,
+      "label": "poco",
+      "xCoor": 0,
+      "yCoor": 2881,
+      "crossSectionId": 0,
+      "environment": 0,
+      "formationId": 0,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 58,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          65,
+          4
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 1,
+      "label": "flow1",
+      "xCoor": 1275,
+      "yCoor": 2890.4,
+      "crossSectionId": 2,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 26,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          0.5,
+          0.5
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 2,
+      "label": "riser1",
+      "xCoor": 2316,
+      "yCoor": 2898,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 21,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          0.5,
+          0.5
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 3,
+      "label": "riser2",
+      "xCoor": 2510.5,
+      "yCoor": 2918.5,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 4,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 4,
+      "label": "riser3",
+      "xCoor": 2705,
+      "yCoor": 3045.4,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 5,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 5,
+      "label": "riser4",
+      "xCoor": 2899.5,
+      "yCoor": 3164.5,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 5,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 6,
+      "label": "riser5",
+      "xCoor": 3093.9,
+      "yCoor": 3219.3,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 5,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 7,
+      "label": "riser6",
+      "xCoor": 3288.4,
+      "yCoor": 3140,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 5,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 8,
+      "label": "riser7",
+      "xCoor": 3482.9,
+      "yCoor": 3056.3,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 5,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 9,
+      "label": "riser8",
+      "xCoor": 3677.4,
+      "yCoor": 3198,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 5,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 10,
+      "label": "riser9",
+      "xCoor": 3871.9,
+      "yCoor": 3523,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 8,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 11,
+      "label": "riser10",
+      "xCoor": 4066.4,
+      "yCoor": 4141.1,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 13,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          4
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 12,
+      "label": "riser11",
+      "xCoor": 4286.2,
+      "yCoor": 5058,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 19,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          4,
+          25
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    },
+    {
+      "id": 13,
+      "label": "riser12",
+      "xCoor": 4386.2,
+      "yCoor": 5056,
+      "crossSectionId": 1,
+      "environment": 1,
+      "thermalCoupling": 0,
+      "convectionDirection": 0,
+      "grouping": true,
+      "numCellsXY": 3,
+      "initialConditions": {
+        "measuredPosition": [
+          0,
+          1
+        ],
+        "ambientTemp": [
+          25,
+          25
+        ],
+        "ambientVel": [
+          1,
+          1
+        ]
+      },
+      "ssFlowModel": 12
+    }
+  ],
+  "servicePipe": [
+    {
+      "id": 0,
+      "environment": 0,
+      "grouping": true
+    }
+  ],
+  "separator": {
+    "active": true,
+    "time": [
+      0
+    ],
+    "pressure": [
+      25.5
+    ]
+  },
+  "gasInj": {
+    "active": true,
+    "time": [
+      0
+    ]
+  },
+  "injectionWellBC": {
+    "fluidType": 1
+  },
+  "massSource": [
+    {
+      "id": 0,
+      "active": false,
+      "thermType": 0,
+      "time": [
+        0
+      ]
+    }
+  ],
+  "gasSource": [
+    {
+      "id": 0,
+      "label": "VGL",
+      "active": true,
+      "measuredLength": 1538,
+      "dry": true,
+      "prodFluidId": 0,
+      "time": [
+        0
+      ],
+      "temperature": [
+        50
+      ],
+      "gasFlowRate": [
+        200000
+      ],
+      "complementaryFluidFlowRate": [
+        0
+      ]
+    }
+  ],
+  "liquidSource": [
+    {
+      "id": 0,
+      "label": "res",
+      "active": true,
+      "prodFluidId": 0,
+      "measuredLength": 0.1,
+      "time": [
+        0
+      ],
+      "temperature": [
+        70
+      ],
+      "liquidFlowRate": [
+        3000
+      ]
+    }
+  ],
+  "pressureSource": [
+    {
+      "id": 0,
+      "active": false,
+      "fluidType": 1,
+      "openingType": 0,
+      "beta": 0,
+      "cd": 0.84,
+      "time": [
+        0
+      ]
+    }
+  ],
+  "valve": [
+    {
+      "id": 0,
+      "active": false,
+      "cvCurve": 0,
+      "cd": 0.84,
+      "time": [
+        0
+      ]
+    }
+  ],
+  "gasLiftSource": [
+    {
+      "id": 0,
+      "active": false,
+      "annulusColumnFlag": true,
+      "valveType": 0,
+      "vglDischCoef": 0.9,
+      "liquidDischCoef": 0.84,
+      "time": [
+        0
+      ]
+    }
+  ],
+  "surfaceChoke": {
+    "active": true,
+    "dischargeCoefficient": 0.84,
+    "cvCurve": 0,
+    "model": 0,
+    "time": [
+      0
+    ],
+    "opening": [
+      1
+    ]
+  },
+  "injectionChoke": {
+    "active": true,
+    "dischargeCoefficient": 0.9,
+    "time": [
+      0
+    ],
+    "opening": [
+      1
+    ]
+  },
+  "masterValve": {
+    "active": true,
+    "activeAreaRatio": 0.4,
+    "cvCurve": 0,
+    "time": [
+      0
+    ],
+    "opening": [
+      1
+    ],
+    "measuredLength": 2881
+  },
+  "masterValve2": {
+    "active": false,
+    "time": [
+      0
+    ],
+    "opening": [
+      1
+    ]
+  },
+  "esp": [
+    {
+      "id": 0,
+      "active": false,
+      "time": [
+        0
+      ],
+      "hiCorrection": true
+    }
+  ],
+  "volumetricPump": [
+    {
+      "id": 0,
+      "active": false,
+      "time": [
+        0
+      ]
+    }
+  ],
+  "pressureDrop": [
+    {
+      "id": 0,
+      "active": false,
+      "gasCompType": 0,
+      "liquidEfficiency": 100,
+      "gasEfficiency": 0,
+      "time": [
+        0
+      ]
+    }
+  ],
+  "wax": {
+    "userPorosity": false,
+    "viscMultiplier": 1,
+    "porosity": 0
+  },
+  "productionProfile": {
+    "time": [
+      0
+    ],
+    "active": true,
+    "pressure": true,
+    "temperature": true,
+    "holdup": true
+  },
+  "serviceProfile": {
+    "time": [
+      0
+    ],
+    "active": true,
+    "pressure": true,
+    "temperature": true
+  },
+  "productionTrend": [
+    {
+      "active": true,
+      "dt": 10
+    }
+  ],
+  "serviceTrend": [
+    {
+      "active": true,
+      "dt": 10
+    }
+  ]
+}

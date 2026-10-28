@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ast
 import json
 import os
 import subprocess
@@ -14,7 +13,7 @@ TESTS_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = TESTS_DIR.parent
 MODELS_FILE = PROJECT_ROOT / "data" / "models" / "models.mr3"
 CHECK_RESULT = TESTS_DIR / "check_result.py"
-REGRESSION_TESTS_FILE = TESTS_DIR / "test_regression.py"
+DEMOS_MANIFEST = PROJECT_ROOT / "demos" / "manifest.json"
 JSON_MODEL_GROUPS = ("benchmark", "transiente", "injetor", "rede", "convecnat")
 COMMAND_GROUPS = (*JSON_MODEL_GROUPS, "regression")
 
@@ -121,33 +120,20 @@ def load_models() -> dict[str, list[Model]]:
 
 
 def load_regression_models() -> list[Model]:
-    with REGRESSION_TESTS_FILE.open(encoding="utf-8") as fp:
-        tree = ast.parse(fp.read(), filename=str(REGRESSION_TESTS_FILE))
-
-    demos = None
-    for node in tree.body:
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == "DEMOS":
-                    demos = ast.literal_eval(node.value)
-                    break
-        if demos is not None:
-            break
-
-    if not isinstance(demos, dict):
-        raise SystemExit(f"Definicao DEMOS nao encontrada em {REGRESSION_TESTS_FILE}")
-
-    return [
-        Model(
-            name=name,
-            type="TRANSIENTE",
-            input_path=f"demos/{info['json']}",
-            pvt_path="demos/",
-            output_file=f"{name}.log",
+    entries = json.loads(DEMOS_MANIFEST.read_text(encoding="utf-8"))
+    models = []
+    for entry in entries:
+        model = Path(entry["model"])
+        mode = entry.get("mode", "PRODUCAO")
+        models.append(Model(
+            name=model.stem,
+            type="TRANSIENTE" if mode == "PRODUCAO" else mode,
+            input_path=f"demos/{model.as_posix()}",
+            pvt_path=f"demos/{model.parent.as_posix()}/",
+            output_file=f"{model.stem}.log",
             group="regression",
-        )
-        for name, info in sorted(demos.items())
-    ]
+        ))
+    return sorted(models, key=lambda m: m.name)
 
 
 def available_models(models: dict[str, list[Model]]) -> dict[str, list[Model]]:

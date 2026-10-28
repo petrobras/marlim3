@@ -43,20 +43,20 @@ def test_desktop_wrapper_consumes_gui_as_a_data_file():
     assert 'desktop_root / "__main__.py"' in spec
 
 
-def test_demo_loader_discovers_mr3_json_and_nested_demos(tmp_path):
+def test_demo_loader_lists_mr3_models_but_not_auxiliary_json(tmp_path):
     discover_demo_files = _load_gui_helper("_discover_demo_files")
     demos_dir = tmp_path / "demos"
-    pt_dir = demos_dir / "pt-br"
-    pt_dir.mkdir(parents=True)
+    case_dir = demos_dir / "case"
+    case_dir.mkdir(parents=True)
     (demos_dir / "english.mr3").write_text("{}", encoding="utf-8")
-    (demos_dir / "legacy.json").write_text("{}", encoding="utf-8")
-    (demos_dir / "PVTSIM-MARLIM.tab").write_text("", encoding="utf-8")
-    (pt_dir / "portuguese.mr3").write_text("{}", encoding="utf-8")
+    (demos_dir / "manifest.json").write_text("[]", encoding="utf-8")
+    (case_dir / "portuguese.mr3").write_text("{}", encoding="utf-8")
+    (case_dir / "VFP.json").write_text("{}", encoding="utf-8")
+    (case_dir / "PVTSIM-MARLIM.tab").write_text("", encoding="utf-8")
 
     assert discover_demo_files(demos_dir) == [
+        "case/portuguese.mr3",
         "english.mr3",
-        "legacy.json",
-        "pt-br/portuguese.mr3",
     ]
 
 

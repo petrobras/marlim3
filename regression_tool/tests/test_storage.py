@@ -24,26 +24,27 @@ class StorageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             demos = root / "demos"
-            (demos / "pt-br").mkdir(parents=True)
-            (demos / "pt-br" / "producao.mr3").write_text("modelo", encoding="utf-8")
-            (demos / "pt-br" / "rede.json").write_text("{}", encoding="utf-8")
-            (demos / "pt-br" / "trecho-0.json").write_text("{}", encoding="utf-8")
+            (demos / "producao").mkdir(parents=True)
+            (demos / "rede").mkdir()
+            (demos / "producao" / "producao.mr3").write_text("modelo", encoding="utf-8")
+            (demos / "rede" / "rede.json").write_text("{}", encoding="utf-8")
+            (demos / "rede" / "trecho-0.json").write_text("{}", encoding="utf-8")
             (demos / "PVTSIM-MARLIM.tab").write_text("pvt", encoding="utf-8")
             (demos / "solto.json").write_text("{}", encoding="utf-8")
             manifest = [
-                {"model": "pt-br/producao.mr3", "aux": ["PVTSIM-MARLIM.tab"]},
-                {"model": "pt-br/rede.json", "mode": "REDE", "aux": ["trecho-0.json"]},
+                {"model": "producao/producao.mr3", "aux": ["PVTSIM-MARLIM.tab"]},
+                {"model": "rede/rede.json", "mode": "REDE", "aux": ["trecho-0.json"]},
             ]
             (demos / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             repository = StorageRepository(root / "tool.db")
             discovered = {test.model_path: test for test in discover_project_demos(root)}
 
-            self.assertEqual(set(discovered), {"demos/pt-br/producao.mr3", "demos/pt-br/rede.json"})
+            self.assertEqual(set(discovered), {"demos/producao/producao.mr3", "demos/rede/rede.json"})
             self.assertEqual(repository.list_tests(), [])
-            self.assertEqual(discovered["demos/pt-br/producao.mr3"].auxiliary_files, ["demos/PVTSIM-MARLIM.tab"])
-            self.assertEqual(discovered["demos/pt-br/producao.mr3"].arguments, [])
-            rede = discovered["demos/pt-br/rede.json"]
-            self.assertEqual(rede.auxiliary_files, ["demos/pt-br/trecho-0.json"])
+            self.assertEqual(discovered["demos/producao/producao.mr3"].auxiliary_files, ["demos/PVTSIM-MARLIM.tab"])
+            self.assertEqual(discovered["demos/producao/producao.mr3"].arguments, [])
+            rede = discovered["demos/rede/rede.json"]
+            self.assertEqual(rede.auxiliary_files, ["demos/rede/trecho-0.json"])
             self.assertEqual(rede.arguments[-2:], ["-s", "REDE"])
 
     def test_no_manifest_means_no_demos(self):

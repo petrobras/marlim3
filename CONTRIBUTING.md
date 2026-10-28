@@ -99,7 +99,7 @@ use a locally configured JFrog mirror through the maintenance helper. Use
 | `gui/` | Streamlit interface |
 | `regression_tool/` | regression and coverage tooling — [guide](regression_tool/README.md) |
 | `tests/` | test suite — [guide](tests/README.md) |
-| `demos/` | example models, PT under `demos/pt-br/` |
+| `demos/` | example models, one folder per case with the PT model, the EN model and auxiliary files |
 | `docs/` | MkDocs documentation source |
 
 ## Making changes
@@ -145,15 +145,15 @@ Run the suite before opening a pull request:
 uv run pytest tests/ -v
 ```
 
-Two markers separate tests that need the compiled engine:
+Tests that need the compiled engine are marked `simulacao`:
 
 ```bash
 uv run pytest tests/ -m "not simulacao"   # unit tests only
-uv run pytest tests/ -m regressao         # regression against stored references
+uv run pytest tests/test_demos_steady_state.py   # demos listed in demos/manifest.json
 ```
 
-See [tests/README.md](tests/README.md) for details, including how reference
-files are generated and updated.
+See [tests/README.md](tests/README.md) for details, including how demos are
+added to `demos/manifest.json` and how their reference files are updated.
 
 Optional C++ unit tests, for changes to the numerical core:
 
@@ -314,7 +314,7 @@ Documentation is part of the feature, not an afterthought. A pull request that a
 | New correlation or model element | Model reference page, citation in code |
 | Changed default value or unit | Model reference page, relevant demo comments |
 | New command-line option or Python API | `docs/` page covering that interface |
-| New demo file | Entry in `tests/test_demos_steady_state.py` and a short description in `demos/README.md` |
+| New demo file | A case folder in `demos/`, an entry in `demos/manifest.json` and its references (see [tests/README.md](tests/README.md)) |
 
 #### Updating schemas when adding or renaming input keys
 
