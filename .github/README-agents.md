@@ -119,6 +119,7 @@ flowchart LR
 ## Tips
 
 - For a quick result, attach the documents you have or ask for defaults ("a simple case showing X, use defaults"): the planner then goes straight to the approval question. With a complete plan, it skips that question too.
+- The agents ask through VS Code's question form (the `vscode/askQuestions` tool). Don't run them in Autopilot mode or with the `chat.autoReply` setting on: VS Code then answers every question by itself ("the user is not available"), so the planner gets none of your answers and the ADR stays `Proposed`.
 - To only plan (without implementing), call `marlim3-planner` directly. To implement an already approved ADR, give its session folder to `marlim3`: it skips planning and goes straight to implementation and QA. To audit an existing case, call `marlim3-qa`.
 - Tests with the `simulacao` marker require the compiled executable and are skipped automatically without it (see [tests/README.md](../tests/README.md)). A skipped test is not a passing test.
 - Run a finished case with `uv run pytest agent_sessions/<session>/test_<slug>.py -v` or via `marlim3.Branch().from_json(...)`. Check any `.mr3` with `uv run python .github/skills/marlim3-json-schema/scripts/check_case.py <file>`.

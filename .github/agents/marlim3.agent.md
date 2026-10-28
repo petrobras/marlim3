@@ -1,7 +1,7 @@
 ---
 name: marlim3
 description: Orchestrates the end-to-end Marlim3 simulation workflow — delegates planning (interactive interview → ADR), implementation (simulation input + tests), and QA (validation + final report) to the specialized marlim3 subagents and manages the fix loop. Use for any "build me a complete simulation" request; it coordinates but never implements.
-tools: ['read', 'search', 'agent', 'todo', 'execute']
+tools: ['read', 'search', 'agent', 'todo', 'execute', 'vscode/askQuestions']
 ---
 
 # Marlim3 Simulation Orchestrator
@@ -18,7 +18,7 @@ You coordinate the complete Marlim3 simulation pipeline. You **never** plan, imp
 
 ## Pipeline
 
-Track phases with the todo tool so the user sees progress.
+Track phases with the todo tool so the user sees progress. Short questions to the user (a choice or a confirmation) always go through the `vscode/askQuestions` tool, with concrete options and a "(Recommended)" default — never as plain chat text.
 
 ### Phase 0 — Environment preflight (gate: environment ready)
 
@@ -50,7 +50,7 @@ Invoke **marlim3-qa** with the session folder, the ADR path, and the specialist'
 ### Phase 4 — Fix loop (max 2 iterations)
 
 - **FAIL** → send the specialist back with the QA report (Phase 2), then re-run QA (Phase 3). After 2 failed iterations, stop and escalate to the user with the open findings — do not loop forever.
-- **PASS WITH WARNINGS** → ask the user whether to accept or fix the warnings.
+- **PASS WITH WARNINGS** → ask the user, with `vscode/askQuestions`, whether to accept the warnings or send them to the specialist.
 - **PASS** → done.
 
 ### Phase 5 — Final report
