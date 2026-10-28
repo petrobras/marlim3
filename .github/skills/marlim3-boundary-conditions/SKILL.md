@@ -29,7 +29,7 @@ Reverse-flow protection at outlet: `initialConfig.checkValve` (0 = reverse gas i
 
 ## Reservoir inflow — `ipr` (array)
 
-`prodFluidId` → fluid id; `measuredLength` (use a small value like 0.1 for bottomhole at line start); `iprType`: 0 linear, 1 combined Vogel, 2 Vogel. Paired schedules (each `*Time` array matches its value array): `staticPressureTime`/`staticPressure` [kgf/cm²], `temperaturesTime`/`temperatures` [°C], `ipTime`/`ip` (linear PI, sm³/d per kgf/cm²), `qMaxTime`/`qMax` (Vogel), `iiTime`/`ii` (injectivity index — used for reverse flow, keep populated).
+`prodFluidId` → fluid id; `measuredLength` (use a small value like 0.1 for bottomhole at line start); `iprType`: 0 linear, 1 combined Vogel, 2 Vogel. Paired schedules (each `*Time` array matches its value array): `staticPressureTime`/`staticPressure` [kgf/cm²], `temperaturesTime`/`temperatures` [°C], `ipTime`/`ip` (linear PI, sm³/d per kgf/cm²), `qMaxTime`/`qMax` (Vogel), `iiTime`/`ii` (injectivity index — used for reverse flow; always populate it, repeating `ip` if unknown: the executable crashes without it).
 
 ## Prescribed sources (arrays; all use `prodFluidId`, `measuredLength`, `time`, `temperature`)
 

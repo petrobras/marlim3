@@ -103,6 +103,6 @@ Run the bundled [check_case.py](scripts/check_case.py) on every case before hand
 uv run python .github/skills/marlim3-json-schema/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
 ```
 
-It reports everything in one run — every schema violation (EN or PT schema, chosen by the `language` marker), unknown keys (typos the schema lets through), loading errors from `marlim3.Branch`, and the cross-reference and structural rules above — and exits with status 1 on any ERROR. `jsonschema` already ships with the project environment (marlim3 depends on nbformat, which depends on it), so no extra dependency group is needed.
+It reports everything in one run — every schema violation (EN or PT schema, chosen by the `language` marker), unknown keys (typos the schema lets through), loading errors from `marlim3.Branch`, the cross-reference and structural rules above, and inputs that crash the executable although the schema accepts them (e.g., an `ipr` without `ii`/`iiTime`) — and exits with status 1 on any ERROR. `jsonschema` already ships with the project environment (marlim3 depends on nbformat, which depends on it), so no extra dependency group is needed.
 
 Some demos predate the current schema (lowercase `layerMeasurementType`, `gasFluid.criticalCorrelation: 0`, legacy keys such as `frecupera`): when a demo and the checker disagree, follow the checker.

@@ -53,7 +53,7 @@ case.plot_profiles()
 2. Writes `<label>.mr3` into the **current working directory** (tests `chdir` into a tmp dir first — copy that pattern).
 3. Runs the bundled executable (`-s INJETOR` added automatically when `system` is `"INJ"`/`"INJETOR"`).
 4. Loads results into `case.resultados`: keys `productionProfile`, `productionTrend`, and `serviceProfile`/`serviceTrend` when `gasLine` is true.
-5. On failure, raises with the `FALHA` entry parsed from `simulacao.log` — always read that log when debugging.
+5. On failure, raises with the `FALHA` entry parsed from `simulacao.log` — always read that log when debugging. If the executable crashes instead (e.g., segmentation fault), there is no `simulacao.log` and no exception: it only prints `No PERFISP*.dat files found` and the result entries are `None`. Run `check_case.py` on the case, then the executable directly (`mkdir out && <path>/Marlim3 -d out -i <label>.mr3`) to see the exit code.
 6. Auxiliary files (`.tab`/`.ctm` PVT, snapshots) must be in the CWD at run time.
 
 Executable availability: `from marlim3._download import executable_exists, get_executable_path`. On import, the package tries to resolve/download the executable (skippable via `MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1`). The agents' environment preflight is [scripts/check_environment.py](scripts/check_environment.py) — `uv run python .github/skills/marlim3-python-api/scripts/check_environment.py` prints `READY`, or `NOT READY` with the fix (exit 1), without downloading or building anything.
