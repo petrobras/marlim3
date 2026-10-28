@@ -9,7 +9,7 @@ The planner turns a request like "simulate a shutdown of a gas-lifted well" into
 
 ## Interview protocol
 
-Use the ask-questions tool (`vscode/askQuestions`) in **batches of related questions** (3–6 per batch), offering concrete options with a recommended default plus free-text. Never assume silently: anything not answered must appear in the ADR's "Assumed defaults" table. Ask in this order, skipping domains the request already answers.
+Use the question tool (`vscode/askQuestions` in VS Code chat, `ask_user` in Copilot CLI sessions) in **batches of related questions** (3–6 per batch), offering concrete options with a recommended default plus free-text. Never assume silently: anything not answered must appear in the ADR's "Assumed defaults" table. Ask in this order, skipping domains the request already answers.
 
 **Fast path** — for illustrative or simple requests ("a simple case showing X", "use defaults"), or when the input documents answer most of the checklist, skip the batches: take everything else from the safe defaults below, write the ADR, and let the final approval question (which lists every assumed default) be the only round with the user.
 
