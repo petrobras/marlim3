@@ -240,7 +240,7 @@ def test_grouped_never_computes_cartesian_product(engine, tmp_path, mode):
     })
     assert count ** 10 > 2 ** 31 - 1
     base_model = json.loads(
-        (ROOT / "demos" / "pt-br" / "atritoTuboLiso.mr3").read_text(encoding="utf-8")
+        (ROOT / "demos" / "smoothPipeFriction" / "atritoTuboLiso.mr3").read_text(encoding="utf-8")
     )
     model_override = {
         "correcao": {
