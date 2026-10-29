@@ -24,6 +24,7 @@
 # v3 por Afranio em 16/06/2026 com ChatPetrobras (Claude Sonnet), suporte a arquivos de saída em inglês
 # v4 por Postal em 01/09/2026 com Claude Opus 5 e Sonnet 5, nomes de variáveis do Olga por padrão,
 #    tratamento de erros básico, melhorias de desempenho e geometria de contingência na ausência de PERFIS
+# v5 por Postal em 29/10/2026 com GPT-6.1 Sol, suporte à saída da análise paramétrica (AP)
 
 import os
 import glob
@@ -40,6 +41,7 @@ from .._output_headers import (
     is_pressure_variable,
     is_temperature_variable,
     parse_trend_headers,
+    split_trend_header_lines,
 )
 
 skip_variables = SKIP_VARIABLES
@@ -434,9 +436,11 @@ def _ap_geometry(perfis_files, source):
 @functools.lru_cache(maxsize=None)
 def read_tend_file(file_path):
     lines = _read_dat_lines(file_path, 5)
-    headers = lines[:3]
-    variable_line = lines[3]
-    data_lines = lines[4:]
+    _, headers, n_header_lines = split_trend_header_lines(lines)
+    if len(lines) < n_header_lines + 2:
+        lines = _read_dat_lines(file_path, n_header_lines + 2)
+    variable_line = lines[n_header_lines]
+    data_lines = lines[n_header_lines + 1:]
 
     try:
         position, rotulo, celula = parse_trend_headers(headers[0], headers[1], headers[2])

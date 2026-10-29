@@ -77,9 +77,11 @@ def _write_perfis_en(path, times):
     path.write_text("PERFISP\n" + "".join(lines), encoding="utf-8")
 
 
-def _write_tend(path, times, position="10.0", label="Poco1", cell="3", pt_col="Pressao (kgf/cm2)"):
+def _write_tend(path, times, position="10.0", label="Poco1", cell="3", pt_col="Pressao (kgf/cm2)",
+                metadata_line=None):
     header = (
-        f"# Comprimento a partir do Fundo de Poco (m) = {position}\n"
+        (f"{metadata_line}\n" if metadata_line is not None else "")
+        + f"# Comprimento a partir do Fundo de Poco (m) = {position}\n"
         f"# Rotulo = {label}\n"
         f"# Indice da Celula = {cell}\n"
         f"Tempo (s);{pt_col} F\n"
@@ -446,3 +448,62 @@ def test_ap_service_trend_only_and_cached_reads(tmp_path, monkeypatch):
         _, series, geometry = _read_plot(tmp_path / f"{tmp_path.name}_AP-{ap}.tpl")
         assert set(geometry) == {"SERVICO"}
         assert series[0][:2] == [0, 100 + 100 * ap]
+
+
+METADATA_PT = "# Versao Marlim - 3.1.0 # arquivo = /path/with spaces/a=b # c/case.mr3"
+METADATA_EN = "# Version Marlim - 3.1.0 # file = C:\\cases\\case.json"
+
+
+@pytest.mark.parametrize("metadata_line", [None, METADATA_PT, METADATA_EN])
+def test_read_tend_file_with_and_without_metadata_line(tmp_path, metadata_line):
+    path = tmp_path / "TENDP-0.dat"
+    _write_tend(path, [0, 60], position="12.5", label="PDG", cell="7", metadata_line=metadata_line)
+
+    headers, variables, data, position, rotulo, celula = conversor.read_tend_file(str(path))
+
+    assert (position, rotulo, celula) == ("12.5", "PDG", "7")
+    assert variables[0] == "Tempo (s)"
+    assert [row[0] for row in data] == ["0", "60"]
+
+
+def test_convert_tend_file_with_metadata_line(tmp_path):
+    _write_tend(tmp_path / "TENDP-0.dat", [0, 60], metadata_line=METADATA_PT)
+
+    conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+    assert "PT " in (tmp_path / f"{tmp_path.name}.tpl").read_text(encoding="utf-8")
+
+
+def test_split_trend_header_lines_and_metadata():
+    spec = importlib.util.spec_from_file_location("_output_headers_standalone", OUTPUT_HEADERS_PATH)
+    headers_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(headers_module)
+    parse_header_metadata = headers_module.parse_header_metadata
+    split_trend_header_lines = headers_module.split_trend_header_lines
+
+    old = ["# Comprimento a partir do Fundo de Poco (m) = 1", "# Rotulo = X", "# Indice da Celula = 2", "Tempo (s) ;"]
+    assert split_trend_header_lines(old) == ({}, old[:3], 3)
+
+    metadata, headers, n = split_trend_header_lines([METADATA_PT] + old)
+    assert n == 4 and headers == old[:3]
+    assert metadata == {"version": "Marlim - 3.1.0", "input_file": "/path/with spaces/a=b # c/case.mr3"}
+
+    assert parse_header_metadata(METADATA_EN) == {"version": "Marlim - 3.1.0", "input_file": "C:\\cases\\case.json"}
+    perfis = ("# Passo de tempo = 10 # Posicao ANM= 1500 # data e hora da simulacao 29/10/2026 18:00:00"
+              " # Versao Marlim - 3.1.0 # arquivo = /abs/case.mr3")
+    assert parse_header_metadata(perfis) == {"version": "Marlim - 3.1.0", "input_file": "/abs/case.mr3"}
+
+
+def test_convert_perfis_with_input_file_in_header(tmp_path):
+    _write_perfis_pt(tmp_path / "PERFISP-0.dat", [0, 60])
+    path = tmp_path / "PERFISP-0.dat"
+    body = path.read_text(encoding="utf-8").split("\n", 1)[1]
+    path.write_text(
+        "# Passo de tempo = 10 # data e hora da simulacao 29/10/2026 18:00:00"
+        " # Versao Marlim - 3.1.0 # arquivo = /abs/case.mr3\n" + body,
+        encoding="utf-8",
+    )
+
+    conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+    assert (tmp_path / f"{tmp_path.name}.ppl").exists()
