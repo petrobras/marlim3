@@ -55,7 +55,7 @@ jobs:
           if [[ "${RESTORE}" == "true" ]]; then
             body="Release label removed: \`_version.py\` restored to **${version}**, so merging will not release."
           else
-            body="Merging this PR will release **v${version}**. Pull before pushing again: the bot committed \`_version.py\`."
+            body="Merging this PR will release **v${version}**. To run CI on the bot commit, select **Approve workflows to run** in the merge box. Pull before pushing again."
           fi
           gh pr comment "${PR_NUMBER}" --body "${body}"
 

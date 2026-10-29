@@ -560,7 +560,7 @@ Each executable comes with a `.sha256` file for integrity verification. The Pyth
 | `Release-Major` | 3.10.0 → 4.0.0 |
 
 1. On every PR into `main`, `.github/workflows/release-version.yml` keeps `_version.py` in step with the label. The version is computed from `_version.py` on `main` and the existing `v*` tags, so:
-   - adding the label commits `chore: set version to X.Y.Z` to the PR branch and comments the version on the PR (pull before pushing again);
+   - adding the label commits `chore: set version to X.Y.Z` to the PR branch and comments the version on the PR (pull before pushing again). GitHub holds the CI runs on this bot commit until a maintainer selects **Approve workflows to run** in the merge box;
    - relabelling (e.g. Patch → Minor) replaces the bump instead of adding to it, and removing the label restores the version on `main`;
    - if `main` gets a new release before the PR is merged, the next push to the PR (or *Update branch*) moves the bump forward.
 2. The same workflow then runs the **Check _version.py** step, which fails if the version does not fit the labels: a label without the bump, a bump that differs from the label, a version that goes backwards, skips a step or reuses an existing tag.
