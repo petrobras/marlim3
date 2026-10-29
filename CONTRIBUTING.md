@@ -263,7 +263,7 @@ flowchart TB
     end
 
     subgraph Release[Release]
-        K[Tag v* created<br/>git tag vX.Y.Z]
+        K[Release-* label on the PR<br/>bumps _version.py; merge tags vX.Y.Z]
         L[CI/CD: build + tests<br/>on all 3 operating systems]
         M[GitHub Release<br/>with published executables]
     end
@@ -473,6 +473,7 @@ The `.github/workflows/build-test-release.yml` file defines the **Build, Test & 
 |---|---|
 | Pull Request to `main` | Python checks + build + tests |
 | Push to `main` | Python checks + build + tests |
+| `v*` tag (started by `tag-release.yml`) | All of the above + desktop apps + GitHub Release + PyPI |
 
 ### Pipeline stages
 
@@ -547,6 +548,27 @@ flowchart TD
 | `Marlim3-desktop-macos-arm64.dmg` | Desktop app — macOS ARM64 (DMG) |
 
 Each executable comes with a `.sha256` file for integrity verification. The Python package is then published to **PyPI** and a smoke test verifies the installation on clean runners.
+
+### Releasing a new version
+
+`_version.py` is the single source of the version: it sets the PyPI package version, the CMake project version, the desktop app version and the release URL from which the Python package downloads the engine. A release is made by a maintainer adding **one** label to the pull request before merging it:
+
+| Label | Example |
+|---|---|
+| `Release-Patch` | 3.10.0 → 3.10.1 |
+| `Release-Minor` | 3.10.0 → 3.11.0 |
+| `Release-Major` | 3.10.0 → 4.0.0 |
+
+1. On every PR into `main`, `.github/workflows/release-version.yml` keeps `_version.py` in step with the label. The version is computed from `_version.py` on `main` and the existing `v*` tags, so:
+   - adding the label commits `chore: set version to X.Y.Z` to the PR branch and comments the version on the PR (pull before pushing again);
+   - relabelling (e.g. Patch → Minor) replaces the bump instead of adding to it, and removing the label restores the version on `main`;
+   - if `main` gets a new release before the PR is merged, the next push to the PR (or *Update branch*) moves the bump forward.
+2. The same workflow then runs the **Check _version.py** step, which fails if the version does not fit the labels: a label without the bump, a bump that differs from the label, a version that goes backwards, skips a step or reuses an existing tag.
+3. When the PR is merged, `.github/workflows/tag-release.yml` sees a version on `main` without a tag, creates the tag `vX.Y.Z` and starts the release pipeline above on it.
+
+PRs without a `Release-*` label do not create a release. Any change of `_version.py` merged into `main` is released. In PRs from forks the bot cannot push, so a maintainer sets `_version.py` by hand to the next version instead of adding the label; the check still validates it.
+
+Do not create `v*` tags by hand. If you do, the tag must match `_version.py`: the pipeline's pre-check fails otherwise, so a mismatched tag cannot publish a release with the wrong version. Never delete a published tag: the next bump would reuse its number, which PyPI rejects.
 
 ### Optimisation: skip duplicates
 

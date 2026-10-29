@@ -1,0 +1,63 @@
+name: Release version
+
+# Keeps _version.py in step with the Release-Patch/-Minor/-Major PR label and
+# checks it on every PR into main. Merging a PR with a new version triggers
+# tag-release.yml, which tags and publishes it.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-version-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Check _version.py
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+      # The default token cannot push to fork branches; those PRs are only checked.
+      SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref || '' }}
+          fetch-depth: 0
+
+      - name: Set version from label
+        if: env.SAME_REPO == 'true'
+        env:
+          RESTORE: ${{ github.event.action == 'unlabeled' && startsWith(github.event.label.name, 'Release-') }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          args=()
+          if [[ "${RESTORE}" == "true" ]]; then args+=(--restore); fi
+          version="$(python3 .github/scripts/release_version.py sync "${LABELS}" "${args[@]}")"
+          if git diff --quiet -- _version.py; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: set version to ${version}" -- _version.py
+          git push origin "HEAD:${HEAD_REF}"
+          if [[ "${RESTORE}" == "true" ]]; then
+            body="Release label removed: \`_version.py\` restored to **${version}**, so merging will not release."
+          else
+            body="Merging this PR will release **v${version}**. Pull before pushing again: the bot committed \`_version.py\`."
+          fi
+          gh pr comment "${PR_NUMBER}" --body "${body}"
+
+      - name: Check version fits labels
+        run: python3 .github/scripts/release_version.py check-pr "${LABELS}"

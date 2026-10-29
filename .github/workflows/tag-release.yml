@@ -1,0 +1,47 @@
+name: Tag release
+
+# A new version in _version.py on main is tagged and released. A tag pushed
+# with GITHUB_TOKEN does not trigger workflows, so the release is dispatched.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - _version.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag and dispatch release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Create tag and start release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="$(python3 .github/scripts/release_version.py show)"
+          tag="v${version}"
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            echo "Tag ${tag} already exists; nothing to release."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "${tag}" -m "${tag}" "${GITHUB_SHA}"
+          git push origin "${tag}"
+          gh workflow run build-test-release.yml --ref "${tag}"
+          echo "Released ${tag}: see the Build, Test & Release run on ${tag}."
