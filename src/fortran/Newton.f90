@@ -60,9 +60,10 @@ module Newton
             real(c_double), dimension(iNComp), intent(out), optional :: oYArg
         end subroutine SolveRachfordRiceEquation
 
-        subroutine PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oMixtureLnFug, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, bFeedIsStableAsSinglePhaseArg, &
-                oLiqStationaryPointWArg, oLiqStationaryPointLnFugArg, oVapStationaryPointWArg, oVapStationaryPointLnFugArg, oImprovedKFactorsArg) &
+        subroutine PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oMixtureLnFug, oTc, oPc, oW, &
+                oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
+                bFeedIsStableAsSinglePhaseArg, oLiqStationaryPointWArg, oLiqStationaryPointLnFugArg, oVapStationaryPointWArg, &
+                oVapStationaryPointLnFugArg, oImprovedKFactorsArg) &
                 bind(C, name='PerformTangentPlaneAnalysisForVLE')
             use iso_c_binding
             implicit none
@@ -130,9 +131,10 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine NewtonMinimization_V1(iXLength, iNParam, sRoutineForFunctionAndDerivatives, sRoutineForCorrectionOfDeltaX, sRoutineForCorrectionOfX, oX, &
-                oProblemParams, oCompProperties, iMaxIter, dRelativeTolerance, bNewtonMinimizationConverged, oXSol, iNewtonIterationsForSol, iIER, &
-                sFunctionForPrematureReturn, bNewtonPrematurelyEnded, sRoutineForAdditionalConvergenceCheck)
+    subroutine NewtonMinimization_V1(iXLength, iNParam, sRoutineForFunctionAndDerivatives, sRoutineForCorrectionOfDeltaX, &
+                sRoutineForCorrectionOfX, oX, oProblemParams, oCompProperties, iMaxIter, dRelativeTolerance, &
+                bNewtonMinimizationConverged, oXSol, iNewtonIterationsForSol, iIER, sFunctionForPrematureReturn, &
+                bNewtonPrematurelyEnded, sRoutineForAdditionalConvergenceCheck)
 
         ! OBJETIVO: Aplicar o Método de Newton aos problemas de minimização que surgem nas análises do escopo
         !           desta biblioteca.
@@ -284,14 +286,15 @@ module Newton
             oPreviousX = oX     ! CUIDADO PRA NÃO CONFUNDIR: "dPreviousObjectiveFunctionValue" não corresponde a "oPreviousX"!
 
             ! Obter a matriz Hessiana e o vetor gradiente:
-            call sRoutineForFunctionAndDerivatives(iXLength, iNParam, oX, oProblemParams, oCompProperties, dObjectiveFunctionValue, &
-                    oObjectiveFunctionDerivatives, oHessianMatrix)
+            call sRoutineForFunctionAndDerivatives(iXLength, iNParam, oX, oProblemParams, oCompProperties, &
+                    dObjectiveFunctionValue, oObjectiveFunctionDerivatives, oHessianMatrix)
 
             iIER_Local = int(oProblemParams(iNParam))
             if(iIER_Local.NE.ERROR_EverythingOK) then
 
                 ! -------> Escrita no arquivo de Debug
-                write(sDebugFileLine, '("                    Iter ", I4, " de Newton; FuncAndDerivatives: iIER_Local = ", I3)') iIter, iIER_Local
+                write(sDebugFileLine, '("                    Iter ", I4, " de Newton; FuncAndDerivatives: iIER_Local = ", I3)') &
+                    iIter, iIER_Local
                 call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile) 
                 ! -------> Fim da escrita no arquivo de Debug
 
@@ -302,7 +305,8 @@ module Newton
             ! Testar ocorrências frente às quais a minimização deva ser interrompida antes do fim:
             hasPrematureReturnRoutine: if(present(sFunctionForPrematureReturn)) then
 
-                call sFunctionForPrematureReturn(iXLength, iNParam, oX, oProblemParams, dObjectiveFunctionValue, bTerminatePrematurely)
+                call sFunctionForPrematureReturn(iXLength, iNParam, oX, oProblemParams, dObjectiveFunctionValue, &
+                    bTerminatePrematurely)
 
                 checkForPrematureClose: if(bTerminatePrematurely) then
                     iNewtonIterationsForSol = iIter
@@ -347,15 +351,17 @@ module Newton
 
             ! ----------> Escrita no arquivo de Debug:
             write(sDebugFileLine, &
-                '("                    Iter ", I4, " de Newton: dCurrentError = ", E12.5, " ; dObjectiveFunctionValue = ", E12.5, " ; dOffsetInErrorCalc = ", F3.1)') &
+                '("                    Iter ", I4, " de Newton: dCurrentError = ", E12.5, " ; dObjectiveFunctionValue = ", &
+                E12.5, " ; dOffsetInErrorCalc = ", F3.1)') &
                 iIter, dCurrentError, dObjectiveFunctionValue, dOffsetInErrorCalc
-            call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)                    
+            call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             ! ----------> Fim da escrita no aruivo de Debug:
 
             ! Verificar se já pode considerar convergido:
             bConverged = (dCurrentError.lt.dRelativeTolerance)
-            if(present(sRoutineForAdditionalConvergenceCheck)) call sRoutineForAdditionalConvergenceCheck(iXLength, oX, oPreviousX, iIter, &
-                    dObjectiveFunctionValue, dPreviousObjectiveFunctionValue, dRelativeTolerance, dCurrentError, bConverged)
+            if(present(sRoutineForAdditionalConvergenceCheck)) call sRoutineForAdditionalConvergenceCheck(iXLength, oX, &
+                    oPreviousX, iIter, dObjectiveFunctionValue, dPreviousObjectiveFunctionValue, dRelativeTolerance, &
+                    dCurrentError, bConverged)
 
             bConverged = bConverged.AND.(iIter.GE.2)                ! Garantir duas passagens, por valores válidos de "oPreviousX" e "dPreviousObjectiveFunctionValue".
 
@@ -546,11 +552,11 @@ module Newton
         doAnalysisOrNot: if(bTangentPlaneAnalysisBeforeNewton) then
 
                 ! APAGAR ESTE COMENTÁRIO DEPOIS: chamada idêntica à de FlashExtras
-            call PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oLeastGPhaseLnFug, oTc, oPc, oW, oKij, oLij, &
-                        oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
-                        bFeedIsStableAsSinglePhaseArg = bFeedIsStableAsSinglePhase, oLiqStationaryPointWArg = oLiqStationaryPointW, &
-                        oLiqStationaryPointLnFugArg = oLiqStationaryPointLnFug, oVapStationaryPointWArg = oVapStationaryPointW, &
-                        oVapStationaryPointLnFugArg = oVapStationaryPointLnFug, oImprovedKFactorsArg = oImprovedKFactors)
+            call PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oLeastGPhaseLnFug, oTc, oPc, oW, &
+                    oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
+                    bFeedIsStableAsSinglePhaseArg = bFeedIsStableAsSinglePhase, oLiqStationaryPointWArg = oLiqStationaryPointW, &
+                    oLiqStationaryPointLnFugArg = oLiqStationaryPointLnFug, oVapStationaryPointWArg = oVapStationaryPointW, &
+                    oVapStationaryPointLnFugArg = oVapStationaryPointLnFug, oImprovedKFactorsArg = oImprovedKFactors)
 
             chkStable1: if(bFeedIsStableAsSinglePhase) then
                 call GetResultsForSinglePhaseFeed(iNComp, oZ, iLeastGPhaseID, dBetaVap, oX, oY)
@@ -561,9 +567,8 @@ module Newton
 
         ! Acionar o método de Newton:
         call PerformFlashCalculationWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
-                oPeneloux, iLiqPhaseModel, iVapPhaseModel, oImprovedKFactors, oLiqStationaryPointW, oVapStationaryPointW, dBetaVap, &
-                oX, oY, bFlashNewtonMinConverged, iIER)
-
+                oPeneloux, iLiqPhaseModel, iVapPhaseModel, oImprovedKFactors, oLiqStationaryPointW, oVapStationaryPointW, &
+                dBetaVap, oX, oY, bFlashNewtonMinConverged, iIER)
 
         didNewtonConverge: if(.not.bFlashNewtonMinConverged) then
 
@@ -583,9 +588,9 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine PerformFlashCalculationWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
-                oPeneloux, iLiqPhaseModel, iVapPhaseModel, oImprovedKFactors, oLiqStationaryPointW, oVapStationaryPointW, dBetaVap, &
-                oX, oY, bFlashNewtonMinConverged, iIER)
+    subroutine PerformFlashCalculationWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, oKij, &
+                oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, oImprovedKFactors, oLiqStationaryPointW, oVapStationaryPointW, &
+                dBetaVap, oX, oY, bFlashNewtonMinConverged, iIER)
 
         ! OBJETIVO: Resolver um cálculo de Flash T,P através da minimização por Newton.
 
@@ -650,7 +655,8 @@ module Newton
 
             ! Na indisponibilidade de beta inicial válido, obter estimativas iniciais com base nos
             ! resultados da verificação de estabilidade:
-            call SolveRachfordRiceEquation(iNComp, oZ, oImprovedKFactors, bRRSolutionExists, dBetaVap, dBetaLiq, oXArg = oRRX, oYArg = oRRY)
+            call SolveRachfordRiceEquation(iNComp, oZ, oImprovedKFactors, bRRSolutionExists, dBetaVap, dBetaLiq, oXArg = oRRX, &
+                oYArg = oRRY)
 
             goWithRRResults: if(bRRSolutionExists.and.(dBetaVap.ge.(0.0d0)).and.(dBetaVap.le.(1.0d0))) then
 
@@ -706,8 +712,8 @@ module Newton
         iNParam = size(oProblemParams)
 
         ! Acionar a minimização por Newton:
-        call NewtonMinimization_V1(iNComp, iNParam, CalculateFlashNewtonObjectiveFunctionAndDerivatives, CheckAndCorrectMolarAmountsChange, &
-                UpdateMolarAmounts, oVapMolarAmounts, oProblemParams, oCompProperties, &
+        call NewtonMinimization_V1(iNComp, iNParam, CalculateFlashNewtonObjectiveFunctionAndDerivatives, &
+                CheckAndCorrectMolarAmountsChange, UpdateMolarAmounts, oVapMolarAmounts, oProblemParams, oCompProperties, &
                 iMaxIterToUse, dRelativeTolToUse, bFlashNewtonMinConverged, oVapMolarAmounts_Sol, iFlashNewtonItersForSol, iIER)
 
         if(iIER.NE.ERROR_EverythingOK) return
@@ -833,7 +839,8 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateFlashObjectiveFunctionForNewtonMinimization(oVapMolarAmounts, oProblemParams, oCompProperties, dObjectiveFunctionValue)
+    subroutine CalculateFlashObjectiveFunctionForNewtonMinimization(oVapMolarAmounts, oProblemParams, oCompProperties, &
+        dObjectiveFunctionValue)
 
         ! OBJETIVO: Calcular a função objetivo que precisa ser minimizada em um cálculo de "flash" - ou
         !           seja, a energia de Gibbs.
@@ -879,12 +886,13 @@ module Newton
 
         ! Obter as variáveis necessárias do vetor:
         iNComp = size(oVapMolarAmounts)
-        call GetFlashVariablesFromParametersVector(iNComp, oProblemParams, dTemperature = dTemperatureLoc, dPressure = dPressureLoc, &
-                oLiqMolarAmounts = oLiqMolarAmountsLoc, oZ = oZ_Loc, iLiqPhaseModel = iLiqPhaseModel_Loc, iVapPhaseModel = iVapPhaseModel_Loc)
+        call GetFlashVariablesFromParametersVector(iNComp, oProblemParams, dTemperature = dTemperatureLoc, &
+                dPressure = dPressureLoc, oLiqMolarAmounts = oLiqMolarAmountsLoc, oZ = oZ_Loc, &
+                iLiqPhaseModel = iLiqPhaseModel_Loc, iVapPhaseModel = iVapPhaseModel_Loc)
 
         ! Obter as propriedades necessárias dos componentes:
-        call GetComponentPropertiesFromParameterMatrix(iNComp, oCompProperties, oTc = oTc_Loc, oPc = oPc_Loc, oW = oW_Loc, oKij = oKij_Loc, &
-                    oLij = oLij_Loc, oPeneloux = oPeneloux_Loc)
+        call GetComponentPropertiesFromParameterMatrix(iNComp, oCompProperties, oTc = oTc_Loc, oPc = oPc_Loc, oW = oW_Loc, &
+                    oKij = oKij_Loc, oLij = oLij_Loc, oPeneloux = oPeneloux_Loc)
 
         ! "Reverter" para frações molares:
         dVapBeta = sum(oVapMolarAmounts)
@@ -923,8 +931,8 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateFlashNewtonObjectiveFunctionAndDerivatives(iNComp, iNParam, oVapMolarAmounts, oProblemParams, oCompProperties, dObjectiveFunctionValue, &
-        oObjectiveFunctionDerivatives, oHessianMatrix)
+    subroutine CalculateFlashNewtonObjectiveFunctionAndDerivatives(iNComp, iNParam, oVapMolarAmounts, oProblemParams, &
+        oCompProperties, dObjectiveFunctionValue, oObjectiveFunctionDerivatives, oHessianMatrix)
 
         ! OBJETIVO: Calcular variáveis necessárias para a solução do flash por minimização da energia de
         !   Gibbs (função objetivo, vetor gradiente e matriz Hessiana).
@@ -934,13 +942,13 @@ module Newton
         implicit none
 
         ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
-        integer(c_int), value, intent(in) :: iNComp                                             ! Número de componentes.
+        integer(c_int), value, intent(in) :: iNComp                 ! Número de componentes.
         integer, intent(in) :: iNParam                              ! Comprimento do vetor "oProblemParams"
-        real(c_double), dimension(iNComp), intent(in) :: oVapMolarAmounts                       ! "Vapor molar amounts" (definição na pág 229 da Referência 1).
+        real(c_double), dimension(iNComp), intent(in) :: oVapMolarAmounts  ! "Vapor molar amounts" (definição na pág 229 da Referência 1).
         real(c_double), dimension(2*iNComp+5), intent(inout) :: oProblemParams  ! Vetor de parâmetros e variáveis do cálculo de "flash"
-        real(c_double), dimension(2*iNComp+4, iNComp), intent(in) :: oCompProperties    ! Matriz de propriedades dos componentes
+        real(c_double), dimension(2*iNComp+4, iNComp), intent(in) :: oCompProperties  ! Matriz de propriedades dos componentes
 
-        real(c_double), intent(out) :: dObjectiveFunctionValue                                ! Valor calculado da função objetivo.
+        real(c_double), intent(out) :: dObjectiveFunctionValue  ! Valor calculado da função objetivo.
         real(c_double), dimension(iNComp), intent(out) :: oObjectiveFunctionDerivatives
         real(c_double), dimension(iNComp, iNComp), intent(out) :: oHessianMatrix
 
@@ -964,11 +972,12 @@ module Newton
         real(c_double), dimension(size(oVapMolarAmounts)) :: oLiqLnFug   ! Vetor dos "ln" dos coeficientes de fugacidade na fase líquida
         real(c_double), dimension(size(oVapMolarAmounts)) :: oVapLnFug   ! Vetor dos "ln" dos coeficientes de fugacidade na fase vapor
         real(c_double) :: dLiqGibbsEnergy, dVapGibbsEnergy
-        integer :: i
-        real(c_double), dimension(size(oVapMolarAmounts), size(oVapMolarAmounts)) :: oDerivLnCoefFugWithNj_Liq, oDerivLnCoefFugWithNj_Vap
-        real(c_double), dimension(size(oVapMolarAmounts), size(oVapMolarAmounts)) :: oPhiIJ_Liq, oPhiIJ_Vap     ! "Phi" da equação 12 da pág 255 da referência.
+        real(c_double), dimension(size(oVapMolarAmounts), size(oVapMolarAmounts)) :: oDerivLnCoefFugWithNj_Liq, &
+                                                                                     oDerivLnCoefFugWithNj_Vap
+        real(c_double), dimension(size(oVapMolarAmounts), size(oVapMolarAmounts)) :: oPhiIJ_Liq, oPhiIJ_Vap  ! "Phi" da equação 12 da pág 255 da referência.
         real(c_double) :: dNLiq, dNVap
         real(c_double) :: dLogX, dLogY
+        integer :: i
 
         ! ------------ CONSTANTES:
 
@@ -982,12 +991,13 @@ module Newton
 
         ! Obter as variáveis necessárias do vetor:
         !iNComp = size(oVapMolarAmounts)
-        call GetFlashVariablesFromParametersVector(iNComp, oProblemParams, dTemperature = dTemperatureLoc, dPressure = dPressureLoc, &
-                oLiqMolarAmounts = oLiqMolarAmountsLoc, oZ = oZ_Loc, iLiqPhaseModel = iLiqPhaseModel_Loc, iVapPhaseModel = iVapPhaseModel_Loc)
+        call GetFlashVariablesFromParametersVector(iNComp, oProblemParams, dTemperature = dTemperatureLoc, &
+                dPressure = dPressureLoc, oLiqMolarAmounts = oLiqMolarAmountsLoc, oZ = oZ_Loc, &
+                iLiqPhaseModel = iLiqPhaseModel_Loc, iVapPhaseModel = iVapPhaseModel_Loc)
 
         ! Obter as propriedades necessárias dos componentes:
-        call GetComponentPropertiesFromParameterMatrix(iNComp, oCompProperties, oTc = oTc_Loc, oPc = oPc_Loc, oW = oW_Loc, oKij = oKij_Loc, &
-                    oLij = oLij_Loc, oPeneloux = oPeneloux_Loc)
+        call GetComponentPropertiesFromParameterMatrix(iNComp, oCompProperties, oTc = oTc_Loc, oPc = oPc_Loc, &
+                    oW = oW_Loc, oKij = oKij_Loc, oLij = oLij_Loc, oPeneloux = oPeneloux_Loc)
 
         ! "Reverter" para frações molares:
         dVapBeta = sum(oVapMolarAmounts)
@@ -1121,7 +1131,7 @@ module Newton
         real(c_double), intent(out), optional :: dTemperature
         real(c_double), intent(out), optional :: dPressure
         real(c_double), dimension(iNComp), intent(out), optional :: oLiqMolarAmounts
-        real(c_double), dimension(iNComp), intent(out), optional :: oZ                             ! Vetor composição da mistura (indexado por componente)
+        real(c_double), dimension(iNComp), intent(out), optional :: oZ               ! Vetor composição da mistura (indexado por componente)
 
         integer(c_int), intent(out), optional :: iLiqPhaseModel
         integer(c_int), intent(out), optional :: iVapPhaseModel
@@ -1149,9 +1159,10 @@ module Newton
     !   ROTINAS PARA MÉTODO DE NEWTON NA "TANGENT PLANE ANALYSIS"
     ! =============================================================
 
-    subroutine TryStabilityAnalysisWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                    iTrialPhaseID, iTrialPhaseThermodynamicModel, oCurrentW, oD, dNegativeTPDCriteriaToUse, iIER, bIgnoreOutcomeAndResume, &
-                    oStationaryPointW, oStationaryPointLnFug, dStationaryPointTPD, dLastTrialWSumBeforeNormalizationMinusUnity)
+    subroutine TryStabilityAnalysisWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oTc, oPc, oW, oKij, oLij, &
+                    oPeneloux, iTrialPhaseID, iTrialPhaseThermodynamicModel, oCurrentW, oD, dNegativeTPDCriteriaToUse, &
+                    iIER, bIgnoreOutcomeAndResume, oStationaryPointW, oStationaryPointLnFug, dStationaryPointTPD, &
+                    dLastTrialWSumBeforeNormalizationMinusUnity)
 
         ! OBJETIVO: Realizar a verificação de estabilidade através de método numérico de segunda ordem.
 
@@ -1258,9 +1269,10 @@ module Newton
         iNParam = size(oProblemParams)
 
         ! Acionar a minimização por Newton:
-        call NewtonMinimization_V1(iNComp, iNParam, CalculateStabAnalysisNewtonObjFunctionAndDerivatives, CheckAndCorrectTrialPhaseCompositionChange, &
-                UpdateTrialPhaseComposition, oAlpha, oProblemParams, oCompProperties, iMaxIterToUse, dRelativeTolToUse, &
-                bNewtonMinimizationConverged, oAlpha_Sol, iNewtonIterationsForSol, iIER, TerminateStabAnalysisPrematurely, &
+        call NewtonMinimization_V1(iNComp, iNParam, CalculateStabAnalysisNewtonObjFunctionAndDerivatives, &
+                CheckAndCorrectTrialPhaseCompositionChange, UpdateTrialPhaseComposition, oAlpha, oProblemParams, &
+                oCompProperties, iMaxIterToUse, dRelativeTolToUse, bNewtonMinimizationConverged, oAlpha_Sol, &
+                iNewtonIterationsForSol, iIER, TerminateStabAnalysisPrematurely, &
                 bNewtonPrematurelyEnded = bTerminatedPrematurely, &
                 sRoutineForAdditionalConvergenceCheck = AdditionalNewtonConvergenceCheckForTangentPlaneVLEAnalysis)
 
@@ -1293,7 +1305,8 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine TerminateStabAnalysisPrematurely(iNComp, iNParam, oAlpha, oProblemParams, dObjectiveFunctionValue, bTerminateStabAnalysisPrematurely)
+    subroutine TerminateStabAnalysisPrematurely(iNComp, iNParam, oAlpha, oProblemParams, dObjectiveFunctionValue, &
+        bTerminateStabAnalysisPrematurely)
 
         ! OBJETIVO: Verificar se a execução iterativa da verificação de estabilidade pelo Método de Newton
         !           precisa ser encerrada imediatamente, cumprindo assim o papel da função "sFunctionForPrematureReturn"
@@ -1322,7 +1335,8 @@ module Newton
 
         ! Obter parâmetros necessários:
         !iNComp = size(oAlpha)
-        call GetStabilityAnalysisVariablesFromParametersVector(iNComp, oProblemParams, dNegativeTPDCriteriaToUse = dNegativeTPDCriteriaToUse_Loc)
+        call GetStabilityAnalysisVariablesFromParametersVector(iNComp, oProblemParams, &
+          dNegativeTPDCriteriaToUse = dNegativeTPDCriteriaToUse_Loc)
 
         ! Verificar se é o caso de encerrar prematuramente devido a tpd negativo:
         dTPD = dObjectiveFunctionValue
@@ -1471,14 +1485,16 @@ module Newton
         if(present(oD)) oD = oProblemParams(4:iNComp+3)
 
         ! Últimas posições (IMPORTANTE: manter a "very last" para código de erro):
-        if(present(iTrialPhaseThermodynamicModel)) iTrialPhaseThermodynamicModel = int(oProblemParams(iLastPositionInParametersVector-1))
+        if(present(iTrialPhaseThermodynamicModel)) &
+            iTrialPhaseThermodynamicModel = int(oProblemParams(iLastPositionInParametersVector-1))
         if(present(dNegativeTPDCriteriaToUse)) dNegativeTPDCriteriaToUse = oProblemParams(iLastPositionInParametersVector-2)
 
     end subroutine GetStabilityAnalysisVariablesFromParametersVector
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateStabAnalysisObjFunctionForNewtonMinimization(oAlpha, oProblemParams, oCompProperties, dObjectiveFunctionValue)
+    subroutine CalculateStabAnalysisObjFunctionForNewtonMinimization(oAlpha, oProblemParams, oCompProperties, &
+        dObjectiveFunctionValue)
 
         ! OBJETIVO: Calcular a função objetivo que precisa ser minimizada em uma verificação de estabilidade.
 
@@ -1515,8 +1531,8 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateStabAnalysisNewtonObjFunctionAndDerivatives(iNComp, iNParam, oAlpha, oProblemParams, oCompProperties, dObjectiveFunctionValue, &
-                    oGradientVector, oHessianMatrix)
+    subroutine CalculateStabAnalysisNewtonObjFunctionAndDerivatives(iNComp, iNParam, oAlpha, oProblemParams, oCompProperties, &
+                    dObjectiveFunctionValue, oGradientVector, oHessianMatrix)
 
         ! OBJETIVO: Calcular variáveis necessárias para a verificação de estabilidade usando o Método de Newton.
 
@@ -1526,11 +1542,11 @@ module Newton
 
         ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
         integer(c_int), value, intent(in) :: iNComp                     ! Número de componentes.
-        integer, intent(in) :: iNParam                              ! Comprimento do vetor "oProblemParams"
+        integer, intent(in) :: iNParam                                  ! Comprimento do vetor "oProblemParams"
         real(c_double), dimension(iNComp), intent(in) :: oAlpha         ! Variáveis independentes (composição "W" transformada conforme
                                                                         ! equação 53 do Capítulo 10 da Referência Bibliográfica 1)
         real(c_double), dimension(iNComp+6), intent(inout) :: oProblemParams          ! Vetor de parâmetros contendo variáveis do cálculo.
-        real(c_double), dimension(2*iNComp+4, iNComp), intent(in) :: oCompProperties    ! Matriz de propriedades dos componentes
+        real(c_double), dimension(2*iNComp+4, iNComp), intent(in) :: oCompProperties  ! Matriz de propriedades dos componentes
 
         real(c_double), intent(out) :: dObjectiveFunctionValue                    ! Valor calculado da função objetivo.
         real(c_double), dimension(iNComp), intent(out) :: oGradientVector         ! "Gradient vector" para uso com o Método de Newton
@@ -1548,7 +1564,8 @@ module Newton
 
         ! Acionar os cálculos:
         call CalculateNewtonObjFunctionAndDerivsForTangentPlaneVLEAnalysis(oAlpha, oProblemParams, oCompProperties, iIER, &
-                dObjectiveFunctionValue_Arg = dObjectiveFunctionValue, oGradientVector_Arg = oGradientVector, oHessianMatrix_Arg = oHessianMatrix)
+                dObjectiveFunctionValue_Arg = dObjectiveFunctionValue, oGradientVector_Arg = oGradientVector, &
+                oHessianMatrix_Arg = oHessianMatrix)
 
         ! Tratar possível erro:
         checkIIER: if(iIER.NE.ERROR_EverythingOK) then
@@ -1622,13 +1639,13 @@ module Newton
                 iTrialPhaseThermodynamicModel = iTrialPhaseThermodynamicModel_Loc, oD = oD_Loc)
 
         ! Obter propriedades necessárias das espécies químicas:
-        call GetComponentPropertiesFromParameterMatrix(iNComp, oCompProperties, oTc = oTc_Loc, oPc = oPc_Loc, oW = oW_Loc, oKij = oKij_Loc, &
-                    oLij = oLij_Loc, oPeneloux = oPeneloux_Loc)
+        call GetComponentPropertiesFromParameterMatrix(iNComp, oCompProperties, oTc = oTc_Loc, oPc = oPc_Loc, oW = oW_Loc, &
+                    oKij = oKij_Loc, oLij = oLij_Loc, oPeneloux = oPeneloux_Loc)
 
         ! Coeficientes de fugacidade e derivadas para a "composição W":
         call CalculateLnFugAndDerivativesForEachComponent(iNComp, iTrialPhaseID_Loc, dTemperature_Loc, dPressure_Loc, oW, &
-             iTrialPhaseThermodynamicModel_Loc, oTc_Loc, oPc_Loc, oW_Loc, oKij_Loc, oLij_Loc, oPeneloux_Loc, iIER, oLnFugArg = oWLnFug, &
-             oDerivLnCoefFugWithNjArg = oDerivLnCoefFugWithNj_W)
+             iTrialPhaseThermodynamicModel_Loc, oTc_Loc, oPc_Loc, oW_Loc, oKij_Loc, oLij_Loc, oPeneloux_Loc, iIER, &
+             oLnFugArg = oWLnFug, oDerivLnCoefFugWithNjArg = oDerivLnCoefFugWithNj_W)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1674,8 +1691,8 @@ module Newton
 
     ! =============================================================
     ! =============================================================
-    subroutine AdditionalNewtonConvergenceCheckForTangentPlaneVLEAnalysis(iXLength, oX, oPreviousX, iIter, dObjectiveFunctionValue, &
-            dPreviousObjectiveFunctionValue, dRelativeTolerance, dCurrentError, bConverged)
+    subroutine AdditionalNewtonConvergenceCheckForTangentPlaneVLEAnalysis(iXLength, oX, oPreviousX, iIter, &
+            dObjectiveFunctionValue, dPreviousObjectiveFunctionValue, dRelativeTolerance, dCurrentError, bConverged)
 
         ! OBJETIVO: Fazer verificações específicas do atingimento ou não de convergência numérica do Método de Newton
         !           quando aplicado à verificação de estabilidade, de modo a complementar a verificação "default" da

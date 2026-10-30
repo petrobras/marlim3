@@ -17,12 +17,13 @@ module BlackOilFromCompositional
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oZ, oMW, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, &
-                            iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure, dStockTankTemperature, &
-                            bHasInitialFlashEstimates, dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
-                            iCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporDensity, &
-                            dStockTankCompositionalGOR, iIER, oCalculatedStockTankLiqComposition_Arg, oCalculatedStockTankVapComposition_Arg, &
-                            dStockTankVaporMW_Arg, dMixtureMW_Arg)
+    subroutine CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oZ, oMW, oTc, oPc, oW, oPeneloux, oKij, oLij, &
+                            iLiqPhaseModel, iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
+                            dStockTankPressure, dStockTankTemperature, bHasInitialFlashEstimates, dGivenInitialBeta, &
+                            oGivenInitialLiqComposition, oGivenInitialVapComposition, iCalculatedStockTankThermodynamicCondition, &
+                            dStockTankVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporDensity, &
+                            dStockTankCompositionalGOR, iIER, oCalculatedStockTankLiqComposition_Arg, &
+                            oCalculatedStockTankVapComposition_Arg, dStockTankVaporMW_Arg, dMixtureMW_Arg)
 
         ! OBJETIVO: Calcular determinados resultados nas condições "stock-tank" de temperatura e pressão
         !           que são frequentemente necessários em outros cálculos.
@@ -155,13 +156,15 @@ module BlackOilFromCompositional
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Retornar, se for o caso, a composição determinada das fases nas condições padrão:
-        if(present(oCalculatedStockTankLiqComposition_Arg)) oCalculatedStockTankLiqComposition_Arg = oCalculatedStockTankLiqComposition
-        if(present(oCalculatedStockTankVapComposition_Arg)) oCalculatedStockTankVapComposition_Arg = oCalculatedStockTankVapComposition
+        if(present(oCalculatedStockTankLiqComposition_Arg)) &
+            oCalculatedStockTankLiqComposition_Arg = oCalculatedStockTankLiqComposition
+        if(present(oCalculatedStockTankVapComposition_Arg)) &
+            oCalculatedStockTankVapComposition_Arg = oCalculatedStockTankVapComposition
 
         ! PASSO 2: Converter a fração molar vaporizada para fração mássica vaporizada:
-        call CalculateMolecularWeightsAndVaporMassFraction(iCalculatedStockTankThermodynamicCondition, iNComp, oMW, oZ, oCalculatedStockTankLiqComposition, &
-                oCalculatedStockTankVapComposition, dCalculatedStockTankBeta, dStockTankLiquidMW, dStockTankVaporMW, &
-                dMixtureMW, dStockTankVaporMassFraction)
+        call CalculateMolecularWeightsAndVaporMassFraction(iCalculatedStockTankThermodynamicCondition, iNComp, oMW, oZ, &
+                oCalculatedStockTankLiqComposition, oCalculatedStockTankVapComposition, dCalculatedStockTankBeta, &
+                dStockTankLiquidMW, dStockTankVaporMW, dMixtureMW, dStockTankVaporMassFraction)
 
         ! Retornar argumentos opcionais, caso presentes:
         if(present(dStockTankVaporMW_Arg)) dStockTankVaporMW_Arg = dStockTankVaporMW
@@ -175,8 +178,8 @@ module BlackOilFromCompositional
         isThereLiqForRho: if(bLiquidPresentAtStockTankConditions) then
 
             ! Calcular a massa específica da fase líquida:
-            call CalculatePhaseDensity(iNComp, PHASE_Liquid, oCalculatedStockTankLiqComposition, dStockTankPressure, dStockTankTemperature, &
-                      iLiqDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
+            call CalculatePhaseDensity(iNComp, PHASE_Liquid, oCalculatedStockTankLiqComposition, dStockTankPressure, &
+                      dStockTankTemperature, iLiqDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
                       oPeneloux, dStockTankLiquidMW, dStockTankLiquidDensity, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
@@ -187,8 +190,8 @@ module BlackOilFromCompositional
         isThereVapForRho: if(bVaporPresentAtStockTankConditions) then
 
             ! Calcular a massa específica da fase vapor:
-            call CalculatePhaseDensity(iNComp, PHASE_Vapor, oCalculatedStockTankVapComposition, dStockTankPressure, dStockTankTemperature, &
-                      iVapDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
+            call CalculatePhaseDensity(iNComp, PHASE_Vapor, oCalculatedStockTankVapComposition, dStockTankPressure, &
+                      dStockTankTemperature, iVapDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
                       oPeneloux, dStockTankVaporMW, dStockTankVaporDensity, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
@@ -196,14 +199,16 @@ module BlackOilFromCompositional
         end if isThereVapForRho
 
         ! PASSO 6: Calcular a GOR ("Gas/oil ratio" - "Rgo")
-        calcGOR:if((.not.bLiquidPresentAtStockTankConditions).OR.(iCalculatedStockTankThermodynamicCondition.EQ.THERMOCOND_SaturatedVapor)) then
+        calcGOR: if((.not.bLiquidPresentAtStockTankConditions).OR. &
+                    (iCalculatedStockTankThermodynamicCondition.EQ.THERMOCOND_SaturatedVapor)) then
 
             ! Erro! Não é possível calcular a "Rgo" na ausência de fase líquida!
             iIER = ERROR_LiquidRequiredButNotDetectedInBlackOilCalculation
             dStockTankCompositionalGOR = 1.0d8
             return
 
-        else if((.not.bVaporPresentAtStockTankConditions).OR.(iCalculatedStockTankThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid)) then calcGOR
+        else if((.not.bVaporPresentAtStockTankConditions).OR. &
+                (iCalculatedStockTankThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid)) then calcGOR
 
             ! Na ausência de vapor...
             dStockTankCompositionalGOR = 0.0d0
@@ -220,8 +225,8 @@ module BlackOilFromCompositional
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporDensity, &
-                        dCompositionalSolutionGasOilRatio)
+    subroutine CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVaporMassFraction, dStockTankLiquidDensity, &
+                        dStockTankVaporDensity, dCompositionalSolutionGasOilRatio)
 
         ! OBJETIVO: Calcular o "Rs" a partir de resultados composicionais.
         implicit none
@@ -245,8 +250,8 @@ module BlackOilFromCompositional
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateOilFormationVolumeFactor(dLiquidDensity, dStockTankLiquidDensity, dVaporMassFraction, dStockTankVaporMassFraction, &
-                    dCompositionalOilFormationVolumeFactor)
+    subroutine CalculateOilFormationVolumeFactor(dLiquidDensity, dStockTankLiquidDensity, dVaporMassFraction, &
+                    dStockTankVaporMassFraction, dCompositionalOilFormationVolumeFactor)
 
         ! OBJETIVO: Calcular o "Bo" a partir de resultados composicionais.
         implicit none
@@ -270,10 +275,10 @@ module BlackOilFromCompositional
 
     ! =============================================================
     ! =============================================================
-    subroutine AdjustGlobalCompositionForTargetGOR_Approach1(iNComp, oOriginalGlobalComposition, oMW, oTc, oPc, oW, oPeneloux, oKij, oLij, &
-                    iLiqPhaseModel, iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure, &
-                    dStockTankTemperature, dTargetGOR, bHasInitialFlashEstimates, dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
-                    oGORAdjustedGlobalComp, dAdjustedGlobalCompGOR, iIER)
+    subroutine AdjustGlobalCompositionForTargetGOR_Approach1(iNComp, oOriginalGlobalComposition, oMW, oTc, oPc, oW, oPeneloux, &
+                    oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
+                    dStockTankPressure, dStockTankTemperature, dTargetGOR, bHasInitialFlashEstimates, dGivenInitialBeta, &
+                    oGivenInitialLiqComposition, oGivenInitialVapComposition, oGORAdjustedGlobalComp, dAdjustedGlobalCompGOR, iIER)
 
         ! OBJETIVO: Ajustar uma composição total fornecida de fluido para que passe a possuir um dado valor de RGO.
 
@@ -342,11 +347,13 @@ module BlackOilFromCompositional
         !WRITE(*,'(A,I5)') 'DEBUG: iIER antes 1ª chamada = ', iIER
 
         ! PRIMEIRO PASSO: Fazer cálculos iniciais nas condições padrão:
-        call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oOriginalGlobalComposition, oMW, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, &
-                            iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure, dStockTankTemperature, &
-                            bHasInitialFlashEstimates, dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
-                            iCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankOriginalLiqDensity, dStockTankOriginalVapDensity, &
-                            dOriginalCalculatedGOR, iIER, oCalculatedStockTankLiqComposition_Arg = oOriginalStockTankLiqComposition, &
+        call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oOriginalGlobalComposition, oMW, oTc, oPc, oW, &
+                            oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iLiqDensityCalculationMethod, &
+                            iVapDensityCalculationMethod, dStockTankPressure, dStockTankTemperature, bHasInitialFlashEstimates, &
+                            dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
+                            iCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, &
+                            dStockTankOriginalLiqDensity, dStockTankOriginalVapDensity, dOriginalCalculatedGOR, iIER, &
+                            oCalculatedStockTankLiqComposition_Arg = oOriginalStockTankLiqComposition, &
                             oCalculatedStockTankVapComposition_Arg = oOriginalStockTankVapComposition, &
                             dStockTankVaporMW_Arg = dOriginalStockTankVaporMW, dMixtureMW_Arg = dOriginalMixtureMW)
 
@@ -393,11 +400,12 @@ module BlackOilFromCompositional
                 oNewAttemptGlobalComposition = oNewAttemptGlobalComposition / sum(oNewAttemptGlobalComposition)
 
                 ! Obter a RGO dessa nova composição global:
-                call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oNewAttemptGlobalComposition, oMW, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, &
-                            iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure, dStockTankTemperature, &
-                            bHasInitialFlashEstimates, dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
-                            iNewlyCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankNewLiqDensity, dStockTankNewVapDensity, &
-                            dNewCalculatedGOR, iIER)
+                call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, oNewAttemptGlobalComposition, oMW, oTc, &
+                            oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iLiqDensityCalculationMethod, &
+                            iVapDensityCalculationMethod, dStockTankPressure, dStockTankTemperature, bHasInitialFlashEstimates, &
+                            dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
+                            iNewlyCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankNewLiqDensity, &
+                            dStockTankNewVapDensity, dNewCalculatedGOR, iIER)
 
                 if(iIER.NE.ERROR_EverythingOK) exit adjustRecombRatioLoop
 

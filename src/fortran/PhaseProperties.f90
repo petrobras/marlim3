@@ -17,13 +17,13 @@ module PhaseProperties
     subroutine CalculatePhaseProperties_Approach1(iNComp, oMW, oTc, oPc, oW, oKij, oLij, oPeneloux, oParachors, oZ, &
                     dP, dT, iThermodynamicCondition, dMolarBeta, oLiqPhaseComposition, oVapPhaseComposition, &
                     iLiqDensityCalculationMethod, iVapDensityCalculationMethod, iLiqHAndCpThermodynamicModel, &
-                    iVapHAndCpThermodynamicModel, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, iLiqModel, iVapModel, dVaporMassFraction, dLiquidZ, &
-                    dLiquidZWithPeneloux, dLiqDensity, &
-                    dDerivLiquidZWithT, dDerivLiquidZPenelouxWithT, dDerivLiquidRhoWithT, dDerivLiquidZWithP, dDerivLiquidZPenelouxWithP, &
-                    dDerivLiquidRhoWithP, dVaporZ, dVaporZWithPeneloux, &
-                    dVapDensity, dDerivVaporZWithT, dDerivVaporZPenelouxWithT, dDerivVaporRhoWithT, dDerivVaporZWithP, &
-                    dDerivVaporZPenelouxWithP, dDerivVaporRhoWithP, dLiqMassEnthalpy, dVapMassEnthalpy, dLiqMassCp, dVapMassCp, dSurfaceTension, dLiqJouleThomsonCoef, &
-                    dVapJouleThomsonCoef, iIER)
+                    iVapHAndCpThermodynamicModel, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, iLiqModel, iVapModel, &
+                    dVaporMassFraction, dLiquidZ, dLiquidZWithPeneloux, dLiqDensity, dDerivLiquidZWithT, &
+                    dDerivLiquidZPenelouxWithT, dDerivLiquidRhoWithT, dDerivLiquidZWithP, dDerivLiquidZPenelouxWithP, &
+                    dDerivLiquidRhoWithP, dVaporZ, dVaporZWithPeneloux, dVapDensity, dDerivVaporZWithT, &
+                    dDerivVaporZPenelouxWithT, dDerivVaporRhoWithT, dDerivVaporZWithP, dDerivVaporZPenelouxWithP, &
+                    dDerivVaporRhoWithP, dLiqMassEnthalpy, dVapMassEnthalpy, dLiqMassCp, dVapMassCp, dSurfaceTension, &
+                    dLiqJouleThomsonCoef, dVapJouleThomsonCoef, iIER)
 
         ! OBJETIVO: Calcular, segundo a primeira sequência e metodologia propostas, as propriedades das fases em escoamento no MARLIM.
         implicit none
@@ -106,14 +106,15 @@ module PhaseProperties
                 oVapPhaseComposition, dMolarBeta, dLiquidPhaseMW, dVaporPhaseMW, dMixtureMW, dVaporMassFraction)
 
         ! Calcular as propriedades da fase líquida, caso esta fase esteja presente:
-        bLiquidPresent = (iThermodynamicCondition.EQ.THERMOCOND_SubcooledLiquid).OR.(iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR. &
+        bLiquidPresent = (iThermodynamicCondition.EQ.THERMOCOND_SubcooledLiquid).OR. &
+                         (iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR. &
             (iThermodynamicCondition.EQ.THERMOCOND_LiquidVaporVLE).OR.(iThermodynamicCondition.EQ.THERMOCOND_SaturatedVapor)
 
         hasLiq: if(bLiquidPresent) then
 
             ! Calcular a massa específica da fase líquida:
-            call CalculatePhaseDensity(iNComp, PHASE_Liquid, oLiqPhaseComposition, dP, dT, iLiqDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
-                      oPeneloux, dLiquidPhaseMW, dLiqDensity, iIER)
+            call CalculatePhaseDensity(iNComp, PHASE_Liquid, oLiqPhaseComposition, dP, dT, iLiqDensityCalculationMethod, oTc, &
+                      oPc, oW, oKij, oLij, oPeneloux, dLiquidPhaseMW, dLiqDensity, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -121,9 +122,10 @@ module PhaseProperties
             dLiquidZWithPeneloux = (dLiquidPhaseMW / 1000.0d0) * dP / (dLiqDensity * dR * dT)
 
             ! Calcular "Cp" e entalpia da fase líquida:
-            call CalculatePhaseCpAndEnthalpy(iNComp, PHASE_Liquid, oLiqPhaseComposition, dP, dT, iLiqHAndCpThermodynamicModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, .true., dReferenceT, &
-                    bLiqZAndDerivZWithTCalculated, dLiquidZ, dDerivLiquidZWithT, dLiquidMolarEnthalpy, dLiquidMolarCp, iIER)
+            call CalculatePhaseCpAndEnthalpy(iNComp, PHASE_Liquid, oLiqPhaseComposition, dP, dT, iLiqHAndCpThermodynamicModel, &
+                                             oTc, oPc, oW, oKij, oLij, oPeneloux, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, .true., &
+                                             dReferenceT, bLiqZAndDerivZWithTCalculated, dLiquidZ, dDerivLiquidZWithT, &
+                                             dLiquidMolarEnthalpy, dLiquidMolarCp, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -132,9 +134,9 @@ module PhaseProperties
             dLiqMassCp = dLiquidMolarCp / (dLiquidPhaseMW / 1000.0d0)
 
             ! Calcular derivadas de "Z" e de "rho" para a fase líquida:
-            call CalculateTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iLiqModel, PHASE_Liquid, iNComp, oLiqPhaseComposition, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dLiquidPhaseMW, dLiquidZ, dDerivLiquidZWithT, dDerivLiquidRhoWithT, dDerivLiquidZWithP, &
-                    dDerivLiquidRhoWithP, dDerivLiquidZPenelouxWithP, dDerivLiquidZPenelouxWithT, iIER)
+            call CalculateTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iLiqModel, PHASE_Liquid, iNComp, oLiqPhaseComposition, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dLiquidPhaseMW, dLiquidZ, dDerivLiquidZWithT, dDerivLiquidRhoWithT, &
+                    dDerivLiquidZWithP, dDerivLiquidRhoWithP, dDerivLiquidZPenelouxWithP, dDerivLiquidZPenelouxWithT, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
             bLiqZAndDerivZWithTCalculated = .true.
@@ -164,14 +166,15 @@ module PhaseProperties
         end if hasLiq
 
         ! Calcular as propriedades da fase vapor, caso esta fase esteja presente:
-        bVaporPresent = (iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR.(iThermodynamicCondition.EQ.THERMOCOND_LiquidVaporVLE).OR. &
+        bVaporPresent = (iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR.&
+                        (iThermodynamicCondition.EQ.THERMOCOND_LiquidVaporVLE).OR. &
             (iThermodynamicCondition.EQ.THERMOCOND_SaturatedVapor).OR.(iThermodynamicCondition.EQ.THERMOCOND_SuperheatedVapor)
 
         hasVap: if(bVaporPresent) then
 
             ! Calcular a massa específica da fase vapor:
-            call CalculatePhaseDensity(iNComp, PHASE_Vapor, oVapPhaseComposition, dP, dT, iVapDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
-                      oPeneloux, dVaporPhaseMW, dVapDensity, iIER)
+            call CalculatePhaseDensity(iNComp, PHASE_Vapor, oVapPhaseComposition, dP, dT, iVapDensityCalculationMethod, oTc, oPc, &
+                                       oW, oKij, oLij, oPeneloux, dVaporPhaseMW, dVapDensity, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -179,8 +182,8 @@ module PhaseProperties
             dVaporZWithPeneloux = (dVaporPhaseMW / 1000.0d0) * dP / (dVapDensity * dR * dT)
 
             ! Calcular "Cp" e entalpia da fase vapor:
-            call CalculatePhaseCpAndEnthalpy(iNComp, PHASE_Vapor, oVapPhaseComposition, dP, dT, iVapHAndCpThermodynamicModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, .true., dReferenceT, &
+            call CalculatePhaseCpAndEnthalpy(iNComp, PHASE_Vapor, oVapPhaseComposition, dP, dT, iVapHAndCpThermodynamicModel, oTc, &
+                    oPc, oW, oKij, oLij, oPeneloux, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, .true., dReferenceT, &
                     bVapZAndDerivZWithTCalculated, dVaporZ, dDerivVaporZWithT, dVaporMolarEnthalpy, dVaporMolarCp, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
@@ -190,8 +193,8 @@ module PhaseProperties
             dVapMassCp = dVaporMolarCp / (dVaporPhaseMW / 1000.0d0)
 
             ! Calcular derivadas de "Z" e de "rho" para a fase vapor:
-            call CalculateTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iVapModel, PHASE_Vapor, iNComp, oVapPhaseComposition, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dVaporPhaseMW, dVaporZ, dDerivVaporZWithT, dDerivVaporRhoWithT, dDerivVaporZWithP, &
+            call CalculateTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iVapModel, PHASE_Vapor, iNComp, oVapPhaseComposition, oTc, oPc, &
+                    oW, oKij, oLij, oPeneloux, dVaporPhaseMW, dVaporZ, dDerivVaporZWithT, dDerivVaporRhoWithT, dDerivVaporZWithP, &
                     dDerivVaporRhoWithP, dDerivVaporZPenelouxWithP, dDerivVaporZPenelouxWithT, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
@@ -224,7 +227,7 @@ module PhaseProperties
         bothPhasesPresent: if(bLiquidPresent.AND.bVaporPresent) then
 
             ! Calcular a tensão superficial:
-            call CalculateMixtureSurfaceTensionFromComponentParachors(iNComp, oParachors, dLiqDensity, dVapDensity, dLiquidPhaseMW, &
+            call CalculateMixtureSurfaceTensionFromComponentParachors(iNComp, oParachors, dLiqDensity, dVapDensity, dLiquidPhaseMW,&
                     dVaporPhaseMW, oLiqPhaseComposition, oVapPhaseComposition, dSurfaceTension)
 
         else bothPhasesPresent
@@ -263,10 +266,12 @@ module PhaseProperties
         ! ------------------ CÁLCULOS:
 
         ! Indicadores da presença de líquido e vapor:
-        bLiquidPresent = (iThermodynamicCondition.EQ.THERMOCOND_SubcooledLiquid).OR.(iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR. &
+        bLiquidPresent = (iThermodynamicCondition.EQ.THERMOCOND_SubcooledLiquid).OR. &
+                         (iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR. &
             (iThermodynamicCondition.EQ.THERMOCOND_LiquidVaporVLE).OR.(iThermodynamicCondition.EQ.THERMOCOND_SaturatedVapor)
 
-        bVaporPresent = (iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR.(iThermodynamicCondition.EQ.THERMOCOND_LiquidVaporVLE).OR. &
+        bVaporPresent = (iThermodynamicCondition.EQ.THERMOCOND_SaturatedLiquid).OR. &
+                        (iThermodynamicCondition.EQ.THERMOCOND_LiquidVaporVLE).OR. &
             (iThermodynamicCondition.EQ.THERMOCOND_SaturatedVapor).OR.(iThermodynamicCondition.EQ.THERMOCOND_SuperheatedVapor)
 
         ! Calcular as massas molares:
@@ -344,8 +349,8 @@ module PhaseProperties
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculatePhaseDensity(iNComp, iPhaseID, oPhaseComposition, dP, dT, iDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
-                      oPeneloux, dMW, dPhaseDensity, iIER)
+    subroutine CalculatePhaseDensity(iNComp, iPhaseID, oPhaseComposition, dP, dT, iDensityCalculationMethod, oTc, oPc, oW, &
+                      oKij, oLij, oPeneloux, dMW, dPhaseDensity, iIER)
 
         ! OBJETIVO: Calcular a massa específica de uma fase em escoamento.
         implicit none
@@ -379,14 +384,15 @@ module PhaseProperties
         dPhaseDensity = -100.0d0
 
         ! O método selecionado é uma Equação de Estado Cúbica?
-        bUsingCubicEOS = (iDensityCalculationMethod.EQ.PENG_ROBINSON_78_PENELOUX).or.(iDensityCalculationMethod.EQ.SRK_PENELOUX).or.(iDensityCalculationMethod.EQ.PENG_ROBINSON_PENELOUX)
+        bUsingCubicEOS = (iDensityCalculationMethod.EQ.PENG_ROBINSON_78_PENELOUX).or. &
+                         (iDensityCalculationMethod.EQ.SRK_PENELOUX).or.(iDensityCalculationMethod.EQ.PENG_ROBINSON_PENELOUX)
 
         ! Proceder de acordo com o método selecionado:
         whichMethod: if(bUsingCubicEOS) then
 
             ! Calcular via Equação de Estado Cúbica:
-            call CalculatePhaseDensityFromCubicEOS(iNComp, oPhaseComposition, dP, dT, iDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
-                                 oPeneloux, dMW, dLiquidDensity, dVaporDensity, iIER)
+            call CalculatePhaseDensityFromCubicEOS(iNComp, oPhaseComposition, dP, dT, iDensityCalculationMethod, oTc, oPc, oW, &
+                                 oKij, oLij, oPeneloux, dMW, dLiquidDensity, dVaporDensity, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -451,8 +457,9 @@ module PhaseProperties
         ! ------------------ CÁLCULOS:
 
         ! Seguir a abordagem padrão --> calcular entalpia e "Cp" residuais:
-        call CalculatePhaseResidualCpAndEnthalpy(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, bZAndDerivZWithTCalculated, dPhasicZ, dDerivPhasicZWithT, iIER)
+        call CalculatePhaseResidualCpAndEnthalpy(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, oTc, &
+                    oPc, oW, oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, bZAndDerivZWithTCalculated, dPhasicZ, &
+                    dDerivPhasicZWithT, iIER)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -542,8 +549,9 @@ module PhaseProperties
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculatePhaseResidualCpAndEnthalpy(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, bZAndDerivZWithTCalculated, dPhasicZ, dDerivPhasicZWithT, iIER)
+    subroutine CalculatePhaseResidualCpAndEnthalpy(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, oTc, &
+                    oPc, oW, oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, bZAndDerivZWithTCalculated, dPhasicZ, &
+                    dDerivPhasicZWithT, iIER)
 
         ! OBJETIVO: Calcular o "Cp" e a entalpia residuais de uma fase em escoamento.
         implicit none
@@ -578,14 +586,15 @@ module PhaseProperties
         bZAndDerivZWithTCalculated = .false.
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
-        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
+        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.&
+                                        (iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
 
         ! Proceder de acordo com o modelo termodinâmico selecionado:
         whichEnthalpyModel: if(bThermodynamicModelIsCubicEOS) then
 
             ! Calcular pela equação de estado cúbica selecionada!
-            call CalculatePhaseResidualCpAndEnthalpyFromCubicEOS(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, dPhasicZ, dDerivPhasicZWithT, iIER)
+            call CalculatePhaseResidualCpAndEnthalpyFromCubicEOS(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, dPhasicZ, dDerivPhasicZWithT, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -602,8 +611,8 @@ module PhaseProperties
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculatePhaseResidualCpAndEnthalpyFromCubicEOS(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, dPhasicZ, dDerivPhasicZWithT, iIER)
+    subroutine CalculatePhaseResidualCpAndEnthalpyFromCubicEOS(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, dPhasicZ, dDerivPhasicZWithT, iIER)
 
         ! OBJETIVO: Calcular o "Cp" e a entalpia residual de uma fase em escoamento a partir de uma equação de estado cúbica.
         implicit none
@@ -655,9 +664,9 @@ module PhaseProperties
         dRootOfU2Minus4W = sqrt((dU ** 2.0d0) - (4.0d0 * dW))
 
         ! Obter as variáveis intermediárias necessárias:
-        call CalculateCubicEOSParamsForPhasicEnthalpiesAndCp(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dAMix, dBMix, dCMix, dPhasicZ, dDerivPhasicZWithT, dPhaseCapitalA, dPhaseCapitalB, &
-                    dFLN, dDerivFLNWithT, dDerivAWithT, dDerivTwoAWithTTwo, iIER)
+        call CalculateCubicEOSParamsForPhasicEnthalpiesAndCp(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dAMix, dBMix, dCMix, dPhasicZ, dDerivPhasicZWithT, dPhaseCapitalA, &
+                    dPhaseCapitalB, dFLN, dDerivFLNWithT, dDerivAWithT, dDerivTwoAWithTTwo, iIER)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -670,7 +679,8 @@ module PhaseProperties
         dResidualCp = dDerivAWithT / dBMix / dRootOfU2Minus4W * dFLN
         dResidualCp = dResidualCp + (dDerivFLNWithT * dAMix / dBMix / dRootOfU2Minus4W)
         dResidualCp = dResidualCp - (dDerivAWithT / dBMix / dRootOfU2Minus4W * dFLN)
-        dResidualCp = dResidualCp - (dT * (dDerivTwoAWithTTwo / dBMix / dRootOfU2Minus4W * dFLN + dDerivFLNWithT * dDerivAWithT / dBMix / dRootOfU2Minus4W))
+        dResidualCp = dResidualCp - (dT * (dDerivTwoAWithTTwo / dBMix / dRootOfU2Minus4W * dFLN + dDerivFLNWithT * dDerivAWithT / &
+                                           dBMix / dRootOfU2Minus4W))
         dResidualCp = dResidualCp + dR * (dPhasicZ - 1.0d0)
         dResidualCp = dResidualCp + dR * dT * dDerivPhasicZWithT
 
@@ -678,9 +688,9 @@ module PhaseProperties
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iThermodynamicModel, iPhaseID, iNComp, oPhaseComposition, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, dDerivPhasicZWithP, &
-                    dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
+    subroutine CalculateTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iThermodynamicModel, iPhaseID, iNComp, oPhaseComposition, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, &
+                    dDerivPhasicZWithP, dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
 
         ! OBJETIVO: Calcular, para dada fase indicada, suas derivadas de massa específica e de fator de compressibilidade
         !               com relação à temperatura e à pressão.
@@ -716,14 +726,15 @@ module PhaseProperties
         ! ------------------ PROCEDIMENTOS E CÁLCULOS:
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
-        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
+        bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.&
+                                        (iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
 
         whichThermoModel: if(bThermodynamicModelIsCubicEOS) then
 
             ! Calcular pela equação de estado cúbica selecionada!
-            call CalculateCubicEOSTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iThermodynamicModel, iPhaseID, iNComp, oPhaseComposition, oTc, oPc, oW, &
-                        oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, dDerivPhasicZWithP, &
-                        dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
+            call CalculateCubicEOSTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iThermodynamicModel, iPhaseID, iNComp, oPhaseComposition,&
+                        oTc, oPc, oW, oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, &
+                        dDerivPhasicZWithP, dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -737,9 +748,9 @@ module PhaseProperties
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateCubicEOSTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iCubicEOSModel, iPhaseID, iNComp, oPhaseComposition, oTc, oPc, oW, &
-                        oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, dDerivPhasicZWithP, &
-                        dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
+    subroutine CalculateCubicEOSTAndPDerivativesOfPhasicRhoAndZ(dP, dT, iCubicEOSModel, iPhaseID, iNComp, oPhaseComposition, &
+                        oTc, oPc, oW, oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, &
+                        dDerivPhasicZWithP, dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
 
         ! OBJETIVO: Calcular, para dada fase indicada, suas derivadas de massa específica e de fator de compressibilidade
         !               com relação à temperatura e à pressão, utilizando uma Equação Cúbica de Estado.
@@ -804,9 +815,9 @@ module PhaseProperties
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Obter as variáveis intermediárias necessárias:
-        call CalculateCubicEOSParamsForPhasicEnthalpiesAndCp(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dAMix, dBMix, dCMix, dPhasicZ, dDerivPhasicZWithT, dPhaseCapitalA, dPhaseCapitalB, &
-                    dFLN, dDerivFLNWithT, dDerivAWithT, dDerivTwoAWithTTwo, iIER)
+        call CalculateCubicEOSParamsForPhasicEnthalpiesAndCp(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dAMix, dBMix, dCMix, dPhasicZ, dDerivPhasicZWithT, dPhaseCapitalA, &
+                    dPhaseCapitalB, dFLN, dDerivFLNWithT, dDerivAWithT, dDerivTwoAWithTTwo, iIER)
 
         ! Calcular a derivada da massa específica da fase em questão com a temperatura:
         dPhaseMW_SI = dPhaseMW / 1000.0d0     ! para "kg/gmol" (lembrando que no SI, mol = gmol)
@@ -826,7 +837,8 @@ module PhaseProperties
 
         ! Calcular as derivadas dos coeficientes da EOS cúbica em relação à pressão:
         dDerivEOSCoef1WithP = (dU - 1.0d0) * dDerivPhaseCapitalBWithP
-        dDerivEOSCoef2WithP = dDerivPhaseCapitalAWithP + ((2.0d0 * dW - 2.0d0 * dU) * dPhaseCapitalB * dDerivPhaseCapitalBWithP) - (dU * dDerivPhaseCapitalBWithP)
+        dDerivEOSCoef2WithP = dDerivPhaseCapitalAWithP + ((2.0d0 * dW - 2.0d0 * dU) * dPhaseCapitalB * dDerivPhaseCapitalBWithP) - &
+                                 (dU * dDerivPhaseCapitalBWithP)
 
         dDerivEOSCoef3WithP = (dPhaseCapitalB * dDerivPhaseCapitalAWithP) + &
                               (dPhaseCapitalA * dDerivPhaseCapitalBWithP) + &
@@ -836,7 +848,7 @@ module PhaseProperties
 
         ! Calcular a derivada do fator de compressibilidade com a pressão:
         dDerivPhasicZWithP = (dPhasicZ * dPhasicZ * dDerivEOSCoef1WithP) + (dPhasicZ * dDerivEOSCoef2WithP) + dDerivEOSCoef3WithP
-        dDerivPhasicZWithP = dDerivPhasicZWithP / (3.0d0 * dPhasicZ * dPhasicZ + (2.0d0 * dCubicEOSCoef1 * dPhasicZ) + dCubicEOSCoef2)
+        dDerivPhasicZWithP = dDerivPhasicZWithP / (3.0d0 * dPhasicZ * dPhasicZ + (2.0d0*dCubicEOSCoef1*dPhasicZ) + dCubicEOSCoef2)
         dDerivPhasicZWithP = -1.0d0 * dDerivPhasicZWithP
 
         ! Calcular a derivada da massa específica com a pressão:
@@ -877,9 +889,9 @@ module PhaseProperties
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateCubicEOSParamsForPhasicEnthalpiesAndCp(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, oTc, oPc, oW, &
-                    oKij, oLij, oPeneloux, dAMix, dBMix, dCMix, dPhasicZ, dDerivPhasicZWithT, dPhaseCapitalA, dPhaseCapitalB, &
-                    dFLN, dDerivFLNWithT, dDerivAWithT, dDerivTwoAWithTTwo, iIER)
+    subroutine CalculateCubicEOSParamsForPhasicEnthalpiesAndCp(iNComp, iPhaseID, oPhaseComposition, dP, dT, iCubicEOSModel, &
+                    oTc, oPc, oW, oKij, oLij, oPeneloux, dAMix, dBMix, dCMix, dPhasicZ, dDerivPhasicZWithT, dPhaseCapitalA, &
+                    dPhaseCapitalB, dFLN, dDerivFLNWithT, dDerivAWithT, dDerivTwoAWithTTwo, iIER)
 
         ! OBJETIVO: Calcular, para dada fase indicada, diversas variáveis que são comuns aos cálculos de "Cp" e
         !               da entalpia através de uma Equação Cúbica de Estado.
@@ -970,8 +982,8 @@ module PhaseProperties
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Determinar as constantes da mistura:
-        call CalculateCubicEOSParametersForMixture(iNComp, oPhaseComposition, oKij, oLij, oCubicEOSaParameters, oCubicEOSbParameters, &
-                                                       oPeneloux, dAMix, dBMix, dCMix)
+        call CalculateCubicEOSParametersForMixture(iNComp, oPhaseComposition, oKij, oLij, oCubicEOSaParameters, &
+                                                   oCubicEOSbParameters, oPeneloux, dAMix, dBMix, dCMix)
 
         ! Calcular o fator de compressibilidade:
         call CalculateZFromCubicEOS(dP, dT, iCubicEOSModel, dAMix, dBMix, dZLiquid, dZVapor, bComplexRootsWereFound, iIER)
@@ -1044,7 +1056,8 @@ module PhaseProperties
                 dComponentPsiFunction = oFW(i) / 2.0d0 / sqrt(oTc(i) * dComponentAlfaFunction * dT) + 0.5d0 / dT
                 dComponentPsiFunction = -1.0d0 * dComponentPsiFunction
 
-                oTDerivOfRootShortAsOverT(i) = sqrt(dCubicEOSGammaA) * dR * oTc(i) * dComponentPsiFunction * sqrt(dComponentAlfaFunction)
+                oTDerivOfRootShortAsOverT(i) = sqrt(dCubicEOSGammaA) * dR * oTc(i) * dComponentPsiFunction * &
+                                               sqrt(dComponentAlfaFunction)
                 oTDerivOfRootShortAsOverT(i) = oTDerivOfRootShortAsOverT(i) / sqrt(oPc(i) * dT)
 
             else isPRorSRK
@@ -1093,12 +1106,15 @@ module PhaseProperties
         dDerivPhaseCapitalBWithT = -1.0d0 * dPhaseCapitalB / dT
 
         dDerivEOSCoef1WithT = (dU - 1.0d0) * dDerivPhaseCapitalBWithT
-        dDerivEOSCoef2WithT = dDerivPhaseCapitalAWithT + 2.0d0 * (dW - dU) * dPhaseCapitalB * dDerivPhaseCapitalBWithT - dU * dDerivPhaseCapitalBWithT
+        dDerivEOSCoef2WithT = dDerivPhaseCapitalAWithT + 2.0d0 * (dW - dU) * dPhaseCapitalB * dDerivPhaseCapitalBWithT - &
+                                dU * dDerivPhaseCapitalBWithT
         dDerivEOSCoef3WithT = -1.0d0 * (dPhaseCapitalB * dDerivPhaseCapitalAWithT + dPhaseCapitalA * dDerivPhaseCapitalBWithT + &
-                2.0d0 * dW * dPhaseCapitalB * dDerivPhaseCapitalBWithT  + 3.0d0 * dW * (dPhaseCapitalB ** 2.0d0) * dDerivPhaseCapitalBWithT)
+                2.0d0 * dW * dPhaseCapitalB * dDerivPhaseCapitalBWithT + &
+                3.0d0 * dW * (dPhaseCapitalB ** 2.0d0) * dDerivPhaseCapitalBWithT)
 
         dDerivPhasicZWithT = (dPhasicZ ** 2.0d0) * dDerivEOSCoef1WithT + dPhasicZ * dDerivEOSCoef2WithT + dDerivEOSCoef3WithT
-        dDerivPhasicZWithT = -1.0d0 * dDerivPhasicZWithT / (3.0d0 * (dPhasicZ ** 2.0d0) + 2.0d0 * dCubicEOSCoef1 * dPhasicZ + dCubicEOSCoef2)
+        dDerivPhasicZWithT = -1.0d0 * dDerivPhasicZWithT / &
+                             (3.0d0 * (dPhasicZ ** 2.0d0) + 2.0d0 * dCubicEOSCoef1 * dPhasicZ + dCubicEOSCoef2)
 
         ! Calcular agora a derivada do logaritmo natural com a temperatura:
         dDerivFLNWithT = 2.0d0 * dDerivPhasicZWithT + (dU - dRootOfU2Minus4W) * dDerivPhaseCapitalBWithT
@@ -1153,8 +1169,8 @@ module PhaseProperties
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Determinar as constantes da mistura:
-        call CalculateCubicEOSParametersForMixture(iNComp, oPhaseComposition, oKij, oLij, oCubicEOSaParameters, oCubicEOSbParameters, &
-                                                       oPeneloux, dAMix, dBMix, dCMix)
+        call CalculateCubicEOSParametersForMixture(iNComp, oPhaseComposition, oKij, oLij, oCubicEOSaParameters, &
+                                                   oCubicEOSbParameters, oPeneloux, dAMix, dBMix, dCMix)
 
         ! Calcular o fator de compressibilidade:
         call CalculateZFromCubicEOS(dP, dT, iCubicEOSModel, dAMix, dBMix, dZLiquid, dZVapor, bComplexRootsWereFound, iIER)

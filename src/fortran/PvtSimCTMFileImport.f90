@@ -11,9 +11,9 @@ module PvtSimCTMFileImport
 
     ! =============================================================
     ! =============================================================
-    subroutine ReadMixtureComponentsFromPVTSIMFileCTM(sPvtSimCTMFileName, bReadOnlyINComp, iNComp, oZ, oMW, oTc, oPc, oW, oParachors, &
-                                                        oKij, oLij, oTIndep_Peneloux, iThermodynamicModel, oCpIGCoefs, oPVTSIMViscCSPTuningParam, &
-                                                        iIER)
+    subroutine ReadMixtureComponentsFromPVTSIMFileCTM(sPvtSimCTMFileName, bReadOnlyINComp, iNComp, oZ, oMW, oTc, oPc, oW, &
+                                                      oParachors, oKij, oLij, oTIndep_Peneloux, iThermodynamicModel, oCpIGCoefs, &
+                                                      oPVTSIMViscCSPTuningParam, iIER)
 
         ! OBJETIVO: Ler automaticamente, a partir de um arquivo "ctm" exportado do PVTSIM,
         !   todas as propriedades dos componentes de um fluido que se deseja calcular "composicionalmente"
@@ -143,8 +143,9 @@ module PvtSimCTMFileImport
                 bReadNumberOfComponentsFromThisLine = .true.
                 cycle readLoop
 
-            else if(    ((sPvtSimCTMFileLine(1:29) == '<Comp Amount CT> mole percent').OR.(sPvtSimCTMFileLine(1:28) == '<Comp Amount CT> mol percent')) &
-                        .AND.(.not.bReadOnlyINComp)) then lineType
+            else if(((sPvtSimCTMFileLine(1:29) == '<Comp Amount CT> mole percent').OR. &
+                     (sPvtSimCTMFileLine(1:28) == '<Comp Amount CT> mol percent')).AND. &
+                     (.not.bReadOnlyINComp)) then lineType
 
                 ! Ler, das próximas linhas, as porcentagens molares:
                 call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, iNComp, 0.01d0, &
@@ -509,7 +510,8 @@ module PvtSimCTMFileImport
 
             !else if((sPvtSimCTMFileLine(1:20) == '<Fluid ExtraInfo CT>').AND.(.not.bReadOnlyINComp)) then lineType
             !   19/02/2021 - linha acima comentada e substituída pela abaixo.
-            else if((sPvtSimCTMFileLine(1:16) == '<Fluid Extra CT>').AND.(.not.bReadOnlyINComp).AND.(.not.bReadEOSFromFluidIPROPSSection)) then lineType
+            else if((sPvtSimCTMFileLine(1:16) == '<Fluid Extra CT>').AND.(.not.bReadOnlyINComp).AND. &
+                    (.not.bReadEOSFromFluidIPROPSSection)) then lineType
 
                 ! Ler da próxima linha a Equação de Estado:
                 read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine

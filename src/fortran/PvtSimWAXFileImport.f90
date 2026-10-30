@@ -173,8 +173,8 @@ module PvtSimWAXFileImport
         real(c_double), allocatable, dimension(:) :: oPressurePoints, oCloudPointTemperatures
         real(c_double), allocatable, dimension(:) :: oStructurePressures
         real(c_double), allocatable, dimension(:) :: oTSequenceValues
-        real(c_double), allocatable, dimension(:, :) :: oStructureTemperatures, oStructureDensities, oStructureGasMW, oStructureLiqMW, &
-            oStructureWaxMW, oStructureHWax, oStructureCPWax, oStructureThermCond
+        real(c_double), allocatable, dimension(:, :) :: oStructureTemperatures, oStructureDensities, oStructureGasMW, &
+            oStructureLiqMW, oStructureWaxMW, oStructureHWax, oStructureCPWax, oStructureThermCond
         real(c_double), allocatable, dimension(:, :, :) :: oStructureWaxConcs
 
         ! ------------ CONSTANTES:
@@ -392,7 +392,8 @@ module PvtSimWAXFileImport
                 ! Para economizar escrita:
                 if(i.NE.iPressureCount) cycle writePStructs
 
-                write(*, '(//, "------------------------> Estrutura de pressão ", I4, " || P = ", F11.1)') i, oStructurePressures(i)
+                write(*, '(//, "------------------------> Estrutura de pressão ", I4, " || P = ", F11.1)') &
+                    i, oStructurePressures(i)
 
                 writeTStructs: do j = 1, iTemperatureCount
                     write(*, '(/, "--------> Temperatura ", I4, " = ", F7.2)') j, oStructureTemperatures(i, j)
@@ -441,10 +442,12 @@ module PvtSimWAXFileImport
 
     ! =============================================================
     ! =============================================================
-    subroutine InterpolatePVTSIMWaxCalcParameters(iWaxComponentCount, iPressureCount, iTemperatureCount, oMolecularWeightsOfWaxComponents, oPressurePoints, oCloudPointTemperatures, oStructurePressures, &
-            oStructureTemperatures, oStructureCPWax, oStructureThermCond, oStructureDensities, oStructureLiqMW, oStructureWaxConcs, &
-            dPressure, dTemperature, iIER, dCloudPointT, dInterpolatedCPWax, dInterpolatedThermCond, dInterpolatedDens, dInterpolatedLiqMW, &
-            oInterpolatedWaxConcsTDeriv, oInterpolatedMassWaxConcsTDeriv, oInterpolatedWaxConcs)
+    subroutine InterpolatePVTSIMWaxCalcParameters(iWaxComponentCount, iPressureCount, iTemperatureCount, &
+            oMolecularWeightsOfWaxComponents, oPressurePoints, oCloudPointTemperatures, oStructurePressures, &
+            oStructureTemperatures, oStructureCPWax, oStructureThermCond, oStructureDensities, oStructureLiqMW, &
+            oStructureWaxConcs, dPressure, dTemperature, iIER, dCloudPointT, dInterpolatedCPWax, dInterpolatedThermCond, &
+            dInterpolatedDens, dInterpolatedLiqMW, oInterpolatedWaxConcsTDeriv, oInterpolatedMassWaxConcsTDeriv, &
+            oInterpolatedWaxConcs)
 
         ! OBJETIVO: Fazer interpolações em P e T de determinados parâmetros de cálculos de
         !   deposição de parafinas obtidos de arquivo "*.wax" do PVTSIM.
@@ -594,22 +597,26 @@ module PvtSimWAXFileImport
         forTemp: do k = 0, 1
 
             ! Cpwax:
-            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oCPWaxMiniTable(k+1, :), dTemperature, iIER, oCPWaxInterpInT(k+1))
+            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oCPWaxMiniTable(k+1, :), dTemperature, iIER, &
+                                      oCPWaxInterpInT(k+1))
 
             if (iIER.ne.ERROR_EverythingOK) return
 
             ! Therm Cond:
-            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oThermCondMiniTable(k+1, :), dTemperature, iIER, oThermCondInterpInT(k+1))
+            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oThermCondMiniTable(k+1, :), dTemperature, iIER, &
+                                      oThermCondInterpInT(k+1))
 
             if (iIER.ne.ERROR_EverythingOK) return
 
             ! Dens:
-            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oDensMiniTable(k+1, :), dTemperature, iIER, oDensInterpInT(k+1))
+            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oDensMiniTable(k+1, :), dTemperature, iIER, &
+                                      oDensInterpInT(k+1))
 
             if (iIER.ne.ERROR_EverythingOK) return
 
             ! Liq Mw:
-            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oLiqMWMiniTable(k+1, :), dTemperature, iIER, oLiqMWInterpInT(k+1))
+            call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oLiqMWMiniTable(k+1, :), dTemperature, iIER, &
+                                      oLiqMWInterpInT(k+1))
 
             if (iIER.ne.ERROR_EverythingOK) return
 
@@ -619,8 +626,8 @@ module PvtSimWAXFileImport
                 oWaxConcsTDeriv(l, k+1) = (oWaxConcsMiniTable(l, k+1, 2) - oWaxConcsMiniTable(l, k+1, 1)) / &
                                           (oTemperatureMiniTable(k+1, 2) - oTemperatureMiniTable(k+1, 1))
 
-                oMassWaxConcTDeriv(l, k+1) = oMolecularWeightsOfWaxComponents(l) * (oWaxConcsMiniTable(l, k+1, 2) / oLiqMWMiniTable(k+1, 2) - &
-                                                                                    oWaxConcsMiniTable(l, k+1, 1) / oLiqMWMiniTable(k+1, 1)) / &
+                oMassWaxConcTDeriv(l, k+1) = oMolecularWeightsOfWaxComponents(l) * &
+            (oWaxConcsMiniTable(l, k+1, 2) / oLiqMWMiniTable(k+1, 2) - oWaxConcsMiniTable(l, k+1, 1) / oLiqMWMiniTable(k+1, 1)) / &
                                              (oTemperatureMiniTable(k+1, 2) - oTemperatureMiniTable(k+1, 1))
 
             end do compLoopT
@@ -628,7 +635,8 @@ module PvtSimWAXFileImport
             ! Concentrações molares:
             compLoopT2: do l = 1, iWaxComponentCount
 
-                call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oWaxConcsMiniTable(l, k+1, :), dTemperature, iIER, oWaxConcInterpInT(l, k+1))
+                call InterpolateInVectors(2, oTemperatureMiniTable(k+1, :), oWaxConcsMiniTable(l, k+1, :), dTemperature, iIER, &
+                                          oWaxConcInterpInT(l, k+1))
 
                 if (iIER.ne.ERROR_EverythingOK) return
 
@@ -693,18 +701,21 @@ module PvtSimWAXFileImport
 
             write(*, '(/, A)') 'Tabela de temperaturas:'
             do k = 1, 2
-                write(*, '("P", I1, 2X, "Val Inf = ", F6.2, 2X, "Val Sup = ", F6.2)') k, oTemperatureMiniTable(k, 1), oTemperatureMiniTable(k, 2)
+                write(*, '("P", I1, 2X, "Val Inf = ", F6.2, 2X, "Val Sup = ", F6.2)') k, oTemperatureMiniTable(k, 1), &
+                    oTemperatureMiniTable(k, 2)
             end do
 
             write(*, '(/, A)') 'Tabela de CPWax:'
             do k = 1, 2
-                write(*, '("P", I1, 2X, "Val Inf = ", F9.3, 2X, "Val Sup = ", F9.3)') k, oCPWaxMiniTable(k, 1), oCPWaxMiniTable(k, 2)
+                write(*, '("P", I1, 2X, "Val Inf = ", F9.3, 2X, "Val Sup = ", F9.3)') k, oCPWaxMiniTable(k, 1), &
+                    oCPWaxMiniTable(k, 2)
             end do
             write(*, '("Interp em T: T1 = ", F9.3, 2X, "T2 = ", F9.3)') oCPWaxInterpInT(1), oCPWaxInterpInT(2)
 
             write(*, '(/, A)') 'Tabela de Therm Cond:'
             do k = 1, 2
-                write(*, '("P", I1, 2X, "Val Inf = ", F9.5, 2X, "Val Sup = ", F9.5)') k, oThermCondMiniTable(k, 1), oThermCondMiniTable(k, 2)
+                write(*, '("P", I1, 2X, "Val Inf = ", F9.5, 2X, "Val Sup = ", F9.5)') k, oThermCondMiniTable(k, 1), &
+                    oThermCondMiniTable(k, 2)
             end do
 
             write(*, '(/, A)') 'Tabela de Dens:'
@@ -714,13 +725,15 @@ module PvtSimWAXFileImport
 
             write(*, '(/, A)') 'Tabela de Liq MW:'
             do k = 1, 2
-                write(*, '("P", I1, 2X, "Val Inf = ", F9.3, 2X, "Val Sup = ", F9.3)') k, oLiqMWMiniTable(k, 1), oLiqMWMiniTable(k, 2)
+                write(*, '("P", I1, 2X, "Val Inf = ", F9.3, 2X, "Val Sup = ", F9.3)') k, oLiqMWMiniTable(k, 1), &
+                    oLiqMWMiniTable(k, 2)
             end do
 
             do l = 1, iWaxComponentCount
                 write(*, '(/, A, I2, ":")') 'Tabela de Wax Conc ', l
                 do k = 1, 2
-                    write(*, '("P", I1, 2X, "Val Inf = ", E11.6, 2X, "Val Sup = ", E11.6)') k, oWaxConcsMiniTable(l, k, 1), oWaxConcsMiniTable(l, k, 2)
+                    write(*, '("P", I1, 2X, "Val Inf = ", E11.6, 2X, "Val Sup = ", E11.6)') k, oWaxConcsMiniTable(l, k, 1), &
+                        oWaxConcsMiniTable(l, k, 2)
                 end do
             end do
 
@@ -784,12 +797,13 @@ module PvtSimWAXFileImport
 
     ! =============================================================
     ! =============================================================
-    subroutine GetPvtSimWAXFileInfoFor1DFlowSimulation(dPressure, dTemperature, iWaxComponentCount, iPressureCount, iTemperatureCount, oPressurePoints, oCloudPointTemperatures, &
-                    oStructurePressures, oStructureTemperatures, oStructureDensities, oStructureLiqMW, oStructureCPWax, oStructureThermCond, &
-                    oStructureWaxConcs, oMolecularWeightsOfWaxComponents, oLiquidDensitiesOfWaxComponents, iIER, &
-                    iWaxComponentCount_output, oMolecularWeightsOfWaxComponents_output, oLiquidDensitiesOfWaxComponents_output, dCloudPointT_output, &
-                    dInterpolatedCPWax_output, dInterpolatedThermCond_output, dInterpolatedDens_output, dInterpolatedLiqMW_output, oInterpolatedWaxConcsTDeriv_output, &
-                    oInterpolatedMassWaxConcsTDeriv_output, oInterpolatedWaxConcs_output)
+    subroutine GetPvtSimWAXFileInfoFor1DFlowSimulation(dPressure, dTemperature, iWaxComponentCount, iPressureCount, &
+                    iTemperatureCount, oPressurePoints, oCloudPointTemperatures, oStructurePressures, oStructureTemperatures, &
+                    oStructureDensities, oStructureLiqMW, oStructureCPWax, oStructureThermCond, oStructureWaxConcs, &
+                    oMolecularWeightsOfWaxComponents, oLiquidDensitiesOfWaxComponents, iIER, iWaxComponentCount_output, &
+                    oMolecularWeightsOfWaxComponents_output, oLiquidDensitiesOfWaxComponents_output, dCloudPointT_output, &
+                    dInterpolatedCPWax_output, dInterpolatedThermCond_output, dInterpolatedDens_output, dInterpolatedLiqMW_output, &
+                    oInterpolatedWaxConcsTDeriv_output, oInterpolatedMassWaxConcsTDeriv_output, oInterpolatedWaxConcs_output)
 
         ! OBJETIVO: Obter, a partir das informações lidas de um arquivo padrão "wax PVTSIM", os parâmetros necessários
         !       para que uma simulação 1D de escoamento possa fazer cálculos de deposição de parafinas.
@@ -835,10 +849,12 @@ module PvtSimWAXFileImport
         ! ------------ PROCEDIMENTOS:
 
         ! Fazer as interpolações que forem necessárias:
-        call InterpolatePVTSIMWaxCalcParameters(iWaxComponentCount, iPressureCount, iTemperatureCount, oMolecularWeightsOfWaxComponents, oPressurePoints, oCloudPointTemperatures, oStructurePressures, &
-            oStructureTemperatures, oStructureCPWax, oStructureThermCond, oStructureDensities, oStructureLiqMW, oStructureWaxConcs, &
-            dPressure, dTemperature, iIER, dCloudPointT, dInterpolatedCPWax, dInterpolatedThermCond, dInterpolatedDens, dInterpolatedLiqMW, &
-            oInterpolatedWaxConcsTDeriv, oInterpolatedMassWaxConcsTDeriv, oInterpolatedWaxConcs)
+        call InterpolatePVTSIMWaxCalcParameters(iWaxComponentCount, iPressureCount, iTemperatureCount, &
+            oMolecularWeightsOfWaxComponents, oPressurePoints, oCloudPointTemperatures, oStructurePressures, &
+            oStructureTemperatures, oStructureCPWax, oStructureThermCond, oStructureDensities, oStructureLiqMW, &
+            oStructureWaxConcs, dPressure, dTemperature, iIER, dCloudPointT, dInterpolatedCPWax, dInterpolatedThermCond, &
+            dInterpolatedDens, dInterpolatedLiqMW, oInterpolatedWaxConcsTDeriv, oInterpolatedMassWaxConcsTDeriv, &
+            oInterpolatedWaxConcs)
 
         if (iIER.ne.ERROR_EverythingOK) return
 
