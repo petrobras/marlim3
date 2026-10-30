@@ -295,6 +295,7 @@ default build:
 
 ```bash
 cmake -S . -B build -DMARLIM_BUILD_TESTS=ON
+cmake --build build --target test_inlet_boundary_initialization
 cmake --build build --target test_friction_factor
 ctest --test-dir build --output-on-failure
 ```

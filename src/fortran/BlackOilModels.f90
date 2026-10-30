@@ -398,7 +398,8 @@ module BlackOilModels
     ! =============================================================
     !           ROTINAS PARA CÁLCULOS DE Rs
     ! =============================================================
-    subroutine CalculateBlackOilSolutionGasOilRatio(corrSat, pres, temp, varPb, dPSEP_VB, dTSEP_VB, API, RGO, Deng, pbtemp, RsResult, iIER)
+    subroutine CalculateBlackOilSolutionGasOilRatio(corrSat, pres, temp, varPb, dPSEP_VB, dTSEP_VB, API, RGO, Deng, pbtemp, &
+                                                    RsResult, iIER)
 
         ! OBJETIVO: Calcular "Rs" usando uma das correlações disponíveis.
 
@@ -827,9 +828,9 @@ module BlackOilModels
     !  ROTINAS PARA CORREÇÃO VIA REGRESSÃO LINEAR CONTRA ANÁLISE PVT
     ! =============================================================
 
-    subroutine FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, dAPI, &
-        dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
-        oCorrectedRs, oCalibrationInfoSummary, iIER)
+    subroutine FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, dPSEP_VB, &
+        dTSEP_VB, dAPI, dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, &
+        dRsRegressionA, dRsRegressionB, oCorrectedRs, oCalibrationInfoSummary, iIER)
 
         ! OBJETIVO: Executa o procedimento completo de ajuste (regressão) de modelos de calibração para propriedades black-oil 
         !           a partir de dados experimentais de Análise PVT, retornando os parâmetros desses modelos ajustados, junto com

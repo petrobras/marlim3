@@ -213,12 +213,13 @@ module FlashExtras
         iIER_Flash = ERROR_EverythingOK
 
         call CalculateIsothermalPTVLEFlash(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                 iLiqPhaseModel, iVapPhaseModel, (bHasInitialFlashEstimates.AND.bAllowedUseOfInitialEstimate), oGivenInitialLiqComposition, oGivenInitialVapComposition, &
-                 iIER_Flash, dBetaVap, oLiqComposition, oVapComposition)
+                 iLiqPhaseModel, iVapPhaseModel, (bHasInitialFlashEstimates.AND.bAllowedUseOfInitialEstimate), &
+                 oGivenInitialLiqComposition, oGivenInitialVapComposition, iIER_Flash, dBetaVap, oLiqComposition, oVapComposition)
 
         ! ----------------> Escrever no arquivo de Debug
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-        write(sDebugFileLine, '("Retornou da CalculateIsothermalPTVLEFlash com iIER = ", I3, " e beta = ", F10.7)') iIER_Flash, dBetaVap
+        write(sDebugFileLine, '("Retornou da CalculateIsothermalPTVLEFlash com iIER = ", I3, " e beta = ", F10.7)') iIER_Flash, &
+                dBetaVap
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         ! ----------------> Escrito no arquivo de Debug
 
@@ -296,9 +297,10 @@ module FlashExtras
             ! ---------> Providências adicionais para verificar se o "VLE" é na verdade um LLE!
             checkIfVLEIsLLE: if(bEnsureVLEIsNotLLE) then
 
-                call CheckVLESolutionForPossibleLLE(iNComp, oMW, oTc, oPc, oW, oKij, oLij, oPeneloux, oZ, iLiqDensityCalculationMethod, &
-                                                iVapDensityCalculationMethod, oLiqComposition, oVapComposition, &
-                                                dBetaVap, dPressure, dTemperature, bLLEDetected, iIER)
+                call CheckVLESolutionForPossibleLLE(iNComp, oMW, oTc, oPc, oW, oKij, oLij, oPeneloux, oZ, &
+                                                iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
+                                                oLiqComposition, oVapComposition, dBetaVap, dPressure, dTemperature, &
+                                                bLLEDetected, iIER)
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
@@ -343,7 +345,8 @@ module FlashExtras
     !           ROTINAS DE CÁLCULO DE FLASH
     ! =============================================================
 
-    subroutine ValidateInitialFlashEstimates(iNComp, oZ, oGivenInitialLiqComposition, oGivenInitialVapComposition, bInitialEstimateIsValid)
+    subroutine ValidateInitialFlashEstimates(iNComp, oZ, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
+                                             bInitialEstimateIsValid)
 
         ! OBJETIVO: Verificar a validade de determinadas estimativas iniciais para o bom cálculo do "flash".
 
@@ -385,7 +388,8 @@ module FlashExtras
             dDiffXY = abs(oGivenInitialLiqComposition(i) - oGivenInitialVapComposition(i))
             dDiffXZ = abs(oGivenInitialLiqComposition(i) - oZ(i))
 
-            bIdenticalXAndYAndZ = bIdenticalXAndYAndZ.AND.(dDiffXY.lt.dTolForIdenticalFractions).AND.(dDiffXZ.lt.dTolForIdenticalFractions)
+            bIdenticalXAndYAndZ = bIdenticalXAndYAndZ.AND.(dDiffXY.lt.dTolForIdenticalFractions).AND. &
+                                                          (dDiffXZ.lt.dTolForIdenticalFractions)
 
         end do trivialSol_Loop1
 
@@ -472,15 +476,15 @@ module FlashExtras
             dLiquidPhaseMW, dVaporPhaseMW, dMixtureMW, dVaporMassFraction)      ! Nesta linha: saídas da rotina
 
         ! Calcular a massa específica da fase líquida:
-        call CalculatePhaseDensity(iNComp, PHASE_Liquid, oLiqPhaseComposition, dP, dT, iLiqDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
-                      oPeneloux, dLiquidPhaseMW, &
+        call CalculatePhaseDensity(iNComp, PHASE_Liquid, oLiqPhaseComposition, dP, dT, iLiqDensityCalculationMethod, &
+                      oTc, oPc, oW, oKij, oLij, oPeneloux, dLiquidPhaseMW, &
                       dLiqDensity, iIER)        ! Nesta linha: saídas da rotina
 
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Calcular a massa específica da fase vapor:
-        call CalculatePhaseDensity(iNComp, PHASE_Vapor, oVapPhaseComposition, dP, dT, iVapDensityCalculationMethod, oTc, oPc, oW, oKij, oLij, &
-                      oPeneloux, dVaporPhaseMW, &
+        call CalculatePhaseDensity(iNComp, PHASE_Vapor, oVapPhaseComposition, dP, dT, iVapDensityCalculationMethod, &
+                      oTc, oPc, oW, oKij, oLij, oPeneloux, dVaporPhaseMW, &
                       dVapDensity, iIER)        ! Nesta linha: saídas da rotina
 
         if(iIER.NE.ERROR_EverythingOK) return
@@ -557,17 +561,20 @@ module FlashExtras
             call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             if(dVapDensity.ge.dLiqDensity) then
                 call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                write(sDebugFileLine, '("    Massa Esp. Vapor >= Massa Esp. Líq: ", F8.2, " (vapor) contra ", F8.2, " (líquido)")') dVapDensity, dLiqDensity
+                write(sDebugFileLine, '("    Massa Esp. Vapor >= Massa Esp. Líq: ", F8.2, " (vapor) contra ", F8.2, &
+                    " (líquido)")') dVapDensity, dLiqDensity
                 call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             end if
             if(dVaporPhaseMW.gt.dLiquidPhaseMW) then
                 call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                write(sDebugFileLine, '("    MW Vapor > MW Líq: ", F8.2, " (vapor) contra ", F8.2, " (líquido)")') dVaporPhaseMW, dLiquidPhaseMW
+                write(sDebugFileLine, '("    MW Vapor > MW Líq: ", F8.2, " (vapor) contra ", F8.2, " (líquido)")') &
+                    dVaporPhaseMW, dLiquidPhaseMW
                 call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             end if
             if(dSumVapHeavy.gt.dSumLiqHeavy) then
                 call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                write(sDebugFileLine, '("    Frac. Molar Pesados Vapor >  Frac. Molar Pesados Líq: ", F7.5, " (vapor) contra ", F7.5, " (líquido)")') dSumVapHeavy, dSumLiqHeavy
+                write(sDebugFileLine, '("    Frac. Molar Pesados Vapor >  Frac. Molar Pesados Líq: ", F7.5, " (vapor) contra ", &
+                    F7.5, " (líquido)")') dSumVapHeavy, dSumLiqHeavy
                 call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             end if
             call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
@@ -586,9 +593,9 @@ module FlashExtras
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateIsothermalPTVLEFlash(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                 iLiqPhaseModel, iVapPhaseModel, bHasInitialFlashEstimates, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
-                 iIER, dBetaVap, oX, oY)
+    subroutine CalculateIsothermalPTVLEFlash(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                 oPeneloux, iLiqPhaseModel, iVapPhaseModel, bHasInitialFlashEstimates, oGivenInitialLiqComposition, &
+                 oGivenInitialVapComposition, iIER, dBetaVap, oX, oY)
 
         ! OBJETIVO: Fazer o cálculo eficiente de um "flash" P,T bifásico (líquido / vapor).
         implicit none
@@ -674,8 +681,8 @@ module FlashExtras
         bTPDAnalysisSuccessfullyDone = .false.
 
         ! Obter, se necessário, estimativas iniciais de "K":
-        if(.not.bHasInitialFlashEstimates) call InitializeLiquidAndVaporCompositions(dPressure, dTemperature, iNComp, oZ, oTc, oPc, oW, &
-                    oGivenInitialLiqComposition, oGivenInitialVapComposition)
+        if(.not.bHasInitialFlashEstimates) call InitializeLiquidAndVaporCompositions(dPressure, dTemperature, iNComp, oZ, oTc, &
+                    oPc, oW, oGivenInitialLiqComposition, oGivenInitialVapComposition)
 
         do i = 1, iNComp
             oK(i) = oGivenInitialVapComposition(i) / oGivenInitialLiqComposition(i)
@@ -747,7 +754,8 @@ module FlashExtras
 
             ! ---------> Escrita no arquivo de Debug:
             call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-            write(sDebugFileLine, '("    Iteração ", I4, ": Subst. Sucessiva do flash ainda não convergiu ; dBetaVap = ", F8.5)') iIter, dBetaVap
+            write(sDebugFileLine, '("    Iteração ", I4, ": Subst. Sucessiva do flash ainda não convergiu ; dBetaVap = ", &
+                F8.5)') iIter, dBetaVap
             call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             ! ---------> Fim da escrita no arquivo de Debug:
 
@@ -802,13 +810,14 @@ module FlashExtras
 
                     ! --------------> Escrita no arquivo de debug:
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("    Iteração ", I4, " da Subst. Sucessiva do flash: vai iniciar teste de estabilidade de fases.")') iIter
+                    write(sDebugFileLine, &
+                      '("    Iteração ", I4, " da Subst. Sucessiva do flash: vai iniciar teste de estabilidade de fases.")') iIter
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                     ! --------------> Fim da escrita no arquivo de debug.
 
-                    call PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oLeastGPhaseLnFug, oTc, oPc, oW, oKij, oLij, &
-                        oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
-                        bFeedIsStableAsSinglePhaseArg = bFeedIsStableAsSinglePhase, oLiqStationaryPointWArg = oLiqStationaryPointW, &
+                    call PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oLeastGPhaseLnFug, oTc, oPc, oW, &
+                        oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
+                        bFeedIsStableAsSinglePhaseArg = bFeedIsStableAsSinglePhase, oLiqStationaryPointWArg = oLiqStationaryPointW,&
                         oLiqStationaryPointLnFugArg = oLiqStationaryPointLnFug, oVapStationaryPointWArg = oVapStationaryPointW, &
                         oVapStationaryPointLnFugArg = oVapStationaryPointLnFug, oImprovedKFactorsArg = oImprovedKFactors)
 
@@ -817,8 +826,10 @@ module FlashExtras
 
                     ! ------------> Escrita no arquivo de debug:
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("    Já saiu de PerformTangentPlaneAnalysisForVLE: vai retornar fase única, beta molar = ", F7.5)') dBetaVap
-                    call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)                        
+                    write(sDebugFileLine, &
+                      '("    Já saiu de PerformTangentPlaneAnalysisForVLE: vai retornar fase única, beta molar = ", F7.5)') &
+                      dBetaVap
+                    call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                     ! ------------: Fim da escrita no arquivo de debug.
 
                         return
@@ -830,7 +841,8 @@ module FlashExtras
 
                     ! ---------> Escrita no arquivo de Debug
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("    Iteração ", I4, " da Subst. Suc. do flash: já tentou TPD; vai tentar Newton.")') iIter
+                    write(sDebugFileLine, &
+                        '("    Iteração ", I4, " da Subst. Suc. do flash: já tentou TPD; vai tentar Newton.")') iIter
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                     ! ---------> Fim da escrita no arquivo de Debug
 
@@ -838,8 +850,8 @@ module FlashExtras
                     ! Recorrer ao método de Newton.
                     call TryFlashCalcWith2ndOrderMinimizationIfNecessary(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, &
                             oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, bGibbsEnergyDecreases, bFoundValidBeta, &
-                            bTPDAnalysisSuccessfullyDone, oLeastGPhaseLnFug, iLeastGPhaseID, oLiqStationaryPointW, oVapStationaryPointW, &
-                            oImprovedKFactors, iIER, dBetaVap, oX, oY, bIgnoreOutcomeAndResume, &
+                            bTPDAnalysisSuccessfullyDone, oLeastGPhaseLnFug, iLeastGPhaseID, oLiqStationaryPointW, &
+                            oVapStationaryPointW, oImprovedKFactors, iIER, dBetaVap, oX, oY, bIgnoreOutcomeAndResume, &
                             bFeedIsStableAsSinglePhase, oLiqStationaryPointLnFug, oVapStationaryPointLnFug)
 
                     ! ---------> Escrita no arquivo de Debug
@@ -864,14 +876,15 @@ module FlashExtras
 
                 ! ---------> Escrita no arquivo de Debug
                 call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                write(sDebugFileLine, '("    Iteração ", I4, " da Subst. Suc. do flash: já esgotou SS; vai tentar Newton.")') iIter
+                write(sDebugFileLine, &
+                    '("    Iteração ", I4, " da Subst. Suc. do flash: já esgotou SS; vai tentar Newton.")') iIter
                 call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                 ! ---------> Fim da escrita no arquivo de Debug
 
                 call TryFlashCalcWith2ndOrderMinimizationIfNecessary(dTemperature, dPressure, iNComp, oZ, oTc, oPc, oW, &
                             oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, bGibbsEnergyDecreases, bFoundValidBeta, &
-                            bTPDAnalysisSuccessfullyDone, oLeastGPhaseLnFug, iLeastGPhaseID, oLiqStationaryPointW, oVapStationaryPointW, &
-                            oImprovedKFactors, iIER, dBetaVap, oX, oY, bIgnoreOutcomeAndResume, &
+                            bTPDAnalysisSuccessfullyDone, oLeastGPhaseLnFug, iLeastGPhaseID, oLiqStationaryPointW, &
+                            oVapStationaryPointW, oImprovedKFactors, iIER, dBetaVap, oX, oY, bIgnoreOutcomeAndResume, &
                             bFeedIsStableAsSinglePhase, oLiqStationaryPointLnFug, oVapStationaryPointLnFug)
 
                 ! ---------> Escrita no arquivo de Debug
@@ -1055,7 +1068,9 @@ module FlashExtras
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
                     write(sDebugFileLine, '("        NA SUBROTINA PerformPTVLEFlashSuccessiveSubstitutionIteration:")')
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("        Detectada convergência do flash! [dRelVar = ", E12.5, " ; dRelVarTol = ", E12.5, "]")') dRelVar, dRelVarTol
+                    write(sDebugFileLine, &
+                      '("        Detectada convergência do flash! [dRelVar = ", E12.5, " ; dRelVarTol = ", E12.5, "]")') &
+                      dRelVar, dRelVarTol
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                 end if
                 ! ---------> Fim da escrita no arquivo de Debug
@@ -1401,8 +1416,8 @@ module FlashExtras
         ! ("Função F" apresentada na Referência Bibliográfica, pág 63, equação "6")
         call CalculateFunctionFValuesAndDerivatives(iNComp, iPhaseID, dTemperature, dPressure, oPhasicComposition, &
             iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oDerivFWithNiArgg = oDerivFWithNi, &
-            bPhasicZAvailableArg = bPhasicZAvailable, dPhasicZArgg = dPhasicZ, &
-            dDeriv2FWithVTwoArgg = dDeriv2FWithVTwo, oDerivFWithNiAndVArgg = oDerivFWithNiAndV, oDerivFWithNiNjArgg = oDerivFWithNiNj)
+            bPhasicZAvailableArg = bPhasicZAvailable, dPhasicZArgg = dPhasicZ, dDeriv2FWithVTwoArgg = dDeriv2FWithVTwo, &
+            oDerivFWithNiAndVArgg = oDerivFWithNiAndV, oDerivFWithNiNjArgg = oDerivFWithNiNj)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1455,8 +1470,8 @@ module FlashExtras
     ! =============================================================
     ! =============================================================
     subroutine CalculateFunctionFValuesAndDerivatives(iNComp, iPhaseID, dTemperature, dPressure, oPhasicComposition, &
-            iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oDerivFWithNiArgg, bPhasicZAvailableArg, dPhasicZArgg, &
-            dDeriv2FWithVTwoArgg, oDerivFWithNiAndVArgg, oDerivFWithNiNjArgg)
+            iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oDerivFWithNiArgg, bPhasicZAvailableArg, &
+            dPhasicZArgg, dDeriv2FWithVTwoArgg, oDerivFWithNiAndVArgg, oDerivFWithNiNjArgg)
 
         ! OBJETIVO: Calcular valores e derivadas relacionadas à "função F" definida na página 63,
         !   equação 6 da referência abaixo.
@@ -1505,7 +1520,9 @@ module FlashExtras
         bPhasicZAvailable = .false.
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
-        bThermodynamicModelIsCubicEOS = (iPhasicThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iPhasicThermodynamicModel.EQ.SRK_PENELOUX).or.(iPhasicThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
+        bThermodynamicModelIsCubicEOS = (iPhasicThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or. &
+                                        (iPhasicThermodynamicModel.EQ.SRK_PENELOUX).or. &
+                                        (iPhasicThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
 
         ! Proceder de acordo com o método selecionado:
         whichMethod: if(bThermodynamicModelIsCubicEOS) then
@@ -1513,8 +1530,9 @@ module FlashExtras
             bPhasicZAvailable = .true.
 
             call CalculateFunctionFValuesAndDerivativesFromCubicEOS(iNComp, iPhaseID, dTemperature, dPressure, oPhasicComposition, &
-                iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oDerivFWithNiArg=oDerivFWithNi, dPhasicZArg=dPhasicZ, &
-                dDeriv2FWithVTwoArg = dDeriv2FWithVTwo, oDerivFWithNiAndVArg = oDerivFWithNiAndV, oDerivFWithNiNjArg = oDerivFWithNiNj)
+                iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oDerivFWithNiArg=oDerivFWithNi, &
+                dPhasicZArg=dPhasicZ, dDeriv2FWithVTwoArg = dDeriv2FWithVTwo, oDerivFWithNiAndVArg = oDerivFWithNiAndV, &
+                oDerivFWithNiNjArg = oDerivFWithNiNj)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1607,9 +1625,9 @@ module FlashExtras
         ! ------------------ CÁLCULOS:
 
         ! Calcular o fator de compressibilidade:
-        call CalculatePhasicCompressibilityFactorFromCubicEOS(iNComp, iPhaseID, dTemperature, dPressure, oPhasicComposition, &
-             iPhasicCubicEOSModel, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhasicZ, iIER, oCubicEOSaParametersArg=oCubicEOSaParameters, &
-             oCubicEOSbParametersArg=oCubicEOSbParameters, dBMixArg=dBMix)
+        call CalculatePhasicCompressibilityFactorFromCubicEOS(iNComp, iPhaseID, dTemperature, dPressure, &
+             oPhasicComposition, iPhasicCubicEOSModel, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhasicZ, iIER, &
+             oCubicEOSaParametersArg=oCubicEOSaParameters, oCubicEOSbParametersArg=oCubicEOSbParameters, dBMixArg=dBMix)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1824,7 +1842,9 @@ module FlashExtras
         dPhasicZ = -10.0d0
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
-        bThermodynamicModelIsCubicEOS = (iPhasicThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iPhasicThermodynamicModel.EQ.SRK_PENELOUX).or.(iPhasicThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
+        bThermodynamicModelIsCubicEOS = (iPhasicThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or. &
+                                        (iPhasicThermodynamicModel.EQ.SRK_PENELOUX).or. &
+                                        (iPhasicThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
 
         ! Proceder de acordo com o método selecionado:
         whichMethod: if(bThermodynamicModelIsCubicEOS) then
@@ -1848,8 +1868,8 @@ module FlashExtras
     ! =============================================================
     ! =============================================================
     subroutine CalculatePhasicCompressibilityFactorFromCubicEOS(iNComp, iPhaseID, dTemperature, dPressure, oPhasicComposition, &
-             iPhasicCubicEOSModel, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhasicZ, iIER, oCubicEOSaParametersArg, oCubicEOSbParametersArg, &
-             dAMixArg, dBMixArg, dCMixArg)
+             iPhasicCubicEOSModel, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhasicZ, iIER, oCubicEOSaParametersArg, &
+             oCubicEOSbParametersArg, dAMixArg, dBMixArg, dCMixArg)
 
         ! OBJETIVO: Concentrar em uma só rotina os procedimentos necessários para calcular, por via de
         !   uma equação cúbica de estado, o fator de compressibilidade de determinada fase.
@@ -1893,7 +1913,7 @@ module FlashExtras
 
         ! Determinar as constantes dos componentes puros nas condições do "flash":
         call CalculateCubicEOSParametersForEachComponent(iNComp, dTemperature, iPhasicCubicEOSModel, oTc, oPc, oW, &
-                                                   iIER, oCubicEOSaParameters, oCubicEOSbParameters)
+                                                         iIER, oCubicEOSaParameters, oCubicEOSbParameters)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1901,8 +1921,8 @@ module FlashExtras
         if(present(oCubicEOSbParametersArg)) oCubicEOSbParametersArg = oCubicEOSbParameters
 
         ! Determinar as constantes da mistura:
-        call CalculateCubicEOSParametersForMixture(iNComp, oPhasicComposition, oKij, oLij, oCubicEOSaParameters, oCubicEOSbParameters, &
-                                                       oPeneloux, dAMix, dBMix, dCMix)
+        call CalculateCubicEOSParametersForMixture(iNComp, oPhasicComposition, oKij, oLij, oCubicEOSaParameters, &
+                                                   oCubicEOSbParameters, oPeneloux, dAMix, dBMix, dCMix)
 
         if(present(dAMixArg)) dAMixArg = dAMix
         if(present(dBMixArg)) dBMixArg = dBMix
@@ -1910,7 +1930,7 @@ module FlashExtras
 
         ! Calcular o fator de compressibilidade:
         call CalculateZFromCubicEOS(dPressure, dTemperature, iPhasicCubicEOSModel, dAMix, dBMix, &
-                                         dZLiquid, dZVapor, bComplexRootsWereFound, iIER)
+                                    dZLiquid, dZVapor, bComplexRootsWereFound, iIER)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -2061,7 +2081,8 @@ module FlashExtras
 
         ! ---------> Escrita no arquivo de Debug
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-        write(sDebugFileLine, '("        dLiqGibbsEnergy = ", E12.5, " ; dVapGibbsEnergy = ", E12.5)') dLiqGibbsEnergy, dVapGibbsEnergy
+        write(sDebugFileLine, &
+            '("        dLiqGibbsEnergy = ", E12.5, " ; dVapGibbsEnergy = ", E12.5)') dLiqGibbsEnergy, dVapGibbsEnergy
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         if(bBothPhasesWithSameGEnergy) then    ! 2-Jul-2026: Ctrl+V correto aqui?
             write(sDebugFileLine, '("        (mesmo valor de energia de Gibbs para ambas as fases!)")')
@@ -2099,7 +2120,9 @@ module FlashExtras
 
                 ! -------> Escrita no arquivo de debug
             if(bForceLiquidBecauseOfEqualG) then
-                write(sDebugFileLine, '("        Líquido por default: ", I3, " componente(s) pesados com fração total = ", E12.5)') iNComp_Heur_VeryHeavy, dZTotal_Heur_VeryHeavy
+                write(sDebugFileLine, &
+                    '("        Líquido por default: ", I3, " componente(s) pesados com fração total = ", E12.5)') &
+                    iNComp_Heur_VeryHeavy, dZTotal_Heur_VeryHeavy
                 call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             end if
                 ! -------> Fim da escrita no arquivo de debug
@@ -2163,16 +2186,18 @@ module FlashExtras
             ! Observação: o "if" abaixo foi colocado como proteção contra frações molares nulas entrando de argumento para o "log"
             !             na expressão. Só que descobriu-se posteriormente que tais valores nulos vinham chegando aqui em função de
             !             um erro de implementação em outro local (prontamente corrigido). Ou seja: a rigor, esse "if" não é necessário.
-            if(oMolarFractions(i).gt.(0.0d0)) dGibbsEnergy = dGibbsEnergy + (oMolarFractions(i) * (log(oMolarFractions(i)) + oLnFugs(i)))
+            if(oMolarFractions(i).gt.(0.0d0)) &
+                dGibbsEnergy = dGibbsEnergy + (oMolarFractions(i) * (log(oMolarFractions(i)) + oLnFugs(i)))
         end do
 
     end subroutine CalculateRelativeMolarGibbsEnergy
 
     ! =============================================================
     ! =============================================================
-    subroutine PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oMixtureLnFug, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, bFeedIsStableAsSinglePhaseArg, &
-                oLiqStationaryPointWArg, oLiqStationaryPointLnFugArg, oVapStationaryPointWArg, oVapStationaryPointLnFugArg, oImprovedKFactorsArg) &
+    subroutine PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oMixtureLnFug, oTc, oPc, oW, &
+                oKij, oLij, oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
+                bFeedIsStableAsSinglePhaseArg, oLiqStationaryPointWArg, oLiqStationaryPointLnFugArg, oVapStationaryPointWArg, &
+                oVapStationaryPointLnFugArg, oImprovedKFactorsArg) &
                 bind(C, name='PerformTangentPlaneAnalysisForVLE')
 
         ! OBJETIVO: Fazer a verificação de estabilidade pelo critério do plano tangente no contexto do
@@ -2303,7 +2328,8 @@ module FlashExtras
         write(sDebugFileLine, '("        dNegativeTPDLimit = ", E12.5)') dNegativeTPDLimit
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-        write(sDebugFileLine, '("        Vai iniciar minimização considerando líquido (", I2, "), iLeastGPhaseID = ", I2)') PHASE_Liquid, iLeastGPhaseID
+        write(sDebugFileLine, '("        Vai iniciar minimização considerando líquido (", I2, "), iLeastGPhaseID = ", I2)') &
+            PHASE_Liquid, iLeastGPhaseID
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         ! -----> Fim da escrita no arquivo de Debug:
 
@@ -2324,13 +2350,15 @@ module FlashExtras
         ! -----> Escrita no arquivo de Debug:
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
         if(iIER_LiqTPDMin.EQ.ERROR_EverythingOK) then
-            write(sDebugFileLine, '("        Retornou de MinimizeTPDFunction com dLiqStationaryPointTPD = ", E12.5)') dLiqStationaryPointTPD
+            write(sDebugFileLine, '("        Retornou de MinimizeTPDFunction com dLiqStationaryPointTPD = ", E12.5)') &
+                dLiqStationaryPointTPD
         else
             write(sDebugFileLine, '("        Retornou de MinimizeTPDFunction com iIER_LiqTPDMin = ", I3)') iIER_LiqTPDMin
         end if
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-        write(sDebugFileLine, '("        Vai iniciar minimização considerando vapor (", I2, "), iLeastGPhaseID = ", I2)') PHASE_Vapor, iLeastGPhaseID
+        write(sDebugFileLine, '("        Vai iniciar minimização considerando vapor (", I2, "), iLeastGPhaseID = ", I2)') &
+            PHASE_Vapor, iLeastGPhaseID
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         ! -----> Fim da escrita no arquivo de Debug:
 
@@ -2351,7 +2379,8 @@ module FlashExtras
         ! -------------> Escrita no arquivo de Debug.
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
         if(iIER_VapTPDMin.EQ.ERROR_EverythingOK) then
-            write(sDebugFileLine, '("        Retornou de MinimizeTPDFunction com dVapStationaryPointTPD = ", E12.5)') dVapStationaryPointTPD
+            write(sDebugFileLine, '("        Retornou de MinimizeTPDFunction com dVapStationaryPointTPD = ", E12.5)') &
+                dVapStationaryPointTPD
         else
             write(sDebugFileLine, '("        Retornou de MinimizeTPDFunction com iIER_VapTPDMin = ", I3)') iIER_VapTPDMin
         end if
@@ -2373,7 +2402,8 @@ module FlashExtras
 
                     ! -----> Escrita no arquivo de Debug:
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("        Resultado do teste de estabilidade de fases: instável como fase única; TPD negativo para L e para V.")')
+                    write(sDebugFileLine, '("        Resultado do teste de estabilidade de fases: instável como fase única; &
+                        TPD negativo para L e para V.")')
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                     ! -----> Fim da escrita no arquivo de Debug:
 
@@ -2385,7 +2415,8 @@ module FlashExtras
 
                     ! -----> Escrita no arquivo de Debug:
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("        Resultado do teste de estabilidade de fases: instável como fase única; TPD negativo para L.")')
+                    write(sDebugFileLine, '("        Resultado do teste de estabilidade de fases: instável como fase única; &
+                        TPD negativo para L.")')
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                     ! -----> Fim da escrita no arquivo de Debug:
 
@@ -2400,7 +2431,8 @@ module FlashExtras
 
                     ! -----> Escrita no arquivo de Debug:
                     call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-                    write(sDebugFileLine, '("        Resultado do teste de estabilidade de fases: instável como fase única; TPD negativo para V.")')
+                    write(sDebugFileLine, '("        Resultado do teste de estabilidade de fases: instável como fase única; &
+                        TPD negativo para V.")')
                     call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
                     ! -----> Fim da escrita no arquivo de Debug:
 
@@ -2442,9 +2474,9 @@ module FlashExtras
 
     ! =============================================================
     ! =============================================================
-    subroutine MinimizeTPDFunction(dTemperature, dPressure, iNComp, oMixtureComposition, oMixtureLnFug, iTrialPhaseID, oWInitialGuess, &
-            iTrialPhaseThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oStationaryPointW, oStationaryPointLnFug, &
-            dStationaryPointTPD, dLastTrialWSumBeforeNormalizationMinusUnity)
+    subroutine MinimizeTPDFunction(dTemperature, dPressure, iNComp, oMixtureComposition, oMixtureLnFug, iTrialPhaseID, &
+            oWInitialGuess, iTrialPhaseThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, iIER, oStationaryPointW, &
+            oStationaryPointLnFug, dStationaryPointTPD, dLastTrialWSumBeforeNormalizationMinusUnity)
 
         ! OBJETIVO: Minimizar a função TPD no contexto de uma "tangent plane analysis", com a função dada
         !   na forma da equação 44 do Capítulo 10 da Referência Bibliográfica.
@@ -2523,8 +2555,8 @@ module FlashExtras
         write(sDebugFileLine, '("            ENTRANDO NA SUBROTINA MinimizeTPDFunction")')
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-        write(sDebugFileLine, '("            Tolerância no Erro da Subst Suc = ", E12.5, " ; Max Iter Subst Suc = ", I4, " ; dNegativeTPDCriteria = ", E12.5)') &
-            dDefaultRelativeTol, iSuccessiveSubstitutionMaxAttempts, dNegativeTPDCriteria
+        write(sDebugFileLine, '("            Tolerância no Erro da Subst Suc = ", E12.5, " ; Max Iter Subst Suc = ", I4, " ; &
+            dNegativeTPDCriteria = ", E12.5)') dDefaultRelativeTol, iSuccessiveSubstitutionMaxAttempts, dNegativeTPDCriteria
         call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
         if(bCheckTPDRelChangeInSS) then
             write(sDebugFileLine, '("            Tolerância Relativa em TPD = ", E12.5)') dTPDRelChangeInSSTolerance
@@ -2603,8 +2635,8 @@ module FlashExtras
 
             ! --------------> Escrita no arquivo de debug
             write(sDebugFileLine, &
-                '("            Iteração ", I3, " da Subst. Suc no Teste Estab: dError = ", E12.5, " ; dCurrentWTPD = ", E12.5, " ; dTPDRelChange = ", E12.5)') &
-                iIter, dError, dCurrentWTPD, dTPDRelChange
+                '("            Iteração ", I3, " da Subst. Suc no Teste Estab: dError = ", E12.5, " ; dCurrentWTPD = ", E12.5, &
+                " ; dTPDRelChange = ", E12.5)') iIter, dError, dCurrentWTPD, dTPDRelChange
             call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             ! --------------> Fim da escrita no arquivo de debug
 
@@ -2625,7 +2657,8 @@ module FlashExtras
 
             end do updateWLoop
 
-            if(present(dLastTrialWSumBeforeNormalizationMinusUnity)) dLastTrialWSumBeforeNormalizationMinusUnity = dLastTrialWSumBeforeNormalizationMinusUnity_Loc
+            if(present(dLastTrialWSumBeforeNormalizationMinusUnity)) &
+                dLastTrialWSumBeforeNormalizationMinusUnity = dLastTrialWSumBeforeNormalizationMinusUnity_Loc
 
             ! TESTANDO - Normalizar "W" entre iterações:
             oCurrentW = oCurrentW / sum(oCurrentW)
@@ -2647,13 +2680,15 @@ module FlashExtras
             ! ---------> Fim da escrita no arquivo de Debug
 
             ! Acionar a minimização por Newton:
-            call TryStabilityAnalysisWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                    iTrialPhaseID, iTrialPhaseThermodynamicModel, oCurrentW, oD, dNegativeTPDCriteriaToUse, iIER, bIgnoreNewtonOutcomeAndResume, &
-                    oStationaryPointW_Newton, oCurrentWLnFug, dCurrentWTPD, dLastTrialWSumBeforeNormalizationMinusUnity_Loc)
+            call TryStabilityAnalysisWith2ndOrderMinimization(dTemperature, dPressure, iNComp, oTc, oPc, oW, oKij, oLij, &
+                    oPeneloux, iTrialPhaseID, iTrialPhaseThermodynamicModel, oCurrentW, oD, dNegativeTPDCriteriaToUse, iIER, &
+                    bIgnoreNewtonOutcomeAndResume, oStationaryPointW_Newton, oCurrentWLnFug, dCurrentWTPD, &
+                    dLastTrialWSumBeforeNormalizationMinusUnity_Loc)
 
             ! ---------> Escrita no arquivo de Debug.
             call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
-            write(sDebugFileLine, '("            Retornou de Newton com iIER = ", I3, " e dCurrentWTPD = ", E12.5)') iIER, dCurrentWTPD
+            write(sDebugFileLine, '("            Retornou de Newton com iIER = ", I3, " e dCurrentWTPD = ", E12.5)') &
+                iIER, dCurrentWTPD
             call WriteDebugFileLine(sDebugFileLine, bConfirmWriteLine = bWriteToDebugFile)
             call WriteDebugFileLine(" ", bConfirmWriteLine = bWriteToDebugFile)
             ! ---------> Fim da escrita no arquivo de Debug.
@@ -2664,7 +2699,8 @@ module FlashExtras
 
                 oCurrentW = oStationaryPointW_Newton
 
-                if(present(dLastTrialWSumBeforeNormalizationMinusUnity)) dLastTrialWSumBeforeNormalizationMinusUnity = dLastTrialWSumBeforeNormalizationMinusUnity_Loc
+                if(present(dLastTrialWSumBeforeNormalizationMinusUnity)) &
+                    dLastTrialWSumBeforeNormalizationMinusUnity = dLastTrialWSumBeforeNormalizationMinusUnity_Loc
 
             end if considerNewton
 
@@ -2713,7 +2749,8 @@ module FlashExtras
         dTPD = 1.0d0
 
         calcSumTPD: do i = 1, iNComp
-            if(oTrialPhaseW(i).GT.(0.0d0)) dTPD = dTPD + (oTrialPhaseW(i) * (log(oTrialPhaseW(i)) + oTrialPhaseLnFug(i) - oD(i) - 1.0d0))
+            if(oTrialPhaseW(i).GT.(0.0d0)) &
+                dTPD = dTPD + (oTrialPhaseW(i) * (log(oTrialPhaseW(i)) + oTrialPhaseLnFug(i) - oD(i) - 1.0d0))
         end do calcSumTPD
 
     end subroutine CalculateTPD
@@ -2942,8 +2979,8 @@ module FlashExtras
 
         ! Obter dados de entrada para cálculo dos coeficientes de fugacidade pelo método tradicional:
         call CalculatePhasicCompressibilityFactorFromCubicEOS(iNComp, iPhaseID, dTemperature, dPressure, oPhasicComposition, &
-             iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhasicZ, iIER, oCubicEOSaParametersArg=oCubicEOSaParameters, &
-             oCubicEOSbParametersArg=oCubicEOSbParameters, &
+             iPhasicThermodynamicModel, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhasicZ, iIER, &
+             oCubicEOSaParametersArg=oCubicEOSaParameters, oCubicEOSbParametersArg=oCubicEOSbParameters, &
              dAMixArg=dMixCubicEOSaShort, dBMixArg=dMixCubicEOSbShort, dCMixArg=dMixCubicEOSc)
 
         ! Calcular os coeficientes de fugacidade pelo método tradicional:
@@ -3007,8 +3044,8 @@ module FlashExtras
         end if
 
 
-        call PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oLeastGPhaseLnFug, oTc, oPc, oW, oKij, oLij, oPeneloux, &
-                iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
+        call PerformTangentPlaneAnalysisForVLE(dTemperature, dPressure, iNComp, oZ, oLeastGPhaseLnFug, oTc, oPc, oW, oKij, oLij, &
+                oPeneloux, iLiqPhaseModel, iVapPhaseModel, iLeastGPhaseID, bTPDAnalysisSuccessfullyDone, &
                 bFeedIsStableAsSinglePhaseArg = bFeedIsStableAsSinglePhase, &
                 oLiqStationaryPointWArg = oLiqStationaryPointW, oLiqStationaryPointLnFugArg = oLiqStationaryPointLnFug, &
                 oVapStationaryPointWArg = oVapStationaryPointW, oVapStationaryPointLnFugArg = oVapStationaryPointLnFug, &
@@ -3025,9 +3062,8 @@ module FlashExtras
 
                     do i = 1, iNComp
 
-                        write(*, '(A, I2, A, F13.7, 5X, A, I2, A, F13.7, 5X, A, F13.7)') 'xSP (', i, ') = ', oLiqStationaryPointW(i), &
-                                                            'ySP (', i, ') = ', oVapStationaryPointW(i), &
-                                                            'Z = ', oZ(i)
+                        write(*, '(A, I2, A, F13.7, 5X, A, I2, A, F13.7, 5X, A, F13.7)') 'xSP (', i, ') = ', &
+                            oLiqStationaryPointW(i), 'ySP (', i, ') = ', oVapStationaryPointW(i), 'Z = ', oZ(i)
 
                     end do
 

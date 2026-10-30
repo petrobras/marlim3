@@ -126,12 +126,13 @@ module Obsoletes
             bGotEstimateForDewPoint = .false.
             bHasInitialEstimates = .false.
 
-            call GenerateVLEExtremaInitialEstimates(dFlashPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, &
-                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
-                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition)
+            call GenerateVLEExtremaInitialEstimates(dFlashPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                            iLiqPhaseModel, iVapPhaseModel, oPeneloux, bGotEstimateForBubblePoint, dClosestToBubbleT, &
+                            oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
+                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                            oInitialVapComposition)
 
         end if hasGivenInitialEstimates
-
 
 
         calcOrNotBubbleAndDewT: if(bTryToCalculateBubbleAndDewTemp) then
@@ -240,8 +241,6 @@ module Obsoletes
 
 
 
-
-
         ! ========================================
         !   INSERÇÃO EM 2/6/2021
         bDewOrBubblePIsAvailable = (iIER_BubbleP.EQ.ERROR_EverythingOK).or.bDewPressureValueIsAvailable
@@ -260,8 +259,8 @@ module Obsoletes
                                                          oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
                                                          oPeneloux, .false., &
                                                          .false., .FALSE., iIER_BubbleT, &
-                                                         dCalculatedBubbleT, iIER_DewT, dCalculatedDewT, iIER_BubbleP, dCalculatedBubbleP, &
-                                                         iIER_PStepwiseBubbleOrDew)
+                                                         dCalculatedBubbleT, iIER_DewT, dCalculatedDewT, iIER_BubbleP, &
+                                                         dCalculatedBubbleP, iIER_PStepwiseBubbleOrDew)
 
         ! PASSO 3: Calcular, se for o caso, o equilíbrio de fases.
 
@@ -314,18 +313,19 @@ module Obsoletes
                 ! Calcular o "flash".
                 iIER_Flash = ERROR_EverythingOK
 
-                call CalcFlashPTVLE(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition, dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash)
+                call CalcFlashPTVLE(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                        iLiqPhaseModel, iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                        oInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash)
 
                 if(iIER_Flash.NE.ERROR_EverythingOK) then
 
                     ! Verificar se o cálculo com pressões sucessivas não funciona....
                     iIER_Flash = ERROR_EverythingOK
 
-                    call CalcPressureStepwiseFlashPTVLE(-10.0d0, dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
-                        iLiqPhaseModel, iVapPhaseModel, oPeneloux, (iIER_BubbleT.EQ.ERROR_EverythingOK), dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, bPStepwiseDetectedSubcooledLiq, dPStepwiseRoughBubblePEstimate, iIER_Flash)
+                    call CalcPressureStepwiseFlashPTVLE(-10.0d0, dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
+                        oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, (iIER_BubbleT.EQ.ERROR_EverythingOK), &
+                        dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, bPStepwiseDetectedSubcooledLiq, &
+                        dPStepwiseRoughBubblePEstimate, iIER_Flash)
 
                 end if
 
@@ -377,11 +377,13 @@ module Obsoletes
                 end if
 
                 ! Determinar a condição termodinâmica:
-                whichCond: if((dCalculatedBeta.EQ.(0.0d0)).OR.((iIER_BubbleT.EQ.ERROR_EverythingOK).AND.(dFlashTemperature.EQ.dCalculatedBubbleT))) then
+                whichCond: if((dCalculatedBeta.EQ.(0.0d0)).OR.((iIER_BubbleT.EQ.ERROR_EverythingOK).AND. &
+                              (dFlashTemperature.EQ.dCalculatedBubbleT))) then
                     ! Líquido saturado!
                     iCalculatedThermodynamicCondition = THERMOCOND_SaturatedLiquid
 
-                else if((dCalculatedBeta.EQ.(1.0d0)).OR.((iIER_DewT.EQ.ERROR_EverythingOK).AND.(dFlashTemperature.EQ.dCalculatedDewT))) then whichCond
+                else if((dCalculatedBeta.EQ.(1.0d0)).OR.((iIER_DewT.EQ.ERROR_EverythingOK).AND. &
+                        (dFlashTemperature.EQ.dCalculatedDewT))) then whichCond
                     ! Vapor saturado!
                     iCalculatedThermodynamicCondition = THERMOCOND_SaturatedVapor
 
@@ -455,8 +457,9 @@ module Obsoletes
 
     subroutine CalcPressureStepwiseBubbleAndDewVariables(dStepOnP, dFlashPressure, dFlashTemperature, iNComp, &
                                                          oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                                                         oPeneloux, bCalculateBubbleT, bCalculateDewT, bCalculateBubbleP, iIER_BubbleT, &
-                                                         dCalculatedBubbleT, iIER_DewT, dCalculatedDewT, iIER_BubbleP, dCalculatedBubbleP, iIER)
+                                                         oPeneloux, bCalculateBubbleT, bCalculateDewT, bCalculateBubbleP, &
+                                                         iIER_BubbleT, dCalculatedBubbleT, iIER_DewT, dCalculatedDewT, &
+                                                         iIER_BubbleP, dCalculatedBubbleP, iIER)
 
         ! OBJETIVO: Calcular pressões e temperaturas de bolha e orvalho, incrementando sucessivamente a pressão para
         !   obter bons chutes iniciais para os próximos cálculos, até se chegar na pressão desejada.
@@ -552,9 +555,11 @@ module Obsoletes
             if(dTrialPressure.LT.dMinimumTrialP) exit reduceP
 
             ! Buscar, neste nível de pressão, estimativas iniciais para os cálculos de interesse:
-            call GenerateVLEExtremaInitialEstimates(dTrialPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, &
-                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
-                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition)
+            call GenerateVLEExtremaInitialEstimates(dTrialPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                            iLiqPhaseModel, iVapPhaseModel, oPeneloux, bGotEstimateForBubblePoint, dClosestToBubbleT, &
+                            oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
+                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, &
+                            oInitialLiqComposition, oInitialVapComposition)
 
             ! Caso se deseje calcular a temperatura de bolha...
             ifCalcBubbleT: if(bCalculateBubbleT.AND.(.NOT.bGotBasePressureForBubbleT)) then
@@ -610,8 +615,9 @@ module Obsoletes
                 ! ... tentar calcular o "flash" neste nível de pressão (e na temperatura desejada)...
                 iIER_TrialFlash = ERROR_EverythingOK
 
-                call CalcFlashPTVLE(dTrialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition, dIntermediaryBeta, &
+                call CalcFlashPTVLE(dTrialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                        iLiqPhaseModel, iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, &
+                        oInitialLiqComposition, oInitialVapComposition, dIntermediaryBeta, &
                         oIntermediaryLiqComposition, oIntermediaryVapComposition, iIER_TrialFlash)
 
                 ! ... e caso convirja para condições bifásicas...
@@ -633,8 +639,10 @@ module Obsoletes
 
             ! Verificar se já é possível terminar este "loop":
             bFoundAllBasePressures = (bCalculateBubbleT.AND.bGotBasePressureForBubbleT).OR.(.NOT.bCalculateBubbleT)
-            bFoundAllBasePressures = ((bCalculateDewT.AND.bGotBasePressureForDewT).OR.(.NOT.bCalculateDewT)).AND.bFoundAllBasePressures
-            bFoundAllBasePressures = ((bCalculateBubbleP.AND.bGotBasePressureForBubbleP).OR.(.NOT.bCalculateBubbleP)).AND.bFoundAllBasePressures
+            bFoundAllBasePressures = ((bCalculateDewT.AND.bGotBasePressureForDewT).OR.(.NOT.bCalculateDewT)).AND. &
+                                     bFoundAllBasePressures
+            bFoundAllBasePressures = ((bCalculateBubbleP.AND.bGotBasePressureForBubbleP).OR.(.NOT.bCalculateBubbleP)).AND. &
+                                     bFoundAllBasePressures
             if(bFoundAllBasePressures) exit reduceP
 
         end do reduceP
@@ -770,9 +778,9 @@ module Obsoletes
 
                     iIER_BubblePObjFunction = ERROR_EverythingOK
 
-                    call CalculateBubbleOrDewPointObjectiveFunction(dTrialBubblePPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-                        oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, CALCTYPE_BubblePoint, .TRUE., oInitialBubblePVapComposition, &
-                        dCalculatedObjectiveFunction, iIER_BubblePObjFunction)
+                    call CalculateBubbleOrDewPointObjectiveFunction(dTrialBubblePPressure, dFlashTemperature, iNComp, oZ, &
+                        oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, CALCTYPE_BubblePoint, .TRUE., &
+                        oInitialBubblePVapComposition, dCalculatedObjectiveFunction, iIER_BubblePObjFunction)
 
                     bBubblePObjFunctionConverged = ((iIER_BubblePObjFunction.EQ.ERROR_EverythingOK).AND. &
                                                     (abs(dCalculatedObjectiveFunction).LE.(5.0D-7)))
@@ -791,9 +799,10 @@ module Obsoletes
                 ! ---------------------------------------------------
                 ! ---------------------------------------------------
 
-                call CalcFlashPTVLE(dTrialBubblePPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, .TRUE., dBubblePCurrentBeta, oBubblePLiqComposition, oBubblePVapComposition, dIntermediaryBeta, &
-                        oIntermediaryLiqComposition, oIntermediaryVapComposition, iIER_TrialFlash)
+                call CalcFlashPTVLE(dTrialBubblePPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                        iLiqPhaseModel, iVapPhaseModel, oPeneloux, .TRUE., dBubblePCurrentBeta, oBubblePLiqComposition, &
+                        oBubblePVapComposition, dIntermediaryBeta, oIntermediaryLiqComposition, oIntermediaryVapComposition, &
+                        iIER_TrialFlash)
 
                 ! Caso o cálculo do "flash" atinja convergência...
                 if(iIER_TrialFlash.EQ.ERROR_EverythingOK) then
@@ -886,8 +895,8 @@ module Obsoletes
 
         ! Calcular aí a função objetivo:
         call CalculateBubbleOrDewPointObjectiveFunction(dFlashPressure, dTInitial, iNComp, oZ, oTc, oPc, oW, &
-                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-                    dInitialObjectiveFunction, iIER)
+                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, &
+                    oOtherPhaseCompositionEstimate, dInitialObjectiveFunction, iIER)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -919,8 +928,8 @@ module Obsoletes
 
             ! Calcular sua função:
             call CalculateBubbleOrDewPointObjectiveFunction(dFlashPressure, dTOther, iNComp, oZ, oTc, oPc, oW, &
-                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-                    dOtherObjectiveFunction, iIER)
+                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, &
+                    bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, dOtherObjectiveFunction, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -956,8 +965,8 @@ module Obsoletes
 
             ! Calcular a função na tentativa:
             call CalculateBubbleOrDewPointObjectiveFunction(dFlashPressure, dTTent, iNComp, oZ, oTc, oPc, oW, &
-                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-                    dTentObjectiveFunction, iIER)
+                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, &
+                    bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, dTentObjectiveFunction, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1127,7 +1136,6 @@ module Obsoletes
 
             ! NOTA: O teste acima NÃO SE MOSTROU EFICAZ no sentido de "driblar" Z's negativos...
 
-
         ! Alterar o valor de "B" conforme sugerido no artigo-referência:
         !dTemp = dZMix * dZMix * dZMix + dCoefA1 * dZMix * dZMix + dCoefA2 * dZMix + dCoefA3
         !dCapitalB = dCapitalB * (1.0d0 + dTemp / (dCapitalA * dCapitalB))
@@ -1148,25 +1156,26 @@ module Obsoletes
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateSingleComponentZAndRhoFromCubicEOS(dTc, dPc, dW, dC, dMW, iPhaseID, dFlashPressure, dFlashTemperature, iCubicEOSModel, dZ, dDensity, iIER)
+    subroutine CalculateSingleComponentZAndRhoFromCubicEOS(dTc, dPc, dW, dC, dMW, iPhaseID, dFlashPressure, dFlashTemperature, &
+                    iCubicEOSModel, dZ, dDensity, iIER)
 
         ! OBJETIVO:
         implicit none
 
         ! ------------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
-        real(c_double), value, intent(in) :: dTc                                    ! Temperatura crítica do componente em questão.
-        real(c_double), value, intent(in) :: dPc                                    ! Pressão crítica do componente em questão.
-        real(c_double), value, intent(in) :: dW                                     ! Fator acêntrico do componente em questão
+        real(c_double), value, intent(in) :: dTc                        ! Temperatura crítica do componente em questão.
+        real(c_double), value, intent(in) :: dPc                        ! Pressão crítica do componente em questão.
+        real(c_double), value, intent(in) :: dW                         ! Fator acêntrico do componente em questão
         real(c_double), value, intent(in) :: dC                         ! "Volume translation parameter" do componente (como volume molar) a aplicar (usar ZERO para não corrigir).
         real(c_double), value, intent(in) :: dMW                        ! Massa molar do componente (g/gmol)
         integer(c_int), value, intent(in) :: iPhaseID                   ! Identificador da fase cujos parâmetros se deseja calcular, conforme convenção.
-        real(c_double), value, intent(in) :: dFlashPressure                         ! Pressão na qual deseja-se realizar os cálculos.
-        real(c_double), value, intent(in) :: dFlashTemperature                      ! Temperatura na qual deseja-se realizar os cálculos.
-        integer(c_int), value, intent(in) :: iCubicEOSModel                         ! Índice da EOS Cúbica, conforme convenção.
+        real(c_double), value, intent(in) :: dFlashPressure             ! Pressão na qual deseja-se realizar os cálculos.
+        real(c_double), value, intent(in) :: dFlashTemperature          ! Temperatura na qual deseja-se realizar os cálculos.
+        integer(c_int), value, intent(in) :: iCubicEOSModel             ! Índice da EOS Cúbica, conforme convenção.
 
-        real(c_double), intent(out) :: dZ                                           ! Fator de compressibilidade do componente em questão.
-        real(c_double), intent(out) :: dDensity                                     ! Massa específica do componente em questão.
-        integer(c_int), intent(out) :: iIER                                         ! Código de erros, conforme convencionado.
+        real(c_double), intent(out) :: dZ                               ! Fator de compressibilidade do componente em questão.
+        real(c_double), intent(out) :: dDensity                         ! Massa específica do componente em questão.
+        integer(c_int), intent(out) :: iIER                             ! Código de erros, conforme convencionado.
 
         ! ------------------ DECLARAÇÃO E DESCRIÇÃO DE VARIÁVEIS LOCAIS:
         real(c_double), dimension(1) :: oTc                             ! Vetor de temperaturas críticas dos componentes.
@@ -1176,7 +1185,7 @@ module Obsoletes
         real(c_double), dimension(1) :: oCubicEOSbParameters       ! Vetor de parâmetros "b" calculados (indexado por componente)
         real(c_double) :: dZLiquid              ! Fator de compressibilidade calculado para a fase líquida.
         real(c_double) :: dZVapor               ! Fator de compressibilidade calculado para a fase vapor.
-        logical :: bComplexRootsWereFound                       ! "True" se foram encontrados fatores de compressibilidade complexos.
+        logical :: bComplexRootsWereFound       ! "True" se foram encontrados fatores de compressibilidade complexos.
 
 
         ! ------------------ CÁLCULOS:
@@ -1193,8 +1202,8 @@ module Obsoletes
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! 2o PASSO: Calcular o fator de compressibilidade a "T" e "P":
-        call CalculateZFromCubicEOS(dFlashPressure, dFlashTemperature, iCubicEOSModel, oCubicEOSaParameters(1), oCubicEOSbParameters(1), &
-                                         dZLiquid, dZVapor, bComplexRootsWereFound, iIER)
+        call CalculateZFromCubicEOS(dFlashPressure, dFlashTemperature, iCubicEOSModel, oCubicEOSaParameters(1), &
+                                    oCubicEOSbParameters(1), dZLiquid, dZVapor, bComplexRootsWereFound, iIER)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1223,24 +1232,25 @@ subroutine Marlim_CalculateSingleComponentZAndRho(dTc, dPc, dW, dC, dMW, iPhaseI
     implicit none
 
     ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
-    real(c_double), value, intent(in) :: dTc                                    ! Temperatura crítica do componente em questão.
-    real(c_double), value, intent(in) :: dPc                                    ! Pressão crítica do componente em questão.
-    real(c_double), value, intent(in) :: dW                                     ! Fator acêntrico do componente em questão
+    real(c_double), value, intent(in) :: dTc                        ! Temperatura crítica do componente em questão.
+    real(c_double), value, intent(in) :: dPc                        ! Pressão crítica do componente em questão.
+    real(c_double), value, intent(in) :: dW                         ! Fator acêntrico do componente em questão
     real(c_double), value, intent(in) :: dC                         ! "Volume translation parameter" do componente (como volume molar) a aplicar (usar ZERO para não corrigir).
     real(c_double), value, intent(in) :: dMW                        ! Massa molar do componente (g/gmol)
     integer(c_int), value, intent(in) :: iPhaseID                   ! Identificador da fase cujos parâmetros se deseja calcular, conforme convenção.
-    real(c_double), value, intent(in) :: dFlashPressure                         ! Pressão na qual deseja-se realizar os cálculos.
-    real(c_double), value, intent(in) :: dFlashTemperature                      ! Temperatura na qual deseja-se realizar os cálculos.
-    integer(c_int), value, intent(in) :: iCubicEOSModel                         ! Índice da EOS Cúbica, conforme convenção.
+    real(c_double), value, intent(in) :: dFlashPressure             ! Pressão na qual deseja-se realizar os cálculos.
+    real(c_double), value, intent(in) :: dFlashTemperature          ! Temperatura na qual deseja-se realizar os cálculos.
+    integer(c_int), value, intent(in) :: iCubicEOSModel             ! Índice da EOS Cúbica, conforme convenção.
 
-    real(c_double), intent(out) :: dZ                                           ! Fator de compressibilidade do componente em questão.
-    real(c_double), intent(out) :: dDensity                                     ! Massa específica do componente em questão.
-    integer(c_int), intent(out) :: iIER                                         ! Código de erros, conforme convencionado.
+    real(c_double), intent(out) :: dZ                               ! Fator de compressibilidade do componente em questão.
+    real(c_double), intent(out) :: dDensity                         ! Massa específica do componente em questão.
+    integer(c_int), intent(out) :: iIER                             ! Código de erros, conforme convencionado.
 
     ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
 
     ! CHAMADA PRINCIPAL:
-    call CalculateSingleComponentZAndRhoFromCubicEOS(dTc, dPc, dW, dC, dMW, iPhaseID, dFlashPressure, dFlashTemperature, iCubicEOSModel, dZ, dDensity, iIER)
+    call CalculateSingleComponentZAndRhoFromCubicEOS(dTc, dPc, dW, dC, dMW, iPhaseID, dFlashPressure, dFlashTemperature, &
+                                                     iCubicEOSModel, dZ, dDensity, iIER)
 
 end subroutine Marlim_CalculateSingleComponentZAndRho
 

@@ -118,9 +118,11 @@ module VLECalculations
             bGotEstimateForDewPoint = .false.
             bHasInitialEstimates = .false.
 
-            call GenerateVLEExtremaInitialEstimates(dFlashPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, &
-                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
-                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition)
+            call GenerateVLEExtremaInitialEstimates(dFlashPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, &
+                            iVapPhaseModel, oPeneloux, bGotEstimateForBubblePoint, dClosestToBubbleT, &
+                            oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
+                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                            oInitialVapComposition)
 
         end if hasGivenInitialEstimates
 
@@ -128,9 +130,10 @@ module VLECalculations
         bPStepwiseDetectedSubcooledLiq = .false.
         iIER_Flash = ERROR_EverythingOK
 
-        call CalcFlashPTVLE(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition, dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash)
+        call CalcFlashPTVLE(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, &
+                        iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                        oInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &
+                        iIER_Flash)
 
         attemptFlashPStepwise: if(iIER_Flash.NE.ERROR_EverythingOK) then
 
@@ -138,8 +141,8 @@ module VLECalculations
             iIER_Flash = ERROR_EverythingOK
 
             call CalcPressureStepwiseFlashPTVLE(-10.0d0, dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
-                   iLiqPhaseModel, iVapPhaseModel, oPeneloux, .FALSE., dCalculatedBeta, &
-                   oCalculatedLiqComposition, oCalculatedVapComposition, bPStepwiseDetectedSubcooledLiq, dPStepwiseRoughBubblePEstimate, iIER_Flash)
+                   iLiqPhaseModel, iVapPhaseModel, oPeneloux, .FALSE., dCalculatedBeta, oCalculatedLiqComposition, &
+                   oCalculatedVapComposition, bPStepwiseDetectedSubcooledLiq, dPStepwiseRoughBubblePEstimate, iIER_Flash)
 
         end if attemptFlashPStepwise
 
@@ -149,7 +152,8 @@ module VLECalculations
             ! Na presente abordagem, não é desejável detectar líquido subresfriado pela "flag" abaixo...
             bErrorInFlashCalculation = bErrorInFlashCalculation.OR.bPStepwiseDetectedSubcooledLiq
 
-        bFlashResultOkAndTwoPhase = (.NOT.bErrorInFlashCalculation).and.(dCalculatedBeta.GE.(0.0d0)).and.(dCalculatedBeta.LE.(1.0d0))
+        bFlashResultOkAndTwoPhase = (.NOT.bErrorInFlashCalculation).and.(dCalculatedBeta.GE.(0.0d0)).and.&
+                                    (dCalculatedBeta.LE.(1.0d0))
 
         ! TRATAR POSSÍVEIS ERROS NO CÁLCULO DO "FLASH":
         bBubblePWasCalculatedOk = .false.
@@ -310,9 +314,9 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine SecantMethod_CalculateBubbleOrDewPressure(dFlashPressure1, dFlashPressure2, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-        oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-        dRootFlashPressure, dCalculatedObjectiveFunction, iIER)
+    subroutine SecantMethod_CalculateBubbleOrDewPressure(dFlashPressure1, dFlashPressure2, dFlashTemperature, iNComp, oZ, oTc, &
+        oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, &
+        oOtherPhaseCompositionEstimate, dRootFlashPressure, dCalculatedObjectiveFunction, iIER)
 
         ! OBJETIVO: Utilizar o Método da Secante para tentar o cálculo da pressão de bolha ou de orvalho.
         implicit none
@@ -369,8 +373,10 @@ module VLECalculations
                 !dTempFlashPressure2 = 340.0d5
 
                 ! TESTE - 11/5/2021 - COMENTEI
-                call FindBubbleOrDewPRootInterval(dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                    iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, dTempFlashPressure1, dTempFlashPressure2, iIER)
+                call FindBubbleOrDewPRootInterval(dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oPeneloux, oKij, oLij, &
+                                                  iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, &
+                                                  bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
+                                                  dTempFlashPressure1, dTempFlashPressure2, iIER)
 
                 if (iIER .ne. ERROR_EverythingOK) return
 
@@ -387,19 +393,20 @@ module VLECalculations
 !        end block
 
         call CalculateBubbleOrDewPointObjectiveFunction(dTempFlashPressure1, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-            oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-            dCalculatedObjectiveFunction1, iIER)
+            oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, &
+            oOtherPhaseCompositionEstimate, dCalculatedObjectiveFunction1, iIER)
 
         if (iIER .ne. ERROR_EverythingOK) return
 
         call CalculateBubbleOrDewPointObjectiveFunction(dTempFlashPressure2, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-            oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-            dCalculatedObjectiveFunction2, iIER)
+            oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, &
+            oOtherPhaseCompositionEstimate, dCalculatedObjectiveFunction2, iIER)
 
         if (iIER .ne. ERROR_EverythingOK) return
 
         do iCount = 1, IMAXCOUNT
-            dRootFlashPressure =  dTempFlashPressure1*dCalculatedObjectiveFunction2 - dTempFlashPressure2*dCalculatedObjectiveFunction1
+            dRootFlashPressure = &
+                dTempFlashPressure1*dCalculatedObjectiveFunction2 - dTempFlashPressure2*dCalculatedObjectiveFunction1
             dRootFlashPressure = dRootFlashPressure /(dCalculatedObjectiveFunction2 - dCalculatedObjectiveFunction1)
 
                 dRootFlashPressure = 0.5d0 * (dTempFlashPressure1 + dTempFlashPressure2)    ! Trocando para Método da Bisseção
@@ -407,8 +414,8 @@ module VLECalculations
             bObjFunctionValueIsExact = .true.
 
             call CalculateBubbleOrDewPointObjectiveFunction(dRootFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-                oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-                dCalculatedObjectiveFunction, iIER)
+                oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, &
+                oOtherPhaseCompositionEstimate, dCalculatedObjectiveFunction, iIER)
 
             ! =======================================
             !   INSERÇÃO EM 15/9/2021
@@ -431,8 +438,8 @@ module VLECalculations
             ! Nova abordagem em caso de erro (para não encerrar precocemente a busca se um erro puder ser contornado) +++++++++++++++++++++++++++
             if (iIER .ne. ERROR_EverythingOK) then
                 dCalculatedObjectiveFunction = dCalculatedObjectiveFunction1 + &
-                    ((dCalculatedObjectiveFunction2 - dCalculatedObjectiveFunction1) / (dTempFlashPressure2 - dTempFlashPressure1) * &
-                     (dRootFlashPressure - dTempFlashPressure1))
+                  ((dCalculatedObjectiveFunction2 - dCalculatedObjectiveFunction1) / (dTempFlashPressure2 - dTempFlashPressure1) * &
+                   (dRootFlashPressure - dTempFlashPressure1))
                 bObjFunctionValueIsExact = .false.
                 iIER = ERROR_EverythingOK
             end if
@@ -521,8 +528,9 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine FindBubbleOrDewPRootInterval(dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, dLowerIntervalP, dUpperIntervalP, iIER)
+    subroutine FindBubbleOrDewPRootInterval(dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, &
+                iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
+                dLowerIntervalP, dUpperIntervalP, iIER)
 
         ! OBJETIVO: Encontrar duas pressões que delimitem um intervalo no interior do qual esteja a pressão de
         !   Bolha ou Orvalho.
@@ -587,8 +595,8 @@ module VLECalculations
             iIER_LocalObjectiveFunction = ERROR_EverythingOK
 
             call CalculateBubbleOrDewPointObjectiveFunction(dInitialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-                oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
-                dNewTrialObjectiveFunction, iIER_LocalObjectiveFunction)
+                oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, &
+                oOtherPhaseCompositionEstimate, dNewTrialObjectiveFunction, iIER_LocalObjectiveFunction)
 
             ! Se o cálculo funcionou, já pode parar a busca:
             searchOK: if((iIER_LocalObjectiveFunction.EQ.ERROR_EverythingOK).AND. &
@@ -638,8 +646,9 @@ module VLECalculations
 
                 iIER_LocalObjectiveFunction = ERROR_EverythingOK
 
-                call CalculateBubbleOrDewPointObjectiveFunction(dOtherPressureTrial(i), dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
+                call CalculateBubbleOrDewPointObjectiveFunction(dOtherPressureTrial(i), dFlashTemperature, iNComp, &
+                    oZ, oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, &
+                    bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
                     dNewTrialObjectiveFunction, iIER_LocalObjectiveFunction)
 
                 otherPTrialValid: if(iIER_LocalObjectiveFunction.EQ.ERROR_EverythingOK) then
@@ -686,9 +695,10 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalcPressureStepwiseFlashPTVLE(dStepOnP, dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
-                iLiqPhaseModel, iVapPhaseModel, oPeneloux, bIsTwoPhaseAccordingtoBubbleT, dCalculatedBeta, oCalculatedLiqComposition, &
-                oCalculatedVapComposition, bPStepwiseDetectedSubcooledLiq, dPStepwiseRoughBubblePEstimate, iIER)
+    subroutine CalcPressureStepwiseFlashPTVLE(dStepOnP, dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, &
+                oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, bIsTwoPhaseAccordingtoBubbleT, &
+                dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, bPStepwiseDetectedSubcooledLiq, &
+                dPStepwiseRoughBubblePEstimate, iIER)
 
         ! OBJETIVO: Calcular um "flash" PT através de passos sucessivos na pressão. A ideia é começar de pressões
         !   mais baixas, de convergência teoricamente mais fácil, e ir fornecendo os resultados como chutes iniciais
@@ -763,16 +773,19 @@ module VLECalculations
             if(dTrialPressure.LT.dMinimumTrialP) exit reduceP
 
             ! Buscar, neste nível de pressão, alguma temperatura em que o cálculo do "flash" convirja:
-            call GenerateVLEExtremaInitialEstimates(dTrialPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, &
-                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
-                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition)
+            call GenerateVLEExtremaInitialEstimates(dTrialPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                            iLiqPhaseModel, iVapPhaseModel, oPeneloux, bGotEstimateForBubblePoint, dClosestToBubbleT, &
+                            oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
+                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                            oInitialVapComposition)
 
             ! Tentar calcular o "flash" neste nível de pressão (e na temperatura desejada):
             iIER_TrialFlash = ERROR_EverythingOK
 
-            call CalcFlashPTVLE(dTrialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition, dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, iIER_TrialFlash)
+            call CalcFlashPTVLE(dTrialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, &
+                        iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                        oInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &
+                        iIER_TrialFlash)
 
             ! Caso tenha ocorrido erro, tentar no próximo nível de pressão:
             if(iIER_TrialFlash.NE.ERROR_EverythingOK) cycle reduceP
@@ -835,12 +848,14 @@ module VLECalculations
             ! Tentar calcular o "flash" na nova pressão:
             iIER_TrialFlash = ERROR_EverythingOK
 
-            call CalcFlashPTVLE(dTrialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition, dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, iIER_TrialFlash)
+            call CalcFlashPTVLE(dTrialPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, &
+                        iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                        oInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &
+                        iIER_TrialFlash)
 
             ! Deu bifásico?
-            bTwoPhaseFlash = (dCalculatedBeta.GT.(0.0d0)).AND.(dCalculatedBeta.LT.(1.0d0)).AND.(.NOT.ISNAN(dCalculatedBeta)).AND.(iIER_TrialFlash.EQ.ERROR_EverythingOK)
+            bTwoPhaseFlash = (dCalculatedBeta.GT.(0.0d0)).AND.(dCalculatedBeta.LT.(1.0d0)).AND.&
+                             (.NOT.ISNAN(dCalculatedBeta)).AND.(iIER_TrialFlash.EQ.ERROR_EverythingOK)
 
             ! Aprimorar, se possível, a estimativa inicial da próxima passagem:
             if(bTwoPhaseFlash) then
@@ -885,9 +900,11 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine GenerateVLEExtremaInitialEstimates(dFlashPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, oPeneloux, &
-                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
-                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition)
+    subroutine GenerateVLEExtremaInitialEstimates(dFlashPressure, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, &
+                            iVapPhaseModel, oPeneloux, bGotEstimateForBubblePoint, dClosestToBubbleT, &
+                            oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
+                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                            oInitialVapComposition)
 
         ! OBJETIVO: Gerar estimativas iniciais razoáveis de composições e temperaturas para os cálculos necessários de
         !           "flash" e pontos de bolha e orvalho.
@@ -964,9 +981,10 @@ module VLECalculations
             ! Calcular o "flash" da vez:
             iIER_Flash = ERROR_EverythingOK
 
-            call CalcFlashPTVLE(dFlashPressure, dTrialTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition,  dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash)
+            call CalcFlashPTVLE(dFlashPressure, dTrialTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, &
+                        iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, &
+                        oInitialVapComposition,  dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &
+                        iIER_Flash)
 
             if(iIER_Flash.NE.ERROR_EverythingOK) cycle nextT
 
@@ -989,7 +1007,8 @@ module VLECalculations
 
             ! Chegou aqui e deu bifásico? Atualizar, para a próxima iteração, as estimativas iniciais.
             updateInitials: if(bTwoPhaseFlash) then
-                refineInitialFlashGuess: if((.NOT.bHasInitialEstimates).OR.((dCalculatedBeta.GE.0.2d0).AND.(dCalculatedBeta.LE.0.7d0))) then
+                refineInitialFlashGuess: &
+                if((.NOT.bHasInitialEstimates).OR.((dCalculatedBeta.GE.0.2d0).AND.(dCalculatedBeta.LE.0.7d0))) then
                     bHasInitialEstimates = .true.
                     dInitialBeta = dCalculatedBeta
                     oInitialLiqComposition = oCalculatedLiqComposition
@@ -1003,8 +1022,9 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateBubbleOrDewPointObjectiveFunction(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
-                    oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
+    subroutine CalculateBubbleOrDewPointObjectiveFunction(dFlashPressure, dFlashTemperature, iNComp, oZ, &
+                    oTc, oPc, oW, oPeneloux, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, iCalculationFlag, &
+                    bHasOtherPhaseCompositionEstimate, oOtherPhaseCompositionEstimate, &
                     dCalculatedObjectiveFunction, iIER)
 
         ! OBJETIVO: Calcular a função objetivo cuja raíz é o ponto de bolha ou orvalho de dada mistura.
@@ -1054,8 +1074,10 @@ module VLECalculations
         ! ------------------ CÁLCULOS:
 
         ! Verificar quanto ao uso de Equações de Estado Cúbicas:
-        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.(iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
-        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.(iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
+        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.&
+                                      (iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
+        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.&
+                                     (iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
         bBothPhaseModelsAreCubicEOS = (bLiquidPhaseModelIsCubicEOS.AND.bVaporPhaseModelIsCubicEOS)
 
         ! Bolha? Orvalho?
@@ -1127,8 +1149,9 @@ module VLECalculations
             end do updateCompositions
 
             ! Calcular as "novas" constantes de equilíbrio:
-            call CalculateVLEEquilibriumRatios(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, dFlashTemperature, &
-                                            iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, oEquilibriumRatios_New, iIER)
+            call CalculateVLEEquilibriumRatios(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, &
+                                               dFlashTemperature, iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, &
+                                               oEquilibriumRatios_New, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1145,14 +1168,17 @@ module VLECalculations
             updatingForCubicEOS: if(bBothPhaseModelsAreCubicEOS) then
 
                 ! Resgatar os coeficientes de fugacidade dos componentes em ambas as fases:
-                call CalculatePhiPhiEquilibriumRatiosFromCubicEOS(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, dFlashTemperature, &
-                                            iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, oLiqFugCoef, oVapFugCoef, oEquilibriumRatios_New, iIER)
+                call CalculatePhiPhiEquilibriumRatiosFromCubicEOS(iNComp, oLiqComposition, oVapComposition, oKij, oLij, &
+                                                                  dFlashPressure, dFlashTemperature, iLiqPhaseModel, &
+                                                                  iVapPhaseModel, oTc, oPc, oW, oPeneloux, oLiqFugCoef, &
+                                                                  oVapFugCoef, oEquilibriumRatios_New, iIER)
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
                 ! Estimar os coeficientes de equilíbrio para a próxima iteração:
                 do i = 1, iNComp
-                    oEquilibriumRatios_Old(i) = oEquilibriumRatios_Old(i) * (oLiqFugCoef(i) * oLiqComposition(i)) / (oVapFugCoef(i) * oVapComposition(i))
+                    oEquilibriumRatios_Old(i) = &
+                        oEquilibriumRatios_Old(i) * (oLiqFugCoef(i) * oLiqComposition(i)) / (oVapFugCoef(i) * oVapComposition(i))
                 end do
 
             else updatingForCubicEOS
@@ -1195,9 +1221,10 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalcFlashPTVLE(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, iLiqPhaseModel, iVapPhaseModel, &
-                        oPeneloux, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition, dCalculatedBeta, &
-                        oCalculatedLiqComposition, oCalculatedVapComposition, iIER)
+    subroutine CalcFlashPTVLE(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, &
+                        iLiqPhaseModel, iVapPhaseModel, oPeneloux, bHasInitialEstimates, dInitialBeta, &
+                        oInitialLiqComposition, oInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, &
+                        oCalculatedVapComposition, iIER)
 
         ! OBJETIVO: Calcular um "flash PT" para Equilíbrio Líquido-Vapor, assumindo direto que o equilíbrio existe! Caso seja necessário testar
         !       se a mistura está superaquecida ou subresfriada, deve-se fazê-lo antes de chamar esta rotina.
@@ -1301,8 +1328,9 @@ module VLECalculations
             call NormComposition(iNComp, oVapComposition, oNormalizedVapComposition)
 
             ! Atualizar os "Ki":
-            call CalculateVLEEquilibriumRatios(iNComp, oNormalizedLiqComposition, oNormalizedVapComposition, oKij, oLij, dFlashPressure, dFlashTemperature, &
-                                            iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, oEquilibriumRatios, iIER)
+            call CalculateVLEEquilibriumRatios(iNComp, oNormalizedLiqComposition, oNormalizedVapComposition, oKij, oLij, &
+                                               dFlashPressure, dFlashTemperature, iLiqPhaseModel, iVapPhaseModel, oTc, &
+                                               oPc, oW, oPeneloux, oEquilibriumRatios, iIER)
 
             if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1310,7 +1338,8 @@ module VLECalculations
             useMukBrillCrit: if(.true.) then
                 dMukBrillSum = 0.0d0
                 mukBrillCritLoop: do i = 1, iNComp
-                    dMukBrillSum = dMukBrillSum + (((oEquilibriumRatios(i) * oNormalizedLiqComposition(i) / oNormalizedVapComposition(i)) - 1.0d0) ** 2.0d0)
+                    dMukBrillSum = dMukBrillSum + &
+                        (((oEquilibriumRatios(i) * oNormalizedLiqComposition(i) / oNormalizedVapComposition(i)) - 1.0d0) ** 2.0d0)
                 end do mukBrillCritLoop
 
                 bMukBrillCritConverged = (dMukBrillSum.LE.(0.0001))
@@ -1356,9 +1385,11 @@ module VLECalculations
 
             computeBetaFunctions: do i = 1, iNComp
 
-                dFBeta = dFBeta + ((oZ(i) * (oEquilibriumRatios(i) - 1.0d0)) / (1.0d0 + dBeta * (oEquilibriumRatios(i) - 1.0d0)))
+                dFBeta = dFBeta + ((oZ(i) * (oEquilibriumRatios(i) - 1.0d0)) / &
+                                   (1.0d0 + dBeta * (oEquilibriumRatios(i) - 1.0d0)))
 
-                dDerivFBeta = dDerivFBeta + (((oEquilibriumRatios(i) - 1.0d0) ** 2.0d0) * oZ(i) / ((dBeta * (oEquilibriumRatios(i) - 1.0d0) + 1.0d0) ** 2.0d0))
+                dDerivFBeta = dDerivFBeta + (((oEquilibriumRatios(i) - 1.0d0) ** 2.0d0) * oZ(i) / &
+                                             ((dBeta * (oEquilibriumRatios(i) - 1.0d0) + 1.0d0) ** 2.0d0))
 
             end do computeBetaFunctions
 
@@ -1524,8 +1555,9 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateVLEEquilibriumRatios(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, dFlashTemperature, &
-                                            iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, oEquilibriumRatios, iIER)
+    subroutine CalculateVLEEquilibriumRatios(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, &
+                                             dFlashTemperature,iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, &
+                                             oEquilibriumRatios, iIER)
 
         ! OBJETIVO: Calcular as constantes de equilíbrio líquido-vapor de todos os componentes de dada mistura.
         implicit none
@@ -1561,16 +1593,21 @@ module VLECalculations
         ! ------------------ CÁLCULOS:
 
         ! Proceder de acordo com os modelos selecionados para cada fase:
-        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.(iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
-        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.(iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
+        bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.&
+                                      (iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
+        bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.&
+                                     (iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
         bBothPhaseModelsAreCubicEOS = (bLiquidPhaseModelIsCubicEOS.AND.bVaporPhaseModelIsCubicEOS)
-        bCalculateKiFromWilsonCorr = (iLiqPhaseModel.EQ.WILSON_EQCONST_CORRELATION).AND.(iVapPhaseModel.EQ.WILSON_EQCONST_CORRELATION)
+        bCalculateKiFromWilsonCorr = (iLiqPhaseModel.EQ.WILSON_EQCONST_CORRELATION).AND.&
+                                     (iVapPhaseModel.EQ.WILSON_EQCONST_CORRELATION)
 
         whichKiModel: if(bBothPhaseModelsAreCubicEOS) then
 
             ! Abordagem Phi-Phi usando equações cúbicas para ambas as fases!
-            call CalculatePhiPhiEquilibriumRatiosFromCubicEOS(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, dFlashTemperature, &
-                                            iLiqPhaseModel, iVapPhaseModel, oTc, oPc, oW, oPeneloux, oLiqFugCoef, oVapFugCoef, oEquilibriumRatios, iIER)
+            call CalculatePhiPhiEquilibriumRatiosFromCubicEOS(iNComp, oLiqComposition, oVapComposition, oKij, oLij, &
+                                                              dFlashPressure, dFlashTemperature, iLiqPhaseModel, &
+                                                              iVapPhaseModel, oTc, oPc, oW, oPeneloux, oLiqFugCoef, &
+                                                              oVapFugCoef, oEquilibriumRatios, iIER)
 
         else if(bCalculateKiFromWilsonCorr) then whichKiModel
 
@@ -1598,8 +1635,10 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculatePhiPhiEquilibriumRatiosFromCubicEOS(iNComp, oLiqComposition, oVapComposition, oKij, oLij, dFlashPressure, dFlashTemperature, &
-                                            iLiqCubicEOSModel, iVapCubicEOSModel, oTc, oPc, oW, oPeneloux, oLiqFugCoef, oVapFugCoef, oEquilibriumRatios, iIER)
+    subroutine CalculatePhiPhiEquilibriumRatiosFromCubicEOS(iNComp, oLiqComposition, oVapComposition, oKij, oLij, &
+                                                            dFlashPressure, dFlashTemperature, iLiqCubicEOSModel, &
+                                                            iVapCubicEOSModel, oTc, oPc, oW, oPeneloux, oLiqFugCoef, &
+                                                            oVapFugCoef, oEquilibriumRatios, iIER)
 
         ! OBJETIVO: Calcular as constantes de equilíbrio líquido-vapor de todos os componentes de dada mistura
         !   a partir dos respectivos coeficientes de fugacidade (abordagem "phi-phi") e a partir de dada equação
@@ -1648,8 +1687,8 @@ module VLECalculations
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Determinar as constantes da mistura:
-        call CalculateCubicEOSParametersForMixture(iNComp, oLiqComposition, oKij, oLij, oCubicEOSaParameters, oCubicEOSbParameters, &
-                                                       oPeneloux, dAMix, dBMix, dCMix)
+        call CalculateCubicEOSParametersForMixture(iNComp, oLiqComposition, oKij, oLij, oCubicEOSaParameters, &
+                                                   oCubicEOSbParameters, oPeneloux, dAMix, dBMix, dCMix)
 
         ! Calcular o fator de compressibilidade:
         call CalculateZFromCubicEOS(dFlashPressure, dFlashTemperature, iLiqCubicEOSModel, dAMix, dBMix, &
@@ -1667,14 +1706,16 @@ module VLECalculations
         ! FASE VAPOR:
 
         ! Caso necessário, determinar novamente as constantes dos componentes puros nas condições do "flash":
-        if(iVapCubicEOSModel.NE.iLiqCubicEOSModel) call CalculateCubicEOSParametersForEachComponent(iNComp, dFlashTemperature, iVapCubicEOSModel, oTc, oPc, oW, &
-                                                            iIER, oCubicEOSaParameters, oCubicEOSbParameters)
+        if(iVapCubicEOSModel.NE.iLiqCubicEOSModel) call CalculateCubicEOSParametersForEachComponent(iNComp, dFlashTemperature, &
+                                                                                                    iVapCubicEOSModel, oTc, oPc, &
+                                                                                                    oW, iIER, oCubicEOSaParameters,&
+                                                                                                    oCubicEOSbParameters)
 
         if(iIER.NE.ERROR_EverythingOK) return
 
         ! Determinar as constantes da mistura:
-        call CalculateCubicEOSParametersForMixture(iNComp, oVapComposition, oKij, oLij, oCubicEOSaParameters, oCubicEOSbParameters, &
-                                                       oPeneloux, dAMix, dBMix, dCMix)
+        call CalculateCubicEOSParametersForMixture(iNComp, oVapComposition, oKij, oLij, oCubicEOSaParameters, &
+                                                   oCubicEOSbParameters, oPeneloux, dAMix, dBMix, dCMix)
 
         ! Calcular o fator de compressibilidade:
         call CalculateZFromCubicEOS(dFlashPressure, dFlashTemperature, iVapCubicEOSModel, dAMix, dBMix, &
@@ -1745,7 +1786,8 @@ module VLECalculations
 
                 dFw = 0.37464d0 + (1.54226d0 * oW(i)) - (0.26992d0 * (oW(i) ** 2.0d0))
 
-                if(oW(i).GT.(0.491d0)) dFw = 0.379642d0 + 1.48503d0 * oW(i) - 0.164423d0 * (oW(i) ** 2.0d0) + 0.016666d0 * (oW(i) ** 3.0d0)
+                if(oW(i).GT.(0.491d0)) &
+                    dFw = 0.379642d0 + 1.48503d0 * oW(i) - 0.164423d0 * (oW(i) ** 2.0d0) + 0.016666d0 * (oW(i) ** 3.0d0)
 
                 dA = 0.45724d0 * (dR ** 2.0d0) * (oTc(i) ** 2.0d0) / oPc(i)
 
@@ -1808,9 +1850,10 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateCubicEOSFugacityCoefficientsForEachComponent(iNComp, oMixtureComposition, oKij, oLij, oCubicEOSaParameters, &
-                                oCubicEOSbParameters, dZMix, dFlashPressure, dFlashTemperature, dMixCubicEOSaShort, dMixCubicEOSbShort, &
-                                dMixCubicEOSc, iCubicEOSModel, iPhaseID, oFugCoef, iIER)
+    subroutine CalculateCubicEOSFugacityCoefficientsForEachComponent(iNComp, oMixtureComposition, oKij, oLij, &
+                                oCubicEOSaParameters, oCubicEOSbParameters, dZMix, dFlashPressure, dFlashTemperature, &
+                                dMixCubicEOSaShort, dMixCubicEOSbShort, dMixCubicEOSc, iCubicEOSModel, iPhaseID, &
+                                oFugCoef, iIER)
 
         ! OBJETIVO: Calcular os coeficientes de fugacidade dos componentes em dada mistura, utilizando
         !   determinada equação cúbica de estado.
@@ -1895,7 +1938,8 @@ module VLECalculations
                 oFugCoef(i) = oFugCoef(i) - log(dZMix - dMixCapitalB)
                 oFugCoef(i) = oFugCoef(i) + (dMixCapitalA / dMixCapitalB / dRootOfU2Minus4W) * &
                     (oCubicEOSbParameters(i) / dMixCubicEOSbShort - dDelta) * &
-                    log((2.0d0 * dZMix + dMixCapitalB * (dU + dRootOfU2Minus4W)) / (2.0d0 * dZMix + dMixCapitalB * (dU - dRootOfU2Minus4W)))
+                    log((2.0d0 * dZMix + dMixCapitalB * (dU + dRootOfU2Minus4W)) / &
+                        (2.0d0 * dZMix + dMixCapitalB * (dU - dRootOfU2Minus4W)))
 
                 oFugCoef(i) = exp(oFugCoef(i))
 
@@ -1954,8 +1998,10 @@ module VLECalculations
                 ! Para cada componente...
                 innerLoop: do j = 1, iNComp
 
-                    dDaDx = dDaDx + oMixtureComposition(j) * sqrt(oCubicEOSaParameters(i) * oCubicEOSaParameters(j)) * (1.0d0 - oKij(i, j))
-                    dDbDx = dDbDx + oMixtureComposition(j) * (oCubicEOSbParameters(i) + oCubicEOSbParameters(j)) * (1.0d0 - oLij(i, j))
+                    dDaDx = dDaDx + &
+                        oMixtureComposition(j) * sqrt(oCubicEOSaParameters(i) * oCubicEOSaParameters(j)) * (1.0d0 - oKij(i, j))
+                    dDbDx = dDbDx + &
+                        oMixtureComposition(j) * (oCubicEOSbParameters(i) + oCubicEOSbParameters(j)) * (1.0d0 - oLij(i, j))
 
                 end do innerLoop
 
@@ -1981,8 +2027,8 @@ module VLECalculations
 
     ! =============================================================
     ! =============================================================
-    subroutine CalculateCubicEOSParametersForMixture(iNComp, oMixtureComposition, oKij, oLij, oCubicEOSaParameters, oCubicEOSbParameters, &
-                                                       oPeneloux, dAMix, dBMix, dCMix)
+    subroutine CalculateCubicEOSParametersForMixture(iNComp, oMixtureComposition, oKij, oLij, oCubicEOSaParameters, &
+                                                     oCubicEOSbParameters, oPeneloux, dAMix, dBMix, dCMix)
 
         ! OBJETIVO: Calcular os parâmetros "a", "b" e "c" de uma equação de estado cúbica para dada mistura de componentes.
         implicit none

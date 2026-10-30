@@ -20,6 +20,34 @@
 #include <cstdio>
 #include <vector>
 
+// because Num4Main.cpp has been excluded
+#include "estruturas.h"
+#include "versao.h"
+
+detTempo tempVF;
+detProp prop;
+detMapProp mapprop;
+detCI CI;
+detCC CC;
+
+int nthrdMatriz = 1;
+string versao = "Marlim - " VERSAO;
+
+int diaIni;
+int horaIni;
+int minutoIni;
+int segundoIni;
+
+int logRede = 0;
+
+string nomeRedePrincipal;
+
+ofstream arqRelatorioPerfis;
+Logger logger("");
+string pathArqEntrada("");
+string pathArqExtEntrada("");
+string pathPrefixoArqSaida("");
+
 namespace {
 
 // Reference: iterate 1/sqrt(f) = -2 log10(eps/3.7 + 2.51/(Re sqrt(f))) to

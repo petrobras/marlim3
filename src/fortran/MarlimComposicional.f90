@@ -54,8 +54,8 @@ module MarlimComposicional
                             dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
                             dCalculatedBeta, oLiqCompositionAtPAndT, oVapCompositionAtPAndT, &
                             dVaporMassFraction, dBubbleP, dLiqDensity, dVapDensity, dLiqMassEnthalpy, &
-                            dVapMassEnthalpy, dLiqMassCp, dVapMassCp, dSurfaceTension, dVaporZ, dLiqJouleThomsonCoef, dVapJouleThomsonCoef, &
-                            oZRhoAndDerivs, iIER) bind(C, name = "MarlimCompositionalProps")
+                            dVapMassEnthalpy, dLiqMassCp, dVapMassCp, dSurfaceTension, dVaporZ, dLiqJouleThomsonCoef, &
+                            dVapJouleThomsonCoef, oZRhoAndDerivs, iIER) bind(C, name = "MarlimCompositionalProps")
 
         ! OBJETIVO: Encaminhar os cálculos composicionais de propriedades requeridos pelo simulador Marlim,
         !           e retornar os resultados destes cálculos.
@@ -158,8 +158,8 @@ module MarlimComposicional
         real(c_double) :: dSumL, dSumV, dGottenBubbleT, dGottenDewT, dCurrentBubbleP, dPhaseEnvInitialBeta
         integer :: iUnit
         logical :: bGotBubbleT, bGotDewT
-        real(c_double) :: dTenLiqPorcent, dTTenLiqPorcent, dThirtyLiqPorcent, dTThirtyLiqPorcent, dFiftyLiqPorcent, dTFiftyLiqPorcent, &
-            dSeventyLiqPorcent, dTSeventyLiqPorcent, dPOfIter, dTOfIter
+        real(c_double) :: dTenLiqPorcent, dTTenLiqPorcent, dThirtyLiqPorcent, dTThirtyLiqPorcent, dFiftyLiqPorcent, &
+            dTFiftyLiqPorcent, dSeventyLiqPorcent, dTSeventyLiqPorcent, dPOfIter, dTOfIter
         real(c_double), dimension(iNComp) :: oPhaseEnvInitialLiqComposition, oPhaseEnvInitialVapComposition
         real(c_double), dimension(:,:), pointer :: temp_oCpIGCoefs
         ! ---------FIM DAS VARIÁVEIS DE TESTE
@@ -232,12 +232,12 @@ module MarlimComposicional
             allocate(oCalculatedVapComp_Fixed(iNComp_Fixed), STAT=iMemoryAllocationError)
 
             ! Pegar os valores:
-            call RemoveZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, temp_oZ, temp_oMW, temp_oTc, temp_oPc, temp_oW, temp_oPeneloux, temp_oGivenInitialLiqComposition, &
-                temp_oGivenInitialVapComposition, oKij_ForCalc, oLij_ForCalc, (dGivenInitialBeta.GE.(0.0d0)), oZ_Fixed, oMW_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oPeneloux_Fixed, &
+            call RemoveZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, temp_oZ, temp_oMW, temp_oTc, temp_oPc, temp_oW, &
+                temp_oPeneloux, temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, oKij_ForCalc, oLij_ForCalc, &
+                (dGivenInitialBeta.GE.(0.0d0)), oZ_Fixed, oMW_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oPeneloux_Fixed, &
                 oKij_Fixed, oLij_Fixed, oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed)
 
         end if treatZeroedComps
-
 
 
         ! CALCULAR PRIMEIRAMENTE A CONDIÇÃO TERMODINÂMICA!
@@ -245,10 +245,9 @@ module MarlimComposicional
 
         deactivate: if(.false.) then
             ! Chamada à subrotina antiga
-            call CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashTemperature, iNComp, temp_oZ, temp_oTc, temp_oPc, temp_oW, &
-                    temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqModel, iVapModel, &
-                    (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
-                    dTBubble, iIER_BubbleT, &
+            call CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashTemperature, iNComp, temp_oZ, temp_oTc, temp_oPc, &
+                    temp_oW, temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqModel, iVapModel, (dGivenInitialBeta.GE.(0.0d0)), &
+                    dGivenInitialBeta, temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, dTBubble, iIER_BubbleT, &
                     dTOrv, iIER_DewT, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash, &
                     dBubbleP, iIER_BubbleP, iCalculatedThermodynamicCondition, iIER)
 
@@ -256,9 +255,10 @@ module MarlimComposicional
 
             deactivateV2: if(.false.) then
 
-                call CalculateMixtureThermodynamicCondition_V2(dFlashPressure, dFlashTemperature, iNComp, temp_oMW, temp_oZ, temp_oTc, temp_oPc, temp_oW, &
-                        temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqModel, iVapModel, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
-                        temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, &
+                call CalculateMixtureThermodynamicCondition_V2(dFlashPressure, dFlashTemperature, iNComp, temp_oMW, temp_oZ, &
+                        temp_oTc, temp_oPc, temp_oW, temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqModel, iVapModel, &
+                        (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, temp_oGivenInitialLiqComposition, &
+                        temp_oGivenInitialVapComposition, dCalculatedBeta, oCalculatedLiqComposition, &
                         oCalculatedVapComposition, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
             else deactivateV2
@@ -268,18 +268,18 @@ module MarlimComposicional
                     ! Chamada sem componentes zerados:
                     call CalculateMixtureThermodynamicCondition_V3(dFlashPressure, dFlashTemperature, iNComp_Fixed, oMW_Fixed, &
                         oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqModel, iVapModel, &
-                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
-                        (dGivenInitialBeta.GE.(0.0d0)), oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, &
-                        dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
+                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, (dGivenInitialBeta.GE.(0.0d0)), &
+                        oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, dCalculatedBeta, oCalculatedLiqComp_Fixed, &
+                        oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
                 else proceedWithoutZeroeds
 
                     ! Chamada original:
                     call CalculateMixtureThermodynamicCondition_V3(dFlashPressure, dFlashTemperature, iNComp, temp_oMW, &
                         temp_oZ, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, iLiqModel, iVapModel, &
-                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
-                        (dGivenInitialBeta.GE.(0.0d0)), temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
-                        dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
+                        iLiqDensityCalculationMethod, iVapDensityCalculationMethod, (dGivenInitialBeta.GE.(0.0d0)), &
+                        temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, dCalculatedBeta, &
+                        oCalculatedLiqComposition, oCalculatedVapComposition, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
 
                 end if proceedWithoutZeroeds
 
@@ -304,22 +304,19 @@ module MarlimComposicional
         end if concludeZeroedsTreat
 
 
-
-
-
         if(iIER.NE.ERROR_EverythingOK) return       ! Não há como prosseguir se houve erro na determinação da condição termodinâmica.
 
         ! CALCULAR AS PROPRIEDADES TERMOFÍSICAS E DE TRANSPORTE!
-        call CalculatePhaseProperties_Approach1(iNComp, temp_oMW, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_Forcalc, temp_oPeneloux, temp_oParachors, temp_oZ, &
-                    dFlashPressure, dFlashTemperature, iCalculatedThermodynamicCondition, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, &
-                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, iLiqHAndCpThermodynamicModel, &
-                    iVapHAndCpThermodynamicModel, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, iLiqModel, iVapModel, dVaporMassFraction, dLiquidZ, &
-                    dLiquidZWithPeneloux, dLiqDensity, &
-                    dDerivLiquidZWithT, dDerivLiquidZPenelouxWithT, dDerivLiquidRhoWithT, dDerivLiquidZWithP, dDerivLiquidZPenelouxWithP, &
-                    dDerivLiquidRhoWithP, dVaporZ, dVaporZWithPeneloux, &
-                    dVapDensity, dDerivVaporZWithT, dDerivVaporZPenelouxWithT, dDerivVaporRhoWithT, dDerivVaporZWithP, dDerivVaporZPenelouxWithP, &
-                    dDerivVaporRhoWithP, dLiqMassEnthalpy, dVapMassEnthalpy, dLiqMassCp, dVapMassCp, dSurfaceTension, dLiqJouleThomsonCoef, dVapJouleThomsonCoef, &
-                    iIER)
+        call CalculatePhaseProperties_Approach1(iNComp, temp_oMW, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_Forcalc, &
+                    temp_oPeneloux, temp_oParachors, temp_oZ, dFlashPressure, dFlashTemperature, iCalculatedThermodynamicCondition,&
+                    dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iLiqDensityCalculationMethod, &
+                    iVapDensityCalculationMethod, iLiqHAndCpThermodynamicModel, iVapHAndCpThermodynamicModel, iIGCoefsSource, &
+                    oCpIGCoefs, oHIGCoefs, iLiqModel, iVapModel, dVaporMassFraction, dLiquidZ, dLiquidZWithPeneloux, dLiqDensity, &
+                    dDerivLiquidZWithT, dDerivLiquidZPenelouxWithT, dDerivLiquidRhoWithT, dDerivLiquidZWithP, &
+                    dDerivLiquidZPenelouxWithP, dDerivLiquidRhoWithP, dVaporZ, dVaporZWithPeneloux, dVapDensity, dDerivVaporZWithT,&
+                    dDerivVaporZPenelouxWithT, dDerivVaporRhoWithT, dDerivVaporZWithP, dDerivVaporZPenelouxWithP, &
+                    dDerivVaporRhoWithP, dLiqMassEnthalpy, dVapMassEnthalpy, dLiqMassCp, dVapMassCp, dSurfaceTension, &
+                    dLiqJouleThomsonCoef, dVapJouleThomsonCoef, iIER)
 
         ! Atribuir as variáveis locais com resultados aos devidos campos de "structs":
         oZRhoAndDerivs%dLiquidZ = dLiquidZ
@@ -344,8 +341,6 @@ module MarlimComposicional
         end if
 
 
-
-
         ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         !       POSSIBILIDADE DE ESCRITA DE DADOS DE ENTRADA NA TELA (para testes)
         ! ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -354,21 +349,19 @@ module MarlimComposicional
                     ! Avisar que serão escritos os dados de entrada:
                     write(*, '(/, A)') '===========> FORTRAN COMPOSICIONAL ESCREVENDO DADOS DE ENTRADA!'
 
-
-
                         do i = 1, iNComp
-                            write(*, '(A, I2, A, F13.7, A, I2, A, F10.4, A, I2, A, F13.7, A, I2, A, F9.7, A, I2, A, F8.3, A, I2, A, E10.4)') 'z(', i, ') = ', temp_oZ(i), '      Tc(', i, ') = ', temp_oTc(i), &
+                            write(*, &
+                            '(A, I2, A, F13.7, A, I2, A, F10.4, A, I2, A, F13.7, A, I2, A, F9.7, A, I2, A, F8.3, A, I2, A, E10.4)')&
+                                'z(', i, ') = ', temp_oZ(i), '      Tc(', i, ') = ', temp_oTc(i), &
                                 '      Pc(', i, ') em bar = ', temp_oPc(i)/100000.0d0, '       w(', i, ') = ', temp_oW(i), &
                                 '      MW(', i, ') = ', temp_oMW(i), '      Pen(', i, ') = ', temp_oPeneloux(i)
                         end do
-
 
                         write(*, '(//, A)') 'Matriz Kij'
 
                         do i = 1, iNComp
                             write(*, '(20(F9.4, 3X))') (oKij_ForCalc(i, j), j = 1, iNComp)
                         end do
-
 
                         write(*, '(//, A)') 'Coeficientes para CP de gás ideal'
                         call c_f_pointer(oCpIGCoefs, temp_oCpIGCoefs, [4, iNComp])
@@ -406,7 +399,6 @@ module MarlimComposicional
                             write(*, '(//, A)') 'Erro no cálculo de propriedades!'
                         end if
 
-
                         ! TESTE - PROVISÓRIO - ESCRITA DE RESULTADOS NA TELA
                         write(*, '(/, A, F13.7, /)') 'P FLASH (kgf/cm2) = ', dFlashPressure / 98066.5d0
 
@@ -416,7 +408,6 @@ module MarlimComposicional
                             write(*, '(/, A, F13.7, /)') 'P BOLHA (kgf/cm2) = ', dBubbleP / 98066.5d0
                         end if
 
-
                         write(*, '(/, A, F13.7, /)') 'BETA = ', dCalculatedBeta
 
                         write(*, '(/, A, I2, /)') 'COND TERMODINAMICA = ', iCalculatedThermodynamicCondition
@@ -424,7 +415,8 @@ module MarlimComposicional
                         dSumL = 0.0d0
                         dSumV = 0.0d0
                         do i = 1, iNComp
-                            write(*, '(A, I2, A, F13.7, A, I2, A, F13.7, A, I2, A, F13.7)') 'x(', i, ') = ', oCalculatedLiqComposition(i), '      y(', i, ') = ', oCalculatedVapComposition(i), &
+                            write(*, '(A, I2, A, F13.7, A, I2, A, F13.7, A, I2, A, F13.7)') 'x(', i, ') = ', &
+                                oCalculatedLiqComposition(i), '      y(', i, ') = ', oCalculatedVapComposition(i), &
                                 '      K(', i, ') = ', (oCalculatedVapComposition(i) / oCalculatedLiqComposition(i))
 
                             dSumL = dSumL + oCalculatedLiqComposition(i)
@@ -627,7 +619,8 @@ subroutine Marlim_GetPvtSimWAXFileInfoFor1DFlowSimulation(dPressure, dTemperatur
                 oMolecularWeightsOfWaxComponents, oLiquidDensitiesOfWaxComponents, iIER, iWaxComponentCount_output, &
                 oMolecularWeightsOfWaxComponents_output, oLiquidDensitiesOfWaxComponents_output, dCloudPointT_output, &
                 dInterpolatedCPWax_output, dInterpolatedThermCond_output, dInterpolatedDens_output, dInterpolatedLiqMW_output, &
-                oInterpolatedWaxConcsTDeriv_output, oInterpolatedMassWaxConcsTDeriv_output, oInterpolatedWaxConcs_output) bind(C, name = "Marlim_GetPvtSimWAXFileInfoFor1DFlowSimulation")
+                oInterpolatedWaxConcsTDeriv_output, oInterpolatedMassWaxConcsTDeriv_output, oInterpolatedWaxConcs_output) &
+                bind(C, name = "Marlim_GetPvtSimWAXFileInfoFor1DFlowSimulation")
 
     ! OBJETIVO: Obter, para dadas condições locais de escoamento determinadas no simulador MARLIM 3, os parâmetros necessários
     !       para cálculos de deposição de parafinas adaptados de arquivos padrão "wax PVTSIM".
@@ -712,11 +705,12 @@ subroutine Marlim_GetPvtSimWAXFileInfoFor1DFlowSimulation(dPressure, dTemperatur
     iIER = ERROR_EverythingOK
 
     ! Chamada à rotina interna:
-    call GetPvtSimWAXFileInfoFor1DFlowSimulation(dPressure_Conv, dTemperature_Conv, iWaxComponentCount, iPressureCount, iTemperatureCount, &
-                    temp_oPressurePoints, temp_oCloudPointTemperatures, temp_oStructurePressures, temp_oStructureTemperatures, &
-                    temp_oStructureDensities, temp_oStructureLiqMW, temp_oStructureCPWax, temp_oStructureThermCond, &
-                    temp_oStructureWaxConcs, temp_oMolecularWeightsOfWaxComponents, temp_oLiquidDensitiesOfWaxComponents, iIER, &
-                    iWaxComponentCount_output, temp_oMolecularWeightsOfWaxComponents_output, temp_oLiquidDensitiesOfWaxComponents_output, &
+    call GetPvtSimWAXFileInfoFor1DFlowSimulation(dPressure_Conv, dTemperature_Conv, iWaxComponentCount, iPressureCount, &
+                    iTemperatureCount, temp_oPressurePoints, temp_oCloudPointTemperatures, temp_oStructurePressures, &
+                    temp_oStructureTemperatures, temp_oStructureDensities, temp_oStructureLiqMW, temp_oStructureCPWax, &
+                    temp_oStructureThermCond, temp_oStructureWaxConcs, temp_oMolecularWeightsOfWaxComponents, &
+                    temp_oLiquidDensitiesOfWaxComponents, iIER, iWaxComponentCount_output, &
+                    temp_oMolecularWeightsOfWaxComponents_output, temp_oLiquidDensitiesOfWaxComponents_output, &
                     dCloudPointT_output, dInterpolatedCPWax_output, dInterpolatedThermCond_output, dInterpolatedDens_output, &
                     dInterpolatedLiqMW_output, temp_oInterpolatedWaxConcsTDeriv_output, &
                     temp_oInterpolatedMassWaxConcsTDeriv, temp_oInterpolatedWaxConcs_output)
@@ -783,9 +777,9 @@ end subroutine GetWaxParameterExternalFileDimensions
 subroutine ReadWaxCalculationParametersFromExternalFile(sExternalFileName, iExternalFileNameLength, iExternalFileSource, &
                 iWaxComponentCount, iPressureCount, iTemperatureCount, iIER, oPressurePoints, oCloudPointTemperatures, &
                 oStructurePressures, oStructureTemperatures, oStructureDensities, oStructureLiqMW, oStructureCPWax, &
-                oStructureThermCond, oStructureWaxConcs, oMolecularWeightsOfWaxComponents, &
-                oLiquidDensitiesOfWaxComponents, &
-                dOilWaxViscosityMultiplierD, dOilWaxViscosityMultiplierE, dOilWaxViscosityMultiplierF) bind(C, name = "ReadWaxCalculationParametersFromExternalFile")
+                oStructureThermCond, oStructureWaxConcs, oMolecularWeightsOfWaxComponents, oLiquidDensitiesOfWaxComponents, &
+                dOilWaxViscosityMultiplierD, dOilWaxViscosityMultiplierE, dOilWaxViscosityMultiplierF) &
+                bind(C, name = "ReadWaxCalculationParametersFromExternalFile")
 
     ! OBJETIVO: Obter automaticamente, a partir de arquivos externos de formato padronizado, os parâmetros necessários
     !   para cálculos de deposição de parafina no MARLIM 3.
@@ -856,11 +850,11 @@ subroutine ReadWaxCalculationParametersFromExternalFile(sExternalFileName, iExte
         call c_f_pointer(oLiquidDensitiesOfWaxComponents, temp_oLiquidDensitiesOfWaxComponents, [iWaxComponentCount])
 
         ! Chamar a rotina
-        call ReadWaxCalculationParametersFromPVTSIMFileWax(sFileNameToUse, iIER, temp_oPressurePoints, temp_oCloudPointTemperatures, &
-                temp_oStructurePressures, temp_oStructureTemperatures, temp_oStructureDensities, temp_oStructureLiqMW, temp_oStructureCPWax, &
-                temp_oStructureThermCond, temp_oStructureWaxConcs, temp_oMolecularWeightsOfWaxComponents, &
-                temp_oLiquidDensitiesOfWaxComponents, &
-                dOilWaxViscosityMultiplierD, dOilWaxViscosityMultiplierE, dOilWaxViscosityMultiplierF)
+        call ReadWaxCalculationParametersFromPVTSIMFileWax(sFileNameToUse, iIER, temp_oPressurePoints, &
+                temp_oCloudPointTemperatures, temp_oStructurePressures, temp_oStructureTemperatures, temp_oStructureDensities, &
+                temp_oStructureLiqMW, temp_oStructureCPWax, temp_oStructureThermCond, temp_oStructureWaxConcs, &
+                temp_oMolecularWeightsOfWaxComponents, temp_oLiquidDensitiesOfWaxComponents, dOilWaxViscosityMultiplierD, &
+                dOilWaxViscosityMultiplierE, dOilWaxViscosityMultiplierF)
 
         inquire(FILE=sFileNameToUse, NUMBER=iPvtSimWaxFileUnit)
         if(iPvtSimWaxFileUnit.NE.(-1)) then
@@ -888,8 +882,9 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
                     iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                     dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
                     dCalculatedBubbleT, iIER_BubbleT, dCalculatedDewT, &
-                    iIER_DewT, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash, dCalculatedBubbleP, &
-                    iIER_BubbleP, iCalculatedThermodynamicCondition, dLiquidPhaseMW, dVaporPhaseMW, dVaporMassFraction, iIER) bind(C, name = "Marlim_CalculateMixtureThermodynamicCondition")
+                    iIER_DewT, dCalculatedBeta, oCalculatedLiqComposition, oCalculatedVapComposition, iIER_Flash, &
+                    dCalculatedBubbleP, iIER_BubbleP, iCalculatedThermodynamicCondition, dLiquidPhaseMW, dVaporPhaseMW, &
+                    dVaporMassFraction, iIER) bind(C, name = "Marlim_CalculateMixtureThermodynamicCondition")
 
     ! OBJETIVO: Permitir que o simulador Marlim Transiente determine "composicionalmente" a condição termodinâmica do fluido que escoa.
     implicit none
@@ -949,7 +944,6 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
     real(c_double), dimension(:), pointer :: temp_oGivenInitialVapComposition    ! Mapeamento do argumento "oGivenInitialVapComposition"
     real(c_double) :: dMixtureMW                                         ! Massa molar da mistura (g/gmol).
 
-
     logical, dimension(iNComp) :: isZeroedComp             ! "True" se o componente "i" estava zerado originalmente
     integer(c_int) :: iNComp_Fixed                         ! Número de componentes não-nulos.
     real(c_double), allocatable, dimension(:) :: oZ_Fixed  ! Frações molares globais dos componentes não-nulos.
@@ -1005,12 +999,12 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
     ! CHAMADA PRINCIPAL:
     deactivate: if(.false.) then
         ! Chamada à rotina obsoleta:
-        call CalculateMixtureThermodynamicCondition(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp, temp_oZ, temp_oTc, temp_oPc, temp_oW, &
-                    temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, &
-                    (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
-                    dCalculatedBubbleT, iIER_BubbleT, &
-                    dCalculatedDewT, iIER_DewT, dCalculatedBeta, temp_oCalculatedLiqComposition, temp_oCalculatedVapComposition, iIER_Flash, &
-                    dCalculatedBubbleP, iIER_BubbleP, iCalculatedThermodynamicCondition, iIER)
+        call CalculateMixtureThermodynamicCondition(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp, temp_oZ, temp_oTc, &
+                    temp_oPc, temp_oW, temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, &
+                    (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, temp_oGivenInitialLiqComposition, &
+                    temp_oGivenInitialVapComposition, dCalculatedBubbleT, iIER_BubbleT, &
+                    dCalculatedDewT, iIER_DewT, dCalculatedBeta, temp_oCalculatedLiqComposition, temp_oCalculatedVapComposition, &
+                    iIER_Flash, dCalculatedBubbleP, iIER_BubbleP, iCalculatedThermodynamicCondition, iIER)
 
     else deactivate
 
@@ -1036,27 +1030,32 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
             allocate(oCalculatedVapComp_Fixed(iNComp_Fixed), STAT=iMemoryAllocationError)
 
             ! Pegar os valores:
-            call RemoveZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, temp_oZ, temp_oMW, temp_oTc, temp_oPc, temp_oW, temp_oPeneloux, temp_oGivenInitialLiqComposition, &
-                temp_oGivenInitialVapComposition, oKij_ForCalc, oLij_ForCalc, (dGivenInitialBeta.GE.(0.0d0)), oZ_Fixed, oMW_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oPeneloux_Fixed, &
+            call RemoveZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, temp_oZ, temp_oMW, temp_oTc, temp_oPc, temp_oW, &
+                temp_oPeneloux, temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, oKij_ForCalc, oLij_ForCalc, &
+                (dGivenInitialBeta.GE.(0.0d0)), oZ_Fixed, oMW_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oPeneloux_Fixed, &
                 oKij_Fixed, oLij_Fixed, oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed)
 
             ! Calcular a condição termodinâmica:
             deactivateV2: if(.false.) then
-                call CalculateMixtureThermodynamicCondition_V2(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp_Fixed, oMW_Fixed, oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, &
-                        oPeneloux_Fixed, oKij_Fixed, oLij_Fixed, iLiqPhaseModel, iVapPhaseModel, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
+                call CalculateMixtureThermodynamicCondition_V2(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp_Fixed, &
+                        oMW_Fixed, oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oPeneloux_Fixed, oKij_Fixed, oLij_Fixed, &
+                        iLiqPhaseModel, iVapPhaseModel, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
                         oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, dCalculatedBeta, oCalculatedLiqComp_Fixed, &
                         oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
             else deactivateV2
-                call CalculateMixtureThermodynamicCondition_V3(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp_Fixed, oMW_Fixed, &
-                    oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqPhaseModel, iVapPhaseModel, &
-                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
+                call CalculateMixtureThermodynamicCondition_V3(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp_Fixed, &
+                    oMW_Fixed, oZ_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oKij_Fixed, oLij_Fixed, oPeneloux_Fixed, iLiqPhaseModel, &
+                    iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
                     (dGivenInitialBeta.GE.(0.0d0)), oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed, &
-                    dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
+                    dCalculatedBeta, oCalculatedLiqComp_Fixed, oCalculatedVapComp_Fixed, iCalculatedThermodynamicCondition, &
+                    iIER_Flash, iIER)
             end if deactivateV2
 
             ! "Recompor" as composições calculadas:
-            call ReInsertZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, oCalculatedLiqComp_Fixed, temp_oCalculatedLiqComposition)
-            call ReInsertZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, oCalculatedVapComp_Fixed, temp_oCalculatedVapComposition)
+            call ReInsertZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, oCalculatedLiqComp_Fixed, &
+                                          temp_oCalculatedLiqComposition)
+            call ReInsertZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, oCalculatedVapComp_Fixed, &
+                                          temp_oCalculatedVapComposition)
 
         else
         !   7/2/2022 - FIM DO TRATAMENTO DE COMPONENTES ZERADOS
@@ -1065,10 +1064,12 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
 
             return ! Por segurança, para não chamar mais a V2 agora que já está disponível a V3 (10-JUL-2023)
 
-            call CalculateMixtureThermodynamicCondition_V2(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp, temp_oMW, temp_oZ, temp_oTc, temp_oPc, temp_oW, &
-                        temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
-                        temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, dCalculatedBeta, temp_oCalculatedLiqComposition, &
-                        temp_oCalculatedVapComposition, iCalculatedThermodynamicCondition, iIER_Flash, iIER)
+            call CalculateMixtureThermodynamicCondition_V2(dFlashPressure_Conv, dFlashTemperature_Conv, iNComp, temp_oMW, &
+                        temp_oZ, temp_oTc, temp_oPc, temp_oW, temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, &
+                        iVapPhaseModel, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
+                        temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, dCalculatedBeta, &
+                        temp_oCalculatedLiqComposition, temp_oCalculatedVapComposition, iCalculatedThermodynamicCondition, &
+                        iIER_Flash, iIER)
 
 
         end if  ! INSERIDO EM 7/2/2022 PARA TRATAMENTO DE COMPONENTES ZERADOS
@@ -1086,8 +1087,9 @@ subroutine Marlim_CalculateMixtureThermodynamicCondition(dFlashPressure, dFlashT
     if(iIER.NE.ERROR_EverythingOK) return
 
         ! Massas molares das duas fases em equilíbrio:
-    call CalculateMolecularWeightsAndVaporMassFraction(iCalculatedThermodynamicCondition, iNComp, temp_oMW, temp_oZ, temp_oCalculatedLiqComposition, &
-                temp_oCalculatedVapComposition, dCalculatedBeta, dLiquidPhaseMW, dVaporPhaseMW, dMixtureMW, dVaporMassFraction)
+    call CalculateMolecularWeightsAndVaporMassFraction(iCalculatedThermodynamicCondition, iNComp, temp_oMW, temp_oZ, &
+                temp_oCalculatedLiqComposition, temp_oCalculatedVapComposition, dCalculatedBeta, dLiquidPhaseMW, &
+                dVaporPhaseMW, dMixtureMW, dVaporMassFraction)
 
 end subroutine Marlim_CalculateMixtureThermodynamicCondition
 
@@ -1095,9 +1097,10 @@ end subroutine Marlim_CalculateMixtureThermodynamicCondition
 ! ===========================================================================================================
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR A TENSÃO SUPERFICIAL DA MISTURA FLUIDA
 ! ===========================================================================================================
-subroutine Marlim_CalculateMixtureSurfaceTension(dPressure, dTemperature, iNComp, oTc, oPc, oW, oPeneloux, oKij, oLij, oParachors, dLiquidPhaseMW, dVaporPhaseMW, &
-                oLiqPhaseComposition, oVapPhaseComposition, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, &
-                dSurfaceTension, iIER) bind(C, name = "Marlim_CalculateMixtureSurfaceTension")
+subroutine Marlim_CalculateMixtureSurfaceTension(dPressure, dTemperature, iNComp, oTc, oPc, oW, oPeneloux, &
+                oKij, oLij, oParachors, dLiquidPhaseMW, dVaporPhaseMW, oLiqPhaseComposition, oVapPhaseComposition, &
+                iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dSurfaceTension, iIER) &
+                bind(C, name = "Marlim_CalculateMixtureSurfaceTension")
 
     ! OBJETIVO: Permitir que o Marlim Transiente calcule "composicionalmente" a tensão superficial da mistura em escoamento.
     implicit none
@@ -1193,8 +1196,9 @@ end subroutine Marlim_CalculateMixtureSurfaceTension
 ! ===========================================================================================================
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR ENTALPIA OU CP DAS FASES EM ESCOAMENTO
 ! ===========================================================================================================
-subroutine Marlim_CalculatePhaseCpAndEnthalpy(dPressure, dTemperature, iPhaseID, oPhaseComposition, iNComp, oTc, oPc, oW, oPeneloux, oKij, oLij, &
-                iThermodynamicModel, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, dPhaseMW, dMassEnthalpy, dMassCp, iIER) bind(C, name = "Marlim_CalculatePhaseCpAndEnthalpy")
+subroutine Marlim_CalculatePhaseCpAndEnthalpy(dPressure, dTemperature, iPhaseID, oPhaseComposition, iNComp, oTc, oPc, oW, &
+                oPeneloux, oKij, oLij, iThermodynamicModel, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, dPhaseMW, dMassEnthalpy, &
+                dMassCp, iIER) bind(C, name = "Marlim_CalculatePhaseCpAndEnthalpy")
 
     ! OBJETIVO: Permitir que o Marlim Transiente calcule "composicionalmente" a entalpia ou o Cp de qualquer uma das fases em escoamento.
     implicit none
@@ -1268,9 +1272,10 @@ subroutine Marlim_CalculatePhaseCpAndEnthalpy(dPressure, dTemperature, iPhaseID,
     iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
-    call CalculatePhaseCpAndEnthalpy(iNComp, iPhaseID, temp_oPhaseComposition, dPressure_Conv, dTemperature_Conv, iThermodynamicModel, temp_oTc, temp_oPc, temp_oW, &
-                    oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, iIGCoefsSource, oCpIGCoefs, oHIGCoefs, .true., dReferenceT, &
-                    bZAndDerivZWithTCalculated, dPhasicZ, dDerivPhasicZWithT, dPhaseMolarEnthalpy, dPhaseMolarCp, iIER)
+    call CalculatePhaseCpAndEnthalpy(iNComp, iPhaseID, temp_oPhaseComposition, dPressure_Conv, dTemperature_Conv, &
+                    iThermodynamicModel, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, &
+                    iIGCoefsSource, oCpIGCoefs, oHIGCoefs, .true., dReferenceT, bZAndDerivZWithTCalculated, dPhasicZ, &
+                    dDerivPhasicZWithT, dPhaseMolarEnthalpy, dPhaseMolarCp, iIER)
 
     if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1356,9 +1361,9 @@ subroutine Marlim_CalculatePhaseDensity(dPressure, dTemperature, iPhaseID, oPhas
     iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
-    call CalculatePhaseDensity(iNComp, iPhaseID, temp_oPhaseComposition, dPressure_Conv, dTemperature_Conv, iDensityCalculationMethod, &
-                                temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, &
-                      temp_oPeneloux, dPhaseMW, dPhaseDensity, iIER)
+    call CalculatePhaseDensity(iNComp, iPhaseID, temp_oPhaseComposition, dPressure_Conv, dTemperature_Conv, &
+                               iDensityCalculationMethod, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, &
+                               temp_oPeneloux, dPhaseMW, dPhaseDensity, iIER)
 
     if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1374,9 +1379,10 @@ end subroutine Marlim_CalculatePhaseDensity
 ! ===================================================================================================================
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR AS DERIVADAS DE "Z" e "RHO" EM RELAÇÃO A "T" e "P"
 ! ===================================================================================================================
-subroutine Marlim_CalculateTAndPDerivativesOfPhasicRhoAndZ(dPressure, dTemperature, iThermodynamicModel, iPhaseID, iNComp, oPhaseComposition, &
-                    oTc, oPc, oW, oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, &
-                    dDerivPhasicZWithP, dDerivPhasicRhoWithP, iIER) bind(C, name = "Marlim_CalculateTAndPDerivativesOfPhasicRhoAndZ")
+subroutine Marlim_CalculateTAndPDerivativesOfPhasicRhoAndZ(dPressure, dTemperature, iThermodynamicModel, iPhaseID, iNComp, &
+                    oPhaseComposition, oTc, oPc, oW, oKij, oLij, oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, &
+                    dDerivPhasicRhoWithT, dDerivPhasicZWithP, dDerivPhasicRhoWithP, iIER) &
+                    bind(C, name = "Marlim_CalculateTAndPDerivativesOfPhasicRhoAndZ")
 
     ! OBJETIVO: Permitir que o Marlim Transiente calcule "composicionalmente", para qualquer fase em escoamento,
     !               as derivadas de massa específica e de fator de compressibilidade com a pressão e a temperatura.
@@ -1447,9 +1453,9 @@ subroutine Marlim_CalculateTAndPDerivativesOfPhasicRhoAndZ(dPressure, dTemperatu
     iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
-    call CalculateTAndPDerivativesOfPhasicRhoAndZ(dPressure_Conv, dTemperature_Conv, iThermodynamicModel, iPhaseID, iNComp, temp_oPhaseComposition, &
-                    temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, dPhaseMW, dPhasicZ, dDerivPhasicZWithT, &
-                    dDerivPhasicRhoWithT, dDerivPhasicZWithP, &
+    call CalculateTAndPDerivativesOfPhasicRhoAndZ(dPressure_Conv, dTemperature_Conv, iThermodynamicModel, iPhaseID, iNComp, &
+                    temp_oPhaseComposition, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, temp_oPeneloux, dPhaseMW, &
+                    dPhasicZ, dDerivPhasicZWithT, dDerivPhasicRhoWithT, dDerivPhasicZWithP, &
                     dDerivPhasicRhoWithP, dDerivPhasicZPenelouxWithP, dDerivPhasicZPenelouxWithT, iIER)
 
             ! EXCEPCIONALMENTE: Retornar, para fins de Marlim, as derivadas de "Z" sempre considerando o "volume translation".
@@ -1552,9 +1558,9 @@ subroutine Marlim_AdjustGlobalCompositionForTargetGOR(iNComp, oOriginalGlobalCom
     iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
-    call AdjustGlobalCompositionForTargetGOR_Approach1(iNComp, temp_oOriginalGlobalComposition, temp_oMW, temp_oTc, temp_oPc, temp_oW, &
-                temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, &
-                    iLiqPhaseModel, iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure_Conv, &
+    call AdjustGlobalCompositionForTargetGOR_Approach1(iNComp, temp_oOriginalGlobalComposition, temp_oMW, temp_oTc, temp_oPc, &
+                    temp_oW, temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, &
+                    iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure_Conv, &
                     dStockTankTemperature_Conv, dTargetGOR, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
                     temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
                     temp_oGORAdjustedGlobalComp, dAdjustedGlobalCompGOR, iIER)
@@ -1569,7 +1575,8 @@ subroutine Marlim_CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, o
                 dStockTankTemperature, &
                 dGivenInitialBeta, oGivenInitialLiqComposition, oGivenInitialVapComposition, &
                 iCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankLiquidDensity, &
-                dStockTankVaporDensity, dStockTankCompositionalGOR, iIER) bind(C, name = "Marlim_CalculateCommonlyRequiredValuesAtStockTankConditions")
+                dStockTankVaporDensity, dStockTankCompositionalGOR, iIER) &
+                bind(C, name = "Marlim_CalculateCommonlyRequiredValuesAtStockTankConditions")
 
     ! OBJETIVO: Permitir que o simulador Marlim Transiente calcule "composicionalmente", à temperatura e pressão "stock-tank", propriedades
     !           comumente necessárias em cálculos "black-oil" posteriores.
@@ -1650,20 +1657,21 @@ subroutine Marlim_CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, o
     iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
-    call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, temp_oZ, temp_oMW, temp_oTc, temp_oPc, temp_oW, temp_oPeneloux, oKij_ForCalc, &
-                            oLij_ForCalc, iLiqPhaseModel, &
-                            iVapPhaseModel, iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure_Conv, dStockTankTemperature_Conv, &
-                            (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
-                            iCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporDensity, &
-                            dStockTankCompositionalGOR, iIER)
+    call CalculateCommonlyRequiredValuesAtStockTankConditions(iNComp, temp_oZ, temp_oMW, temp_oTc, temp_oPc, temp_oW, &
+                            temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, &
+                            iLiqDensityCalculationMethod, iVapDensityCalculationMethod, dStockTankPressure_Conv, &
+                            dStockTankTemperature_Conv, (dGivenInitialBeta.GE.(0.0d0)), dGivenInitialBeta, &
+                            temp_oGivenInitialLiqComposition, temp_oGivenInitialVapComposition, &
+                            iCalculatedStockTankThermodynamicCondition, dStockTankVaporMassFraction, dStockTankLiquidDensity, &
+                            dStockTankVaporDensity, dStockTankCompositionalGOR, iIER)
 
 end subroutine Marlim_CalculateCommonlyRequiredValuesAtStockTankConditions
 
 ! ===================================================================================================================
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR "COMPOSICIONALMENTE" O RS
 ! ===================================================================================================================
-subroutine Marlim_CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporDensity, &
-                dCompositionalSolutionGasOilRatio) bind(C, name = "Marlim_CalculateSolutionGasOilRatio")
+subroutine Marlim_CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVaporMassFraction, dStockTankLiquidDensity, &
+                dStockTankVaporDensity, dCompositionalSolutionGasOilRatio) bind(C, name = "Marlim_CalculateSolutionGasOilRatio")
 
     ! OBJETIVO: Permitir que o simulador Marlim Transiente calcule "Rs" a partir de resultados composicionais.
     implicit none
@@ -1681,8 +1689,8 @@ subroutine Marlim_CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVap
     ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
 
     ! CHAMADA PRINCIPAL:
-    call CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporDensity, &
-                        dCompositionalSolutionGasOilRatio)
+    call CalculateSolutionGasOilRatio(dVaporMassFraction, dStockTankVaporMassFraction, dStockTankLiquidDensity, &
+                        dStockTankVaporDensity, dCompositionalSolutionGasOilRatio)
 
     ! Converter o "Rs" para "scft/stdBBL":
     dCompositionalSolutionGasOilRatio = dCompositionalSolutionGasOilRatio * (1.0d0 / 2.831685d-2)   ! "scft/m3"
@@ -1693,9 +1701,10 @@ end subroutine Marlim_CalculateSolutionGasOilRatio
 ! ===================================================================================================================
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR "COMPOSICIONALMENTE" O Bo
 ! ===================================================================================================================
-subroutine Marlim_CalculateOilFormationVolumeFactor(dPressure, dTemperature, iNComp, oTc, oPc, oW, oKij, oLij, oPeneloux, iLiqDensityCalculationMethod, &
-                oLiqPhaseComposition, dLiquidPhaseMW, dVaporMassFraction, dStockTankLiquidDensity, dStockTankVaporMassFraction, &
-                dCompositionalOilFormationVolumeFactor, iIER) bind(C, name = "Marlim_CalculateOilFormationVolumeFactor")
+subroutine Marlim_CalculateOilFormationVolumeFactor(dPressure, dTemperature, iNComp, oTc, oPc, oW, oKij, oLij, &
+                oPeneloux, iLiqDensityCalculationMethod, oLiqPhaseComposition, dLiquidPhaseMW, dVaporMassFraction, &
+                dStockTankLiquidDensity, dStockTankVaporMassFraction, dCompositionalOilFormationVolumeFactor, iIER) &
+                bind(C, name = "Marlim_CalculateOilFormationVolumeFactor")
 
     ! OBJETIVO: Permitir que o simulador Marlim Transiente calcule "Bo" a partir de resultados composicionais.
     implicit none
@@ -1762,15 +1771,16 @@ subroutine Marlim_CalculateOilFormationVolumeFactor(dPressure, dTemperature, iNC
     iIER = ERROR_EverythingOK
 
     ! Calcular a massa específica da fase líquida à P e T:
-    call CalculatePhaseDensity(iNComp, PHASE_Liquid, temp_oLiqPhaseComposition, dPressure_Conv, dTemperature_Conv, iLiqDensityCalculationMethod, temp_oTc, &
+    call CalculatePhaseDensity(iNComp, PHASE_Liquid, temp_oLiqPhaseComposition, dPressure_Conv, dTemperature_Conv, &
+                      iLiqDensityCalculationMethod, temp_oTc, &
                       temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, &
                       temp_oPeneloux, dLiquidPhaseMW, dLiquidDensity, iIER)
 
     if(iIER.NE.ERROR_EverythingOK) return
 
     ! CHAMADA PRINCIPAL:
-    call CalculateOilFormationVolumeFactor(dLiquidDensity, dStockTankLiquidDensity, dVaporMassFraction, dStockTankVaporMassFraction, &
-                    dCompositionalOilFormationVolumeFactor)
+    call CalculateOilFormationVolumeFactor(dLiquidDensity, dStockTankLiquidDensity, dVaporMassFraction, &
+                    dStockTankVaporMassFraction, dCompositionalOilFormationVolumeFactor)
 
 end subroutine Marlim_CalculateOilFormationVolumeFactor
 
@@ -1819,9 +1829,10 @@ end subroutine Marlim_CorrectBlackOilRsWithPVTAnalysisRegression
 ! ===========================================================================================================
 !  ROTINA A SER CHAMADA PELO MARLIM 3 NO INÍCIO DE SIMULAÇÕES PARA AJUSTAR MODELOS BLACK-OIL CONTRA ANÁLISES PVT
 ! ===========================================================================================================
-subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, &
-                dAPI, dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, &
-                dRsRegressionB, oCorrectedRs, oCalibrationInfoSummary, iIER) bind(C, name = "Marlim_FitBlackOilPVTAnalysisCalibrationModels")
+subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPressures_Arg, oExpRs_Arg, dExpTemperature, &
+                dPSEP_VB, dTSEP_VB, dAPI, dRGO_Arg, dDeng, oTestedRsCorrelations, oCorrelationsRs, iBestRsCorrelation, &
+                iRsRegressionModelType, dRsRegressionA, dRsRegressionB, oCorrectedRs, oCalibrationInfoSummary, iIER) &
+                bind(C, name = "Marlim_FitBlackOilPVTAnalysisCalibrationModels")
 
     ! OBJETIVO: Permitir que o MARLIM 3 faça a regressão de correlações black-oil contra resultados experimentais de Análises PVT.
 
@@ -1882,9 +1893,9 @@ subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, oExpPress
     iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
-    call FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, temp_oExpPressures_Arg, temp_oExpRs_Arg, dExpTemperature, dPSEP_VB, dTSEP_VB, dAPI, &
-        dRGO_Arg, dDeng, temp_oTestedRsCorrelations, temp_oCorrelationsRs, iBestRsCorrelation, iRsRegressionModelType, dRsRegressionA, dRsRegressionB, &
-        temp_oCorrectedRs, temp_oCalibrationInfoSummary, iIER)
+    call FitBlackOilPVTAnalysisCalibrationModels(iNPVTPoints, temp_oExpPressures_Arg, temp_oExpRs_Arg, dExpTemperature, &
+        dPSEP_VB, dTSEP_VB, dAPI, dRGO_Arg, dDeng, temp_oTestedRsCorrelations, temp_oCorrelationsRs, iBestRsCorrelation, &
+        iRsRegressionModelType, dRsRegressionA, dRsRegressionB, temp_oCorrectedRs, temp_oCalibrationInfoSummary, iIER)
 
     if(iIER.NE.ERROR_EverythingOK) return
 
@@ -1897,7 +1908,8 @@ end subroutine Marlim_FitBlackOilPVTAnalysisCalibrationModels
 !       ROTINA A SER CHAMADA PELO MARLIM TRANSIENTE PARA CALCULAR A PRESSÃO DE BOLHA DA MISTURA EM ESCOAMENTO
 ! ===========================================================================================================
 subroutine Marlim_CalculateBubblePressure(dTemperature, iNComp, oZ, oTc, oPc, oW, oKij, oLij, oPeneloux, iLiqPhaseModel, &
-                                             iVapPhaseModel, dPressure, dCalculatedBubbleP, iIER) bind(C, name = "Marlim_CalculateBubblePressure")
+                                          iVapPhaseModel, dPressure, dCalculatedBubbleP, iIER) &
+                                          bind(C, name = "Marlim_CalculateBubblePressure")
 
     ! OBJETIVO: Permitir que o Marlim Transiente calcule "composicionalmente" a pressão de bolha de dada mistura fluida em escoamento.
     implicit none
@@ -1945,7 +1957,8 @@ subroutine Marlim_CalculateBubblePressure(dTemperature, iNComp, oZ, oTc, oPc, oW
 
     logical :: bGotEstimateForBubblePoint, bGotEstimateForDewPoint, bHasInitialEstimates
     real(c_double) :: dClosestToBubbleT, dClosestToDewT, dInitialBeta, dBubblePObjectiveFunction
-    real(c_double), dimension(iNComp) :: oVapCompositionClosestToBubbleT, oLiqCompositionClosestToDewT, oInitialLiqComposition, oInitialVapComposition
+    real(c_double), dimension(iNComp) :: oVapCompositionClosestToBubbleT, oLiqCompositionClosestToDewT, oInitialLiqComposition, &
+                                         oInitialVapComposition
 
     ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
 
@@ -1990,14 +2003,16 @@ subroutine Marlim_CalculateBubblePressure(dTemperature, iNComp, oZ, oTc, oPc, oW
 
     ! Substituir o cálculo da pressão de bolha acima por outro mais eficiente:
 
-    call GenerateVLEExtremaInitialEstimates(dPressure_Conv, iNComp, temp_oZ, temp_oTc, temp_oPc, temp_oW, oKij_ForCalc, oLij_ForCalc, &
-                            iLiqPhaseModel, iVapPhaseModel, temp_oPeneloux, &
-                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, bGotEstimateForDewPoint, dClosestToDewT, &
-                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, oInitialLiqComposition, oInitialVapComposition)
+    call GenerateVLEExtremaInitialEstimates(dPressure_Conv, iNComp, temp_oZ, temp_oTc, temp_oPc, temp_oW, &
+                            oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, temp_oPeneloux, &
+                            bGotEstimateForBubblePoint, dClosestToBubbleT, oVapCompositionClosestToBubbleT, &
+                            bGotEstimateForDewPoint, dClosestToDewT, &
+                            oLiqCompositionClosestToDewT, bHasInitialEstimates, dInitialBeta, &
+                            oInitialLiqComposition, oInitialVapComposition)
 
-    call SecantMethod_CalculateBubbleOrDewPressure(-10.0d0, -10.0d0, dTemperature_Conv, iNComp, temp_oZ, temp_oTc, temp_oPc, temp_oW, &
-            temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, CALCTYPE_BubblePoint, bGotEstimateForBubblePoint, &
-            oVapCompositionClosestToBubbleT, dCalculatedBubbleP, dBubblePObjectiveFunction, iIER_BubbleP)
+    call SecantMethod_CalculateBubbleOrDewPressure(-10.0d0, -10.0d0, dTemperature_Conv, iNComp, temp_oZ, temp_oTc, temp_oPc, &
+          temp_oW, temp_oPeneloux, oKij_ForCalc, oLij_ForCalc, iLiqPhaseModel, iVapPhaseModel, CALCTYPE_BubblePoint, &
+          bGotEstimateForBubblePoint, oVapCompositionClosestToBubbleT, dCalculatedBubbleP, dBubblePObjectiveFunction, iIER_BubbleP)
 
     ! PAREI AQUI EM 2/8/2021
     ! Verificar a lógica acima, talvez ajeitar a declaração dos argumentos, comentar...!!
@@ -2060,8 +2075,8 @@ end subroutine CountZeroedComponents
 
 
 subroutine RemoveZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, oZ, oMW, oTc, oPc, oW, oPeneloux, oGivenInitialLiqComp, &
-                oGivenInitialVapComp, oKij, oLij, bHasInitialFlashEstimates, oZ_Fixed, oMW_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, oPeneloux_Fixed, &
-                oKij_Fixed, oLij_Fixed, oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed)
+                oGivenInitialVapComp, oKij, oLij, bHasInitialFlashEstimates, oZ_Fixed, oMW_Fixed, oTc_Fixed, oPc_Fixed, oW_Fixed, &
+                oPeneloux_Fixed, oKij_Fixed, oLij_Fixed, oGivenInitialLiqComp_Fixed, oGivenInitialVapComp_Fixed)
 
     ! OBJETIVO: Remover os componentes "zerados" nos argumentos de entrada de um cálculo composicional (foi detectado que
     !       a presença deles pode piorar o desempenho das simulações de escoamento 1D).
@@ -2070,7 +2085,7 @@ subroutine RemoveZeroedComponents(iNComp, isZeroedComp, iNComp_Fixed, oZ, oMW, o
     ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
     integer(c_int), value, intent(in) :: iNComp                         ! Número original de componentes.
     logical, dimension(iNComp), intent(in) :: isZeroedComp              ! "True" se o componente "i" estava zerado originalmente
-    integer(c_int), value, intent(in) :: iNComp_Fixed                          ! Número de componentes não-nulos.
+    integer(c_int), value, intent(in) :: iNComp_Fixed                   ! Número de componentes não-nulos.
     real(c_double), dimension(iNComp), intent(in) :: oZ                 ! Vetor composição global original (indexado por componente).
     real(c_double), dimension(iNComp), intent(in) :: oMW
     real(c_double), dimension(iNComp), intent(in) :: oTc
