@@ -76,6 +76,7 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         double maxef=efic[0];
         int k=1;
         while(maxef<efic[k]&&k<lenth-1){maxef=efic[k];k++;}
+        Qzero=vaz[lenth-1]*1000.;
         BEP=FalsaCorda(1,vaz[k-2],vaz[k]);
         if(BEP<0)BEP=vaz[k-1];
         Qzero=FalsaCorda(0,vaz[lenth-2],vaz[lenth-1]);
@@ -98,7 +99,7 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         d2power=0;
         d2efic=0;
         BEP=0;
-        Qzero=0;
+        Qzero=1.e10;
         freq=0;
         Hvis=0.;
         Pvis=0.;
@@ -213,7 +214,7 @@ BomCentSub& BomCentSub::operator =(const BomCentSub& bombaantiga){
                 d2power=0;
                 d2efic=0;
                 BEP=0;
-                Qzero=0;
+                Qzero=1.e10;
                 freq=0;
                 Hvis=0.;
                 Pvis=0.;
