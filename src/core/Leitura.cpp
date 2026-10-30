@@ -8,8 +8,22 @@
 #include "JSONKeyTranslator.h"
 #include "OutputI18n.h"
 #include "rapidjson/filereadstream.h"
+#include <filesystem>
 
 using namespace rapidjson;
+
+string Ler::caminhoArquivoEntradaAbs() const {
+	if (impfile.empty())
+		return impfile;
+	try {
+		const std::filesystem::path p(impfile);
+		const std::u8string abs =
+				std::filesystem::absolute(p).lexically_normal().u8string();
+		return string(abs.begin(), abs.end());
+	} catch (...) {
+		return impfile;
+	}
+}
 
 /*!
  * Iniciar todas as variaveis globais e de instancia.
@@ -18767,7 +18781,8 @@ void Ler::imprimeProfile(Cel* const celula,
 		escreveIni << t("# Passo de tempo = ", "# Time step = ") << (*vg1dSP).contador
 				  << t(" # Posicao ANM= ", " # ANM position= ") << master1.comp
 				  << t(" # data e hora da simulacao ", " # simulation date and time ")
-				  << dataStr << " # " << t("Versao ", "Version ") << versao << "\n";
+				  << dataStr << " # " << t("Versao ", "Version ") << versao
+				  << " # " << t("arquivo = ", "file = ") << caminhoArquivoEntradaAbs() << "\n";
 		escreveIni << t(" Comprimento (m) Fronteira F;", " Length (m) Boundary F;");
 		escreveIni << t(" Comprimento (m) Centro Volume C;", " Length (m) Cell center C;");
 		escreveIni << t(" Tempo (s) ;", " Time (s) ;");
@@ -19175,7 +19190,8 @@ void Ler::imprimeProfileG(CelG* const celula,
 		ofstream escreveIni(tmp.c_str(), ios_base::out);
 		escreveIni << t("# Passo de tempo = ", "# Time step = ") << (*vg1dSP).contador
 				  << t(" # data e hora da simulacao ", " # simulation date and time ")
-				  << dataStr << " # " << t("Versao ", "Version ") << versao << "\n";
+				  << dataStr << " # " << t("Versao ", "Version ") << versao
+				  << " # " << t("arquivo = ", "file = ") << caminhoArquivoEntradaAbs() << "\n";
 		escreveIni << t(" Comprimento (m) Fronteira F;", " Length (m) Boundary F;");
 		escreveIni << t(" Comprimento (m) Centro Volume C;", " Length (m) Cell center C;");
 		escreveIni << t(" comprimento_fundoPoco (m) F;", " bottomhole_length (m) F;");
