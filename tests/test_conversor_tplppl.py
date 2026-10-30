@@ -471,7 +471,7 @@ def test_convert_tend_file_with_metadata_line(tmp_path):
 
     conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
 
-    assert "PT " in (tmp_path / f"{tmp_path.name}.tpl").read_text(encoding="utf-8")
+    assert "PT " in (tmp_path / "case.tpl").read_text(encoding="utf-8")
 
 
 def test_split_trend_header_lines_and_metadata():
@@ -506,4 +506,60 @@ def test_convert_perfis_with_input_file_in_header(tmp_path):
 
     conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
 
-    assert (tmp_path / f"{tmp_path.name}.ppl").exists()
+    assert (tmp_path / "case.ppl").exists()
+
+
+def _perfis_header(input_file):
+    return ("# Passo de tempo = 0 # data e hora da simulacao 29/10/2026 18:00:00"
+            f" # Versao Marlim - 3.1.0 # arquivo = {input_file}")
+
+
+def _set_first_line(path, first_line):
+    body = path.read_text(encoding="utf-8").split("\n", 1)[1]
+    path.write_text(first_line + "\n" + body, encoding="utf-8")
+
+
+@pytest.mark.parametrize("input_file", ["/abs/cases/my case.mr3", "C:\\cases\\my case.mr3"])
+def test_output_named_after_input_file_in_headers(tmp_path, input_file):
+    _write_perfis_pt(tmp_path / "PERFISP-0.dat", [0, 60])
+    _set_first_line(tmp_path / "PERFISP-0.dat", _perfis_header(input_file))
+    _write_tend(tmp_path / "TENDP-0.dat", [0, 60],
+                metadata_line=f"# Versao Marlim - 3.1.0 # arquivo = {input_file}")
+
+    conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+    assert (tmp_path / "my case.ppl").exists()
+    assert (tmp_path / "my case.tpl").exists()
+    assert not (tmp_path / f"{tmp_path.name}.ppl").exists()
+
+
+def test_trend_only_output_named_after_input_file(tmp_path):
+    _write_tend(tmp_path / "TENDP-0.dat", [0, 60],
+                metadata_line="# Version Marlim - 3.1.0 # file = /abs/case.json")
+
+    conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+    assert (tmp_path / "case.tpl").exists()
+
+
+def test_ap_outputs_named_after_input_file(tmp_path):
+    path = tmp_path / "TENDG-AP-20.dat"
+    _write_ap_trend(path, [(0, 0, 100), (1, 0, 200)])
+    path.write_text("# Versao Marlim - 3.1.0 # arquivo = /abs/estudo.mr3\n" + path.read_text(encoding="utf-8"),
+                    encoding="utf-8")
+
+    conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+    assert {p.name for p in tmp_path.glob("*.tpl")} == {"estudo_AP-0.tpl", "estudo_AP-1.tpl"}
+
+
+def test_conflicting_input_files_use_first_name(tmp_path, capsys):
+    _write_perfis_pt(tmp_path / "PERFISP-0.dat", [0, 60])
+    _write_perfis_pt(tmp_path / "PERFISP-60.dat", [120])
+    _set_first_line(tmp_path / "PERFISP-0.dat", _perfis_header("/abs/a.mr3"))
+    _set_first_line(tmp_path / "PERFISP-60.dat", _perfis_header("/abs/b.mr3"))
+
+    conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+    assert (tmp_path / "a.ppl").exists()
+    assert "a, b" in capsys.readouterr().out

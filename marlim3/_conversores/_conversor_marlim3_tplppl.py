@@ -6,6 +6,9 @@
 
 # Para os perfis, verifica se os tempos são os mesmos. Caso positivo, consolida resultados dos arquivos PERFISP e PERFISG em um mesmo .ppl. Caso negativo salva um <nome>_P.ppl e um <nome>_G.ppl
 
+# <nome> é o nome (sem extensão) do arquivo de entrada registrado no cabeçalho dos .dat (arquivo = / file =);
+# na ausência dessa informação (saídas antigas), usa o nome do diretório de entrada.
+
 # Para os arquivos TENDP e TENDG, agrupa por array de tempo. Se todos os arquivos tiverem o mesmo array de tempo, consolida em um único .tpl. Caso contrário, salva um .tpl com o maior grupo e os demais com nomes detalhados.
 #
 # Na analise parametrica (AP), separa PERFIS pelo seqAP do nome e TEND pela coluna
@@ -32,6 +35,7 @@ import functools
 import math
 import re
 from decimal import Decimal, InvalidOperation
+from pathlib import PureWindowsPath
 
 from datetime import datetime
 from .. import __version__
@@ -40,6 +44,7 @@ from .._output_headers import (
     SKIP_VARIABLES,
     is_pressure_variable,
     is_temperature_variable,
+    parse_header_metadata,
     parse_trend_headers,
     split_trend_header_lines,
 )
@@ -816,11 +821,44 @@ def _convert_file_set(input_dir_name, output_directory, use_olga_names,
                                           geometry_blocks, input_dir_name, use_olga_names, branch_geometry)
 
 
+def _header_input_file(file_path):
+    """Input file path recorded in a PERFIS/TEND header, or None for older outputs."""
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as file:
+            lines = [file.readline().strip() for _ in range(4)]
+    except OSError:
+        return None
+    if os.path.basename(file_path).startswith('TEND'):
+        metadata = split_trend_header_lines(lines)[0]
+    else:
+        metadata = parse_header_metadata(lines[0])
+    return metadata.get('input_file') or None
+
+
+def _output_base_name(input_directory, paths):
+    """Output name from the input file stem in the .dat headers, else the directory name.
+
+    PureWindowsPath accepts both '/' and '\\', so paths written on either OS are parsed.
+    """
+    names = []
+    for path in paths:
+        input_file = _header_input_file(path)
+        stem = PureWindowsPath(input_file).stem if input_file else ''
+        if stem and stem not in names:
+            names.append(stem)
+    if len(names) > 1:
+        print(f"Aviso: arquivos .dat de entradas diferentes ({', '.join(names)}); usando '{names[0]}'")
+    return names[0] if names else os.path.basename(os.path.normpath(input_directory))
+
+
 def convert_to_ppl_tpl(input_directory, output_directory, use_olga_names=True):
     """Convert ordinary outputs and independent AP cases to TPL/PPL files.
 
-    AP outputs use <directory>_AP-<sequence> names. Compatible times and branches
-    consolidate only within a case; incompatible sampling produces extra files.
+    Output files are named after the input file recorded in the .dat headers
+    (e.g. case.mr3 -> case.ppl), falling back to the input directory name for
+    outputs without it. AP outputs use <name>_AP-<sequence> names. Compatible
+    times and branches consolidate only within a case; incompatible sampling
+    produces extra files.
     """
     tend_files = sorted(glob.glob(os.path.join(input_directory, 'TEND*.dat')))
     perfisp_files = sorted(glob.glob(os.path.join(input_directory, 'PERFISP-*.dat')))
@@ -846,7 +884,7 @@ def convert_to_ppl_tpl(input_directory, output_directory, use_olga_names=True):
                 else:
                     case = cases.setdefault(metadata[0], ([], [], [], {}))
                     case[kind].append(path)
-        name = os.path.basename(os.path.normpath(input_directory))
+        name = _output_base_name(input_directory, perfisp_files + perfisg_files + tend_files)
         if any(ordinary):
             _convert_file_set(name, output_directory, use_olga_names, *ordinary)
         for sequence, (trends, profiles_p, profiles_g, rows) in sorted(cases.items()):
