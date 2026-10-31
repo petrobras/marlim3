@@ -7,9 +7,23 @@
 #include "Leitura.h"
 #include "JSONKeyTranslator.h"
 #include "OutputI18n.h"
+#include "TuffpModel.h"
 #include "rapidjson/filereadstream.h"
 
 using namespace rapidjson;
+
+// Aborts the run when a pipe selects the TUFFP model (ssFlowModel = 51) but
+// the external TUFFP library cannot be loaded.
+static void validarDisponibilidadeTuffp(int correlacao) {
+	if (correlacao != 51) return;
+	std::string mensagem;
+	if (!tuffpLoad(mensagem)) {
+		logger.log_write_logs_and_exit(LOGGER_FALHA,
+				LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+				"ssFlowModel = 51 (TUFFP Unified gas-liquid)", "correlacaoMR2",
+				mensagem);
+	}
+}
 
 /*!
  * Iniciar todas as variaveis globais e de instancia.
@@ -5262,6 +5276,7 @@ void Ler::parse_unidades_producao(
 
 				if(tipoModeloDrift==0)unidadeP[ind].correlacaoMR2 = dutos_producao_json[indAtivo].correlacaoMR2();
 				else unidadeP[ind].correlacaoMR2 =-1;
+				validarDisponibilidadeTuffp(unidadeP[ind].correlacaoMR2);
 
 				double lxy=0.;
 				if(modoXY==0){
@@ -5903,6 +5918,7 @@ void Ler::parse_unidades_producaoAmb(
 
 				if(tipoModeloDrift==0)unidadeP[ind].correlacaoMR2 = dutos_producao_json[indAtivo].correlacaoMR2();
 				else unidadeP[ind].correlacaoMR2 =-1;
+				validarDisponibilidadeTuffp(unidadeP[ind].correlacaoMR2);
 
 				double lxy=0.;
 				if(modoXY==0){

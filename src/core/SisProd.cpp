@@ -21784,7 +21784,7 @@ void SProd::RenovaMassPerm(int i) {
                                    celula[i - 1].correlacaoMR2,
                                    holdup, frictionGrad, gravityGrad, totalGrad,
                                    reynolds, flowType);
-               if(celula[i - 1].correlacaoMR2==16){
+               if(celula[i - 1].correlacaoMR2==16 || celula[i - 1].correlacaoMR2==51){
                 if(flowType=='1' || flowType=='2')celula[i].arranjo=0;
                 if(flowType=='3')celula[i].arranjo=1;
                 if(flowType=='4')celula[i].arranjo=2;

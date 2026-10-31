@@ -1,6 +1,10 @@
 //Petroleo Brasileiro S.A.
 #include "GradientCorrelations.h"
 #include "CorrelationFits.h"
+#include "TuffpModel.h"
+#include <atomic>
+#include <mutex>
+#include <string>
 #include <cmath>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -200,9 +204,26 @@ Parameters:
                        13 = Dukler, Eaton, and Flanigan
                        14 = Dukler and Minami I
                        15 = Dukler and Minami II
+                       16 = Gomez
+                       51 = TUFFP Unified gas-liquid (external library)
 
 ==============================================================================
 */
+
+namespace {
+// Reports the first TUFFP warning only, to avoid flooding the log
+// (the model is called for every cell at every iteration).
+void reportTuffpWarning(const std::string& report) {
+    static std::atomic<bool> reported{false};
+    static std::mutex logMutex;
+    if (reported.exchange(true)) return;
+    std::lock_guard<std::mutex> lock(logMutex);
+    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
+               "TUFFP Unified gas-liquid model (ssFlowModel = 51)", "",
+               "TUFFP model warning; the returned values were used. "
+               "Further occurrences are not reported. Details: " + report);
+}
+}
 
 
 void executarCorrelacao(Cel* celula, int i, int inter, int AceleraConvergPerm,
@@ -495,6 +516,43 @@ void executarCorrelacao(Cel* celula, int i, int inter, int AceleraConvergPerm,
         if((int)saida.pattern==4 || (int)saida.pattern==5)flowPattern='3';
         if((int)saida.pattern==0 || (int)saida.pattern==1)flowPattern='6';
         if((int)saida.pattern==3)flowPattern='5';
+    }
+    else if (correlacao == 51) {
+        // 51 = TUFFP Unified gas-liquid model (external library, loaded at runtime)
+        TuffpInput entrada;
+        entrada.angle=angle;
+        entrada.diameter=diameter*(2.54*12)/100.;
+        entrada.muG=gasViscosity/1000.;
+        entrada.muL=liquidViscosity/1000.;
+        entrada.rhoG=gasDensity/0.06243;
+        entrada.rhoL=liquidDensity/0.06243;
+        entrada.roughness=roughness*entrada.diameter;
+        entrada.sigma=surfaceTension/1000.;
+        entrada.vSG=ugsmed;
+        entrada.vSL=ulsmed;
+        entrada.noFlowHoldup=static_cast<double>(liquidFraction);
+        TuffpResult saida=calculateTuffp(entrada);
+        if (saida.error) reportTuffpWarning(saida.errorReport);
+        holdup=saida.HL;
+        totalGrad=(saida.dpdL_grav+saida.dpdL_fric+saida.dpdL_acc)/22620.6;
+        gravityGrad=saida.dpdL_grav/22620.6;
+        frictionGrad=saida.dpdL_fric/22620.6;
+        accelGrad=saida.dpdL_acc/22620.6;
+        switch (static_cast<tuffp::Pattern>(saida.patternCode)) {
+            case tuffp::Pattern::SinglePhaseLiquid: flowPattern='1'; break;
+            case tuffp::Pattern::SinglePhaseGas:    flowPattern='2'; break;
+            case tuffp::Pattern::Bubble:
+            case tuffp::Pattern::DispersedBubble:   flowPattern='3'; break;
+            case tuffp::Pattern::Slug:              flowPattern='4'; break;
+            case tuffp::Pattern::Annular:
+            case tuffp::Pattern::AnnularTwoFilms:   flowPattern='5'; break;
+            case tuffp::Pattern::StratifiedSmooth:
+            case tuffp::Pattern::StratifiedWavy:    flowPattern='6'; break;
+            default:
+                if(holdup>1-1e-5)flowPattern='1';
+                else if(holdup<1e-5)flowPattern='2';
+                break;
+        }
     }
     flowType=flowPattern;
 }
