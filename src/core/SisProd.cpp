@@ -13475,14 +13475,15 @@ void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, P
     if ((trackRGO > 0 || trackDeng > 0) && arq.flashCompleto != 2)
         renovaRGOdgYco2(fluiRev);
     if (arq.flashCompleto == 2) {
-    	 for (int i = 0; i < ncel; i++){
+    	//nao retirar trecho em espera para quando um novo modelo de trabsferência de massa for incorporado
+    	 /*for (int i = 0; i < ncel; i++){
              if (celula[i].flui.dCalculatedBeta < 0. || celula[i].flui.dCalculatedBeta > 1.)
             	 celula[i].flui.atualizaPropComp(celula[i].pres, celula[i].temp, -1, NULL, NULL, arq.pocinjec);
              else
             	 celula[i].flui.atualizaPropComp(celula[i].pres, celula[i].temp,
             			 celula[i].flui.dCalculatedBeta, celula[i].flui.oCalculatedLiqComposition,
 						 celula[i].flui.oCalculatedVapComposition, arq.pocinjec);
-    	 }
+    	 }*/
         renovaFracMol2(fluiRev);
         kontaRenovaComp++;
         if (kontaRenovaComp == arq.miniTabAtraso + 1 && arq.miniTabAtraso > 0) {

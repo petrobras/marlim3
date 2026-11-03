@@ -76,7 +76,7 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         double maxef=efic[0];
         int k=1;
         while(maxef<efic[k]&&k<lenth-1){maxef=efic[k];k++;}
-        Qzero=vaz[lenth-1]*1000.;
+        Qzero=vaz[lenth-1]-head[lenth-1]*((vaz[lenth-1]-vaz[lenth-2])/(head[lenth-1]-head[lenth-2]));
         BEP=FalsaCorda(1,vaz[k-2],vaz[k]);
         if(BEP<0)BEP=vaz[k-1];
         Qzero=FalsaCorda(0,vaz[lenth-2],vaz[lenth-1]);
