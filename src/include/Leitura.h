@@ -1188,6 +1188,8 @@ class Ler {
     int ConContEntrada; // Defines the production-system inlet boundary condition: 0 = closed
     // 1 = pressure, 2 = inlet flow rate and pressure
     string impfile;   // JSON file
+    // Absolute, normalized path of impfile (UTF-8), written to output file headers
+    string caminhoArquivoEntradaAbs() const;
     string pvtsimarq; // PVTSim file
     int modelcp;      // When 1, uses Cp values from a PVTSim table even with a black-oil model
     int modelJTL;     // When 1, uses Drhol/dT values from a PVTSim table even with a black-oil model

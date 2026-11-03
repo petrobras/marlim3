@@ -13981,6 +13981,8 @@ void SProd::ImprimeTrendPCab(int i, int nrede) {
             int posicn = arq.trendp[i].posic;
             for (int k = 0; k <= posicn; k++)
                 comprimento += arq.celp[k].dx;
+            escreveTrend << "# " << t("Versao ", "Version ") << versao << " # " << t("arquivo = ", "file = ")
+                         << arq.caminhoArquivoEntradaAbs() << endl;
             escreveTrend << t("# Comprimento a partir do Fundo de Poco (m) = ", "# Length from Bottomhole (m) = ") << comprimento << endl;
             escreveTrend << t("# Rotulo = ", "# Label = ") << arq.trendp[i].rotulo << endl;
             escreveTrend << t("# Indice da Celula = ", "# Cell index = ") << arq.trendp[i].posic << endl;
@@ -14228,6 +14230,8 @@ void SProd::ImprimeTrendGCab(int i, int nrede) {
             int posicn = arq.trendg[i].posic;
             for (int k = 0; k <= posicn; k++)
                 comprimento += arq.celg[k].dx;
+            escreveTrend << "# " << t("Versao ", "Version ") << versao << " # " << t("arquivo = ", "file = ")
+                         << arq.caminhoArquivoEntradaAbs() << endl;
             escreveTrend << t("# Comprimento a partir da Plataforma (m) = ", "# Length from Platform (m) = ") << comprimento << endl;
             escreveTrend << t("# Rotulo = ", "# Label = ") << arq.trendg[i].rotulo << endl;
             escreveTrend << t("# Indice da Celula = ", "# Cell index = ") << arq.trendg[i].posic << endl;
