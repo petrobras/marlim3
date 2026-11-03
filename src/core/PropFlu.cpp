@@ -5963,7 +5963,8 @@ double ProFlu::MasGasLivre(double pres, double temp,double varRS) const{
 	 double rs;
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
-     return 1.225*Deng*(IRGO - rDgD*rs)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
+     const double freeGasMass = 1.225*Deng*(IRGO - rDgD*rs)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
+     return freeGasMass < 0. ? 0. : freeGasMass;
 }
 double ProFlu::FracAguaInSitu(double pres, double temp,double varRS) const{
 	if(flashCompleto!=2){
@@ -6051,7 +6052,8 @@ double ProFlu::MasGasLivreHidra(double pres, double temp,double varRS) const{
 	 double rs;
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
-	 return (1-BSW)*1.225*Deng*(IRGO - rDgD*rs)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
+	 const double freeGasMass = (1-BSW)*1.225*Deng*(IRGO - rDgD*rs)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
+     return freeGasMass < 0. ? 0. : freeGasMass;
 }
 
 double ProFlu::FracMass(double pres, double temp) const{

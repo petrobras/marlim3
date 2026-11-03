@@ -338,4 +338,11 @@ if(MARLIM_BUILD_TESTS)
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     add_test(NAME friction_factor COMMAND test_friction_factor)
+
+    add_executable(test_upstream_numerics
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_upstream_numerics.cpp
+        ${SRCDIR}/Bcsm2.cpp
+    )
+    target_include_directories(test_upstream_numerics PRIVATE ${INCDIR} ${LIBDIR})
+    add_test(NAME upstream_numerics COMMAND test_upstream_numerics)
 endif()

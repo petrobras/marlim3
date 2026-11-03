@@ -471,20 +471,20 @@
             },
             "miniTabDinAtraso": {
               "type": "integer",
-              "default": 0,
-              "description": "A cada número de passos de tempo definido por este parâmetro, uma mini-tabela local é gerada para cada célula do sistema. Esta minitabela armazena dados de flashes de pressão (P) e temperatura (T), utilizando incrementos e decrementos de valor definidos pelos parâmetros miniTabDinDp e miniTabDinDt, respectivamente. Aplicável em simulações transientes com modelos de fluido composicionais."
+              "default": 5,
+              "description": "A cada número de passos de tempo definido por este parâmetro, uma mini-tabela local é gerada para cada célula do sistema. Esta minitabela armazena dados de flashes de pressão (P) e temperatura (T), utilizando incrementos e decrementos de valor definidos pelos parâmetros miniTabDinDp e miniTabDinDt, respectivamente. Aplicável em simulações transientes com modelos de fluido composicionais. O valor zero é tratado como um; sem a seção Avancado, o atraso é um."
             },
             "miniTabDinDp": {
               "type": "number",
               "unit": "kgf/cm2",
-              "default": 0,
-              "description": "Define incremento e decremento de pressão usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais."
+              "default": 5,
+              "description": "Define incremento e decremento de pressão usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais. Valores menores que cinco são tratados como cinco."
             },
             "miniTabDinDt": {
               "type": "number",
               "unit": "degC",
-              "default": 0,
-              "description": "Define incremento e decremento de temperatura usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais."
+              "default": 5,
+              "description": "Define incremento e decremento de temperatura usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais. Valores menores que cinco são tratados como cinco."
             },
             "Tsonico": {
               "type": "array",

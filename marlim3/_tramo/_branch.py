@@ -27,7 +27,12 @@ import pandas as pd
 from .._download import get_executable_path
 from .._process import process_group_kwargs
 from .._conversores._conversor_marlim3_tplppl import convert_to_ppl_tpl
-from .._output_headers import CANONICAL_TIME_COLUMN, normalize_time_column, parse_trend_headers
+from .._output_headers import (
+    CANONICAL_TIME_COLUMN,
+    normalize_time_column,
+    parse_trend_headers,
+    split_trend_header_lines,
+)
 from .._plots._plots_perfis import _plotar_perfis, _plotar_perfis_animados
 from .._plots._plots_tends import _plotar_tendencias
 from .._plots._plots_geometria import _plotar_geometria
@@ -607,15 +612,13 @@ class Branch:
                         file_number = int(
                             re.search(r'\d+', os.path.splitext(filename)[0]).group())
 
-                        with open(file_path, 'r') as fh:
-                            line1 = fh.readline().strip()
-                            line2 = fh.readline().strip()
-                            line3 = fh.readline().strip()
+                        with open(file_path, 'r', encoding='utf-8', errors='replace') as fh:
+                            header_lines = [fh.readline().strip() for _ in range(4)]
 
-                        measured_length, label, cell_index = parse_trend_headers(
-                            line1, line2, line3)
+                        metadata, trend_headers, n_header_lines = split_trend_header_lines(header_lines)
+                        measured_length, label, cell_index = parse_trend_headers(*trend_headers)
 
-                        df = pd.read_csv(file_path, sep=';', skiprows=3, header=0)
+                        df = pd.read_csv(file_path, sep=';', skiprows=n_header_lines, header=0)
                         df.columns = [col.strip() for col in df.columns]
                         df = normalize_time_column(df)
                         df[CANONICAL_TIME_COLUMN] = df[CANONICAL_TIME_COLUMN].astype(float)
@@ -627,7 +630,10 @@ class Branch:
                         df.attrs['measured_length'] = measured_length
                         df.attrs['label'] = label
                         df.attrs['cell_index'] = cell_index
-
+                        if 'version' in metadata:
+                            df.attrs['version'] = metadata['version']
+                        if 'input_file' in metadata:
+                            df.attrs['input_file'] = metadata['input_file']
                         results[file_number] = df
 
                     except Exception as exc:

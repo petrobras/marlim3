@@ -687,7 +687,7 @@ Trend files record the **temporal evolution** of variables at user-selected axia
 | `TENDG-{dist}.dat` | `SProd::ImprimeTrendGCab()` + `ImprimeTrendG()` | Gas-lift service-line trends |
 | `TENDTRANSP-{cel}-{cam}-{disc}.dat` | `SProd::ImprimeTrendTransP()` | Thermal layer trends |
 
-Format: text matrix, semicolon-delimited, `width=20`, `precision=19`. Three comment lines (`# Comprimento`, `# Rotulo`, `# Indice da Celula`) precede the column headers. Data is buffered in `MatTrendP[i]` / `MatTrendG[i]` matrices during time-stepping (filled by `Ler::imprimeTrend()`) and flushed to disk by the `ImprimeTrend*` methods in append mode (`ios_base::app`). Columns mirror the profile set and are controlled by the same per-position boolean flags (`trendp[i].*`).
+Format: text matrix, semicolon-delimited, `width=20`, `precision=19`. Four comment lines precede the column headers: engine version and input-file path, followed by length, label and cell index. Readers also accept the previous format with three comment lines. Data is buffered in `MatTrendP[i]` / `MatTrendG[i]` matrices during time-stepping (filled by `Ler::imprimeTrend()`) and flushed to disk by the `ImprimeTrend*` methods in append mode (`ios_base::app`). Columns mirror the profile set and are controlled by the same per-position boolean flags (`trendp[i].*`).
 
 ### Steady-State Summary
 

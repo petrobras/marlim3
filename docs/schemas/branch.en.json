@@ -465,20 +465,20 @@
             },
             "dynTableMinDelay": {
               "type": "integer",
-              "default": 0,
-              "description": "Every number of time steps defined by this parameter, a local mini-table is generated for each system cell. This mini-table stores pressure (P) and temperature (T) flash data using increments/decrements defined by dynTableMinDp and dynTableMinDt. Applicable to transient simulations with compositional fluid models."
+              "default": 5,
+              "description": "Every number of time steps defined by this parameter, a local mini-table is generated for each system cell. This mini-table stores pressure (P) and temperature (T) flash data using increments/decrements defined by dynTableMinDp and dynTableMinDt. Applicable to transient simulations with compositional fluid models. A value of zero is treated as one; if the advanced section is absent, the delay is one."
             },
             "dynTableMinDp": {
               "type": "number",
               "unit": "kgf/cm2",
-              "default": 0,
-              "description": "Defines pressure increment/decrement used to generate flash mini-tables at intervals defined by dynTableMinDelay. Applicable to transient simulations with compositional fluid models."
+              "default": 5,
+              "description": "Defines pressure increment/decrement used to generate flash mini-tables at intervals defined by dynTableMinDelay. Applicable to transient simulations with compositional fluid models. Values below five are treated as five."
             },
             "dynTableMinDt": {
               "type": "number",
               "unit": "degC",
-              "default": 0,
-              "description": "Defines temperature increment/decrement used to generate flash mini-tables at intervals defined by dynTableMinDelay. Applicable to transient simulations with compositional fluid models."
+              "default": 5,
+              "description": "Defines temperature increment/decrement used to generate flash mini-tables at intervals defined by dynTableMinDelay. Applicable to transient simulations with compositional fluid models. Values below five are treated as five."
             },
             "sonicTime": {
               "type": "array",

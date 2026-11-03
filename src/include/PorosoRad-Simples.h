@@ -166,6 +166,8 @@ class PorosRadSimp {
     double BSW;
     SimulationContext *simulationContext;
 
+    double outerRadius = 0.;
+
     PorosRadSimp();
     PorosRadSimp(string nomeArquivoEntrada, SimulationContext *context = 0);
     PorosRadSimp(const PorosRadSimp &); // Copy constructor

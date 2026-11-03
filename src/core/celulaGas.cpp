@@ -1,3 +1,4 @@
+#include "FrictionTransition.h"
 #include "celulaGas.h"
 #include "UnitConversions.h"
 
@@ -321,7 +322,7 @@ double CelG::Rey(double dia, double vel,
 double CelG::fric(double re, double eps) {
     double val;
     if (fabs(re) > 1e-5) {
-        if (re > 2400) {
+        if (re > friction::kLaminarReynoldsLimit) {
         	switch (tipoFatorFric) {
         	case 0:
             	val = 6.9 / fabs(re) + pow(eps / 3.7, 1.11);
@@ -342,6 +343,8 @@ double CelG::fric(double re, double eps) {
             	break;
         	}
             val /= 4.;
+            val = friction::transitionFanningFactor(re, val);
+
         } else
             val = 16. / fabs(re);
     } else

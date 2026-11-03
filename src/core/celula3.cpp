@@ -1,3 +1,4 @@
+#include "FrictionTransition.h"
 #include "celula3.h"
 #include "Leitura.h"
 #include "UnitConversions.h"
@@ -1233,7 +1234,7 @@ double Cel::fric(double re, double eps, int tipo) {
 
     double val;
     if (fabs(re) > 1e-5) {
-        if (re > 2400) {
+        if (re > friction::kLaminarReynoldsLimit) {
         	switch (tipoFatorFric) {
         	case 0:
         		if (tipo == -1)
@@ -1260,6 +1261,7 @@ double Cel::fric(double re, double eps, int tipo) {
             	break;
         	}
             val /= 4.;
+            val = friction::transitionFanningFactor(re, val);
         } else
             val = 16. / fabs(re);
     } else

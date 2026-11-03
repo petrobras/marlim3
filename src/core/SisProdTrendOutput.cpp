@@ -194,6 +194,9 @@ void writeLineTrendMetadata(std::ostream &trendFile, const CaptionTranslator &tr
                             const Cell *cells, const char *originPtBrText,
                             const char *originEnText) {
     const double length = lengthFromOrigin(cells, trend.posic);
+    trendFile << translate("# Versao ", "# Version ") << state.engineVersion
+              << translate(" # arquivo = ", " # file = ")
+              << state.input.absoluteInputFilePath() << std::endl;
     trendFile << translate(originPtBrText, originEnText) << length << std::endl;
     trendFile << translate("# Rotulo = ", "# Label = ") << trend.rotulo << std::endl;
     trendFile << translate("# Indice da Celula = ", "# Cell index = ") << trend.posic << std::endl;

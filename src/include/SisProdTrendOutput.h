@@ -1,6 +1,8 @@
 #ifndef SISPRODTRENDOUTPUT_H_
 #define SISPRODTRENDOUTPUT_H_
 
+#include <string>
+
 /// Writes buffered time series and input-mesh metadata for production and service lines.
 /// Samples and configuration are read without modifying simulation state or advancing counters.
 /// File names use pathPrefixoArqSaida. Each enabled call closes its file before recording its
@@ -28,6 +30,7 @@ struct TrendSeries {
 struct TrendState {
     /// Input deck, output settings and mesh geometry -- SProd::arq.
     const Ler &input;
+    const std::string &engineVersion;
     /// Shared globals; sequenciaAP is read only for an AP sequence column -- SProd::simulationContext.
     const SimulationContext *const &globals;
     /// Branch index; negative outside a network -- SProd::indTramo.

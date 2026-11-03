@@ -2536,6 +2536,7 @@ void PorosRadSimp::geraCel(double **const vPcamada, double **const vsL, double *
             }
         }
     }
+    outerRadius=r2;
 }
 
 double PorosRadSimp::marchaperm(double mastot) {
@@ -3331,7 +3332,7 @@ void PorosRadSimp::defineDT(int perm) {
 
         dt = delt;
     } else {
-        dt = 2 * temp.dtmax[0];
+        dt = 2. * temp.dtmax[0];
     }
 
     for (int i = 0; i < ncel; i++) {
@@ -3529,6 +3530,15 @@ void PorosRadSimp::pseudoTrans(int partida) {
             celula[i].sWPoc = sWPoc;
         }
     }
+    const double pressureGradient = (presRes - Pint) / (outerRadius - celula[0].r0);
+    for (int i = 0; i < ncel; i++) {
+        celula[i].Pcamada=Pint+pressureGradient*(celula[i].r0-celula[0].r0);
+        if(i==0)celula[i].PcamadaL=celula[i].Pcamada;
+        else celula[i].PcamadaL=celula[i-1].Pcamada;
+        if(i>0)celula[i-1].PcamadaR=celula[i].Pcamada;
+        celula[i].Pini=celula[i].Pcamada;
+    }
+    celula[ncel-1].PcamadaR=celula[ncel-1].Pcamada;
     erroPermanente = 1000.;
     int kontaItera = 0;
     while ((erroPermanente > Pint / 10000.) || kontaItera < 3) {
@@ -3539,9 +3549,9 @@ void PorosRadSimp::pseudoTrans(int partida) {
         for (int i = 0; i < ncel; i++) {
             celula[i].dPdT = 0.;
         }
-        while (ciclo < 1) {
+        while (ciclo < 3) {
             for (int i = 0; i < ncel; i++) {
-                if (i >= ncel - 1 && celula[ncel - 2].QcamadaL > 0.) {
+                if (i >= ncel - 1 && celula[ncel - 2].QcamadaL >= 0.) {
                     celula[i].sL = sLRes;
                     celula[i - 1].sLR = sLRes;
                     celula[i].sW = sWRes;
@@ -3624,6 +3634,7 @@ void PorosRadSimp::pseudoTrans(int partida) {
                                                         celula[i].flup.oCalculatedVapComposition, 0);
                 }
             }
+            for (int i = 0; i < ncel; i++)celula[i].dPdT = (celula[i].Pcamada-celula[i].Pini)/dt;
             ciclo++;
         }
         erroPermanente = 0.;

@@ -1187,6 +1187,7 @@ class Ler {
     int usaTabela;      // Indicates that a table is being used by either the black-oil or PVTSim model
     int ConContEntrada; // Defines the production-system inlet boundary condition: 0 = closed
     // 1 = pressure, 2 = inlet flow rate and pressure
+    std::string absoluteInputFilePath() const;
     string impfile;   // JSON file
     string pvtsimarq; // PVTSim file
     int modelcp;      // When 1, uses Cp values from a PVTSim table even with a black-oil model

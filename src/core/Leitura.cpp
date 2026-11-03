@@ -6,12 +6,28 @@
  */
 #include "Leitura.h"
 #include "InputPaths.h"
+#include "DynamicTablePolicy.h"
 #include "JSONKeyTranslator.h"
 #include "OutputI18n.h"
 #include "rapidjson/filereadstream.h"
 #include "UnitConversions.h"
+#include <limits.h>
+#include <stdlib.h>
 
 using namespace rapidjson;
+
+std::string Ler::absoluteInputFilePath() const {
+    if (impfile.empty()) return impfile;
+#ifdef _WIN32
+    char absolutePath[_MAX_PATH];
+    const char *resolvedPath = _fullpath(absolutePath, impfile.c_str(), _MAX_PATH);
+#else
+    char absolutePath[PATH_MAX + 1];
+    const char *resolvedPath = realpath(impfile.c_str(), absolutePath);
+#endif
+    return resolvedPath ? std::string(resolvedPath) : impfile;
+}
+
 
 /*!
  * Iniciar todas as variaveis globais e de instancia.
@@ -2741,10 +2757,12 @@ void Ler::parse_configuracao_inicial(
 			    if (configuracao_inicial_json.Avancado().miniTabDinAtraso().exists())
 			    	miniTabAtraso=configuracao_inicial_json.Avancado().miniTabDinAtraso();
 			    if(miniTabAtraso==0)miniTabAtraso=1;
+			    miniTabDp = fluidtables::kMinimumMiniTableIncrement;
+			    miniTabDt = fluidtables::kMinimumMiniTableIncrement;
 			    if (configuracao_inicial_json.Avancado().miniTabDinDp().exists())
-			    	miniTabDp=configuracao_inicial_json.Avancado().miniTabDinDp();
+                miniTabDp = fluidtables::minimumMiniTableIncrement(configuracao_inicial_json.Avancado().miniTabDinDp());
 			    if (configuracao_inicial_json.Avancado().miniTabDinDt().exists())
-			    	miniTabDt=configuracao_inicial_json.Avancado().miniTabDinDt();
+                miniTabDt = fluidtables::minimumMiniTableIncrement(configuracao_inicial_json.Avancado().miniTabDinDt());
 
 			} else {
 				mono = 1e-4;
@@ -2772,6 +2790,9 @@ void Ler::parse_configuracao_inicial(
 		    	Vsonico = new int[1];
 		    	Vsonico[0]=0;
 		    	Tempsonico[0]=0.;
+				miniTabAtraso = fluidtables::kDefaultMiniTableDelay;
+				miniTabDp = fluidtables::kMinimumMiniTableIncrement;
+				miniTabDt = fluidtables::kMinimumMiniTableIncrement;
 			}
 
 			(*simulationContext).solverThreadCount=nthrd;
@@ -18794,7 +18815,8 @@ void Ler::imprimeProfile(Cel* const celula,
 		escreveIni << t("# Passo de tempo = ", "# Time step = ") << (*simulationContext).timeStepIndex
 				  << t(" # Posicao ANM= ", " # ANM position= ") << master1.comp
 				  << t(" # data e hora da simulacao ", " # simulation date and time ")
-				  << dataStr << " # " << t("Versao ", "Version ") << versao << "\n";
+				  << dataStr << " # " << t("Versao ", "Version ") << versao
+				  << t(" # arquivo = ", " # file = ") << absoluteInputFilePath() << "\n";
 		escreveIni << t(" Comprimento (m) Fronteira F;", " Length (m) Boundary F;");
 		escreveIni << t(" Comprimento (m) Centro Volume C;", " Length (m) Cell center C;");
 		escreveIni << t(" Tempo (s) ;", " Time (s) ;");
@@ -19202,7 +19224,8 @@ void Ler::imprimeProfileG(CelG* const celula,
 		ofstream escreveIni(tmp.c_str(), ios_base::out);
 		escreveIni << t("# Passo de tempo = ", "# Time step = ") << (*simulationContext).timeStepIndex
 				  << t(" # data e hora da simulacao ", " # simulation date and time ")
-				  << dataStr << " # " << t("Versao ", "Version ") << versao << "\n";
+				  << dataStr << " # " << t("Versao ", "Version ") << versao
+				  << t(" # arquivo = ", " # file = ") << absoluteInputFilePath() << "\n";
 		escreveIni << t(" Comprimento (m) Fronteira F;", " Length (m) Boundary F;");
 		escreveIni << t(" Comprimento (m) Centro Volume C;", " Length (m) Cell center C;");
 		escreveIni << t(" comprimento_fundoPoco (m) F;", " bottomhole_length (m) F;");

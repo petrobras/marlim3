@@ -765,6 +765,7 @@ sisprod::thermal::ThermalState SProd::thermalStateOf() {
 trendoutput::TrendState SProd::trendStateOf() const {
     return trendoutput::TrendState{
         .input = arq,
+        .engineVersion = versao,
         .globals = simulationContext,
         .branchIndex = indTramo,
         .printPassCount = trends.trendOutputCount,
