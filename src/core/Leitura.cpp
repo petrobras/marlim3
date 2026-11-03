@@ -9,10 +9,18 @@
 #include "OutputI18n.h"
 #include "rapidjson/filereadstream.h"
 #include <filesystem>
+#ifdef _WIN32
+  #include <direct.h>
+  #include <stdlib.h>    // ← redundante, mas inofensivo (include guard)
+#else
+  #include <limits.h>    // ← redundante, mas inofensivo
+  #include <stdlib.h>    // ← redundante, mas inofensivo
+  #include <string.h>    // ← redundante, mas inofensivo
+#endif
 
 using namespace rapidjson;
 
-std::string Ler::caminhoArquivoEntradaAbs() const {
+/*std::string Ler::caminhoArquivoEntradaAbs() const {
     if (impfile.empty())
         return impfile;
 
@@ -22,6 +30,26 @@ std::string Ler::caminhoArquivoEntradaAbs() const {
         return std::string(ptr, strlen(ptr));
     }
     return impfile;
+}*/
+
+std::string Ler::caminhoArquivoEntradaAbs() const {
+    if (impfile.empty())
+        return impfile;
+
+#ifdef _WIN32
+    char full[_MAX_PATH];
+    if (_fullpath(full, impfile.c_str(), _MAX_PATH) != nullptr) {
+        return std::string(full);
+    }
+    return impfile;
+#else
+    char actualpath[PATH_MAX + 1];
+    char *ptr = realpath(impfile.c_str(), actualpath);
+    if (ptr != nullptr) {
+        return std::string(ptr);
+    }
+    return impfile;
+#endif
 }
 
 /*!
