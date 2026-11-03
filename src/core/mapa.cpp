@@ -238,7 +238,7 @@ double arranjo::zbrent(double x1,double x2,
 double arranjo::funcarranjo(double alfl){
 
 	double alfl3=alfl*alfl*alfl;
-	double den1=pow(1-alfl,1.5)*alfl;
+	double den1=pow(1-alfl,2.5)*alfl;
 	return den1*alfl3*hidro-(1+75.*alfl)*alfl3*dpg+den1*dpl;
 }
 

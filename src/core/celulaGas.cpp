@@ -319,8 +319,10 @@ double CelG::Rey(double dia, double vel,
 }*/
 double CelG::fric(double re, double eps) {
     double val;
+    double reyL=2400.;
+    double reyT=4000.;
     if (fabs(re) > 1e-5) {
-        if (re > 2400) {
+        if (re > reyL) {
         	switch (tipoFatorFric) {
         	case 0:
             	val = 6.9 / fabs(re) + pow(eps / 3.7, 1.11);
@@ -341,6 +343,11 @@ double CelG::fric(double re, double eps) {
             	break;
         	}
             val /= 4.;
+            if(re<reyT){
+            	double facRe=(re-reyL)/(reyT-reyL);
+            	val=(1.-facRe)*(16. / fabs(re))+facRe*val;
+            }
+
         } else
             val = 16. / fabs(re);
     } else

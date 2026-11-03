@@ -5892,7 +5892,9 @@ double ProFlu::MasGasLivre(double pres, double temp,double varRS) const{
 	 double rs;
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
-     return 1.225*Deng*(IRGO - rDgD*rs)*6.29/35.31467;
+	 double val=1.225*Deng*(IRGO - rDgD*rs)*6.29/35.31467;
+	 if(val<0.)val=0.;
+     return val;
 }
 double ProFlu::FracAguaInSitu(double pres, double temp,double varRS) const{
 	if(flashCompleto!=2){
@@ -5980,7 +5982,9 @@ double ProFlu::MasGasLivreHidra(double pres, double temp,double varRS) const{
 	 double rs;
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
-	 return (1-BSW)*1.225*Deng*(IRGO - rDgD*rs)*6.29/35.31467;
+	 double val=(1-BSW)*1.225*Deng*(IRGO - rDgD*rs)*6.29/35.31467;
+	 if(val<0.)val=0.;
+	 return val;
 }
 
 double ProFlu::FracMass(double pres, double temp) const{

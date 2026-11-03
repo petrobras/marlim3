@@ -657,14 +657,14 @@ void celradSimp::calcVazOWG(){
 
 	pmed1=0.5*(PcamadaR+Pcamada);
 	slmed1=sLR;
-	if((QwcamadaR+QocamadaR)<0)slmed1=sL;
+	if((QwcamadaR+QocamadaR)>0)slmed1=sL;
 	samed1=sWR;
-	if((QwcamadaR+QocamadaR)<0)samed1=sW;
+	if((QwcamadaR+QocamadaR)>0)samed1=sW;
 	pmed0=0.5*(Pcamada+PcamadaL);
 	slmed0=sL;
-	if((QwcamadaL+QocamadaL)<0)slmed0=sLL;
+	if((QwcamadaL+QocamadaL)>0)slmed0=sLL;
 	samed0=sW;
-	if((QwcamadaL+QocamadaL)<0)samed0=sWL;
+	if((QwcamadaL+QocamadaL)>0)samed0=sWL;
 
 	vbo=flup.BOFunc(Pcamada, tRes);
 	rhoa=flup.MasEspAgua(Pcamada, tRes);
@@ -1113,7 +1113,7 @@ void celradSimp::transcel(int idisc){
 			double mio;
 			double mia;
 			double mig;
-				mio=flup.ViscOleo( Pcamada, tRes)/1000.;
+			mio=flup.ViscOleo( Pcamada, tRes)/1000.;
 			mig=flup.ViscGas( Pcamada, tRes)/1000.;
 			mia=flup.VisAgua(tRes)/1000.;
 			double alfC;
@@ -1130,9 +1130,9 @@ void celradSimp::transcel(int idisc){
 			dA=ka/mia;
 		}
 
-		 fracO=dO/(dO+dA);
-		 fracA=dA/(dO+dA);
-		 fracG=0.;
+	  fracO=dO/(dO+dA);
+	  fracA=dA/(dO+dA);
+	  fracG=0.;
 	  h1=ip/(2*M_PI*rm*86400);
 
 
