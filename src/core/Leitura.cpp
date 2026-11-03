@@ -8,7 +8,7 @@
 #include "JSONKeyTranslator.h"
 #include "OutputI18n.h"
 #include "rapidjson/filereadstream.h"
-//#include <filesystem>
+#include <filesystem>
 
 using namespace rapidjson;
 
