@@ -2355,6 +2355,8 @@ void corrigeVazNoBuf(SProd *malha, int ind) {
 
 void SolveRedeTrans(SProd *malha, Rede &arqRede,
                     Vcr<int> &inativo, int indativo, int nrede) {
+    logger.setEtapa(ETAPA_TRANSIENTE);
+    logger.setRelogio(&(*arqRede.vg1dSP).lixo5R); // instante simulado da rede
 
     int narq = arqRede.nsisprod;
 
@@ -3094,7 +3096,7 @@ void aviso(int i) {
 }
 void aviso2(int i) {
     cout << "*******************************************************************************" << endl;
-    cout << "o tramo de indice " << i << " teve dificuldade de convergencia, por isto, sera� desligado da rede" << endl;
+    cout << "o tramo de indice " << i << " teve dificuldade de convergencia, por isto, será desligado da rede" << endl;
     cout << "Isto ocorreu logo na primeira iteracao, geralmente" << endl;
     cout << "em certas situacoes, a dificuldade de convergencia de um tramo inserido em uma rede se deve ao" << endl;
     cout << "deste de fato nao conseguir escoar quando posto em competicao com outros tramos em uma rede de escoamento"
@@ -3744,7 +3746,7 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                             if (konta > 10) {
                                                 ciclo = 0.8e10;
                                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
-                                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                                logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
                                                            "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
                                                            "", "");
                                             }
@@ -3802,7 +3804,7 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                             if (konta > 10) {
                                                 ciclo = 0.8e10;
                                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
-                                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                                logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
                                                            "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
                                                            "", "");
                                             }
@@ -7535,7 +7537,7 @@ double permanenteSimples(SProd &sistem1, double inichute = -1.) {
                                 // a busca permanente
                                 ciclo = 1.1e10;
                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
                                            "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
                                            "", "");
                             }
@@ -7608,7 +7610,7 @@ double permanenteSimples(SProd &sistem1, double inichute = -1.) {
                                 // a busca permanente
                                 ciclo = 1.1e10;
                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
                                            "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
                                            "", "");
                             }
@@ -8078,7 +8080,7 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
         ofstream escreveIni(tmp.c_str(), ios_base::out);
         if (fabs(saida) > 1e9) {
             escreveIni << "    PROBLEMAS NA CONVERGENCIA DO PERMANENTE     " << endl;
-            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+            logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
                        "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
                        "", "");
         }
@@ -8189,6 +8191,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
                       sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
+    logger.setEtapa(ETAPA_PERMANENTE);
     // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
     // testara destas variaveis na analise parametrica
     int imprime = 0;
@@ -8290,6 +8293,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     }
     #pragma omp parallel for num_threads(analisePara.nthrdAP)
 	for(int iSeq=0;iSeq<analisePara.nVariaveis;iSeq++){//laco onde e calculado o permanente de cada combinacao
+		logger.setSequenciaAP(iSeq);
 		//algumas variaveis ja se encontram na condicao correta para se apolicar no sistema de simulacao,
 		//outras precisam de um "pos procesaamento"
 		double vazgasG;
@@ -8611,6 +8615,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
                       sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
+    logger.setEtapa(ETAPA_PERMANENTE);
     // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
     // testara destas variaveis na analise parametrica
     int imprime = 0;
@@ -8830,6 +8835,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
                       sistem1.arq.flup, sistem1.arq.bcs,sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
+    logger.setEtapa(ETAPA_PERMANENTE);
     // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
     // testara destas variaveis na analise parametrica
     double vazgasG;
@@ -8921,6 +8927,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
         double chute = -1.;
         cout << "Resolvendo Sequencia " << iSeq << " da analise parametrica" << endl;
         (*sistem1.vg1dSP).sequenciaAP = iSeq;
+        logger.setSequenciaAP(iSeq);
         if (iSeq == 0 || sistem1.arq.ConContEntrada == 2 || sistem1.arq.pocinjec == 1) {
             // se for o primeiro caso da analise parametrica, não se usa nenhum valor para o chute, chute=-1
             chute = -1.;
@@ -9309,6 +9316,7 @@ void preparaRedeProd(SProd *malha, Rede &arqRede, int narq, string nomeArquivoLo
             if ((*arqRede.vg1dSP).fluidoRede == 0)
                 (*arqRede.vg1dSP).tipoFluidoRedeGlob = 1; // tipoFluidoRede==1 implica em que a rede será uma rede dominada pela fase líquida
             // construtor do tramo temporario com as caracteristicas basicas do tramo i da rede
+            logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
             SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog,
                              tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD, bloqR, 0, arqRede.malha[i].reverso, 0, 0, 0, arqRede.malha[i].perm);
 
@@ -9599,6 +9607,7 @@ void preparaRedeProd(SProd *malha, Rede &arqRede, int narq, string nomeArquivoLo
     } else {
         int i = 0;
         int tD = arqRede.tabelaDinamica;
+        logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
         SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog,
                          tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD);
         temporario.noextremo = 1;
@@ -10065,6 +10074,7 @@ void RedeProd(SProd *malha, Rede &arqRede, int narq,
             if ((*arqRede.vg1dSP).fluidoRede == 0)
                 (*arqRede.vg1dSP).tipoFluidoRedeGlob = 1; // tipoFluidoRede==1 implica em que a rede será uma rede dominada pela fase líquida
             // construtor do tramo temporario com as caracteristicas basicas do tramo i da rede
+            logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
             SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog,
                              tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD, bloqR, 0, arqRede.malha[i].reverso, 0, 0, 0, arqRede.malha[i].perm);
 
@@ -10591,6 +10601,7 @@ void RedeProd(SProd *malha, Rede &arqRede, int narq,
 
         int i = 0;
         int tD = arqRede.tabelaDinamica;
+        logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
         SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog,
                          tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD);
         temporario.noextremo = 1;
@@ -10689,6 +10700,8 @@ void RedeProd(SProd *malha, Rede &arqRede, int narq,
 
 void TransAnel(int narq, int nfontes, int *indfonte, int *indtramo, int *posicfonte, int indAnel,
                vector<fonteposic> dreno, SProd *malha, Rede &arqRede) {
+    logger.setEtapa(ETAPA_TRANSIENTE);
+    logger.setRelogio(&(*arqRede.vg1dSP).lixo5R); // instante simulado da rede
 
     Vcr<double> razMast0(narq);
     Vcr<double> razMast(narq);
@@ -11085,6 +11098,8 @@ double chutePresRedeParalelaSec(SProd *malha, int iP, int iS, double pchute, int
 }
 
 void SolveRedeParalelaTrans(SProd *malha, Rede &arqRede, int nrede) {
+    logger.setEtapa(ETAPA_TRANSIENTE);
+    logger.setRelogio(&(*arqRede.vg1dSP).lixo5R); // instante simulado da rede
     int narq = arqRede.nsisprod;
     Vcr<int> celpos(narq);
     Vcr<int> kontasnp(narq, 1);
@@ -11446,6 +11461,7 @@ void RedeParalela(SProd *malha, Rede &arqRede, int narq,
     int iP = arqRede.tramoPrimario;
     int tD = arqRede.tabelaDinamica;
     for (int i = 0; i < narq; i++) {
+        logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
         SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog,
                          tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD, 0, 0, 0, 0, 0, 0, arqRede.malha[i].perm);
         malha[i] = temporario;
@@ -11535,6 +11551,7 @@ void RedeParalela(SProd *malha, Rede &arqRede, int narq,
         malha[iS].hidroTramoSecundario(titSec);
     }
 
+    logger.setEtapa(ETAPA_PERMANENTE);
     double erro = 1000.;
     double resulP = 1000;
     double resulP0 = 0.;
@@ -11804,6 +11821,7 @@ void RedeAnelGL(SProd *malha, Rede &arqRede, int narq,
     int tD = arqRede.tabelaDinamica;
     for (int i = 0; i < narq; i++) {
         if (arqRede.malha[i].tipoanel == 0) {
+            logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
             SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog,
                              tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD, 0, 0, 0, 0, 0, 0, arqRede.malha[i].perm);
             compfonte[konta] = arqRede.malha[i].compfonte;
@@ -11849,6 +11867,7 @@ void RedeAnelGL(SProd *malha, Rede &arqRede, int narq,
     posicdreno = new int[dreno.size()];
     for (int i = 0; i < dreno.size(); i++)
         compdreno[i] = dreno[i].posicmani;
+    logger.setTramo(arqRede.impfiles[indAnel], (*arqRede.vg1dSP).qualRede);
     SProd temporario(pathArqEntrada + arqRede.impfiles[indAnel], nomeArquivoLog,
                      tipoValidacaoMrt, tipoSimulacaoMrt, vG1d, tD, 0, 0, 0, compdreno, posicdreno, dreno.size(), arqRede.malha[indAnel].perm);
     for (int i = 0; i < dreno.size(); i++)
@@ -11874,6 +11893,7 @@ void RedeAnelGL(SProd *malha, Rede &arqRede, int narq,
         malha[indAnel].betaE = malha[indAnel].arq.CCPres.bet[0];
     }
 
+    logger.setEtapa(ETAPA_PERMANENTE);
     for (int i = 0; i < narq; i++) {
         malha[i].modoPerm = 1;
         if (arqRede.malha[i].tipoanel == 0) {
@@ -12404,6 +12424,7 @@ void RedeInj(SProd *malha, Rede &arqRede, int narq, string nomeArquivoLog, tipoV
              tipoSimulacao_t tipoSimulacaoMrt, varGlob1D *vG1d) {
     int testaFlashComp = 0;
     for (int i = 0; i < narq; i++) {
+        logger.setTramo(arqRede.impfiles[i], (*arqRede.vg1dSP).qualRede);
         SProd temporario(pathArqEntrada + arqRede.impfiles[i], nomeArquivoLog, tipoValidacaoMrt, tipoSimulacaoMrt, vG1d);
 
         if (arqRede.malha[i].ncoleta > 0)
@@ -12428,6 +12449,7 @@ void RedeInj(SProd *malha, Rede &arqRede, int narq, string nomeArquivoLog, tipoV
     }
     if (testaFlashComp != 0 && testaFlashComp != narq && testaFlashComp != 2 * narq)
         NumError("Rede com modelos de fluido diferentes");
+    logger.setEtapa(ETAPA_PERMANENTE);
     Vcr<int> inativo(narq, 0);
     int indativo = 0;
     while ((*arqRede.vg1dSP).restartRede == 1) {
@@ -12646,19 +12668,20 @@ void signalHandler(int sigNumber) {
         break;
     }
 
-    if (tipoSimulacao == tipoSimulacao_t::transiente) {
-        WriteSnapShot(*ptrSistemaProducao);
-    }
     // incluir log INFO de cancelamento da simulacao
     logger.log(LOGGER_FALHA, LOG_INFO_SIMULATION_CANCELLED, to_string(sigNumber), "", signalDescription);
-    // gravar arquivo de log
+    // gravar o log antes do snapshot, que pode falhar com a memoria corrompida
     logger.writeOutputLog();
+    if (tipoSimulacao == tipoSimulacao_t::transiente && ptrSistemaProducao != nullptr) {
+        WriteSnapShot(*ptrSistemaProducao);
+    }
     // caso nao seja simulacao POCO_INJETOR
     if (tipoSimulacao != tipoSimulacao_t::poco_injetor && tipoSimulacao != tipoSimulacao_t::convecNatural) {
         // fechar arquivo de registro dos arquivos de saida de dados da simulacao
         arqRelatorioPerfis.close();
     }
-    exit(exitCode);
+    // cancelamento pelo usuario mantem 0; demais sinais saem com a etapa da falha
+    exit(exitCode == EXIT_SUCCESS ? EXIT_SUCCESS : logger.codigoSaida());
 }
 
 int main(int argc, char **argv) {
@@ -12873,6 +12896,8 @@ int main(int argc, char **argv) {
             vg1dRedeSimples.ntrd = arqRede.nthrRede;
             if (vg1dRedeSimples.chaveredeT > 0)
                 vg1dRedeSimples.TmaxR = arqRede.TmaxR; // tempo maximo de simulacao transiente para rede
+            if (vg1dRedeSimples.chaveredeT > 0)
+                logger.setTempoFinal(arqRede.TmaxR);
             else
                 vg1dRedeSimples.TmaxR = 1;
 
@@ -12941,14 +12966,16 @@ int main(int argc, char **argv) {
                             preparaRedeProd(malha[i], arqRedeTemp[i], vg1dRede[i].narq, nomeArquivoLog, validacaoJson,
                                             tipoSimulacao_t::transiente, i, contapermRede[i], &vg1dRede[i]);
                         }
+                        logger.setTramo("", -1); // a montagem deixou o ultimo tramo no contexto global
 #pragma omp parallel for num_threads(vg1dRedeSimples.ntrdGlob)
                         for (int i = 0; i < redeLeitura; i++) {
-                            Vcr<int> inativo(vg1dRede[i].narq, 0); // indica se algum tramo falhou na sua busca pela solu�ao transiente
+                            Vcr<int> inativo(vg1dRede[i].narq, 0); // indica se algum tramo falhou na sua busca pela solução transiente
                             int indativo = 0;                      // indica o numero de tramso que foram inativados na solucao permanente por
                             // falha de convergencia
                             cout << "!!!!!! Resolvendo REDE INTERNA " << i << "!!!!!!" << "\n";
                             vector<noRede> normaEvol;
                             vector<tramoPart> bloq;
+                            logger.setEtapa(ETAPA_PERMANENTE); // vale so para esta thread se em paralelo
                             solveRedeProd(malha[i], arqRedeTemp[i], vg1dRede[i].narq, inativo, indativo, nomeArquivoLog, validacaoJson,
                                           tipoSimulacao_t::transiente, i, contapermRede[i], &vg1dRede[i], normaEvol, bloq); // construcao dos objetos tramos de uma rede
                             // neste metodo e criado o vetor de tramos da rede, avaliado se algum tramo encontra-se em uma condicao sem vazao,
@@ -12976,7 +13003,12 @@ int main(int argc, char **argv) {
 
                             normaEvol.clear();
                             bloq.clear();
+                            // limpa o contexto da thread (ou o relogio global, se serial)
+                            logger.setEtapa(ETAPA_HERDADA);
+                            logger.setRelogio(nullptr);
+                            logger.setTramo("", -1);
                         }
+                        logger.setEtapa(ETAPA_POS);
 
                         if (redeLeitura > 0) {
                             if (saidaClassica == 1) {
@@ -13037,6 +13069,8 @@ int main(int argc, char **argv) {
                     malha = new SProd[narq];                                                                                       // vetor com os objetos tramos
                     RedeInj(malha, arqRede, narq, nomeArquivoLog, validacaoJson, tipoSimulacao_t::poco_injetor, &vg1dRedeSimples); // construcao
                     // dos objetos tramos de uma rede de injecao e busca de sua solucao permanente
+                    logger.setEtapa(ETAPA_POS);
+                    logger.setTramo("", -1);
                     if (saidaClassica == 1) {
                         cout << "*******************************************************************************" << endl;
                         cout << "                                  UFA!!!!!!!!                                  " << endl;
@@ -13063,6 +13097,9 @@ int main(int argc, char **argv) {
                     // de uma rede de anel de GL, dentro deste metodo e feita a solucao permanente e
                     // eventualmente a solucao transiente tambem
 
+                    logger.setEtapa(ETAPA_POS);
+                    logger.setRelogio(nullptr);
+                    logger.setTramo("", -1);
                     saidaClassica = malha[0].arq.saidaClassica;
                     if (saidaClassica == 1) {
                         cout << "*******************************************************************************" << endl;
@@ -13086,6 +13123,9 @@ int main(int argc, char **argv) {
                                  inativo, indativo, nomeArquivoLog, validacaoJson, arqRede.chaveredeT,
                                  tipoSimulacao_t::transiente, &vg1dRedeSimples);
 
+                    logger.setEtapa(ETAPA_POS);
+                    logger.setRelogio(nullptr);
+                    logger.setTramo("", -1);
                     saidaClassica = malha[0].arq.saidaClassica;
                     if (saidaClassica == 1) {
                         cout << "*******************************************************************************" << endl;
@@ -13114,8 +13154,10 @@ int main(int argc, char **argv) {
 
             // caso habilitado o calculo do permanente
             if (sistem1.arq.perm == 1) {
-                if (sistem1.arq.AP == 0)
+                if (sistem1.arq.AP == 0) {
+                    logger.setEtapa(ETAPA_PERMANENTE);
                     SolveTramoSolteiro(sistem1, sistem1.arq.chutePerm); // solucao simples de permanente para um tramo simples
+                }
                 else {
     			ostringstream arquivoAPtemp;
     			arquivoAPtemp<<pathArqEntrada<<sistem1.arq.arquivoAP;
@@ -13124,6 +13166,7 @@ int main(int argc, char **argv) {
     				leituraAP(arquivoAP, sistem1);//solucao de analise parametrica para tramo simples
     			else
     				leituraAPparalelo(arquivoAP, nomeArquivoLog, validacaoJson, sistem1);//solucao de analise parametrica para tramo simples
+			logger.setSequenciaAP(-1);
                 }
 
             } else if (sistem1.arq.perm == 2) { // quando a condicao de contorno nao e o resultado de um regime permanente mas a "foto" em algum momento de
@@ -13132,6 +13175,9 @@ int main(int argc, char **argv) {
                 ReadSnapShot(sistem1);
             }
             if (sistem1.arq.transiente == 1) { // opcao transiente ativa, inicio do processo transiente
+                logger.setEtapa(ETAPA_TRANSIENTE);
+                logger.setRelogio(&(*sistem1.vg1dSP).lixo5); // instante simulado do tramo
+                logger.setTempoFinal(sistem1.tfinal);
                 // preparacao de algumas variaveis para a partida na simulacao transiente:
                 if (sistem1.arq.ConContEntrada == 1) {
                     if (sistem1.celula[0].acsr.tipo == 2) {
@@ -13302,6 +13348,7 @@ int main(int argc, char **argv) {
                 }
                 WriteSnapShot(sistem1, (*sistem1.vg1dSP).lixo5); // registro do SNP do tempo final
             }
+            logger.setEtapa(ETAPA_POS);
             if (saidaClassica == 1) {
                 cout << "*******************************************************************************" << endl;
                 cout << "                                  UFA!!!!!!!!                                  " << endl;
@@ -13328,7 +13375,7 @@ int main(int argc, char **argv) {
         // gravar arquivo de log
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
 
     // incluir log INFO de conclusao da simulacao
@@ -13342,5 +13389,5 @@ int main(int argc, char **argv) {
         arqRelatorioPerfis.close();
     }
 
-    return EXIT_SUCCESS;
+    return logger.codigoSaida();
 }

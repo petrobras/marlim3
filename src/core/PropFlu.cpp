@@ -1997,7 +1997,7 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
             // gravar arquivo de log
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
     		int para;
     		para++;
     	}
@@ -3213,7 +3213,7 @@ double ProFlu::FalsaCorda(double a,double b,double PR,double TR,double delta ,do
             // gravar arquivo de log
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
           }
           return c;
 }

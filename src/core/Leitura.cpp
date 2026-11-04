@@ -1694,9 +1694,9 @@ void Ler::testaTipo() {
 	FILE *mr3InFile = NULL;
 	char mr3InBuf[65536];
 	logger.setNomeArqEntrada(impfile);
-	    // abrir arquivo de entrada da simulaÃ§Ã£o
+	    // abrir arquivo de entrada da simulação
 	mr3InFile = fopen(impfile.c_str(), "r");
-    // criar stream para o arquivo de entrada da simulaÃ§Ã£o
+    // criar stream para o arquivo de entrada da simulação
 	FileReadStream mr3InStream(mr3InFile, mr3InBuf, sizeof(mr3InBuf));
 	// realizar o parse do Rede de entrada
 	doc.ParseStream(mr3InStream);
@@ -1823,13 +1823,13 @@ void Ler::validateVsSchema(Document *schemaDoc,
  * \return bool Flag indicating whether the property is active.
  */
 template<typename T> bool is_ativo(T& propriedade_json) {
-	// caso a propriedade nÃ£o esteja vazia e exista uma chave "ativo"
+	// caso a propriedade não esteja vazia e exista uma chave "ativo"
 	if (propriedade_json.ativo().exists()) {
 		// retorna o valor da chave "ativo" da propriedade
 		return propriedade_json.ativo();
 	} else {
 		// TODO: alterar quando tratar os erros no JSON.
-		// habilita a propriedade, caso nÃ£o exista a chave "ativo"
+		// habilita a propriedade, caso não exista a chave "ativo"
 		return true;
 	}
 }
@@ -1899,7 +1899,7 @@ int Ler::identificarMaterial(int identificador) {
 		}
 		if(i==nmaterial) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarMaterial", "",
-						"Material nÃ£o encontrado");
+						"Material não encontrado");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -1923,7 +1923,7 @@ int Ler::identificarCorte(int identificador) {
 		}
 		if(i==ncorte) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarSecaoTransversal", "",
-						"Secao Transversal nÃ£o encontrada");
+						"Secao Transversal não encontrada");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -1947,7 +1947,7 @@ int Ler::identificarFormacao(int identificador) {
 		}
 		if(i==nform) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarFormacao", "",
-						"formacao nÃ£o encontrada");
+						"formacao não encontrada");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -1971,7 +1971,7 @@ int Ler::identificarFluidoProducao(int identificador) {
 		}
 		if(i==nfluP) logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_UNEXPECTED_EXCEPTION, "identificarFluidoProducao", "",
-						"fluido nÃ£o encontrado");
+						"fluido não encontrado");
 	} catch (exception& e) {
 		// incluir falha
 		logger.log_write_logs_and_exit(LOGGER_FALHA,
@@ -2161,7 +2161,7 @@ bool Ler::verificarUnicidade(const std::vector<int>& identificadores) {
     // Encontrar o maior elemento
     int maiorElemento = *std::max_element(identificadores.begin(), identificadores.end());
 
-    // Usar vector para unicidade (gerencia memÃ³ria automaticamente)
+    // Usar vector para unicidade (gerencia memória automaticamente)
     std::vector<bool> unicidade(maiorElemento + 1, false);
 
     // percorrer os elementos do array
@@ -2173,15 +2173,15 @@ bool Ler::verificarUnicidade(const std::vector<int>& identificadores) {
         }
     }
 
-    return true; // todos os elementos sÃ£o Ãºnicos
+    return true; // todos os elementos são únicos
 }
 
 
-// FunÃ§Ã£o auxiliar para ler uma linha "lÃ³gica" com continuaÃ§Ãµes com barra invertida (\)
+// Função auxiliar para ler uma linha "lógica" com continuações com barra invertida (\)
 std::string Ler::ler_linha_continua(std::ifstream& in) {
 	std::string linha, temp;
 	while (std::getline(in, temp)) {
-		// Remove espaÃ§os e caracteres de fim de linha (como \r)
+		// Remove espaços e caracteres de fim de linha (como \r)
 		temp.erase(std::find_if(temp.rbegin(), temp.rend(),
 			[](unsigned char ch) { return !std::isspace(ch); }).base(), temp.end());
 
@@ -2368,27 +2368,27 @@ void Ler::parse_configuracao_inicial(
 					if (configuracao_inicial_json.modeloJTL().exists())
 						modelJTL = configuracao_inicial_json.modeloJTL();
 					if(modelcp==1 || modelJTL==1 || latente==1){
-						// Verificar extensÃ£o .tab
+						// Verificar extensão .tab
 						if (pvtsimarq.empty()){
 							logger.log(LOGGER_FALHA,
 									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 									"Chave requerida: latente, modeloCp ou modeloJTL",
-									chaveJson, "black-oil com uso hÃ­brido de tabelas, Ã© necessÃ¡ria uma tabela do tipo .tab, nÃ£o se estÃ¡ indicando o arquivo");
+									chaveJson, "black-oil com uso híbrido de tabelas, é necessária uma tabela do tipo .tab, não se está indicando o arquivo");
 						}
-						// Verificar extensÃ£o .ctm
+						// Verificar extensão .ctm
 						else if (pvtsimarq.length() >= 4 && (pvtsimarq.substr(pvtsimarq.length() - 4) == ".ctm" ||
 								pvtsimarq.substr(pvtsimarq.length() - 4) == ".CTM") ) {
-						    // Ã‰ um arquivo .ctm
+						    // É um arquivo .ctm
 							logger.log(LOGGER_FALHA,
 									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 									"Chave requerida: latente, modeloCp ou modeloJTL",
-									chaveJson, "black-oil com uso hÃ­brido de tabelas, Ã© necessÃ¡ria uma tabela do tipo .tab nÃ£o um arquivo ctm");
+									chaveJson, "black-oil com uso híbrido de tabelas, é necessária uma tabela do tipo .tab não um arquivo ctm");
 						}
 						else if (pvtsimarq.length() >= 4 && pvtsimarq.substr(pvtsimarq.length() - 4) != ".tab") {
 							logger.log(LOGGER_FALHA,
 									LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 									"Chave requerida: latente, modeloCp ou modeloJTL",
-									chaveJson, "black-oil com uso hÃ­brido de tabelas, Ã© necessÃ¡ria uma tabela do tipo .tab, se indicou um arquivo de extensÃ£o desconhecida");
+									chaveJson, "black-oil com uso híbrido de tabelas, é necessária uma tabela do tipo .tab, se indicou um arquivo de extensão desconhecida");
 						}
 
 					}
@@ -3200,7 +3200,7 @@ void Ler::parse_condcont_pocinjec(JSON_entrada_CondicaoContPocInjec& condcont_js
 				if (condcont_json.presInjec().exists()) {
 					condpocinj.presinj = condcont_json.presInjec();
 				} else {
-					// RN-019: Chave "presInjec" requerida para as condiÃ§Ãµes de contorno (CC = 1, 3 ou 4)
+					// RN-019: Chave "presInjec" requerida para as condições de contorno (CC = 1, 3 ou 4)
 					// incluir falha
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -3217,7 +3217,7 @@ void Ler::parse_condcont_pocinjec(JSON_entrada_CondicaoContPocInjec& condcont_js
 					condpocinj.presfundo =
 							condcont_json.presFundo();
 				} else {
-					// RN-020: Chave "presFundo" requerida para as condiÃ§Ãµes de contorno (CC = 2, 3 ou 5)
+					// RN-020: Chave "presFundo" requerida para as condições de contorno (CC = 2, 3 ou 5)
 					// incluir falha
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -3446,7 +3446,7 @@ void Ler::parse_parafina(JSON_entrada_parafina& parafina_json) {
 /*!
  * Converter o elemento "fluidosProducao" do arquivo Json do MRT em struct flup.
  *
- * \tparam Objeto JSON correspondente Ã  fluidos producao
+ * \tparam Objeto JSON correspondente à fluidos producao
  */
 void Ler::parse_fluidos_producao(
 		JSON_entrada_fluidosProducao& fluidos_producao_json) {
@@ -3507,13 +3507,13 @@ void Ler::parse_fluidos_producao(
 			if (flashCompleto == 0) {
 				// loop para carga do vetor do JSON
 				for (int i = 0; i < nfluP; i++) {
-					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avanÃ§a
+					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avança
 					while (!is_ativo(fluidos_producao_json[++indAtivo]))
 						;
 					// obter maior identificador
 					indFlup[i]=identificadores[i] =
 							fluidos_producao_json[indAtivo].id();
-					// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+					// caso o identificador seja maior que o último selecionado, substitui
 					if (identificadores[i] > maiorIdentificador) {
 						maiorIdentificador = identificadores[i];
 					}
@@ -3705,7 +3705,7 @@ void Ler::parse_fluidos_producao(
 				double testatok;
 				char line[50000];
 
-				// LÃª linha com possÃ­vel quebra
+				// Lê linha com possível quebra
 
 				lendoPVTSimPre >> chave;
 				while (chave != "PRESSURE") {
@@ -3720,7 +3720,7 @@ void Ler::parse_fluidos_producao(
 				}
 
 
-				// LÃª novamente linha com quebra e monta linha unificada
+				// Lê novamente linha com quebra e monta linha unificada
 				std::string linha_completa = ler_linha_continua(lendoPVTSimPre);
 				strcpy(line, linha_completa.c_str());
 
@@ -3811,13 +3811,13 @@ void Ler::parse_fluidos_producao(
 
 				flash = new tabelaFlash[nfluP];
 				for (int i = 0; i < nfluP; i++) {
-					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avanÃ§a
+					// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avança
 					while (!is_ativo(fluidos_producao_json[++indAtivo]))
 						;
 					// obter maior identificador
 					indFlup[i]=identificadores[i] =
 							fluidos_producao_json[indAtivo].id();
-					// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+					// caso o identificador seja maior que o último selecionado, substitui
 					if (identificadores[i] > maiorIdentificador) {
 						maiorIdentificador = identificadores[i];
 					}
@@ -4055,7 +4055,7 @@ void Ler::parse_fluidos_producao(
 					else dadosMR=condpocinj.pvtsimarqInj;
 					ifstream lendoPVTSim(dadosMR.c_str(), ios_base::in);
 
-					// LÃª novamente linha com quebra e monta linha unificada
+					// Lê novamente linha com quebra e monta linha unificada
 					linha_completa = ler_linha_continua(lendoPVTSim);
 					strcpy(line, linha_completa.c_str());
 
@@ -4377,12 +4377,12 @@ void Ler::parse_fluidos_producao(
                 }
                 double fractemp[npseudo];
                 for(int i=0; i<nfluP;i++){
-                	// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avanÃ§a
+                	// enquanto a propriedade "ativo" do fluido de producao esteja desabilitada, avança
                 	while (!is_ativo(fluidos_producao_json[++indAtivo]));
  					// obter maior identificador
                 	indFlup[i]=identificadores[i] =
 							fluidos_producao_json[indAtivo].id();
-					// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+					// caso o identificador seja maior que o último selecionado, substitui
 					if (identificadores[i] > maiorIdentificador) {
 						maiorIdentificador = identificadores[i];
 					}
@@ -4474,7 +4474,7 @@ void Ler::parse_fluidos_producao(
 
 
 					int modelovisc = 1;  // modelo viscosidade tabela flash
-					//!!!!!!!!!!!!!!!!!!!!!!!!!!!momentaneamente, sera desconsiderada esta opÃ§Ã£o para composicional!!!!!!!!!!!!
+					//!!!!!!!!!!!!!!!!!!!!!!!!!!!momentaneamente, sera desconsiderada esta opção para composicional!!!!!!!!!!!!
 								//fluidos_producao_json[indAtivo].modeloViscBlackOil(); //alteracao6
 					if (modelovisc == 1) {  //modelo viscosidade black oil
 						vcorrOM = 0;
@@ -4806,7 +4806,7 @@ void Ler::parse_fluidos_producao(
 /*!
  * Converter o elemento "fluidoComplementar" do arquivo Json do MRT em struct fluc.
  *
- * \tparam Objeto JSON correspondente Ã  fluidos producao
+ * \tparam Objeto JSON correspondente à fluidos producao
  */
 void Ler::parse_fluido_complementar(
 		JSON_entrada_fluidoComplementar& fluido_complementar_json) {
@@ -4853,7 +4853,7 @@ void Ler::parse_fluido_complementar(
 /*!
  * Converter o elemento "fluidoGas" do arquivo Json do MRT em struct flug.
  *
- * \tparam Objeto JSON correspondente Ã  fluidos producao
+ * \tparam Objeto JSON correspondente à fluidos producao
  */
 void Ler::parse_fluido_gas(JSON_entrada_fluidoGas& fluido_gas_json) {
 	double api = 60.0;
@@ -4999,13 +4999,13 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 			// iniciar vetor de inteiros para armazenar os ids
 			identificadores.resize(nmaterial);
 			for (int i = 0; i < nmaterial; i++) {
-				// enquanto a propriedade "ativo" do material esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do material esteja desabilitada, avança
 				while (!is_ativo(material_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = material_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -5016,7 +5016,7 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 				mat[i].tipo = material_json[indAtivo].tipo();
 				else mat[i].tipo =0;
 				// TODO: Remover BACALHAU
-				// caso poÃ§o injetor e material liquido, altera para Ã¡gua
+				// caso poço injetor e material liquido, altera para água
 				if (pocinjec == 1 && mat[i].tipo == 1)
 					mat[i].tipo = 2;
 				// de-para do elemento "material" do json para o struct material
@@ -5109,7 +5109,7 @@ void Ler::parse_materiais(JSON_entrada_material& material_json) {
 /*!
  * Converter o elemento "secaoTransversal" do arquivo Json do MRT em struct material.
  *
- * \tparam Objeto JSON correspondente a secÃ£o transversal / corte
+ * \tparam Objeto JSON correspondente a secão transversal / corte
  */
 void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
@@ -5117,7 +5117,7 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 	try {
 		// obter o tamanho do elemento do Json
 		ncorte = 0;
-		// percorre o array de seÃ§Ãµes transversais
+		// percorre o array de seções transversais
 		for (size_t i = 0; i < corte_json.size(); i++) {
 			// caso a secao transversal esteja ativo
 			if (is_ativo(corte_json[i]))
@@ -5131,20 +5131,20 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 
 		// caso o tamanho do elemento seja maior que zero
 		if (ncorte > 0) {
-			// vetor de seÃ§Ãµes transversais
+			// vetor de seções transversais
 			corte = new corteduto[ncorte];
 			// iniciar vetor de inteiros para armazenar os ids
 			identificadores.resize(ncorte);
 			// loop para carga do vetor do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < ncorte; i++) {
-				// enquanto a propriedade "ativo" da secao transversal esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da secao transversal esteja desabilitada, avança
 				while (!is_ativo(corte_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = corte_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -5174,7 +5174,7 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 				corte[i].rug = corte_json[indAtivo].rugosidade();
 				// obter vetor de camadas da secao transversal
 				corte[i].ncam = (int) corte_json[indAtivo].camadas().size();
-				// alocar memÃ³ria para os elementos das camadas
+				// alocar memória para os elementos das camadas
 				corte[i].diam = new double[corte[i].ncam];
 				corte[i].indmat = new int[corte[i].ncam];
 				corte[i].discre = new int[corte[i].ncam];
@@ -5269,7 +5269,7 @@ void Ler::parse_corte(JSON_entrada_secaoTransversal& corte_json) {
 /*!
  * Converter os elementos "dutosProducao" e "dutosServico" do arquivo Json do MRT em struct detduto.
  *
- * \tparam Objeto JSON correspondente Ã  fluidos producao
+ * \tparam Objeto JSON correspondente à fluidos producao
  */
 void Ler::parse_unidades_producao(
 		JSON_entrada_dutosProducao& dutos_producao_json) {
@@ -5290,7 +5290,7 @@ void Ler::parse_unidades_producao(
 			// loop para carga do vetor de unidades de producao do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadep; i++) {
-				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avança
 				while (!is_ativo(dutos_producao_json[++indAtivo]))
 					;
 
@@ -5300,7 +5300,7 @@ void Ler::parse_unidades_producao(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_producao_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -5438,7 +5438,7 @@ void Ler::parse_unidades_producao(
 				}
 				if(unidadeP[ind].acopcol==1 || unidadeP[ind].acopcolRede==1)unidadeP[ind].dirconv=1;
 
-				// caso poÃ§o injetor e formacao desabilitada
+				// caso poço injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeP[ind].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeP[ind].ambext = 1;
@@ -5484,15 +5484,15 @@ void Ler::parse_unidades_producao(
 						unidadeP[ind].ncel +=
 							dutos_producao_json[indAtivo].discretizacao()[j].nCelulas();
 					}
-					// quantidade de cÃ©lulas total da unidade de producao
+					// quantidade de células total da unidade de producao
 					ncelp += unidadeP[ind].ncel;
-					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
+					// vetor de comprimentos de cada célula desta unidade de producao
 					unidadeP[ind].dx = new double[unidadeP[ind].ncel];
 
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizaÃ§Ãµes
+					// percorre o vetor de discretizações
 					for (int kontadiscre = 0;
 							kontadiscre
 								< (int) dutos_producao_json[indAtivo].discretizacao().size();
@@ -5572,20 +5572,20 @@ void Ler::parse_unidades_producao(
 					if(fabs(unidadeP[ind].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
+									"'comprimento total da discretização diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de producao
 				nCompTotalUnidadesP += unidadeP[ind].comp;
 
-				// tamanho do vetor das condiÃ§Ãµes iniciais
+				// tamanho do vetor das condições iniciais
 				int npontsTeste=0;
 				unidadeP[ind].nponts = 0;
 				// caso uma das chaves 'condicoesIniciais', 'condicoesIniciais/compInter' inexista
 				if ((unidadeP[ind].acopcol == 0 || (perm == 0 && descarga == 0)) && (!dutos_producao_json[indAtivo].condicoesIniciais().exists()
 						)) {
-					// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
+					// validar obrigatoriedade das condições iniciais e do vetor compInter
 					// RN-069: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -5931,7 +5931,7 @@ void Ler::parse_unidades_producaoAmb(
 			// loop para carga do vetor de unidades de producao do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadep; i++) {
-				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do duto de producao esteja desabilitada, avança
 				while (!is_ativo(dutos_producao_json[++indAtivo]))
 					;
 
@@ -5941,7 +5941,7 @@ void Ler::parse_unidades_producaoAmb(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_producao_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -6078,7 +6078,7 @@ void Ler::parse_unidades_producaoAmb(
 				}
 				if(unidadeP[ind].acopcol==1 || unidadeP[ind].acopcolRede==1)unidadeP[ind].dirconv=1;
 
-				// caso poÃ§o injetor e formacao desabilitada
+				// caso poço injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeP[ind].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeP[ind].ambext = 1;
@@ -6124,15 +6124,15 @@ void Ler::parse_unidades_producaoAmb(
 						unidadeP[ind].ncel +=
 							dutos_producao_json[indAtivo].discretizacao()[j].nCelulas();
 					}
-					// quantidade de cÃ©lulas total da unidade de producao
+					// quantidade de células total da unidade de producao
 					ncelp += unidadeP[ind].ncel;
-					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
+					// vetor de comprimentos de cada célula desta unidade de producao
 					unidadeP[ind].dx = new double[unidadeP[ind].ncel];
 
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizaÃ§Ãµes
+					// percorre o vetor de discretizações
 					for (int kontadiscre = 0;
 							kontadiscre
 								< (int) dutos_producao_json[indAtivo].discretizacao().size();
@@ -6212,20 +6212,20 @@ void Ler::parse_unidades_producaoAmb(
 					if(fabs(unidadeP[ind].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
+									"'comprimento total da discretização diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de producao
 				nCompTotalUnidadesP += unidadeP[ind].comp;
 
-				// tamanho do vetor das condiÃ§Ãµes iniciais
+				// tamanho do vetor das condições iniciais
 				int npontsTeste=0;
 				unidadeP[ind].nponts = 0;
 				// caso uma das chaves 'condicoesIniciais', 'condicoesIniciais/compInter' inexista
 				if ((unidadeP[ind].acopcol == 0 || (perm == 0 && descarga == 0)) && (!dutos_producao_json[indAtivo].condicoesIniciaisEAmbiente().exists()
 						)) {
-					// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
+					// validar obrigatoriedade das condições iniciais e do vetor compInter
 					// RN-069: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas
 					logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -6567,7 +6567,7 @@ void Ler::parse_unidades_servico(
 			// loop para carga do vetor de unidades de servico do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadeg; i++) {
-				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avança
 				while (!is_ativo(dutos_servico_json[++indAtivo]))
 					;
 
@@ -6577,7 +6577,7 @@ void Ler::parse_unidades_servico(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_servico_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -6675,7 +6675,7 @@ void Ler::parse_unidades_servico(
 					}
 				}
 
-				// caso poÃ§o injetor e formacao desabilitada
+				// caso poço injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeG[i].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeG[i].ambext = 1;
@@ -6717,12 +6717,12 @@ void Ler::parse_unidades_servico(
 					}
 					// quantidade de celulas total da unidade de servico
 					ncelg += unidadeG[i].ncel;
-					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
+					// vetor de comprimentos de cada célula desta unidade de producao
 					unidadeG[i].dx = new double[unidadeG[i].ncel];
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizaÃ§Ãµes
+					// percorre o vetor de discretizações
 					for (int kontadiscre = 0;
 						kontadiscre
 								< (int) dutos_servico_json[indAtivo].discretizacao().size();
@@ -6769,17 +6769,17 @@ void Ler::parse_unidades_servico(
 					if(fabs(unidadeG[i].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
+									"'comprimento total da discretização diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de servico
 				nCompTotalUnidadesG += unidadeG[i].comp;
 
-				// tamanho do vetor das condiÃ§Ãµes iniciais
+				// tamanho do vetor das condições iniciais
 				unidadeG[i].nponts = 0;
 				int npontsTeste=0;
-				// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
+				// validar obrigatoriedade das condições iniciais e do vetor compInter
 				if (!dutos_servico_json[indAtivo].condicoesIniciais().exists()
 						) {
 					// RN-028: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas para simulacao nao permanente (#configuracaoInicial/permanente = 0) e sem descarga
@@ -6802,7 +6802,7 @@ void Ler::parse_unidades_servico(
 								new double[npontsTeste];
 				}
 
-				// caso nÃ£o permanente e sem descarga
+				// caso não permanente e sem descarga
 				if ((perm == 0 && descarga == 0)
 						|| ((*vg1dSP).chaverede == 1 )) {
 					// caso uma das chaves "temp", "pressao", "vazaoMassicaGas" inexista
@@ -7053,7 +7053,7 @@ void Ler::parse_unidades_servicoAmb(
 			// loop para carga do vetor de unidades de servico do JSON
 			int indAtivo = -1;
 			for (int i = 0; i < nunidadeg; i++) {
-				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do duto de servico esteja desabilitada, avança
 				while (!is_ativo(dutos_servico_json[++indAtivo]))
 					;
 
@@ -7063,7 +7063,7 @@ void Ler::parse_unidades_servicoAmb(
 				// obter maior identificador
 				identificadores[i] =
 						dutos_servico_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -7161,7 +7161,7 @@ void Ler::parse_unidades_servicoAmb(
 					}
 				}
 
-				// caso poÃ§o injetor e formacao desabilitada
+				// caso poço injetor e formacao desabilitada
 				if (pocinjec == 1 && unidadeG[i].formacDuto == 0) {
 					// habilita ambiente externo automaticamente - workaround por causa da alteracao pendente da PUC
 					unidadeG[i].ambext = 1;
@@ -7203,12 +7203,12 @@ void Ler::parse_unidades_servicoAmb(
 					}
 					// quantidade de celulas total da unidade de servico
 					ncelg += unidadeG[i].ncel;
-					// vetor de comprimentos de cada cÃ©lula desta unidade de producao
+					// vetor de comprimentos de cada célula desta unidade de producao
 					unidadeG[i].dx = new double[unidadeG[i].ncel];
 					int ndx;
 					double tempdx;
 					int totaliza = 0;
-					// percorre o vetor de discretizaÃ§Ãµes
+					// percorre o vetor de discretizações
 					for (int kontadiscre = 0;
 						kontadiscre
 								< (int) dutos_servico_json[indAtivo].discretizacao().size();
@@ -7255,17 +7255,17 @@ void Ler::parse_unidades_servicoAmb(
 					if(fabs(unidadeG[i].comp-lxy)/lxy>1e-15)	logger.log(LOGGER_FALHA,
 							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "modo de preenchimento X-Y",
 									chaveDutoIndice,
-									"'comprimento total da discretizaÃ§Ã£o diferente dos limites X e Y indicados"
+									"'comprimento total da discretização diferente dos limites X e Y indicados"
 									" '#/configuracaoInicial/modoXY' true");
 				}
 
 				// comprimento total da linha de servico
 				nCompTotalUnidadesG += unidadeG[i].comp;
 
-				// tamanho do vetor das condiÃ§Ãµes iniciais
+				// tamanho do vetor das condições iniciais
 				unidadeG[i].nponts = 0;
 				int npontsTeste=0;
-				// validar obrigatoriedade das condiÃ§Ãµes iniciais e do vetor compInter
+				// validar obrigatoriedade das condições iniciais e do vetor compInter
 				if (!dutos_servico_json[indAtivo].condicoesIniciaisEAmbiente().exists()
 						) {
 					// RN-028: Chaves 'condicoesIniciais', 'condicoesIniciais/compInter' requeridas para simulacao nao permanente (#configuracaoInicial/permanente = 0) e sem descarga
@@ -7288,7 +7288,7 @@ void Ler::parse_unidades_servicoAmb(
 								new double[npontsTeste];
 				}
 
-				// caso nÃ£o permanente e sem descarga
+				// caso não permanente e sem descarga
 				if ((perm == 0 && descarga == 0)
 						|| ((*vg1dSP).chaverede == 1 )) {
 					// caso uma das chaves "temp", "pressao", "vazaoMassicaGas" inexista
@@ -7592,7 +7592,7 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 			}
 
 			if (hidrato_json.Hammerschmidt().exists()) {
-				// carregar os parÃ¢metros da chave
+				// carregar os parâmetros da chave
 				MMH =
 						hidrato_json.Hammerschmidt().MMH();
 				MMG =
@@ -7615,7 +7615,7 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 			}
 
 			if (hidrato_json.PropFluHidrato().exists()) {
-				// carregar os parÃ¢metros da chave
+				// carregar os parâmetros da chave
 
 				coefEsteq =
 						hidrato_json.PropFluHidrato().coefEsteq();
@@ -7629,7 +7629,7 @@ void Ler::parse_hidrato(JSON_entrada_hidrato& hidrato_json) {
 
 
 			if (hidrato_json.ModeloTurner().exists()) {
-				// carregar os parÃ¢metros da chave
+				// carregar os parâmetros da chave
 
 				estruturaHidratos =
 						hidrato_json.ModeloTurner().estruturaHidratos();
@@ -7698,13 +7698,13 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 			// loop para parse das estruturas do ipr
 			int indAtivo = -1;
 			for (int i = 0; i < nipr; i++) {
-				// enquanto a propriedade "ativo" do ipr esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do ipr esteja desabilitada, avança
 				while (!is_ativo(ipr_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = ipr_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -7718,7 +7718,7 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 					IPRS[i].comp = 0.0;
 				double lverif = IPRS[i].comp;
 				IPRS[i].indcel = buscaIndiceMeioP(lverif);
-				// parse do vetor de pressÃµes estÃ¡ticas
+				// parse do vetor de pressões estáticas
 				IPRS[i].tipoIPR=1;
 				if (ipr_json[indAtivo].tipoIPR().exists())IPRS[i].tipoIPR=ipr_json[indAtivo].tipoIPR();
 				IPRS[i].seriep =
@@ -7740,7 +7740,7 @@ void Ler::parse_ipr(JSON_entrada_ipr& ipr_json) {
 							chaveJson,
 							"Chaves #/ipr/pressaoEstatica e #/ipr/tempoPressaoEstatica com tamanhos diferentes");
 				} else {
-					// loop para parse do vetor de pressÃµes estÃ¡ticas
+					// loop para parse do vetor de pressões estáticas
 					for (int j = 0; j < IPRS[i].seriep; j++) {
 						IPRS[i].pres[j] =
 								ipr_json[indAtivo].pressaoEstatica()[j];
@@ -8146,11 +8146,11 @@ void Ler::parse_fonte_gaslift(JSON_entrada_fonteGasLift& fonte_gaslift_json) {
 	int colEanul=1;
 
 	try {
-		// tamanho do vetor de fontes de gÃ¡s lift
+		// tamanho do vetor de fontes de gás lift
 		nvalvgas = 0;
-		// percorre o array de fontes de gÃ¡s lift
+		// percorre o array de fontes de gás lift
 		for (size_t i = 0; i < fonte_gaslift_json.size(); i++) {
-			// caso a fonte de gÃ¡s lift esteja ativo
+			// caso a fonte de gás lift esteja ativo
 			if (is_ativo(fonte_gaslift_json[i]))
 				nvalvgas++;
 		}
@@ -8161,7 +8161,7 @@ void Ler::parse_fonte_gaslift(JSON_entrada_fonteGasLift& fonte_gaslift_json) {
 
 			int indAtivo = -1;
 			for (int i = 0; i < nvalvgas; i++) {
-				// enquanto a propriedade "ativo" da fonte de gÃ¡s lift esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de gás lift esteja desabilitada, avança
 				while (!is_ativo(fonte_gaslift_json[++indAtivo]))
 					;
 
@@ -8357,9 +8357,9 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 	try {
 		// tamanho do vetor fonteGas
 		ninjgas = 0;
-		// percorre o array de fontes de gÃ¡s
+		// percorre o array de fontes de gás
 		for (size_t i = 0; i < fonte_gas_json.size(); i++) {
-			// caso a fonte de gÃ¡s esteja ativo
+			// caso a fonte de gás esteja ativo
 			if (is_ativo(fonte_gas_json[i]))
 				ninjgas++;
 		}
@@ -8378,13 +8378,13 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 			// loop para parse das estruturas do fonteGas
 			int indAtivo = -1;
 			for (int i = 0; i < ninjgas; i++) {
-				// enquanto a propriedade "ativo" da fonte de gÃ¡s esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de gás esteja desabilitada, avança
 				while (!is_ativo(fonte_gas_json[++indAtivo]))
 					;
 
 				// obter maior identificador
 				identificadores[i] = fonte_gas_json[indAtivo].id();
-				// caso o identificador seja maior que o Ãºltimo selecionado, substitui
+				// caso o identificador seja maior que o último selecionado, substitui
 				if (identificadores[i] > maiorIdentificador) {
 					maiorIdentificador = identificadores[i];
 				}
@@ -8398,7 +8398,7 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 					fonteg[i].comp = 0.0;
 				double lverif = fonteg[i].comp;
 				fonteg[i].posicP = buscaIndiceMeioP(lverif);
-				// parse do vetor de pressÃµes estÃ¡ticas
+				// parse do vetor de pressões estáticas
 				fonteg[i].parserie =
 						(int) fonte_gas_json[indAtivo].tempo().size();
 				fonteg[i].temp = new double[fonteg[i].parserie];
@@ -8486,7 +8486,7 @@ void Ler::parse_fonte_gas(JSON_entrada_fonteGas& fonte_gas_json) {
 /*!
  * Converter o elemento "valvula" do arquivo Json do MRT em struct .
  *
- * \tparam Objeto JSON correspondente Ã  fonte de liquido
+ * \tparam Objeto JSON correspondente à fonte de liquido
  */
 void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
@@ -8516,7 +8516,7 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 			// loop para parse das estruturas do valv
 			int indAtivo = -1;
 			for (int i = iIni; i < nvalv; i++) {
-				// enquanto a propriedade "ativo" da valvula esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da valvula esteja desabilitada, avança
 				while (!is_ativo(valvula_json[++indAtivo]))
 					;
 
@@ -8744,7 +8744,7 @@ void Ler::parse_valv(JSON_entrada_valvula& valvula_json) {
 /*!
  * Converter o elemento "fonteLiquido" do arquivo Json do MRT em struct .
  *
- * \tparam Objeto JSON correspondente Ã  fonte de liquido
+ * \tparam Objeto JSON correspondente à fonte de liquido
  */
 void Ler::parse_fonte_liquido(JSON_entrada_fonteLiquido& fonte_liquido_json) {
 	// criar variavel para o nome da propriedade json em processo de parse
@@ -8752,9 +8752,9 @@ void Ler::parse_fonte_liquido(JSON_entrada_fonteLiquido& fonte_liquido_json) {
 	try {
 		// tamanho do vetor fonte_liquido
 		ninjliq = 0;
-		// percorre o array de fontes de lÃ­quido
+		// percorre o array de fontes de líquido
 		for (size_t i = 0; i < fonte_liquido_json.size(); i++) {
-			// caso a fonte de lÃ­quido esteja ativo
+			// caso a fonte de líquido esteja ativo
 			if (is_ativo(fonte_liquido_json[i]))
 				ninjliq++;
 		}
@@ -8795,7 +8795,7 @@ void Ler::parse_fonte_liquido(JSON_entrada_fonteLiquido& fonte_liquido_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < ninjliq; i++) {
-				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
 				while (!is_ativo(fonte_liquido_json[++indAtivo]))
 					;
 
@@ -8888,9 +8888,9 @@ void Ler::parse_fonte_massa(JSON_entrada_fonteMassa& fonte_massa_json) {
 
 	    if(ConContEntrada!=2)ninjmass = 0;
 	    else ninjmass = 1;
-		// percorre o array de fontes de lÃ­quido
+		// percorre o array de fontes de líquido
 		for (size_t i = 0; i < fonte_massa_json.size(); i++) {
-			// caso a fonte de lÃ­quido esteja ativo
+			// caso a fonte de líquido esteja ativo
 			if (is_ativo(fonte_massa_json[i]))
 				ninjmass++;
 		}
@@ -8940,7 +8940,7 @@ void Ler::parse_fonte_massa(JSON_entrada_fonteMassa& fonte_massa_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < ninjmass; i++) {
-				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
 				while (!is_ativo(fonte_massa_json[++indAtivo]))
 					;
 
@@ -9043,9 +9043,9 @@ void Ler::parse_fonte_PoroRadial(JSON_entrada_fontePoroRadial& fonte_poroRadial_
 	try {
 		// tamanho do vetor fonte_liquido
 		nPoroRad = 0;
-		// percorre o array de fontes de lÃ­quido
+		// percorre o array de fontes de líquido
 		for (size_t i = 0; i < fonte_poroRadial_json.size(); i++) {
-			// caso a fonte de lÃ­quido esteja ativo
+			// caso a fonte de líquido esteja ativo
 			if (is_ativo(fonte_poroRadial_json[i]))
 				nPoroRad++;
 		}
@@ -9066,7 +9066,7 @@ void Ler::parse_fonte_PoroRadial(JSON_entrada_fontePoroRadial& fonte_poroRadial_
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nPoroRad; i++) {
-				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
 				while (!is_ativo(fonte_poroRadial_json[++indAtivo]))
 					;
 
@@ -9116,9 +9116,9 @@ void Ler::parse_fonte_Poro2D(JSON_entrada_fontePoro2D& fonte_poro2D_json) {
 	try {
 		// tamanho do vetor fonte_liquido
 		nPoro2D = 0;
-		// percorre o array de fontes de lÃ­quido
+		// percorre o array de fontes de líquido
 		for (size_t i = 0; i < fonte_poro2D_json.size(); i++) {
-			// caso a fonte de lÃ­quido esteja ativo
+			// caso a fonte de líquido esteja ativo
 			if (is_ativo(fonte_poro2D_json[i]))
 				nPoro2D++;
 		}
@@ -9139,7 +9139,7 @@ void Ler::parse_fonte_Poro2D(JSON_entrada_fontePoro2D& fonte_poro2D_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nPoro2D; i++) {
-				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
 				while (!is_ativo(fonte_poro2D_json[++indAtivo]))
 					;
 
@@ -9196,9 +9196,9 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 	try {
 		// tamanho do vetor fonte_liquido
 		nfuro = 0;
-		// percorre o array de fontes de lÃ­quido
+		// percorre o array de fontes de líquido
 		for (size_t i = 0; i < fontePressao_json.size(); i++) {
-		 // caso a fonte de lÃ­quido esteja ativo
+		 // caso a fonte de líquido esteja ativo
 			nfuro++;
 		}
 
@@ -9219,7 +9219,7 @@ void Ler::parse_furo(JSON_entrada_fontePressao &fontePressao_json) {
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nfuro; i++) {
-				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
 				while (!is_ativo(fontePressao_json[++indAtivo]))
 				;
 				indAtivo = i;//??????????????????????????ESTA CERTO???????????????????????????????????????????
@@ -9400,7 +9400,7 @@ void Ler::parse_bcs(JSON_entrada_bcs& bcs_json) {
 			// loop para parse das estruturas do bcs
 			int indAtivo = -1;
 			for (int i = 0; i < nbcs; i++) {
-				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avança
 				while (!is_ativo(bcs_json[++indAtivo]))
 					;
 
@@ -9537,7 +9537,7 @@ void Ler::parse_multibcs(JSON_entrada_multibcs& multibcs_json) {
 			// loop para parse das estruturas do bcs
 			int indAtivo = -1;
 			for (int i = 0; i < nmultibcs; i++) {
-				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do bcs esteja desabilitada, avança
 				while (!is_ativo(multibcs_json[++indAtivo]))
 					;
 
@@ -9707,11 +9707,11 @@ void Ler::parse_bomba_volumetrica(
 	// criar variavel para o maior identificador encontrado
 	int maiorIdentificador = -99999;
 	try {
-		// tamanho do array de bombas volumÃ©tricas
+		// tamanho do array de bombas volumétricas
 		nbvol = 0;
-		// percorre o array de bombas volumÃ©tricas
+		// percorre o array de bombas volumétricas
 		for (size_t i = 0; i < bomba_volumetrica_json.size(); i++) {
-			// caso a bomba volumÃ©trica esteja ativo
+			// caso a bomba volumétrica esteja ativo
 			if (is_ativo(bomba_volumetrica_json[i]))
 				nbvol++;
 		}
@@ -9719,10 +9719,10 @@ void Ler::parse_bomba_volumetrica(
 			bvol = new detBVOL[nbvol];
 			// criar vetor de inteiros para armazenar os ids
 			identificadores.resize(nbvol);
-			// loop para parse das estruturas de bombas volumÃ©tricas
+			// loop para parse das estruturas de bombas volumétricas
 			int indAtivo = -1;
 			for (int i = 0; i < nbvol; i++) {
-				// enquanto a propriedade "ativo" da bomba volumÃ©trica esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da bomba volumétrica esteja desabilitada, avança
 				while (!is_ativo(bomba_volumetrica_json[++indAtivo]))
 					;
 
@@ -9803,11 +9803,11 @@ void Ler::parse_delta_pressao(JSON_entrada_deltaPressao& delta_pressao_json) {
 	// criar variavel para o maior identificador encontrado
 	int maiorIdentificador = -99999;
 	try {
-		// tamanho do array de deltas de pressÃ£o
+		// tamanho do array de deltas de pressão
 		ndpreq = 0;
-		// percorre o array de deltas de pressÃ£o
+		// percorre o array de deltas de pressão
 		for (size_t i = 0; i < delta_pressao_json.size(); i++) {
-			// caso o delta de pressÃ£o esteja ativo
+			// caso o delta de pressão esteja ativo
 			if (is_ativo(delta_pressao_json[i]))
 				ndpreq++;
 		}
@@ -9815,10 +9815,10 @@ void Ler::parse_delta_pressao(JSON_entrada_deltaPressao& delta_pressao_json) {
 			dpreq = new detDPREQ[ndpreq];
 			// criar vetor de inteiros para armazenar os ids
 			identificadores.resize(ndpreq);
-			// loop para parse das estruturas de deltas de pressÃ£o
+			// loop para parse das estruturas de deltas de pressão
 			int indAtivo = -1;
 			for (int i = 0; i < ndpreq; i++) {
-				// enquanto a propriedade "ativo" do delta de pressÃ£o esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do delta de pressão esteja desabilitada, avança
 				while (!is_ativo(delta_pressao_json[++indAtivo]))
 					;
 
@@ -9906,11 +9906,11 @@ void Ler::parse_fonteCalor(JSON_entrada_fonteCalor& fonteCalor_json) {
 	// criar variavel para o maior identificador encontrado
 	int maiorIdentificador = -99999;
 	try {
-		// tamanho do array de deltas de pressÃ£o
+		// tamanho do array de deltas de pressão
 		ncalor = 0;
-		// percorre o array de deltas de pressÃ£o
+		// percorre o array de deltas de pressão
 		for (size_t i = 0; i < fonteCalor_json.size(); i++) {
-			// caso o delta de pressÃ£o esteja ativo
+			// caso o delta de pressão esteja ativo
 			if (is_ativo(fonteCalor_json[i]))
 				ncalor++;
 		}
@@ -9918,10 +9918,10 @@ void Ler::parse_fonteCalor(JSON_entrada_fonteCalor& fonteCalor_json) {
 			fonteCal = new detCalor[ncalor];
 			// criar vetor de inteiros para armazenar os ids
 			identificadores.resize(ncalor);
-			// loop para parse das estruturas de deltas de pressÃ£o
+			// loop para parse das estruturas de deltas de pressão
 			int indAtivo = -1;
 			for (int i = 0; i < ncalor; i++) {
-				// enquanto a propriedade "ativo" do delta de pressÃ£o esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do delta de pressão esteja desabilitada, avança
 				while (!is_ativo(fonteCalor_json[++indAtivo]));
 
 				// obter maior identificador
@@ -10627,7 +10627,7 @@ void Ler::parse_pig(JSON_entrada_pig& pig_json) {
 			// loop para parse das estruturas de pigs
 			int indAtivo = -1;
 			for (int i = 0; i < npig; i++) {
-				// enquanto a propriedade "ativo" do pig esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do pig esteja desabilitada, avança
 				while (!is_ativo(pig_json[++indAtivo]))
 					;
 
@@ -10694,9 +10694,9 @@ void Ler::parse_intermitencia(JSON_entrada_intermitenciaSevera& intermitencia_js
 	try {
 		// tamanho do vetor fonte_liquido
 		nintermi = 0;
-		// percorre o array de fontes de lÃ­quido
+		// percorre o array de fontes de líquido
 		for (size_t i = 0; i < intermitencia_json.size(); i++) {
-			// caso a fonte de lÃ­quido esteja ativo
+			// caso a fonte de líquido esteja ativo
 			if (is_ativo(intermitencia_json[i]))
 				nintermi++;
 		}
@@ -10717,7 +10717,7 @@ void Ler::parse_intermitencia(JSON_entrada_intermitenciaSevera& intermitencia_js
 			// loop para parse das estruturas do fontel
 			int indAtivo = -1;
 			for (int i = iIni; i < nintermi; i++) {
-				// enquanto a propriedade "ativo" da fonte de lÃ­quido esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da fonte de líquido esteja desabilitada, avança
 				while (!is_ativo(intermitencia_json[++indAtivo]))
 					;
 
@@ -10809,7 +10809,7 @@ void Ler::parse_celulaUnitaria(JSON_entrada_detalheCelulaUnitaria& celulaUnitari
 			// loop para parse das estruturas do celUnit
 			int indAtivo = -1;
 			for (int i = 0; i < nCelUnit; i++) {
-				// enquanto a propriedade "ativo" do celUnit esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" do celUnit esteja desabilitada, avança
 				while (!is_ativo(celulaUnitaria_json[++indAtivo]))
 					;
 
@@ -11788,7 +11788,7 @@ void Ler::parse_tendencia_producao(
 			// loop para parse das estruturas de tendencias de producao
 			int indAtivo = -1;
 			for (int i = 0; i < ntendp; i++) {
-				// enquanto a propriedade "ativo" da tendencia de producao esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da tendencia de producao esteja desabilitada, avança
 				while (!is_ativo(tendencia_producao_json[++indAtivo]))
 					;
 
@@ -12400,7 +12400,7 @@ void Ler::parse_tendencia_servico(
 			// loop para parse das estruturas de tendencias de servico
 			int indAtivo = -1;
 			for (int i = 0; i < ntendg; i++) {
-				// enquanto a propriedade "ativo" da tendencia de servico esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da tendencia de servico esteja desabilitada, avança
 				while (!is_ativo(tendencia_servico_json[++indAtivo]))
 					;
 
@@ -12854,7 +12854,7 @@ void Ler::parse_tendencia_trans_producao(
 			// loop para parse das estruturas de tendencias trans producao
 			int indAtivo = -1;
 			for (int i = 0; i < ntendtransp; i++) {
-				// enquanto a propriedade "ativo" da tendencia trans producao esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da tendencia trans producao esteja desabilitada, avança
 				while (!is_ativo(tendencia_trans_producao_json[++indAtivo]))
 					;
 				double lComp =
@@ -12935,7 +12935,7 @@ void Ler::parse_tendencia_trans_servico(
 			// loop para parse das estruturas de tendencias trans servico
 			int indAtivo = -1;
 			for (int i = 0; i < ntendtransg; i++) {
-				// enquanto a propriedade "ativo" da tendencia trans servico esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da tendencia trans servico esteja desabilitada, avança
 				while (!is_ativo(tendencia_trans_servico_json[++indAtivo]))
 					;
 				double lComp =
@@ -13012,7 +13012,7 @@ void Ler::parse_tela(JSON_entrada_tela& tela_json) {
 			// loop para parse das estruturas de tela
 			int indAtivo = -1;
 			for (int i = 0; i < ntela; i++) {
-				// enquanto a propriedade "ativo" da tela esteja desabilitada, avanÃ§a
+				// enquanto a propriedade "ativo" da tela esteja desabilitada, avança
 				while (!is_ativo(tela_json[++indAtivo]))
 					;
 
@@ -13443,7 +13443,7 @@ void Ler::lerArq() {
 		}
 
 
-		// caso o atributo "tabG" do elemento "configuracaoInicial" seja true e exista elemento "fonteGas" nÃ£o vazio
+		// caso o atributo "tabG" do elemento "configuracaoInicial" seja true e exista elemento "fonteGas" não vazio
 
 		// caso simulacao de poco de injecao e tipo de fluido CO2
 		if (pocinjec == 1 && condpocinj.tipoFlui == 2 && flashCompleto!=1) {
@@ -13654,7 +13654,7 @@ void Ler::lerArq() {
 			if(conINIAmbS==0)parse_unidades_servico(jsonDoc.dutosServico());
 			else if(conINIAmbS==1)parse_unidades_servicoAmb(jsonDoc.dutosServico());
 
-			// gerar as cÃ©lulas da linha de servico
+			// gerar as células da linha de servico
 			celg = new detcelg[ncelg];
 			int tempncel = 0;
 			int para = 0;
@@ -14577,7 +14577,7 @@ int Ler::retornaNTab(){
 		if(lendoPVTSimPre.eof( )){
 			logger.log_write_logs_and_exit(LOGGER_FALHA,
 			LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-					"Arquivo PVTSIM com problemas", "busca de nÃºmero de pontos na tabela flash",
+					"Arquivo PVTSIM com problemas", "busca de número de pontos na tabela flash",
 					"pvtsimArq");
 			break;
 		}
@@ -14585,7 +14585,7 @@ int Ler::retornaNTab(){
 
 
 
-	// LÃª novamente linha com quebra e monta linha unificada
+	// Lê novamente linha com quebra e monta linha unificada
 	std::string linha_completa = ler_linha_continua(lendoPVTSimPre);
 	strcpy(line, linha_completa.c_str());
 
@@ -14600,7 +14600,7 @@ int Ler::retornaNTab(){
 		if(lendoPVTSimPre.eof( )){
 			logger.log_write_logs_and_exit(LOGGER_FALHA,
 			LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-					"Arquivo PVTSIM com problemas",  "busca de nÃºmero de pontos na tabela flash",
+					"Arquivo PVTSIM com problemas",  "busca de número de pontos na tabela flash",
 					"pvtsimArq");
 		}
 
@@ -14609,14 +14609,14 @@ int Ler::retornaNTab(){
 			if(lendoPVTSimPre.eof( )){
 				logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						"Arquivo PVTSIM com problemas",  "busca de nÃºmero de pontos na tabela flash",
+						"Arquivo PVTSIM com problemas",  "busca de número de pontos na tabela flash",
 						"pvtsimArq");
 			}
 			tenta = strtok(NULL, " ,)/");
 			if(lendoPVTSimPre.eof( )){
 				logger.log_write_logs_and_exit(LOGGER_FALHA,
 				LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-						"Arquivo PVTSIM com problemas",  "busca de nÃºmero de pontos na tabela flash",
+						"Arquivo PVTSIM com problemas",  "busca de número de pontos na tabela flash",
 						"pvtsimArq");
 			}
 		}
@@ -15500,7 +15500,7 @@ int Ler::buscaIndiceUnidade(int iniSeg, int nuni,
 			// gerar o arquivo de saida da simulacao
 			logger.writeOutputLog();
 			// encerrar a aplicacao
-			exit(EXIT_SUCCESS);
+			exit(logger.codigoSaida());
 		}
 	}
 	return iniSeg;
@@ -15525,7 +15525,7 @@ int Ler::buscaIndiceUnidadeG(int iniSeg, int nuni,
 			// gerar o arquivo de saida da simulacao
 			logger.writeOutputLog();
 			// encerrar a aplicacao
-			exit(EXIT_SUCCESS);
+			exit(logger.codigoSaida());
 		}
 	}
 	return iniSeg;
@@ -15716,10 +15716,10 @@ void Ler::geraevento(int inic, int extrem) {
 							e.duracao = IPRS[i].tqMax[j + 1] - IPRS[i].tqMax[j];
 							if (IPRS[i].qMax[j] > IPRS[i].qMax[j + 1])
 								e.descricao =
-										"Diminuindo vazÃ£o mÃ¡xima de IPR";
+										"Diminuindo vazão máxima de IPR";
 							else
 								e.descricao =
-										"Aumentando vazÃ£o mÃ¡xima de IPR";
+										"Aumentando vazão máxima de IPR";
 							e.estIni = IPRS[i].qMax[j];
 							e.estFim = IPRS[i].qMax[j + 1];
 							logevento.push_back(e);
@@ -18371,13 +18371,13 @@ double Ler::interpolaTempEnvelope(double pres){
 
 	if(pres<=envelopeHidra[0][0]){
  		logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
- 			      		    		"Valor da pressao abaixo do limite inferior do envelope de hidratos cadastrado, valor assumido serÃ¡ a menor pressao",
+ 			      		    		"Valor da pressao abaixo do limite inferior do envelope de hidratos cadastrado, valor assumido será a menor pressao",
  			      		          "", "");
  		return envelopeHidra[0][1];
 	}
 	else if(pres>=envelopeHidra[nparEnvelope-1][0]){
  		logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
- 			      		    		"Valor da pressao acima do limite inferior do envelope de hidratos cadastrado, valor assumido serÃ¡ a maior pressao",
+ 			      		    		"Valor da pressao acima do limite inferior do envelope de hidratos cadastrado, valor assumido será a maior pressao",
  			      		          "", "");
  		return envelopeHidra[nparEnvelope-1][1];
 	}
@@ -19324,8 +19324,8 @@ void Ler::resumoPermanente(Cel* const celula, CelG* const celulaG, double pGsup,
 	escreveIni << t(" P_JUS_CKP (kgf/cm2);", " P_DOWN_CKP (kgf/cm2);");
 	if(lingas==1){
 		escreveIni << t(" Vazao volumetrica standard de gas injetado (Sm3/(d));", " Standard injected gas flow rate (Sm3/(d));");
-		escreveIni << t(" Pressao de injeÃ§Ã£o a montante do choke (kgf/cm2);", " Upstream injection pressure at choke (kgf/cm2);");
-		escreveIni << t(" Pressao de injeÃ§Ã£o a jusante do choke (kgf/cm2);", " Downstream injection pressure at choke (kgf/cm2);");
+		escreveIni << t(" Pressao de injeção a montante do choke (kgf/cm2);", " Upstream injection pressure at choke (kgf/cm2);");
+		escreveIni << t(" Pressao de injeção a jusante do choke (kgf/cm2);", " Downstream injection pressure at choke (kgf/cm2);");
 	}
 	if(nbcs>0){
 		for(int ibcs=0;ibcs<nbcs;ibcs++){
@@ -19513,7 +19513,7 @@ void Ler::resumoIntermitencia(Cel* const celula, int indTramo, int nrede){
 	string tmp = saidaR.str();
 	ofstream escreveIni(tmp.c_str(), ios_base::out);
 
-	escreveIni << t(" Ã�ndice do Teste ", " Index Test ") << " ;";
+	escreveIni << t(" Índice do Teste ", " Index Test ") << " ;";
 	escreveIni << t(" Criterio do teste de Intermitencia Severa ", " Severe Intermittency test criterion ") << " ;";
 	escreveIni << t(" Qualidade do Arranjo estratificado para Trecho de Acumulacao ", " Stratified pattern quality for accumulation section ") <<  t(", (-);", ", (-);");
 	escreveIni << t(" Fator de compressibilidade medio zona de acumulo ", " Average compressibility factor in accumulation zone ") << t(", (-);", ", (-);");
@@ -19596,22 +19596,22 @@ void Ler::relatorioCelulaUnitaria(Cel *const celula, int posic, int indTramo, in
 	string tmp = saidaR.str();
 	ofstream escreveIni(tmp.c_str(), ios_base::out);
 	escreveIni << "us (m/s) Velocidade da mistura ; ";
-	escreveIni << "C  (-)   ParÃ¢metro de distribuiÃ§Ã£o ; ";
+	escreveIni << "C  (-)   Parâmetro de distribuição ; ";
 	escreveIni << "ud (m/s) Velocidade de drift ; ";
 	escreveIni << "ut (m/s) Velocidade translacional ; ";
 	escreveIni << "HG (-)   Holdup na golfada ; ";
-	escreveIni << "alpha_s (-) FraÃ§Ã£o de vazio na golfada ; ";
+	escreveIni << "alpha_s (-) Fração de vazio na golfada ; ";
 	escreveIni << "ub (m/s) Velocidade bolhas dispersas ; ";
-	escreveIni << "uL (m/s) Velocidade do lÃ­quido na golfada ; ";
+	escreveIni << "uL (m/s) Velocidade do líquido na golfada ; ";
 	escreveIni << "ls (m) Comprimento da golfada ; ";
 	escreveIni << "lf (m) Comprimento do filme ; ";
 	escreveIni << "lu (m) Comprimento do slug unit ; ";
-	escreveIni << "freq (Hz) FrequÃªncia da golfada ; ";
-	escreveIni << "hfe  (m)  NÃ­vel/espessura no final do filme ; ";
+	escreveIni << "freq (Hz) Frequência da golfada ; ";
+	escreveIni << "hfe  (m)  Nível/espessura no final do filme ; ";
 	escreveIni << "Rfe  (-)  Holdup no final do filme ; ";
 	escreveIni << "ufe  (m/s) Velocidade do filme final ; ";
-	escreveIni << "hE   (m)   NÃ­vel de equilÃ­brio ; ";
-	escreveIni << "alpha_u (-) FraÃ§Ã£o de vazio mÃ©dia do slug unit ; ";
+	escreveIni << "hE   (m)   Nível de equilíbrio ; ";
+	escreveIni << "alpha_u (-) Fração de vazio média do slug unit ; ";
 	escreveIni << "flowGeometry (-) Vertical annular ou stratified ; ";
 	escreveIni << "Indicador de Arranjo (-) ; ";
 	escreveIni << "Convergencia ; ";
@@ -19628,8 +19628,8 @@ void Ler::relatorioCelulaUnitaria(Cel *const celula, int posic, int indTramo, in
 	escreveIni << "////////////////////////////////////////////////////////////////////////////////";
 	escreveIni << "                                    Perfil Filme                               "<<"\n";
 
-	escreveIni<<"indice da posicao ; "<<"z (m) PosiÃ§Ã£o axial desde o tail da golfada ; "<<"hf (m) Nivel (estratif.) ou espessura Î´ (anular) ; "<<
-		"Holf (-) Holdup do filme ; "<<	"uf (m/s) Velocidade do lÃ­quido no filme ; "<<"uG (m/s) Velocidade do gÃ¡s"<<"\n";
+	escreveIni<<"indice da posicao ; "<<"z (m) Posição axial desde o tail da golfada ; "<<"hf (m) Nivel (estratif.) ou espessura Î´ (anular) ; "<<
+		"Holf (-) Holdup do filme ; "<<	"uf (m/s) Velocidade do líquido no filme ; "<<"uG (m/s) Velocidade do gás"<<"\n";
 	int nPerf=celUnitResults.profile.z.size();
 	for(int iPerf=0;iPerf<nPerf;iPerf++){
 		escreveIni<<iPerf<<" ; "<<celUnitResults.profile.z[iPerf]<<" ; "<<celUnitResults.profile.hf[iPerf]<<" ; "<<
@@ -20884,7 +20884,7 @@ void Ler::copia_corte(Ler& arqAntigo) {
 
 		// caso o tamanho do elemento seja maior que zero
 		if (ncorte > 0) {
-			// vetor de seÃ§Ãµes transversais
+			// vetor de seções transversais
 			corte = new corteduto[ncorte];
 			for(int i=0; i< ncorte; i++){
 				corte[i].id = arqAntigo.corte[i].id;

@@ -12,6 +12,8 @@
 #define LOG_ERR_PARSE_SCHEMA_VALIDATION "1002"
 #define LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION "1003"
 #define LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION "1004"
+#define LOG_ERR_NUMERICAL_FAILURE "1005"
+#define LOG_WARN_STEADY_STATE_NOT_CONVERGED "1006"
 #define LOG_INFO_PARSE_PROCESS_FINISHED "1100"
 #define LOG_INFO_PARSE_PROCESS_GENERIC "1101"
 #define LOG_INFO_SIMULATION_FINISHED "1200"
@@ -52,6 +54,16 @@ typedef enum {
     LOGGER_FALHA
 } log_t;
 
+// Etapa da simulacao; tambem e o codigo de saida do executavel quando ha FALHA nela.
+// ETAPA_HERDADA so e usada em regioes paralelas, para voltar a etapa global.
+typedef enum {
+    ETAPA_HERDADA = 0,
+    ETAPA_PRE = 1,
+    ETAPA_PERMANENTE = 2,
+    ETAPA_TRANSIENTE = 3,
+    ETAPA_POS = 4
+} etapa_t;
+
 typedef struct {
     string nomeArqEntrada;
     string nomeArqLog;
@@ -68,6 +80,11 @@ typedef struct {
         vector<string> propriedades;
         vector<string> causas;
         vector<int> linhas;
+        vector<etapa_t> etapas;
+        vector<double> tempos; // instante simulado (s) no transiente; negativo fora dele
+        vector<int> sequencias; // sequencia da analise parametrica; negativo fora dela
+        vector<string> tramos; // arquivo do tramo da rede em solucao; vazio fora de rede
+        vector<int> redesInternas; // negativo se a rede nao foi dividida
     } evento;
 } stResultadoSimulacao_t;
 
@@ -99,6 +116,21 @@ class Logger {
                                  const string propriedade, const string causa, const int linha);
     void setVersao(const std::string &) { vers = versao; }
 
+    // Contexto de execucao gravado em cada evento. Chamadas dentro de uma regiao OpenMP ativa
+    // valem so para a thread corrente (redes internas resolvidas em paralelo).
+    void setEtapa(etapa_t etapa);
+    void setRelogio(const double *tempoSimulado); // nullptr desliga o registro do instante
+    void setTempoFinal(double tempo) { tempoFinal = tempo; }
+    void setSequenciaAP(int sequencia); // -1 fora da analise parametrica
+    int sequenciaAtual() const;
+    void setTramo(const string &arquivoTramo, int redeInterna); // "" e -1 limpam
+    string tramoAtual() const;
+    int redeInternaAtual() const;
+    etapa_t etapaAtual() const;
+    double tempoAtual() const; // negativo se nao houver relogio ativo
+    // 0 sem FALHA; senao a etapa da primeira FALHA (1 pre, 2 permanente, 3 transiente, 4 pos)
+    int codigoSaida() const;
+
     const stResultadoSimulacao_t &getStResultadoSimulacao() const {
         return this->stResultadoSimulacao;
     }
@@ -107,6 +139,14 @@ class Logger {
     }
 
     stResultadoSimulacao_t stResultadoSimulacao;
+
+  private:
+    etapa_t etapa = ETAPA_PRE;
+    const double *relogio = nullptr;
+    double tempoFinal = -1.;
+    int sequenciaAP = -1;
+    string tramo;
+    int redeInterna = -1;
 };
 
 #endif /* LOG_H_ */
