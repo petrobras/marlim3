@@ -14,7 +14,7 @@
 #include "PropFluCol.h"
 #include "Vetor.h"
 #include "estruturasPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <fstream>
 #include <math.h>
@@ -191,9 +191,9 @@ class celradSimp {
     double rhoRef;
     double pBolha;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
-    celradSimp(varGlob1D *Vvg1dSP = 0, int vncel = 0, int vicel = 0, double vr0 = 0., double vr1 = 0., double vrm = 0., double vKXL = 0., double vKXR = 0.,
+    celradSimp(SimulationContext *context = 0, int vncel = 0, int vicel = 0, double vr0 = 0., double vr1 = 0., double vrm = 0., double vKXL = 0., double vKXR = 0.,
                double vKYL = 0., double vKYR = 0., double vporo = 0., double vcompresPoro = 0., double vPcamada = 0, double vPint = 0.,
                double vpresRes2 = 0., double vpresRes = 0., double vQL = 0., double vQR = 0, double vtRes = 0, double vdt = 0,
                double vzD0 = 0, double vzD = 0,

@@ -28,7 +28,7 @@
 #include "rapidjson/schema.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <ctime>
 #include <fstream>
@@ -188,7 +188,7 @@ class dadosPoro {
     double rhoRef;     // Reference density.
     double pBolha;     // Bubble-point pressure.
     double BSW;        // Basic sediment and water fraction.
-    varGlob1D *vg1dSP; // Pointer to shared one-dimensional global variables.
+    SimulationContext *simulationContext; // Pointer to shared one-dimensional global variables.
     int nthrdLocal;    // Number of threads used by the local computation.
 
     int rankLU;    // Rank or configuration value used by the LU solver.
@@ -199,7 +199,7 @@ class dadosPoro {
      * Construct the porous-medium data from the shared global variables and
      * the specified input file.
      */
-    dadosPoro(varGlob1D *Vvg1dSP, string nomeArquivoEntrada);
+    dadosPoro(SimulationContext *context, string nomeArquivoEntrada);
 
     //! Construct an empty porous-medium data object.
     dadosPoro();

@@ -312,7 +312,7 @@ void dadosPAxiSim::parse_corte(Value& corte_json) {
 						"Sem zona de formacao", "zonas de troca termica",
 						"Detalhamento Axissimetrico");
 			}
-			if(fabs(fabs(zonaProf[nzonas])-fabs(profFim))<1e-10)
+			if(fabs(fabs(zonaProf[nzonas - 1])-fabs(profFim))>1e-10)
 				logger.log(LOGGER_FALHA,
 					LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
 							"Profundidade final da zona de troca termica diferente da profundiade do poco",
@@ -326,9 +326,7 @@ void dadosPAxiSim::lerPoisson(string nomeArquivoEntrada, double* vresGlob,
 		double* vTint, double* vdiamI, double* dxCel,
 		int vncel, double* vgeoterm) {
 
-	ostringstream arquivotemp;
-	arquivotemp<<pathArqEntrada<<nomeArquivoEntrada;
-	entrada = arquivotemp.str();
+    entrada = nomeArquivoEntrada;
     FILE *fp = fopen(entrada.c_str(), "r");
 
 	if (!fp) {
@@ -426,7 +424,8 @@ void dadosPAxiSim::lerPoisson(string nomeArquivoEntrada, double* vresGlob,
     	    	ncoor++;
     		}
     	}
-    	prof-=dxCel[iprof];
+        if (iprof < vncel)
+            prof-=dxCel[iprof];
     }
     nVert=4;
     nele=ndR*vncel;

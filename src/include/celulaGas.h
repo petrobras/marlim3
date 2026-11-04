@@ -8,6 +8,7 @@
 #include "TrocaCalor.h"
 #include "Vetor.h"
 #include "chokegas.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -152,12 +153,14 @@ class CelG {
     double fric(double re /* Reynolds number. */,
                 double eps /* Relative roughness. */); // Calculate the friction factor.
     double MasEspFlu(double pres, double temp) const; // Calculate the completion-fluid density.
+    // The completion-fluid density at the correlation's own standard conditions, 1 kgf/cm2 and 20 C
+    double completionFluidStandardDensity() const { return MasEspFlu(1., 20.); }
     double VisFlu(double pres, double temp) const;    // Calculate the completion-fluid viscosity.
     double CalorLiq(double pres, double temp) const;  // Calculate the completion-fluid specific heat.
     double CondLiq(double pres, double temp) const;   // Calculate the completion-fluid thermal conductivity.
     double DrhoDtFlu(double pres, double temp) const; // Calculate the completion-fluid density derivative
                                                      // with respect to temperature in the service line.
-    double psia(const double p) const { return (p * 0.9678411) * 14.69595; }        // Convert pressure from kgf/cm2 to psia.
+    double psia(const double p) const { return p * units::kPsiPerKgfPerCm2; }        // Convert pressure from kgf/cm2 to psia.
     double Faren(const double t) const { return 1.8 * t + 32; }                     // Convert temperature from degrees Celsius to degrees Fahrenheit.
     void GeraLocal(int ncelGas, double presiniG, double tempiniG, double abertura); // Assemble the local matrix for the
                                                                                    // i-th service-line control volume.

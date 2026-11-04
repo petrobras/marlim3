@@ -26,7 +26,7 @@
 #include "rapidjson/schema.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <chrono>
 #include <ctime>
@@ -85,7 +85,7 @@ class solv2D {
     detInterFace interface;
     int unv;
     int nthrdLocal;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
     int solverMat;
     int rankLU;
     int colore;
@@ -106,7 +106,7 @@ class solv2D {
         matVF = 0;
         malhaH = 0;
         unv = 0;
-        vg1dSP = 0;
+        simulationContext = 0;
         nthrdLocal = 1;
         rankLU = -1;
         colore = 0;
@@ -120,7 +120,7 @@ class solv2D {
         acopD=0;
         velPreParada=0.;
     };
-    solv2D(string vnomeArquivoEntrada, string vnomeArquivoLog, varGlob1D *Vvg1dSP = 0) {
+    solv2D(string vnomeArquivoEntrada, string vnomeArquivoLog, SimulationContext *context = 0) {
         nomeArquivoEntrada = vnomeArquivoEntrada;
         nomeArquivoLog = vnomeArquivoLog;
         flucVF = ProFluColVF();
@@ -129,7 +129,7 @@ class solv2D {
         matVF = 0;
         malhaH = 0;
         unv = 0;
-        vg1dSP = Vvg1dSP;
+        simulationContext = context;
         nthrdLocal = 1;
         rankLU = -1;
         colore = 0;
@@ -144,14 +144,14 @@ class solv2D {
         velPreParada=0.;
     };
     ~solv2D() {
-        if ((*vg1dSP).acop == 1) {
+        if ((*simulationContext).thermalCouplingEnabled == 1) {
             delete[] matVF;
             delete[] corteVF.diam;
             delete[] corteVF.indmat;
             delete[] corteVF.discre;
         }
-        if ((*vg1dSP).nxMH > 0) {
-            for (int i = 0; i < (*vg1dSP).nxMH; i++)
+        if ((*simulationContext).regularGridCellCountX > 0) {
+            for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++)
                 delete[] malhaH[i];
             delete[] malhaH;
         }

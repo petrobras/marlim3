@@ -7,14 +7,14 @@
 #include "Malha2DPoissonAxiSim.h"
 
 
-malha2dAxiSim::malha2dAxiSim(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,
+malha2dAxiSim::malha2dAxiSim(SimulationContext* context,double** xcoor, int** noEle,int* tipo,
 		double* atributo,int nVert, int neleV, int nno, int vperm, int vtrans, int vacopD):
 	vecSolv(neleV){
 	nele=neleV;
 	acopDir=vacopD;
 	if(nele>0){
 	    for(int i=0; i<neleV;i++){
-	    	elem2dPoissonAxiSim temp(Vvg1dSP,xcoor, noEle, tipo, atributo, nVert, nele,
+	    	elem2dPoissonAxiSim temp(context,xcoor, noEle, tipo, atributo, nVert, nele,
 	    			nno,vperm, vtrans, i,acopDir);
 	    	mlh2d.push_back(temp);
 	    }
@@ -115,6 +115,7 @@ malha2dAxiSim& malha2dAxiSim::operator =(const malha2dAxiSim& vmalha) {
 	if (this != &vmalha) {
 		mlh2d.clear();
 		nele=vmalha.nele;
+		acopDir=vmalha.acopDir;
 		if(nele>0){
 			vecSolv=vmalha.vecSolv;
 		    for(int i=0; i<nele;i++){

@@ -6,6 +6,7 @@
  */
 
 #include "multiBCS.h"
+#include "UnitConversions.h"
 
 multiBomCentSub::multiBomCentSub(int vnBCS ,BomCentSub* BCStemp ,int* nestagParcFabtemp ,
 		int* nestagParctemp, double Vfreq, double VeficM,
@@ -164,7 +165,7 @@ multiBomCentSub& multiBomCentSub::operator =(const multiBomCentSub& bombaantiga)
 
 
 void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, double temp, double alfa, double beta){
-	double xvaz = (86400 / 0.1589876)*(vazG+vazL);
+	double xvaz = (86400 / units::kCubicMetrePerBarrel)*(vazG+vazL);
 	double cpl;
 	double rhol;
 	double cpg;
@@ -215,12 +216,12 @@ void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, doub
     double fwRef = fluiL.BSW*baRef / (boRef + baRef*fluiL.BSW - fluiL.BSW * boRef);
 
     if(equilTerm==0 && flui.flashCompleto!=1 && flui.flashCompleto!=2){
-    	double rgoNovo=flui.RS(pres, temp)*6.29/35.31467;
+    	double rgoNovo=flui.RS(pres, temp)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
     	flui.rzDegL(pres, temp);
     	flui.razDegD(pres, temp);
     	double razDengL=flui.rDgL;
     	double razDengD=flui.rDgD;
-    	fluiG=ProFlu(flui.vg1dSP, 60, 10000000000000.0, razDengL*flui.Deng, 0., 1., 10., 10.,
+        fluiG=ProFlu(flui.simulationContext, 60, 10000000000000.0, razDengL*flui.Deng, 0., 1., 10., 10.,
 				50., 50.,0, 0, 0,0, 0, 0,flui.yco2,
 				flui.corrC);
     	fluiL=flui;
@@ -258,7 +259,7 @@ void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, doub
     		BCSinterno[iCurva].NovaVis(vismis, rhomis, xvaz);
     	    dpB = 0.3048 * BCSinterno[iCurva].Hvis * rhomis * 9.82;
 
-    	    pres+=dpB/98066.5;
+    	    pres+=dpB/units::kPascalPerKgfPerCm2;
 
     	    vpotB = BCSinterno[iCurva].Pvis * 745.7;
     	    potB+=vpotB;
@@ -321,7 +322,7 @@ void multiBomCentSub::marchaMultiBcs(double vazG, double vazL, double pres, doub
                     + beta * fluicol.VisFlu(pres, temp));
     		vazL=qo+qw+qc;
     		vazG=(vazLIni*rholIni+vazGIni*rhogIni-vazL*rhol)/rhog;
-    		xvaz = (86400 / 0.1589876)*(vazG+vazL);
+    		xvaz = (86400 / units::kCubicMetrePerBarrel)*(vazG+vazL);
     	}
     }
     dpB=pres-presIni;

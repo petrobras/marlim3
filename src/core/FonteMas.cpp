@@ -1,4 +1,5 @@
 #include "FonteMas.h"
+#include "UnitConversions.h"
 
 IPR::IPR(double vpres, double vtres, double vip, double vij, double vqm, ProFlu vfluido, int tipoip,
 		int vICV,int vncv, choke vchoke) {
@@ -13,7 +14,7 @@ IPR::IPR(double vpres, double vtres, double vip, double vij, double vqm, ProFlu 
     tipoIPR = tipoip;
     this->FluidoPro = vfluido;
     fluidocol=ProFluCol();
-    Psat = vfluido.PB(Pres, Tres) / (0.9678411 * 14.69595);
+    Psat = vfluido.PB(Pres, Tres) / units::kPsiPerKgfPerCm2;
     ICV=vICV;
     chokeICV=vchoke;
     presAnul=-1.;
@@ -102,7 +103,7 @@ double IPR::VMas(const double &pfundo, const double &tfundo) {
     double var = 0.;
     double multiplicador = 0.;
     if (tipoIPR == 1) {
-        Psat = this->FluidoPro.PB(Pres, Tres) / (0.9678411 * 14.69595);
+        Psat = this->FluidoPro.PB(Pres, Tres) / units::kPsiPerKgfPerCm2;
         double Psat2 = Psat;
         if (Psat > Pres)
             Psat2 = Pres;
@@ -549,7 +550,7 @@ InjLiq &InjLiq::operator=(const InjLiq &vinj) {
 double InjLiq::VMas(const double &pres, const double &temp) {
     // NOTE: For a gas-lift source, the injected flow rate is expressed in Sm3/day, while the mass flow rate is expressed in kg/s.
     double Rhols = (1000. * 141.5 / (131.5 + this->FluidoPro[1])) * (1 - this->FluidoPro[4]) + 1000. * this->FluidoPro[5] * this->FluidoPro[4];
-    return (Rhols * (1. - bet) + bet * fluidocol.MasEspFlu(1., 15)) * QLiq / 86400.;
+    return (Rhols * (1. - bet) + bet * fluidocol.standardDensity()) * QLiq / 86400.;
 }
 
 InjMult::InjMult(double vmp, double vmc, double vmg, double vtemp,

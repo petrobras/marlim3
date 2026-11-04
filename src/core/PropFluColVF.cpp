@@ -6,6 +6,7 @@
  */
 #define _USE_MATH_DEFINES // para M_PI
 #include "PropFluColVF.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <math.h>
@@ -174,7 +175,7 @@ double ProFluColVF::operator[](int i) const { // sobrecarga do operador []
 
 double ProFluColVF::MasEspFlu(double pres, double temper) const {
     if ((injPoc <= 1 || injPoc > 3) && descarga == 0)
-        return rholStd + 0. * (1. - compresT * (temper - 20.)) * exp((pres - 1.033211) * 98066.52 * compresP);
+        return rholStd + 0. * (1. - compresT * (temper - 20.)) * exp((pres - units::kAtmosphereInKgfPerCm2) * units::kPascalPerKgfPerCm2 * compresP);
     else if (injPoc == 2 || descarga == 1 || tipoF == 1) {
         double tfarAmb = Faren(20.);
         double ppsiAmb = psia(1.);
@@ -202,9 +203,9 @@ double ProFluColVF::VisFlu(double pres, double temper, double deform) const {
     if (tabelaVisc == 0) {
         if ((injPoc <= 1 || injPoc > 3) && descarga == 0) {
             double rhol = rholStd / 1000.;
-            double bASTM = (log10(log10((LVisL / 1) / rhol + 0.7)) - log10(log10((LVisH / 1) / rhol + 0.7))) / log10((TempL + 273) / (TempH + 273));
+            double bASTM = (log10(log10((LVisL / 1) / rhol + 0.7)) - log10(log10((LVisH / 1) / rhol + 0.7))) / log10((TempL + units::kZeroCelsiusInKelvin) / (TempH + units::kZeroCelsiusInKelvin));
 
-            double visASTM = rhol * (pow(10, pow(10, (bASTM * log10((temper + 273) / (TempL + 273)) + log10(log10((LVisL / 1) / rhol + 0.7))))) - 0.7);
+            double visASTM = rhol * (pow(10, pow(10, (bASTM * log10((temper + units::kZeroCelsiusInKelvin) / (TempL + units::kZeroCelsiusInKelvin)) + log10(log10((LVisL / 1) / rhol + 0.7))))) - 0.7);
 
             return visASTM;
         } else if (injPoc == 2 || descarga == 1 || tipoF == 1) {
@@ -268,7 +269,7 @@ double ProFluColVF::VisFlu(double pres, double temper, double deform) const {
 
 double ProFluColVF::VisGas(double pres, double temp) const {
     double TF = Faren(temp);
-    double TR = TF + 459.67;
+    double TR = TF + units::kZeroFahrenheitInRankine;
     double wg = (rhogStd / 1.29) * 29;
     double AK = (9.4 + 0.02 * wg) * pow(TR, 1.5) / (209. + 19. * wg + TR);
     double x = 3.5 + (986 / TR) + 0.01 * wg;

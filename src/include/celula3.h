@@ -9,7 +9,7 @@
 #include "TrocaCalor.h"
 #include "Vetor.h"
 #include "acessorios.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -58,7 +58,7 @@ struct detalhaParafina {
         Vwax=temp.Vwax;
         muOilf=temp.muOilf;
         auxRatioHeatFluxMixtureThermalConductivity=temp.auxRatioHeatFluxMixtureThermalConductivity;
-        for(int icomp=0; icomp<comp; icomp++)auxGradMolarConcentration_Component.push_back(temp.auxGradMolarConcentration_Component[icomp]);
+        auxGradMolarConcentration_Component = temp.auxGradMolarConcentration_Component;
     }
     detalhaParafina &operator=(const detalhaParafina &temp) {
         if (this != &temp) {
@@ -72,7 +72,7 @@ struct detalhaParafina {
             Vwax=temp.Vwax;
             muOilf=temp.muOilf;
             auxRatioHeatFluxMixtureThermalConductivity=temp.auxRatioHeatFluxMixtureThermalConductivity;
-            for(int icomp=0; icomp<comp; icomp++)auxGradMolarConcentration_Component.push_back(temp.auxGradMolarConcentration_Component[icomp]);
+            auxGradMolarConcentration_Component = temp.auxGradMolarConcentration_Component;
         }
         return *this;
     }
@@ -117,8 +117,8 @@ class Cel {
     double agua_consumida_massa;
     double gas_consumido_massa;
 
-    double agua_consumida_massa_step;
-    double gas_consumido_massa_step;
+    double waterMassConsumedByHydratesThisStep;
+    double gasMassConsumedByHydratesThisStep;
 
     double massa_hidrato;
 
@@ -422,11 +422,9 @@ class Cel {
 
     double corrigeMassaPres; // Currently unused.
     int mudaDT;
-    int mudaDTL;
     double dpdt;
     double dpdtIni;
     double m2d;
-    double m2dL;
     double d2pdt2;
     double termoHidro; // Hydrostatic pressure variation between the current and right control volumes.
     double termoFric;  // Frictional pressure variation between the current and right control volumes.
@@ -466,7 +464,7 @@ class Cel {
 
     int miniTabAtraso;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
     int modoParafina;
     int hidratado; //alteracao hidratos modelo 3
@@ -534,7 +532,7 @@ class Cel {
     double pExpli;
     double MCExpli;
 
-    Cel(varGlob1D *Vvg1dSP = 0, const DadosGeo vdutoL = DadosGeo(),
+    Cel(SimulationContext *context = 0, const DadosGeo vdutoL = DadosGeo(),
         const DadosGeo vduto = DadosGeo(),
         const DadosGeo vdutoR = DadosGeo(),
         const ProFlu vflui = ProFlu(),

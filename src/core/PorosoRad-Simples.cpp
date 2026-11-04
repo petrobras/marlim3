@@ -7,8 +7,10 @@
 
 #define _USE_MATH_DEFINES // para M_PI
 #include "PorosoRad-Simples.h"
+#include "InputPaths.h"
 #include "Matriz.h"
 #include "Vetor.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <fstream>
 #include <math.h>
@@ -20,14 +22,14 @@ PorosRadSimp::PorosRadSimp() {
     iniciaVariaveis();
 }
 
-PorosRadSimp::PorosRadSimp(string nomeArquivoEntrada, varGlob1D *Vvg1dSP) {
+PorosRadSimp::PorosRadSimp(string nomeArquivoEntrada, SimulationContext *context) {
     iniciaVariaveis();
     lerDados(nomeArquivoEntrada);
     double *vkx = 0;
     double *vky = 0;
     double *vporo = 0;
     double *vcompRoc = 0;
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     if (corte.ncam > 0) {
         int cam = corte.ncam;
         vkx = new double[cam];
@@ -170,7 +172,7 @@ PorosRadSimp::PorosRadSimp(string nomeArquivoEntrada, varGlob1D *Vvg1dSP) {
 
 PorosRadSimp::PorosRadSimp(const PorosRadSimp &vPorosRadSimp) {
     iniciaVariaveis();
-    vg1dSP = vPorosRadSimp.vg1dSP;
+    simulationContext = vPorosRadSimp.simulationContext;
     lerDados(vPorosRadSimp.entrada);
     double *vkx = 0;
     double *vky = 0;
@@ -425,7 +427,7 @@ PorosRadSimp &PorosRadSimp::operator=(const PorosRadSimp &vPorosRadSimp) {
         }
 
         iniciaVariaveis();
-        vg1dSP = vPorosRadSimp.vg1dSP;
+        simulationContext = vPorosRadSimp.simulationContext;
         lerDados(vPorosRadSimp.entrada);
         double *vkx = 0;
         double *vky = 0;
@@ -721,13 +723,16 @@ void PorosRadSimp::iniciaVariaveis() {
     compOleo = 1e-5;
     rhoRef = 900;
 
-    vg1dSP = 0;
+    simulationContext = 0;
 }
 
 void PorosRadSimp::lerDados(string nomeArquivoEntrada) {
 
     entrada = nomeArquivoEntrada;
     FILE *fp = fopen(nomeArquivoEntrada.c_str(), "r");
+    if (!fp)
+        logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                       "Arquivo inexistente", "", nomeArquivoEntrada);
     char readBuffer[125536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));
     Document elementoRaiz;
@@ -781,7 +786,7 @@ void PorosRadSimp::lerDados(string nomeArquivoEntrada) {
             dzdtP[i] = new double[npontos + 2];
     }
     parse_fluido_producao(elementoRaiz["fluidosProducao"]);
-    pBolha = flup.PB(1., tRes) / (0.9678411 * 14.69595);
+    pBolha = flup.PB(1., tRes) / units::kPsiPerKgfPerCm2;
 
     if (tabp > 0) {
         double TCMin = 0;
@@ -810,10 +815,10 @@ void PorosRadSimp::lerDados(string nomeArquivoEntrada) {
         if (flup.PC > PCMax)
             PCMax = flup.PC;
         tabentCrit.npont = tabent.npont;
-        tabentCrit.tmin = (tabent.tmin + 273.15) / ((TCMax - 460. - 32.) / 1.8 + 273.15);
-        tabentCrit.tmax = (tabent.tmax + 273.15) / ((TCMin - 460. - 32.) / 1.8 + 273.15);
-        tabentCrit.pmin = tabent.pmin * 0.9678411 * 14.69595 / PCMax;
-        tabentCrit.pmax = tabent.pmax * 0.9678411 * 14.69595 / PCMin;
+        tabentCrit.tmin = (tabent.tmin + units::kZeroCelsiusInKelvin) / ((TCMax - 460. - 32.) / 1.8 + units::kZeroCelsiusInKelvin);
+        tabentCrit.tmax = (tabent.tmax + units::kZeroCelsiusInKelvin) / ((TCMin - 460. - 32.) / 1.8 + units::kZeroCelsiusInKelvin);
+        tabentCrit.pmin = tabent.pmin * units::kPsiPerKgfPerCm2 / PCMax;
+        tabentCrit.pmax = tabent.pmax * units::kPsiPerKgfPerCm2 / PCMin;
 
         flup.tabela(tabentCrit.pmax, tabentCrit.tmax, tabentCrit.pmin,
                     tabentCrit.tmin);
@@ -851,7 +856,7 @@ void PorosRadSimp::lerDados(string nomeArquivoEntrada) {
         temp.viscO = 0;
         temp.TBF = 0;
         temp.PBF = 0;
-        tabDin.push_back(temp);
+        tabDin.push_back(std::move(temp));
     }
 
     if (tipoModelOleo == 0) {
@@ -929,7 +934,7 @@ void PorosRadSimp::parse_tempo(Value &tempo_json) {
     }
     if (flashCompleto == 1 || flashCompleto == 2) {
         if (tempo_json.HasMember("pvtsimArq"))
-            pvtsimarq = pathArqExtEntrada + string(tempo_json["pvtsimArq"].GetString());
+            pvtsimarq = namedInputPath(string(tempo_json["pvtsimArq"].GetString()));
         else {
             logger.log(LOGGER_FALHA,
                        LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -1174,7 +1179,7 @@ void PorosRadSimp::parse_pcOA(Value &pcOA_json) {
     pcOA.presCapOW = new double[pcOA.npont];
     for (int i = 0; i < pcOA.npont; i++) {
         pcOA.satW[i] = pcOA_json["satA"][i].GetDouble();
-        pcOA.presCapOW[i] = pcOA_json["pcOA"][i].GetDouble() / (14.69595 * 0.9678411);
+        pcOA.presCapOW[i] = pcOA_json["pcOA"][i].GetDouble() / units::kPsiPerKgfPerCm2;
     }
 
     pcGO.npont = 1;
@@ -1283,10 +1288,10 @@ void PorosRadSimp::geraTabFlash(int var) {
         lendoPVTSim >> chave;
     lendoPVTSim.get(line, 4000);
     tenta = strtok(line, " ,()=");
-    presPVTSim[0] = atof(tenta) * 1.01971621e-5;
+    presPVTSim[0] = atof(tenta) / units::kPascalPerKgfPerCm2;
     for (int kontaPVT = 1; kontaPVT <= ndiv; kontaPVT++) {
         tenta = strtok(NULL, " ,");
-        presPVTSim[kontaPVT] = atof(tenta) * 1.01971621e-5;
+        presPVTSim[kontaPVT] = atof(tenta) / units::kPascalPerKgfPerCm2;
     }
     while (chave != "TEMPERATURE")
         lendoPVTSim >> chave;
@@ -1368,11 +1373,11 @@ void PorosRadSimp::geraTabFlash(int var) {
                 if (var == 8 && i > 0 && j > 0) {
                     double rhostd = 141.5 * 1000. / (131.5 + flup.API);
                     double rgstd = 1.225 * flup.Deng;
-                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * 35.31467 / 6.29;
+                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
                     if (flash.RSF[i][j] < 0)
                         flash.RSF[i][j] = 0.;
                     // falcatrua-teste de consistencia de RS do PVTSIM
-                    VarTemp[i][j] = flash.RSF[i][j] * 6.29 / 35.31467;
+                    VarTemp[i][j] = flash.RSF[i][j] * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
                 }
                 if ((var == 16 || var == 17) && i > 0 && j > 0) {
                     if (var == 16)
@@ -1414,11 +1419,11 @@ void PorosRadSimp::geraTabFlash(int var) {
                 if (var == 8 && i > 0 && j > 0) {
                     double rhostd = 141.5 * 1000. / (131.5 + flup.API);
                     double rgstd = 1.225 * flup.Deng;
-                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * 35.31467 / 6.29;
+                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
                     if (flash.RSF[i][j] < 0)
                         flash.RSF[i][j] = 0.;
                     // falcatrua-teste de consistencia de RS do PVTSIM
-                    VarTemp[i][j] = flash.RSF[i][j] * 6.29 / 35.31467;
+                    VarTemp[i][j] = flash.RSF[i][j] * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
                 }
                 if ((var == 16 || var == 17) && i > 0 && j > 0) {
                     if (var == 16)
@@ -1642,7 +1647,7 @@ void PorosRadSimp::parse_fluido_producao(
             corrDeng =
                 fluidos_producao_json["correcaoDenGas"].GetInt();
 
-        flup = ProFlu(vg1dSP, api, rgo, deng, bsw,
+        flup = ProFlu(simulationContext, api, rgo, deng, bsw,
                       denag, templ, lvisl, temph, lvish, tipoemul, aemul,
                       bemul, PHI100, bswCorte, tabp, yco2, corrC, corrSat,
                       vcorrOM, vcorrOV, vcorrOS, flashCompleto, 0);
@@ -1663,7 +1668,7 @@ void PorosRadSimp::parse_fluido_producao(
     } else if (flashCompleto == 1) {
 
         if (fluidos_producao_json.HasMember("pvtsimArq"))
-            pvtsimarq = pathArqExtEntrada + string(fluidos_producao_json["pvtsimArq"].GetString());
+            pvtsimarq = namedInputPath(string(fluidos_producao_json["pvtsimArq"].GetString()));
 
         string dadosMRPre;
         dadosMRPre = pvtsimarq;
@@ -1910,7 +1915,7 @@ void PorosRadSimp::parse_fluido_producao(
         api /= 1000.;
         api = 141.5 / api - 131.5;
 
-        flup = ProFlu(vg1dSP, api, rgo, deng, bsw,
+        flup = ProFlu(simulationContext, api, rgo, deng, bsw,
                       denag, templ, lvisl, temph, lvish, tipoemul, aemul,
                       bemul, PHI100, bswCorte, tabp, yco2, corrC, corrSat,
                       vcorrOM, vcorrOV, vcorrOS, flashCompleto, 0);
@@ -1928,12 +1933,12 @@ void PorosRadSimp::parse_fluido_producao(
         }
         lendoPVTSim.get(line, 4000);
         tenta = strtok(line, " ,()=");
-        flash.PBF[0] = atof(tenta) * 0.00014503773800722;
+        flash.PBF[0] = atof(tenta) / units::kPascalPerPsi;
         for (int kontaPVT = 1; kontaPVT <= lacoleitura;
              kontaPVT++) {
             tenta = strtok(NULL, " ,");
             testatok = atof(tenta);
-            flash.PBF[kontaPVT] = testatok * 0.00014503773800722;
+            flash.PBF[kontaPVT] = testatok / units::kPascalPerPsi;
         }
         while (chave != "BUBBLETEMPERATURES") {
             lendoPVTSim >> chave;
@@ -1998,7 +2003,7 @@ void PorosRadSimp::parse_fluido_producao(
         double dt1;
 
         int imin = 1;
-        while (flup.rhogF[imin][0] <= 1.0332274497825)
+        while (flup.rhogF[imin][0] <= units::kAtmosphereInKgfPerCm2)
             imin++;
         flup.indMinEquP = imin + 1;
         int iant = imin + 1;
@@ -2110,7 +2115,7 @@ void PorosRadSimp::parse_fluido_producao(
         rgo = fluidos_producao_json["rgo"].GetDouble();
         if (rgo > flup.RGO) {
             flup.RGO = rgo;
-            flup.IRGO = flup.RGO * 35.31467 / 6.29;
+            flup.IRGO = flup.RGO * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
         }
 
         if (flash.rhogF[0][1] < 20 && flash.rhogF[1][0] < 1.01)
@@ -2297,7 +2302,7 @@ void PorosRadSimp::parse_fluido_producao(
             }
         }
 
-        flup = ProFlu(vg1dSP, api, rgo, deng, bsw,
+        flup = ProFlu(simulationContext, api, rgo, deng, bsw,
                       denag, templ, lvisl, temph, lvish, tipoemul, aemul,
                       bemul, PHI100, bswCorte, tabp, yco2, corrC, corrSat,
                       vcorrOM, vcorrOV, vcorrOS, flashCompleto, 0, npseudo);
@@ -2459,7 +2464,7 @@ void PorosRadSimp::geraCel(double **const vPcamada, double **const vsL, double *
     vkRelOG = kRelOG;
     vpcOA = pcOA;
     vpcGO = pcGO;
-    celula[konta] = celradSimp(vg1dSP, ncel, konta, r0, r2, r1, kxl, kxr,
+    celula[konta] = celradSimp(simulationContext, ncel, konta, r0, r2, r1, kxl, kxr,
                                kyl, kyr, geom.poro[0], geom.compRoc[0], pcamada, Pint,
                                presRes2, presRes, ql, qr, tRes, dt, zdKm, zdK, zdK2,
                                dh, sL, sW, sLRes, sWPoc, sWRes,
@@ -2517,7 +2522,7 @@ void PorosRadSimp::geraCel(double **const vPcamada, double **const vsL, double *
                 vkRelOG = kRelOG;
                 vpcOA = pcOA;
                 vpcGO = pcGO;
-                celula[konta] = celradSimp(vg1dSP, ncel, konta, r0, r2, r1, kxl, kxr,
+                celula[konta] = celradSimp(simulationContext, ncel, konta, r0, r2, r1, kxl, kxr,
                                            kyl, kyr, geom.poro[icam], geom.compRoc[icam], pcamada, Pint,
                                            presRes2, presRes, ql, qr, tRes, dt, zdKm, zdK, zdK2,
                                            dh, sL, sW, sLRes, sWPoc, sWRes,
@@ -2531,7 +2536,7 @@ void PorosRadSimp::geraCel(double **const vPcamada, double **const vsL, double *
             }
         }
     }
-    raioFim=r2;
+    outerRadius=r2;
 }
 
 double PorosRadSimp::marchaperm(double mastot) {
@@ -2553,7 +2558,7 @@ double PorosRadSimp::transperm(double mastot) {
     if (mastot < 0) {
         double keq = celula[0].kabsol1;
         double visc = flup.ViscOleo(1., tRes) / 1000.;
-        double ip = 98066.52 * (keq / (visc)) /
+        double ip = units::kPascalPerKgfPerCm2 * (keq / (visc)) /
                     (log(celula[ncel - 1].rm / celula[0].rm) + 0.);
         mastot = ip * (celula[0].presRes - celula[0].Pint) * 1000.;
     }
@@ -2606,7 +2611,7 @@ void PorosRadSimp::renovaPres(int i, double mTot) {
         double dO;
         double dG;
         double dA;
-        double grav = 9.82 / 98066.22;
+        double grav = 9.82 / units::kPascalPerKgfPerCm2;
 
         celula[i + 1].pcOGm = celula[i + 1].interpolaTabela(celula[i + 1].pcGOCel.npont, 1. - celula[i + 1].sL, celula[i + 1].pcGOCel.satG,
                                                             celula[i + 1].pcGOCel.presCapGO);
@@ -2628,9 +2633,9 @@ void PorosRadSimp::renovaPres(int i, double mTot) {
         celula[i].sW = celula[i + 1].sW;
 
         while (erro > 1e-5) {
-            dO = celula[i + 1].darcyO0 = celula[i + 1].kmed0 * celula[i + 1].kabsol0 * 98066.22 / miomed;
-            dG = celula[i + 1].darcyG0 = celula[i + 1].kmedG0 * celula[i + 1].kabsol0 * 98066.22 / migmed;
-            dA = celula[i + 1].darcyA0 = celula[i + 1].kmedA0 * celula[i + 1].kabsol0 * 98066.22 / miamed;
+            dO = celula[i + 1].darcyO0 = celula[i + 1].kmed0 * celula[i + 1].kabsol0 * units::kPascalPerKgfPerCm2 / miomed;
+            dG = celula[i + 1].darcyG0 = celula[i + 1].kmedG0 * celula[i + 1].kabsol0 * units::kPascalPerKgfPerCm2 / migmed;
+            dA = celula[i + 1].darcyA0 = celula[i + 1].kmedA0 * celula[i + 1].kabsol0 * units::kPascalPerKgfPerCm2 / miamed;
 
             double mTotGeom = mTot * celula[i].drP1 / celula[i].rQcamadaR;
             double termoPR = rhomed * dO + rhogmed * dG + rhoamed * dA;
@@ -2658,8 +2663,8 @@ void PorosRadSimp::renovaPres(int i, double mTot) {
             double vazoleoSTD = vazoleo / celula[i + 1].flup.BOFunc(celula[i].pmed1, tRes);
             double vazgas = dG * (celula[i].rQcamadaR / celula[i].drP1) * (celula[i + 1].Pcamada - celula[i].Pcamada - 1 * rhogmed * (celula[i + 1].zD * grav - celula[i + 1].zD0 * grav - celula[i + 1].pcOGm + celula[i].pcOGm));
             double vazagua = dA * (celula[i].rQcamadaR / celula[i].drP1) * (celula[i + 1].Pcamada - celula[i].Pcamada - 1 * rhoamed * (celula[i + 1].zD * grav - celula[i + 1].zD0 * grav + celula[i + 1].pcAOm - celula[i].pcAOm));
-            double rs1 = celula[i].flup.RS(celula[i].pmed1, tRes) * 6.29 / 35.31467;
-            double rs0 = celula[i].flup.RS(celula[i].Pcamada, tRes) * 6.29 / 35.31467;
+            double rs1 = celula[i].flup.RS(celula[i].pmed1, tRes) * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
+            double rs0 = celula[i].flup.RS(celula[i].Pcamada, tRes) * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
             double maslib = vazoleoSTD * (rs1 - rs0) * celula[i + 1].rhogstd;
             vazoleo = (vazoleo * rhomed - maslib) / celula[i].rhoP;
             vazgas = (vazgas * rhomed + maslib) / celula[i].rhogP;
@@ -2769,9 +2774,9 @@ double PorosRadSimp::zriddr(double x1, double x2) {
 void PorosRadSimp::indrazT(int &ind, double &raz) {
     for (int i = 0; i <= temp.parserie - 1; i++) {
         if (i < temp.parserie - 1) {
-            if ((*vg1dSP).tempo >= temp.tempo[i] && (*vg1dSP).tempo < temp.tempo[i + 1]) {
+            if ((*simulationContext).solverTime >= temp.tempo[i] && (*simulationContext).solverTime < temp.tempo[i + 1]) {
                 ind = i;
-                raz = 1 - ((*vg1dSP).tempo - temp.tempo[i]) / (temp.tempo[i + 1] - temp.tempo[i]);
+                raz = 1 - ((*simulationContext).solverTime - temp.tempo[i]) / (temp.tempo[i + 1] - temp.tempo[i]);
                 break;
             }
         } else if (i == temp.parserie - 1) {
@@ -2784,9 +2789,9 @@ void PorosRadSimp::indrazT(int &ind, double &raz) {
 void PorosRadSimp::indrazPW(int &ind, double &raz) {
     for (int i = 0; i <= pW.nserie - 1; i++) {
         if (i < pW.nserie - 1) {
-            if ((*vg1dSP).tempo >= pW.tempo[i] && (*vg1dSP).tempo < pW.tempo[i + 1]) {
+            if ((*simulationContext).solverTime >= pW.tempo[i] && (*simulationContext).solverTime < pW.tempo[i + 1]) {
                 ind = i;
-                raz = 1 - ((*vg1dSP).tempo - pW.tempo[i]) / (pW.tempo[i + 1] - pW.tempo[i]);
+                raz = 1 - ((*simulationContext).solverTime - pW.tempo[i]) / (pW.tempo[i + 1] - pW.tempo[i]);
                 break;
             }
         } else if (i == pW.nserie - 1) {
@@ -2799,9 +2804,9 @@ void PorosRadSimp::indrazPW(int &ind, double &raz) {
 void PorosRadSimp::indraz(int &ind, double &raz, double *serieTempo, int nserie) {
     for (int i = 0; i <= nserie - 1; i++) {
         if (i < nserie - 1) {
-            if ((*vg1dSP).tempo >= serieTempo[i] && (*vg1dSP).tempo < serieTempo[i + 1]) {
+            if ((*simulationContext).solverTime >= serieTempo[i] && (*simulationContext).solverTime < serieTempo[i + 1]) {
                 ind = i;
-                raz = 1 - ((*vg1dSP).tempo - serieTempo[i]) / (serieTempo[i + 1] - serieTempo[i]);
+                raz = 1 - ((*simulationContext).solverTime - serieTempo[i]) / (serieTempo[i + 1] - serieTempo[i]);
                 break;
             }
         } else if (i == nserie - 1) {
@@ -3525,13 +3530,13 @@ void PorosRadSimp::pseudoTrans(int partida) {
             celula[i].sWPoc = sWPoc;
         }
     }
-    double dpr=(presRes-Pint)/(raioFim-celula[0].r0);
+    const double pressureGradient = (presRes - Pint) / (outerRadius - celula[0].r0);
     for (int i = 0; i < ncel; i++) {
-    	celula[i].Pcamada=Pint+dpr*(celula[i].r0-celula[0].r0);
-    	if(i==0)celula[i].PcamadaL=celula[i].Pcamada;
-    	else celula[i].PcamadaL=celula[i-1].Pcamada;
-    	if(i>0)celula[i-1].PcamadaR=celula[i].Pcamada;
-    	celula[i].Pini=celula[i].Pcamada;
+        celula[i].Pcamada=Pint+pressureGradient*(celula[i].r0-celula[0].r0);
+        if(i==0)celula[i].PcamadaL=celula[i].Pcamada;
+        else celula[i].PcamadaL=celula[i-1].Pcamada;
+        if(i>0)celula[i-1].PcamadaR=celula[i].Pcamada;
+        celula[i].Pini=celula[i].Pcamada;
     }
     celula[ncel-1].PcamadaR=celula[ncel-1].Pcamada;
     erroPermanente = 1000.;
@@ -3849,7 +3854,7 @@ void PorosRadSimp::solveTrans() {
         Pint = pW.val[ind];
     if (Pint < 338) {
     }
-    if ((*vg1dSP).tempo >= 43400) {
+    if ((*simulationContext).solverTime >= 43400) {
     }
 
     indraz(ind, raz, tempoSatLRes, nsatLRes);
@@ -3984,7 +3989,7 @@ void PorosRadSimp::solveTrans() {
         ciclo++;
     }
     atualizaIni();
-    (*vg1dSP).tempo += dt;
+    (*simulationContext).solverTime += dt;
 }
 
 void PorosRadSimp::avancoSW(double Ndt) {
@@ -4139,18 +4144,18 @@ void PorosRadSimp::avancoPressao() {
         }
     }
     atualizaIni();
-    (*vg1dSP).tempo = (*vg1dSP).lixo5;
+    (*simulationContext).solverTime = (*simulationContext).simulationTime;
 
-    if (temp.tempoImp[kontaTempoImp] >= (*vg1dSP).tempo - dt && temp.tempoImp[kontaTempoImp] <= (*vg1dSP).tempo) {
+    if (temp.tempoImp[kontaTempoImp] >= (*simulationContext).solverTime - dt && temp.tempoImp[kontaTempoImp] <= (*simulationContext).solverTime) {
         FullMtx<double> matrizsaida(nglobal, 11);
         matrizsaida = perfil();
         ostringstream saida;
         // saida << pathPrefixoArqSaida << "PerfisPocoRadial" << "-" << kontaTempoImp
-        saida << pathPrefixoArqSaida << "PerfisPocoRadial" << "-" << (*vg1dSP).tempo
+        saida << pathPrefixoArqSaida << "PerfisPocoRadial" << "-" << (*simulationContext).solverTime
               << "-" << posicMarlim << ".dat";
         string tmp = saida.str();
         ofstream escreveIni(tmp.c_str(), ios_base::out);
-        escreveIni << "tempo = " << (*vg1dSP).tempo << endl;
+        escreveIni << "tempo = " << (*simulationContext).solverTime << endl;
         escreveIni << " raio (m) ;" << " raio (pol.) ;" << " pressao (kgf/cm2) ;" << " vazao total (sm3/d) ;" << " vazao de oleo (sm3/d) ;" << " vazao de gas (sm3/d) ;" << " vazao de agua (sm3/d) ;" << "saturacao de liquido (-) ;" << " saturacao de agua (-) ;" << " fracao volumetrica de gas homogeneo (-) ;"
                    << " BSW (-) ;" << endl;
         escreveIni << matrizsaida;

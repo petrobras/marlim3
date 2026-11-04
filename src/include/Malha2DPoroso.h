@@ -24,7 +24,7 @@ using namespace std;
 #include "estruturaTabDin.h"
 #include "dados1Poroso.h"
 #include "Elem2DPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 
 // obter string do prefixo dos arquivos de saida para POCO_INJETOR
 extern string pathPrefixoArqSaida;
@@ -33,11 +33,11 @@ extern string pathPrefixoArqSaida;
 class malha2dPoro{
 public:
 	int nele;
-	varGlob1D* vg1dSP;
+	SimulationContext* simulationContext;
 	Vcr<double> vecSolv;
 	vector<elem2dPoroso> mlh2d;
 	malha2dPoro();
-	malha2dPoro(varGlob1D* Vvg1dSP,double** xcoor, int** noEle, int* tipo,double* atributo,int nVert, int neleV, int nno,
+	malha2dPoro(SimulationContext* context,double** xcoor, int** noEle, int* tipo,double* atributo,int nVert, int neleV, int nno,
 			int vperm, int vtrans,ProFlu vflup,tabelaPemRelOA vkRelOA,tabelaPemRelOG vkRelOG,
 			tabelaPresCapOA vpcOA,tabelaPresCapGO vpcGO);
 	malha2dPoro(const malha2dPoro&);

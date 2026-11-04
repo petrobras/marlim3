@@ -14,6 +14,7 @@
 // ==============================================================================
 
 #include "GomezModel.h"
+#include "UnitConversions.h"
 #include <cmath>
 #include <algorithm>
 #include <functional>
@@ -129,7 +130,7 @@ static double stratifiedInterfacialFriction(
     if (!isWavy) return fG;
 
     if (d <= 0.127) {
-        double vSG_t = 5.0 * sqrt(101325.0 / std::max(pressure, 1.0));
+        double vSG_t = 5.0 * sqrt(units::kPascalPerAtmosphere / std::max(pressure, 1.0));
         if (vSG <= vSG_t) return fG;
         return fG * (1.0 + 15.0 * sqrt(hL / d) * (vSG / vSG_t - 1.0));
     }

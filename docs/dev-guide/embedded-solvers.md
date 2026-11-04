@@ -102,7 +102,7 @@ where $\rho$, $c_p$ and $k$ are the local density, specific heat and thermal con
 
 | Method | Purpose |
 |--------|---------|
-| `solverP(vg1dSP, meshFile, condGlob, condLoc, hE, hInt, Tint, Tamb, diamI, diamE, indCel)` | Full constructor: reads mesh, applies material properties, sets coupling parameters |
+| `solverP(simulationContext, meshFile, condGlob, condLoc, hE, hInt, Tint, Tamb, diamI, diamE, indCel)` | Full constructor: reads mesh, applies material properties, sets coupling parameters |
 | `permanentePoisson()` | Iterative steady-state solve |
 | `inicializaPermanentePoisson()` / `inicializaTransientePoisson()` | Switch all cells between permanent/transient mode flags |
 | `transientePoisson(delt)` | Advance one time step through transient finite-volume assembly and iterative temperature update |
@@ -330,7 +330,7 @@ Pipeline cell  ←→  1D radial annulus (PorosRad)  ←→  2D reservoir mesh (
 
 | Method | Purpose |
 |--------|---------|
-| `solverPoro(vg1dSP, meshFile)` | Constructor: reads mesh, material properties, fluid model, BCs |
+| `solverPoro(simulationContext, meshFile)` | Constructor: reads mesh, material properties, fluid model, BCs |
 | `avancoPressao()` | Pressure-update stage: assembles sparse global coefficients, updates the 2D pressure field, and exchanges pressure/flux data with the radial `transfer` object |
 | `avancoSW(delt)` | Explicit saturation advance from face fluxes (CFL-limited) |
 | `avancoSWcorrec()` | Saturation correction step |

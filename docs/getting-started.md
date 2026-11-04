@@ -46,7 +46,7 @@ Download the matching asset from the GitHub Releases page and run it. No Python
 installation or compiler is required. The Linux desktop application requires
 only glibc 2.34 or newer from the operating system.
 
-See [marlim3_desktop/README.md](../marlim3_desktop/README.md) for platform
+See [marlim3_desktop/README.md](https://github.com/petrobras/marlim3/blob/main/marlim3_desktop/README.md) for platform
 details, checksum verification, and diagnostic logs.
 
 ### Command-line executable
@@ -142,7 +142,7 @@ dependencies, and writes one release-named artifact to `dist/`.
 ### Python package
 
 Use Marlim3 as a Python library in your scripts or notebooks. See
-[marlim3/README.md](../marlim3/README.md) for the API guide, including the
+[marlim3/README.md](https://github.com/petrobras/marlim3/blob/main/marlim3/README.md) for the API guide, including the
 bilingual interface and a worked example.
 
 **Graphical interface.** Marlim3 includes a Streamlit-based GUI for
@@ -167,7 +167,7 @@ uv sync --group regression_tool
 uv run regression_tool/run.py
 ```
 
-See [regression_tool/README.md](../regression_tool/README.md) for the toolchain
+See [regression_tool/README.md](https://github.com/petrobras/marlim3/blob/main/regression_tool/README.md) for the toolchain
 requirements, local data locations, and the full workflow.
 
 ### Command-line executable
@@ -231,7 +231,7 @@ Compilation is only necessary if you need to rebuild the executable from source.
 
 ### Presets
 
-The project uses [CMake presets](../CMakePresets.json):
+The project uses [CMake presets](https://github.com/petrobras/marlim3/blob/main/CMakePresets.json):
 
 | Preset | Platform | Description |
 |--------|----------|-------------|
@@ -305,5 +305,5 @@ ctest --test-dir build --output-on-failure
 uv run pytest tests/ -v
 ```
 
-See [tests/README.md](../tests/README.md) for markers, regression references,
+See [tests/README.md](https://github.com/petrobras/marlim3/blob/main/tests/README.md) for markers, regression references,
 and how to update them.

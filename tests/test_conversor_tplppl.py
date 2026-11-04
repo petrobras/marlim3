@@ -563,3 +563,21 @@ def test_conflicting_input_files_use_first_name(tmp_path, capsys):
 
     assert (tmp_path / "a.ppl").exists()
     assert "a, b" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("length,message", [(float("nan"), "Non-finite geometry"), (0., "Non-increasing AP profile boundaries")])
+def test_ap_rejects_nonphysical_profile_geometry(tmp_path, length, message):
+    _write_ap_profile(tmp_path / "PERFISP-seqAP-0-0.dat", length=length)
+    with pytest.raises(conversor.ConversionError, match=message):
+        conversor.convert_to_ppl_tpl(str(tmp_path), str(tmp_path))
+
+
+def test_missing_metadata_file_uses_name_fallback(tmp_path):
+    assert conversor._header_input_file(str(tmp_path / "PERFISP-0.dat")) is None
+
+
+def test_ordinary_trend_rejects_invalid_cell_index(tmp_path):
+    path = tmp_path / "TENDP-0.dat"
+    _write_tend(path, [0], cell="missing")
+    with pytest.raises(conversor.ConversionError, match="Invalid trend headers"):
+        conversor.read_tend_file(str(path))

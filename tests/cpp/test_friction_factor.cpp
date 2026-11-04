@@ -55,14 +55,12 @@ void check(bool condition, const char *what, double reynolds, double relRoughnes
 } // namespace
 
 int main() {
-    // Serghides' published accuracy is ~0.0025% across the Moody chart. A 0.05%
-    // tolerance absorbs compiler-dependent rounding while still catching a
-    // regression to the previous formulation, which erred by up to 11.2%.
+    // Compare with the converged implicit root using a 0.05% tolerance.
     const double TOLERANCE_PERCENT = 0.05;
 
     const std::vector<double> reynolds = {5.0e3, 1.0e4, 3.0e4, 1.0e5,
                                           3.0e5, 1.0e6, 3.0e6, 1.0e7};
-    const std::vector<double> relRoughness = {1.0e-6, 1.0e-5, 1.0e-4,
+    const std::vector<double> relRoughness = {0.0, 1.0e-6, 1.0e-5, 1.0e-4,
                                               1.0e-3, 1.0e-2, 5.0e-2};
 
     double worst = 0.0;

@@ -16,7 +16,8 @@
 #include "celRad.h"
 #include "estruturaTabDin.h"
 #include "estruturasPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
+#include "UnitConversions.h"
 
 extern detTempoPoroso temp;
 
@@ -77,11 +78,11 @@ class PorosRad {
     double pBolha;
     double BSW;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
     PorosRad();
 
-    PorosRad(const DadosGeoPoro vgeom, varGlob1D *Vvg1dSP, const int vpermanente, const int *const vncamada,
+    PorosRad(const DadosGeoPoro vgeom, SimulationContext *context, const int vpermanente, const int *const vncamada,
              const double *const vdrcamada, double **const vPcamada, const double vPint,
              const double vpresRes, const double vtRes, const double vdt, const double pres, const double vzD0, const double vzD1, const double vdh,
              double **const vsL, double **const vsW, const double vsLRes, const double vsWRes,
@@ -118,10 +119,10 @@ class PorosRad {
     void transtransAux(double espessura);
     void FeiticoDoTempo();
     FullMtx<double> perfil();
-    double psia(const double p) const { return (p * 0.9678411) * 14.69595; } // Converts pressure from kgf/cm2 to psia
+    double psia(const double p) const { return p * units::kPsiPerKgfPerCm2; } // Converts pressure from kgf/cm2 to psia
     double Faren(const double t) const { return 1.8 * t + 32; }              // Converts temperature from degrees Celsius to degrees Fahrenheit
     double cel(const double t) const { return (t - 32) / 1.8; }              // Converts temperature from degrees Fahrenheit to degrees Celsius
-    double kgf(const double p) const { return p / (14.69595 * 0.9678411); }  // Converts pressure from psia to kgf/cm2
+    double kgf(const double p) const { return p / units::kPsiPerKgfPerCm2; }  // Converts pressure from psia to kgf/cm2
 };
 
 #endif /* POROSORAD_H_ */

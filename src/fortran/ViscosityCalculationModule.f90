@@ -345,6 +345,8 @@ contains
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! O metano é o terceiro elemento na sequencia de componentes
         ! Mas vamos usar os valores de tabela do Multiflash
         dPco = 45.39057 * 101325.0      !oPc(3)
@@ -502,6 +504,7 @@ contains
         real(c_double), dimension(:), pointer :: temp_oMW         ! Mapeamento do argumento "oMW"
         real(c_double), dimension(:), pointer :: temp_oComposition         ! Mapeamento do argumento "oComposition"
 
+        iIER = ERROR_EverythingOK
         call c_f_pointer(oTc, temp_oTc, [iNComp])
         call c_f_pointer(oPc, temp_oPc, [iNComp])
         call c_f_pointer(oMW, temp_oMW, [iNComp])

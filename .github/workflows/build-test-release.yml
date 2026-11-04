@@ -28,8 +28,7 @@ env:
   ARTIFACT_RETENTION_DAYS: "7"
 
 jobs:
-  # Skips the workflow when a develop merge has identical content to an
-  # already-passed PR run. Tag pushes always run (never skipped).
+  # Skips runs with content that already passed. Tag pushes always run.
   pre_check:
     name: Pre-check (skip duplicates)
     runs-on: ubuntu-latest

@@ -113,6 +113,9 @@ fontemaschk &fontemaschk::operator=(const fontemaschk &vinj) {
     check = vinj.check;
     ambGas = vinj.ambGas;
 
+    indMon = vinj.indMon;
+    indJus = vinj.indJus;
+
     return *this;
 }
 

@@ -100,7 +100,7 @@ main()
 When `main()` creates the `SProd` object:
 
 ```cpp
-SProd sistem1(nomeArquivoEntrada, nomeArquivoLog, validacaoJson, tipoSimulacao, &vg1dTramo);
+SProd sistem1(nomeArquivoEntrada, nomeArquivoLog, validacaoJson, tipoSimulacao, &branchContext);
 ```
 
 The constructor ([`src/core/SisProd.cpp`](https://github.com/petrobras/marlim3/blob/main/src/core/SisProd.cpp)) performs:

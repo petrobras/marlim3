@@ -6,13 +6,13 @@
  */
 #include "solver3DPoisson.h"
 
-solverP3D::solverP3D(string nomeArquivoEntrada, varGlob1D *DGP3DV, int nacopV, vector<DadosGeo> &dutoAux,
+solverP3D::solverP3D(string nomeArquivoEntrada, SimulationContext *DGP3DV, int nacopV, vector<DadosGeo> &dutoAux,
                      double hi, double he, double ti) : dados(nomeArquivoEntrada), termolivre(dados.nele), matglob(dados.nele, dados.noZero, dados.vecsra, dados.veclm, dados.vecfnz) {
     nacop = nacopV;
     itera = 0;
     penalizaDt = 0;
-    DGP3D = DGP3DV;
-    (*DGP3D).tempo = 0.;
+    simulationContext = DGP3DV;
+    (*simulationContext).solverTime = 0.;
 
     rank = dados.rank;
     precn = 4;
@@ -21,7 +21,7 @@ solverP3D::solverP3D(string nomeArquivoEntrada, varGlob1D *DGP3DV, int nacopV, v
     matglob.colorido = dados.colorido;
     matglob.rank = rank;
 
-    malha = malha3d(DGP3D, dados.elementoO, dados.xcoor, dados.noEle, dados.tipo,
+    malha = malha3d(simulationContext, dados.elementoO, dados.xcoor, dados.noEle, dados.tipo,
                     dados.atributo, 4, dados.nele, dados.nno);
     for (int i = 0; i < malha.nele; i++) {
         malha.mlh3d[i].CC = &dados.CC;
@@ -110,7 +110,7 @@ solverP3D::solverP3D(string nomeArquivoEntrada, varGlob1D *DGP3DV, int nacopV, v
 
 solverP3D::solverP3D() : dados(), termolivre(1), matglob(1, 1) {
     nacop = 0;
-    DGP3D = 0;
+    simulationContext = 0;
     ki = 0.;
     cpi = 0.;
     rhoi = 0.;
@@ -127,8 +127,8 @@ solverP3D::solverP3D(const solverP3D &vPoisson) : dados(vPoisson.dados.entrada),
     nacop = vPoisson.nacop;
     itera = 0;
     penalizaDt = 0;
-    DGP3D = vPoisson.DGP3D;
-    (*DGP3D).tempo = 0.;
+    simulationContext = vPoisson.simulationContext;
+    (*simulationContext).solverTime = 0.;
 
     rank = dados.rank;
     precn = 4;
@@ -137,7 +137,7 @@ solverP3D::solverP3D(const solverP3D &vPoisson) : dados(vPoisson.dados.entrada),
     matglob.colorido = dados.colorido;
     matglob.rank = rank;
 
-    malha = malha3d(DGP3D, dados.elementoO, dados.xcoor, dados.noEle, dados.tipo, dados.atributo, 4, dados.nele, dados.nno);
+    malha = malha3d(simulationContext, dados.elementoO, dados.xcoor, dados.noEle, dados.tipo, dados.atributo, 4, dados.nele, dados.nno);
 
     for (int i = 0; i < malha.nele; i++) {
         malha.mlh3d[i].CC = &dados.CC;
@@ -247,7 +247,7 @@ solverP3D &solverP3D::operator=(const solverP3D &vPoisson) {
         itera = 0;
         penalizaDt = 0;
 
-        DGP3D = vPoisson.DGP3D;
+        simulationContext = vPoisson.simulationContext;
         dados = vPoisson.dados;
         termolivre = vPoisson.termolivre;
         matglob = vPoisson.matglob;
@@ -259,10 +259,10 @@ solverP3D &solverP3D::operator=(const solverP3D &vPoisson) {
         matglob.colorido = dados.colorido;
         matglob.rank = rank;
 
-        (*DGP3D).tempo = 0.;
+        (*simulationContext).solverTime = 0.;
         if (malha.mlh3d.size() > 0)
             malha.mlh3d.clear();
-        malha = malha3d(DGP3D,
+        malha = malha3d(simulationContext,
                         dados.elementoO, dados.xcoor, dados.noEle, dados.tipo,
                         dados.atributo, 4, dados.nele, dados.nno);
 
@@ -370,9 +370,9 @@ void solverP3D::indrazT(int &ind, double &raz) {
 
     for (int i = 0; i <= dados.temp.parserie - 1; i++) {
         if (i < dados.temp.parserie - 1) {
-            if ((*DGP3D).tempo >= dados.temp.tempo[i] && (*DGP3D).tempo < dados.temp.tempo[i + 1]) {
+            if ((*simulationContext).solverTime >= dados.temp.tempo[i] && (*simulationContext).solverTime < dados.temp.tempo[i + 1]) {
                 ind = i;
-                raz = 1 - ((*DGP3D).tempo - dados.temp.tempo[i]) / (dados.temp.tempo[i + 1] - dados.temp.tempo[i]);
+                raz = 1 - ((*simulationContext).solverTime - dados.temp.tempo[i]) / (dados.temp.tempo[i + 1] - dados.temp.tempo[i]);
                 break;
             }
         } else if (i == dados.temp.parserie - 1) {
@@ -497,7 +497,7 @@ void solverP3D::transientePoisson(double vdelt) {
     double delt = vdelt;
     double norma;
     int indsra;
-    (*DGP3D).tempo = (*DGP3D).lixo5;
+    (*simulationContext).solverTime = (*simulationContext).simulationTime;
     norma = 1e5;
     for (int i = 0; i < malha.nele; i++)
         malha.mlh3d[i].dt = delt;
@@ -510,17 +510,17 @@ void solverP3D::transientePoisson(double vdelt) {
     }
     itera = 0;
     while (norma > 1.e-20 || itera < 5) {
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
+#pragma omp parallel for num_threads((*simulationContext).poisson3DThreadCount)
         for (int i = 0; i < malha.nele; i++) {
             for (int j = 0; j < malha.mlh3d[i].cel3D.dim; j++) {
                 malha.mlh3d[i].cel3D.gradGreenTI[j] = malha.mlh3d[i].cel3D.gradGreenT[j];
             }
         }
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
+#pragma omp parallel for num_threads((*simulationContext).poisson3DThreadCount)
         for (int i = 0; i < malha.nele; i++) {
             malha.mlh3d[i].calcGradGreen();
         }
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
+#pragma omp parallel for num_threads((*simulationContext).poisson3DThreadCount)
         for (int i = 0; i < malha.nele; i++) {
             malha.mlh3d[i].GeraLocal(dados.temp.relax);
         }
@@ -538,7 +538,6 @@ void solverP3D::transientePoisson(double vdelt) {
             malha.vecSolv[i] = malha.mlh3d[i].cel3D.tempC;
         }
         norma = 0.;
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++) {
             malha.mlh3d[i].cel3D.tempCI = malha.mlh3d[i].cel3D.tempC;
             malha.mlh3d[i].cel3D.tempC = malha.vecSolv[i];
@@ -587,11 +586,11 @@ void solverP3D::transientePoisson(double vdelt) {
     if (penalizaDt > 0)
         penalizaDt--;
 
-    cout << "tempo= " << (*DGP3D).tempo << " norma= " << norma << " iteracoes= " << itera;
+    cout << "tempo= " << (*simulationContext).solverTime << " norma= " << norma << " iteracoes= " << itera;
     cout << endl;
 
-    if (((*DGP3D).tempo > 1e-15 && (*DGP3D).tempo <= dados.temp.tempoImp[kontaTempo] && (*DGP3D).tempo + delt >= dados.temp.tempoImp[kontaTempo])) {
-        malha.imprime((*DGP3D).tempo);
+    if (((*simulationContext).solverTime > 1e-15 && (*simulationContext).solverTime <= dados.temp.tempoImp[kontaTempo] && (*simulationContext).solverTime + delt >= dados.temp.tempoImp[kontaTempo])) {
+        malha.imprime((*simulationContext).solverTime);
         kontaTempo++;
         if (kontaTempo >= dados.temp.parserieImp)
             kontaTempo--;
@@ -624,16 +623,16 @@ void solverP3D::transientePoissonDummy(double vdelt, int konta) {
     }
     itera = 0;
     while (norma > 1.e-20 || itera < 5) {
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
+#pragma omp parallel for num_threads((*simulationContext).poisson3DThreadCount)
         for (int i = 0; i < malha.nele; i++) {
             for (int j = 0; j < malha.mlh3d[i].cel3D.dim; j++) {
                 malha.mlh3d[i].cel3D.gradGreenTI[j] = malha.mlh3d[i].cel3D.gradGreenT[j];
             }
         }
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
+#pragma omp parallel for num_threads((*simulationContext).poisson3DThreadCount)
         for (int i = 0; i < malha.nele; i++)
             malha.mlh3d[i].calcGradGreen();
-#pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
+#pragma omp parallel for num_threads((*simulationContext).poisson3DThreadCount)
         for (int i = 0; i < malha.nele; i++)
             malha.mlh3d[i].GeraLocal(1.);
         indsra = 0;

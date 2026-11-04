@@ -15,7 +15,7 @@
 #include "Vetor.h"
 #include "estruturaTabDin.h"
 #include "estruturasPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <fstream>
 #include <math.h>
@@ -191,7 +191,7 @@ class celrad {
     double pBolha;
     double BSW;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
     celrad();
 
@@ -201,7 +201,7 @@ class celrad {
            double vzD1, double vdh, double vsL, double vsW, double vsLRes, double vsWRes, double vsWPoc,
            double vsatConata, const double vip, tabelaPemRelOA vkRelOA, tabelaPemRelOG vkRelOG,
            tabelaPresCapOA vpcOA, tabelaPresCapGO vpcGO,
-           ProFluCol vfluc, ProFlu vflup, celrad *vcelL, celrad *vcelR, varGlob1D *Vvg1dSP);
+           ProFluCol vfluc, ProFlu vflup, celrad *vcelL, celrad *vcelR, SimulationContext *context);
     celrad(const celrad &); // construtor por copia
     celrad &operator=(const celrad &);
     double interpolaTabela(int nserie, double valx, double *x, double *y);

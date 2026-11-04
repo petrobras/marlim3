@@ -77,7 +77,7 @@ main()
  │
  ├── IF tipoSimulacao == REDE
  │    ├── Rede arqRede(...) → read network JSON
- │    ├── Set fields on the global shared-state struct `varGlob1D` (defined in `variaveisGlobais1D.h`): network flags (`chaverede`, `chaveredeT`, `chaveAnelGL`, `chaveRedeParalela`), file count (`narq`), fluid type (`fluidoRede`), max temperature (`TmaxR`)
+ │    ├── Set fields on the global shared-state struct `SimulationContext` (defined in `SimulationContext.h`): network flags (`networkMode`, `networkTransientEnabled`, `gasLiftRingNetworkEnabled`, `parallelNetworkMode`), branch count (`branchCount`), fluid mode (`networkFluidMode`), final time (`networkFinalTime`)
  │    ├── Determine network sub-type:
  │    │    ├── Standard production network (not GL-loop, not parallel, not injection)
  │    │    │    ├── descarteTramo() → mark inactive branches
@@ -136,7 +136,7 @@ main()
  │    │    │    ├── inicializaTransientePoisson()
  │    │    │    └── Sub-cycling loop: transientePoissonDummy() until wall heat flux converges
  │    │    ├── Set RGOMax = 14000 (black-oil dead-oil safety bound)
- │    │    └── Time-stepping loop (while lixo5 < tfinal):
+ │    │    └── Time-stepping loop (while simulationTime < tfinal):
  │    │         ├── SolveTrans() → advance one time step
  │    │         ├── WriteSnapShot() at user-specified times (tempsnp[])
  │    │         └── WriteSnapShot() → final snapshot after loop exits
@@ -405,7 +405,7 @@ After convergence, writes:
 
 #### Transient
 
-The single-branch transient simulation is driven by the `SolveTrans()` loop inside `main()` (see [High-Level Execution Flow](#high-level-execution-flow)). `SolveTrans()` is a method on `SProd` ([`SisProd.cpp`](https://github.com/petrobras/marlim3/blob/main/src/core/SisProd.cpp)) rather than a free function in `Num4Main.cpp`. The transient loop in `main()` initialises cell-level properties, calls `determinaDT()`, and iterates `SolveTrans()` → `WriteSnapShot()` until `lixo5 ≥ tfinal`.
+The single-branch transient simulation is driven by the `SolveTrans()` loop inside `main()` (see [High-Level Execution Flow](#high-level-execution-flow)). `SolveTrans()` is a method on `SProd` ([`SisProd.cpp`](https://github.com/petrobras/marlim3/blob/main/src/core/SisProd.cpp)) rather than a free function in `Num4Main.cpp`. The transient loop in `main()` initialises cell-level properties, calls `determinaDT()`, and iterates `SolveTrans()` → `WriteSnapShot()` until `simulationTime ≥ tfinal`.
 
 ---
 
@@ -648,7 +648,7 @@ where `N = round(porc)` is the snapshot index (percentage or sequence number).
 
 3. **Gas-lift service cells** (if `lingas > 0`) — ~40 fields per gas cell including pressures, velocities, thermal data.
 
-4. **Footer** — simulation time `lixo5`.
+4. **Footer** — simulation time `simulationTime`.
 
 **HISEP mode** (`HISEP == 1`): writes a simplified CSV table (`t ; HL ; slipRatio ; Usg ; Usl ; FlowPattern ; cell`) for flow-pattern analysis.
 
@@ -687,7 +687,7 @@ Trend files record the **temporal evolution** of variables at user-selected axia
 | `TENDG-{dist}.dat` | `SProd::ImprimeTrendGCab()` + `ImprimeTrendG()` | Gas-lift service-line trends |
 | `TENDTRANSP-{cel}-{cam}-{disc}.dat` | `SProd::ImprimeTrendTransP()` | Thermal layer trends |
 
-Format: text matrix, semicolon-delimited, `width=20`, `precision=19`. Three comment lines (`# Comprimento`, `# Rotulo`, `# Indice da Celula`) precede the column headers. Data is buffered in `MatTrendP[i]` / `MatTrendG[i]` matrices during time-stepping (filled by `Ler::imprimeTrend()`) and flushed to disk by the `ImprimeTrend*` methods in append mode (`ios_base::app`). Columns mirror the profile set and are controlled by the same per-position boolean flags (`trendp[i].*`).
+Format: text matrix, semicolon-delimited, `width=20`, `precision=19`. Four comment lines precede the column headers: engine version and input-file path, followed by length, label and cell index. Readers also accept the previous format with three comment lines. Data is buffered in `MatTrendP[i]` / `MatTrendG[i]` matrices during time-stepping (filled by `Ler::imprimeTrend()`) and flushed to disk by the `ImprimeTrend*` methods in append mode (`ios_base::app`). Columns mirror the profile set and are controlled by the same per-position boolean flags (`trendp[i].*`).
 
 ### Steady-State Summary
 
@@ -719,7 +719,7 @@ The file includes headers organized into the following groups:
 | `Leitura.h` | Input file parsing, enums |
 | `LeituraVapor.h` | Vapor/steam input parsing |
 | `LerAP.h` | Parametric analysis reader |
-| `variaveisGlobais1D.h` | `varGlob1D` — shared simulation state |
+| `SimulationContext.h` | `SimulationContext` — shared simulation state |
 | `Log.h` | `Logger` — structured logging |
 
 ### Fluid Properties

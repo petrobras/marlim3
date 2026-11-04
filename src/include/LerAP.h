@@ -30,7 +30,7 @@
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -424,7 +424,7 @@ class APara {
     int *vecParSerie = nullptr;
     int varSeq[23];
     int vfp;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
     int ncel;
     detcelp *celp;
     ProFlu *flup;
@@ -434,7 +434,7 @@ class APara {
 
     int imprimePerfil;
 
-    APara(varGlob1D *Vvg1dSP, const string IMPFILE, int vncel, detcelp *vcelp, ProFlu *vflup = 0, detBCS *vbcs = 0,
+    APara(SimulationContext *context, const string IMPFILE, int vncel, detcelp *vcelp, ProFlu *vflup = 0, detBCS *vbcs = 0,
     		detMultiBCS *vmbcs = 0, detFONGAS *vfonteg = 0);
     APara(const APara &); // Copy constructor
     APara &operator=(const APara &);
@@ -500,8 +500,11 @@ class APara {
             delete[] APCondEquiv;
         }
 
-        liberaSequencias();
+        releaseSweepVectors();
     }
+
+    /// Releases sequence indices, per-variable lengths, and pressure/liquid-rate outputs.
+    void releaseSweepVectors();
 
     Document parseEntrada();
     void parse_variaveis(Value &variaveis_json);
@@ -594,7 +597,6 @@ class APara {
 
   private:
     int tamanhoSerie(const Value &serie, const string &chaveJson);
-    void liberaSequencias();
 };
 
 #endif /* LERAP_H_ */

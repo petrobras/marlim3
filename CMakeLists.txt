@@ -289,6 +289,17 @@ option(MARLIM_BUILD_TESTS "Build the C++ unit tests" OFF)
 if(MARLIM_BUILD_TESTS)
     enable_testing()
 
+    add_executable(test_transient_temperature_update
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_transient_temperature_update.cpp
+    )
+    target_include_directories(test_transient_temperature_update PRIVATE ${INCDIR})
+    add_test(NAME transient_temperature_update COMMAND test_transient_temperature_update)
+
+    add_executable(test_transient_kinetic_boundary
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_transient_kinetic_boundary.cpp)
+    target_include_directories(test_transient_kinetic_boundary PRIVATE ${INCDIR})
+    add_test(NAME transient_kinetic_boundary COMMAND test_transient_kinetic_boundary)
+
     add_executable(test_inlet_boundary_initialization
         ${CMAKE_SOURCE_DIR}/tests/cpp/test_inlet_boundary_initialization.cpp
     )
@@ -299,37 +310,44 @@ if(MARLIM_BUILD_TESTS)
     add_test(NAME inlet_boundary_initialization
         COMMAND test_inlet_boundary_initialization)
 
-    # Reuse the engine sources without the entry point, so the test binary can
-    # define its own main().
-    set(MARLIM_TEST_CXX_SOURCES ${CXX_SOURCES})
-    list(REMOVE_ITEM MARLIM_TEST_CXX_SOURCES ${SRCDIR}/Num4Main.cpp)
-
     add_executable(test_friction_factor
         ${CMAKE_SOURCE_DIR}/tests/cpp/test_friction_factor.cpp
-        ${MARLIM_TEST_CXX_SOURCES}
-        ${F90_SOURCES}
+        ${SRCDIR}/GradientCorrelations.cpp
     )
 
     target_include_directories(test_friction_factor PRIVATE
         ${INCDIR}
         ${LIBDIR}
-        ${MODDIR}
     )
+
+    # Keep the tested numerical routine and discard unrelated correlations.
+    if(MSVC)
+        target_compile_options(test_friction_factor PRIVATE /Gy /Gw)
+        target_link_options(test_friction_factor PRIVATE /OPT:REF)
+    else()
+        target_compile_options(test_friction_factor PRIVATE -ffunction-sections -fdata-sections
+            $<$<CONFIG:Release>:-ffp-contract=off>)
+        if(APPLE)
+            target_link_options(test_friction_factor PRIVATE -Wl,-dead_strip)
+        else()
+            target_link_options(test_friction_factor PRIVATE -Wl,--gc-sections)
+        endif()
+    endif()
 
     if(OpenMP_CXX_FOUND)
         target_link_libraries(test_friction_factor PRIVATE OpenMP::OpenMP_CXX)
     endif()
 
-    if(UNIX AND NOT APPLE AND CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-        target_link_libraries(test_friction_factor PRIVATE ${MARLIM_GNU_FORTRAN_RUNTIME_LIBS})
-    endif()
-
-    if(MARLIM_FORTRAN_LIBS)
-        target_link_libraries(test_friction_factor PRIVATE ${MARLIM_FORTRAN_LIBS})
-    endif()
 
     set_target_properties(test_friction_factor PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     add_test(NAME friction_factor COMMAND test_friction_factor)
+
+    add_executable(test_upstream_numerics
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_upstream_numerics.cpp
+        ${SRCDIR}/Bcsm2.cpp
+    )
+    target_include_directories(test_upstream_numerics PRIVATE ${INCDIR} ${LIBDIR})
+    add_test(NAME upstream_numerics COMMAND test_upstream_numerics)
 endif()

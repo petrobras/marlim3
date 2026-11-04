@@ -6,12 +6,13 @@
  */
 #define _USE_MATH_DEFINES // para M_PI
 #include "SisProdVap.h"
+#include "UnitConversions.h"
 #include <math.h>
 
-SProdVap::SProdVap(string nomeArquivoEntrada, string nomeArquivoLog, varGlob1D *Vvg1dSP) : arq(nomeArquivoEntrada, Vvg1dSP), flut(arq.ncelp, arq.nvarprofp + 2 + 1 + 1), matglobP(2 * arq.ncelp, 2, 2), termolivreP(
+SProdVap::SProdVap(string nomeArquivoEntrada, string nomeArquivoLog, SimulationContext *context) : arq(nomeArquivoEntrada, context), flut(arq.ncelp, arq.nvarprofp + 2 + 1 + 1), matglobP(2 * arq.ncelp, 2, 2), termolivreP(
                                                                                                                                                                                                             2 * arq.ncelp) {
 
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     receb = 0;
     fechaM1 = 0;
     abreM1 = 0;
@@ -123,7 +124,7 @@ SProdVap::SProdVap() : arq(), flut(1, 1 + 2 + 1 + 1), matglobP(2 * 1, 2, 2), ter
     velmedDesc = 0;
     tempmedDEsc = 0;
 
-    vg1dSP = 0;
+    simulationContext = 0;
 }
 
 SProdVap &SProdVap::operator=(const SProdVap &sp) {
@@ -175,7 +176,7 @@ SProdVap &SProdVap::operator=(const SProdVap &sp) {
     if (npig > 0)
         delete[] receb;
 
-    vg1dSP = sp.vg1dSP;
+    simulationContext = sp.simulationContext;
     arq = sp.arq;
     flut = sp.flut;
     flutG = sp.flutG;
@@ -236,8 +237,8 @@ void SProdVap::montasistema() {
         indpigP = 0;
         reinicia = 0;
         masChkSup = 0;
-        (*vg1dSP).localtiny = arq.mono;
-        (*vg1dSP).CritCond = arq.critcond;
+        (*simulationContext).smallValueTolerance = arq.mono;
+        (*simulationContext).condensationVoidFractionThreshold = arq.critcond;
         titRev = -1;
 
         arq.geraduto();
@@ -256,8 +257,8 @@ void SProdVap::montasistema() {
                        "Foi escolhida uma condicao de contorno de pressao no início da tubulacao e foi colocada uma fonte de massa neste inicio, isto pode causar inconsistencias",
                        "", "");
         }
-        if ((arq.perm == 1 || (*vg1dSP).chaverede > 0) && celula[0].acsr.tipo == 0) {
-            if (arq.ConContEntrada == 0 || arq.CCPres.tit[0] < (1 - (*vg1dSP).localtiny)) {
+        if ((arq.perm == 1 || (*simulationContext).networkMode > 0) && celula[0].acsr.tipo == 0) {
+            if (arq.ConContEntrada == 0 || arq.CCPres.tit[0] < (1 - (*simulationContext).smallValueTolerance)) {
                 InjMultVap injliqMRT(0, 0);
                 celula[0].acsr.tipo = 12;
                 celula[0].acsr.injmvap = injliqMRT;
@@ -314,11 +315,11 @@ void SProdVap::montasistema() {
             cout << i << "  " << arq.evento[i] << "\n";
         arq.geraevento(noinicial, noextremo);
 
-        (*vg1dSP).lixo5 = 0.;
-        (*vg1dSP).contador = 0;
+        (*simulationContext).simulationTime = 0.;
+        (*simulationContext).timeStepIndex = 0;
         arq.atualiza(noinicial, noextremo, chokeSup, celula, pGSup, temperatura,
-                     presE, tempE, titE, (*vg1dSP).lixo5);
-        // presiniG,tempiniG,presE,tempE,titE,betaE,(*vg1dSP).lixo5);//alteracao7
+                     presE, tempE, titE, (*simulationContext).simulationTime);
+        // presiniG,tempiniG,presE,tempE,titE,betaE,(*simulationContext).lixo5);//alteracao7
         if (chokeSup.AreaGarg >= 0.6 * celula[ncel - 1].duto.area)
             aberto = 1;
         else
@@ -389,15 +390,15 @@ void SProdVap::montasistema() {
 
         kontaTempoProf = 0;
         if (arq.nperfisp > 0) {
-            arq.imprimeProfile(celula, flut, (*vg1dSP).lixo5, indTramo);
-            if (arq.profp.tempo[0] <= 0 + (*vg1dSP).localtiny)
+            arq.imprimeProfile(celula, flut, (*simulationContext).simulationTime, indTramo);
+            if (arq.profp.tempo[0] <= 0 + (*simulationContext).smallValueTolerance)
                 kontaTempoProf++;
         }
 
         kontaTempoTransProf = 0;
         if (arq.nperfistransp > 0) {
-            arq.imprimeProfileTrans(celula, ncelperftransp, (*vg1dSP).lixo5, indTramo);
-            if (arq.proftransp.tempo[0] <= 0 + (*vg1dSP).localtiny)
+            arq.imprimeProfileTrans(celula, ncelperftransp, (*simulationContext).simulationTime, indTramo);
+            if (arq.proftransp.tempo[0] <= 0 + (*simulationContext).smallValueTolerance)
                 kontaTempoTransProf++;
         }
 
@@ -405,7 +406,7 @@ void SProdVap::montasistema() {
         tmpLog = saidaLog.str();
         contaLog = 0;
         int nevent = arq.logevento.size();
-        while (fabs(arq.logevento[contaLog].instante - (*vg1dSP).lixo5) < dt && contaLog < nevent) {
+        while (fabs(arq.logevento[contaLog].instante - (*simulationContext).simulationTime) < dt && contaLog < nevent) {
             time_t now = time(0);
             tm *ltm = localtime(&now); ///////////Retirado de https://www.tutorialspoint.com/cplusplus/cpp_date_time.htm
             ofstream escreveIni(tmpLog.c_str(), ios_base::app);
@@ -459,13 +460,13 @@ void SProdVap::calctemp(int i, double tempantiga) {
     double area = 0.25 * M_PI * dia * dia;
     double alfmed = celula[i].alf;
     double ugsmed;
-    if (celula[i].alf > (*vg1dSP).localtiny)
+    if (celula[i].alf > (*simulationContext).smallValueTolerance)
         ugsmed = celula[i].QG / area;
     else {
         ugsmed = 0.;
     }
     double ulsmed;
-    if (celula[i].alf < 1. - (*vg1dSP).localtiny)
+    if (celula[i].alf < 1. - (*simulationContext).smallValueTolerance)
         ulsmed = celula[i].QL / area;
     else {
         ulsmed = 0.;
@@ -500,11 +501,11 @@ void SProdVap::calctemp(int i, double tempantiga) {
     double coefdxP = (rhol * ulsmed * jtl + rhog * ugsmed * jtg) * area;
     double dpdx;
     if (i < ncel)
-        dpdx = 2. * (celula[i + 1].presaux - celula[i].pres) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i + 1].presaux - celula[i].pres) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     else
-        dpdx = 2. * (celula[i].pres - celula[i].presaux) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i].pres - celula[i].presaux) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     if (celula[i].acsr.tipo == 5 && celula[i].acsr.chk.AreaGarg <= (1e-3 + arq.master1.razareaativ) * celula[i].duto.area)
-        dpdx = 2. * (celula[i].pres - celula[i].presaux) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i].pres - celula[i].presaux) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     // celula[i].VTemper=coefdxT*area/coefTempo;//corrigir a multiplicação pela área
     celula[i].VTemper = coefdxT / coefTempo;
     double dtdx = (celula[i].temp - tempantiga) / dxmed;
@@ -522,7 +523,7 @@ void SProdVap::calctemp(int i, double tempantiga) {
         dpdx = 0.;
     }
     if (celula[i].acsr.tipo == 8 && celula[i].acsr.bvol.freq > 1.) {
-        dpdx = (celula[i].pres - celula[i - 1].pres) * 98066.5 / dxmed;
+        dpdx = (celula[i].pres - celula[i - 1].pres) * units::kPascalPerKgfPerCm2 / dxmed;
     }
 
     double cinetico = 0;
@@ -600,9 +601,9 @@ void SProdVap::calctemp(int i, double tempantiga) {
                 double rholpJ = celula[i].flui.MasEspLiq(celula[i].pres, celula[i].temp, TEMP);
                 double rholmixJ = rholpJ;
 
-                double hidroM = sin(celula[i - 1].duto.teta) * (0.5 * celula[i - 1].dx) * (rholmix * (1 - alfE) + alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP)) * 9.82 / 98600.;
+                double hidroM = sin(celula[i - 1].duto.teta) * (0.5 * celula[i - 1].dx) * (rholmix * (1 - alfE) + alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP)) * 9.82 / units::kPascalPerKgfPerCm2;
                 double hidroJ = sin(celula[i].duto.teta) * (0.5 * celula[i].dx) * (rholmixJ * (1 - alfJ) + alfJ * celula[i].flui.MasEspGas(celula[i].pres, celula[i].temp, TEMP)) *
-                                9.82 / 98600.;
+                                9.82 / units::kPascalPerKgfPerCm2;
 
                 double tit = alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP) / (celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP) * alfE + rholmix * (1. - alfE));
                 double jtlM = celula[i - 1].flui.JTlFunc(celula[i - 1].pres - hidroM, celula[i - 1].temp);
@@ -663,20 +664,20 @@ void SProdVap::calctemp(int i, double tempantiga) {
         alfinterL = celula[i].alf;
     }
     double delvel;
-    if (alfinter > (*vg1dSP).localtiny && alfinter < (1. - (*vg1dSP).localtiny))
+    if (alfinter > (*simulationContext).smallValueTolerance && alfinter < (1. - (*simulationContext).smallValueTolerance))
         delvel = ugsmed / alfinter - ulsmed / (1. - alfinter);
-    else if (alfinter > (*vg1dSP).localtiny)
+    else if (alfinter > (*simulationContext).smallValueTolerance)
         delvel = ugsmed;
     else
         delvel = ulsmed;
-    double verifica = area * celula[i].pres * 98066.5 * delvel * (alfinter - alfinterL) / celula[i].dx;
+    double verifica = area * celula[i].pres * units::kPascalPerKgfPerCm2 * delvel * (alfinter - alfinterL) / celula[i].dx;
 
     if (celula[i].temp < 0 || celula[i].temp > 100) {
         int para;
         para = 0.;
     }
 
-    celula[i].temp = ((coefTempo / celula[i].dt) * celula[i].temp - (coefPresTempo * (celula[i].pres - celula[i].presini) * 98066.5 / celula[i].dt) - coefdxT * dtdx + coefdxP * dpdx - cinetico - (hidro - 0. * verifica) + celula[i - 1].potB / dxmed + fontemassL + fontemassG + fluxcal -
+    celula[i].temp = ((coefTempo / celula[i].dt) * celula[i].temp - (coefPresTempo * (celula[i].pres - celula[i].presini) * units::kPascalPerKgfPerCm2 / celula[i].dt) - coefdxT * dtdx + coefdxP * dpdx - cinetico - (hidro - 0. * verifica) + celula[i - 1].potB / dxmed + fontemassL + fontemassG + fluxcal -
                       latente) /
                      (coefTempo / celula[i].dt);
     if (celula[i].temp < -50.)
@@ -793,8 +794,8 @@ double SProdVap::calcHmix(int i, double tempantiga) {
                 double rholpJ = celula[i].flui.MasEspLiq(celula[i].pres, celula[i].temp, TEMP);
                 double rholmixJ = rholpJ;
 
-                double hidroM = sin(celula[i - 1].duto.teta) * (0.5 * celula[i - 1].dx) * (rholmix * (1 - alfE) + alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP)) * 9.82 / 98600.;
-                double hidroJ = sin(celula[i].duto.teta) * (0.5 * celula[i].dx) * (rholmixJ * (1 - alfJ) + alfJ * celula[i].flui.MasEspGas(celula[i].pres, celula[i].temp, TEMP)) * 9.82 / 98600.;
+                double hidroM = sin(celula[i - 1].duto.teta) * (0.5 * celula[i - 1].dx) * (rholmix * (1 - alfE) + alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP)) * 9.82 / units::kPascalPerKgfPerCm2;
+                double hidroJ = sin(celula[i].duto.teta) * (0.5 * celula[i].dx) * (rholmixJ * (1 - alfJ) + alfJ * celula[i].flui.MasEspGas(celula[i].pres, celula[i].temp, TEMP)) * 9.82 / units::kPascalPerKgfPerCm2;
 
                 double tit = alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP) / (celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP) * alfE + rholmix * (1. - alfE));
 
@@ -853,7 +854,7 @@ double SProdVap::calcTempEntalp(int i, double tempantiga) {
     double difer = energint - energchute;
     double tneg;
     double tpos;
-    if (alf < (*vg1dSP).localtiny || (1. - alf) < (*vg1dSP).localtiny) {
+    if (alf < (*simulationContext).smallValueTolerance || (1. - alf) < (*simulationContext).smallValueTolerance) {
         if (difer > 0.) {
             tpos = t0;
             while (difer > 0.) {
@@ -948,13 +949,13 @@ void SProdVap::calcTransMassTermo(int i) {
     double alfmed = celula[i].alf;
     double ugsmed;
 
-    if (celula[i].alf > (*vg1dSP).localtiny)
+    if (celula[i].alf > (*simulationContext).smallValueTolerance)
         ugsmed = celula[i].QG / area;
     else {
         ugsmed = 0.;
     }
     double ulsmed;
-    if (celula[i].alf < 1. - (*vg1dSP).localtiny)
+    if (celula[i].alf < 1. - (*simulationContext).smallValueTolerance)
         ulsmed = celula[i].QL / area;
     else {
         ulsmed = 0.;
@@ -989,11 +990,11 @@ void SProdVap::calcTransMassTermo(int i) {
     double coefdxP = (rhol * ulsmed * jtl + rhog * ugsmed * jtg) * area;
     double dpdx;
     if (i < ncel)
-        dpdx = 2. * (celula[i + 1].presaux - celula[i].pres) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i + 1].presaux - celula[i].pres) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     else
-        dpdx = 2. * (celula[i].pres - celula[i].presaux) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i].pres - celula[i].presaux) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     if (celula[i].acsr.tipo == 5 && celula[i].acsr.chk.AreaGarg <= (1e-3 + arq.master1.razareaativ) * celula[i].duto.area)
-        dpdx = 2. * (celula[i].pres - celula[i].presaux) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i].pres - celula[i].presaux) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     celula[i].VTemper = coefdxT / coefTempo;
     double dtdx = (celula[i].temp - celula[i - 1].temp) / dxmed;
     if (i < ncel)
@@ -1009,7 +1010,7 @@ void SProdVap::calcTransMassTermo(int i) {
         dpdx = 0.;
     }
     if (celula[i].acsr.tipo == 8 && celula[i].acsr.bvol.freq > 1.) {
-        dpdx = (celula[i].pres - celula[i - 1].pres) * 98066.5 / dxmed;
+        dpdx = (celula[i].pres - celula[i - 1].pres) * units::kPascalPerKgfPerCm2 / dxmed;
     }
 
     double cinetico = 0;
@@ -1087,9 +1088,9 @@ void SProdVap::calcTransMassTermo(int i) {
                 double rholpJ = celula[i].flui.MasEspLiq(celula[i].pres, celula[i].temp, TEMP);
                 double rholmixJ = rholpJ;
 
-                double hidroM = sin(celula[i - 1].duto.teta) * (0.5 * celula[i - 1].dx) * (rholmix * (1 - alfE) + alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP)) * 9.82 / 98600.;
+                double hidroM = sin(celula[i - 1].duto.teta) * (0.5 * celula[i - 1].dx) * (rholmix * (1 - alfE) + alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP)) * 9.82 / units::kPascalPerKgfPerCm2;
                 double hidroJ = sin(celula[i].duto.teta) * (0.5 * celula[i].dx) * (rholmixJ * (1 - alfJ) + alfJ * celula[i].flui.MasEspGas(celula[i].pres, celula[i].temp, TEMP)) *
-                                9.82 / 98600.;
+                                9.82 / units::kPascalPerKgfPerCm2;
 
                 double tit = alfE * celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP) / (celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp, TEMP) * alfE + rholmix * (1. - alfE));
                 double jtlM = celula[i - 1].flui.JTlFunc(celula[i - 1].pres - hidroM, celula[i - 1].temp);
@@ -1150,20 +1151,20 @@ void SProdVap::calcTransMassTermo(int i) {
         alfinterL = celula[i].alf;
     }
     double delvel;
-    if (alfinter > (*vg1dSP).localtiny && alfinter < (1. - (*vg1dSP).localtiny))
+    if (alfinter > (*simulationContext).smallValueTolerance && alfinter < (1. - (*simulationContext).smallValueTolerance))
         delvel = ugsmed / alfinter - ulsmed / (1. - alfinter);
-    else if (alfinter > (*vg1dSP).localtiny)
+    else if (alfinter > (*simulationContext).smallValueTolerance)
         delvel = ugsmed;
     else
         delvel = ulsmed;
-    double verifica = area * celula[i].pres * 98066.5 * delvel * (alfinter - alfinterL) / celula[i].dx;
+    double verifica = area * celula[i].pres * units::kPascalPerKgfPerCm2 * delvel * (alfinter - alfinterL) / celula[i].dx;
 
     if (celula[i].temp < 0 || celula[i].temp > 100) {
         int para;
         para = 0.;
     }
 
-    celula[i].FonteMudaFase = (-(coefTempo / celula[i].dt) * (celula[i].temp - celula[i].tempini) - (coefPresTempo * (celula[i].pres - celula[i].presini) * 98066.5 / celula[i].dt) - coefdxT * dtdx + coefdxP * dpdx - cinetico - (hidro - 0. * verifica) + celula[i - 1].potB / dxmed + fontemassL + fontemassG + fluxcal); // / (coefTempo / celula[i].dt);
+    celula[i].FonteMudaFase = (-(coefTempo / celula[i].dt) * (celula[i].temp - celula[i].tempini) - (coefPresTempo * (celula[i].pres - celula[i].presini) * units::kPascalPerKgfPerCm2 / celula[i].dt) - coefdxT * dtdx + coefdxP * dpdx - cinetico - (hidro - 0. * verifica) + celula[i - 1].potB / dxmed + fontemassL + fontemassG + fluxcal); // / (coefTempo / celula[i].dt);
 
     celula[i].FonteMudaFase /= latente;
 }
@@ -1183,8 +1184,8 @@ void SProdVap::FonteValv(int ind) {
         double rholpJ = celula[ind + 1].flui.MasEspLiq(celula[ind + 1].pres, celula[ind + 1].temp, TEMP);
         double rholmixJ = rholpJ;
 
-        double hidroM = sin(celula[ind].duto.teta) * (0.5 * celula[ind].dx) * (rholmix * (1 - alfE) + alfE * celula[ind].flui.MasEspGas(celula[ind].pres, celula[ind].temp, TEMP)) * 9.82 / 98600.;
-        double hidroJ = sin(celula[ind + 1].duto.teta) * (0.5 * celula[ind + 1].dx) * (rholmixJ * (1 - alfJ) + alfJ * celula[ind + 1].flui.MasEspGas(celula[ind + 1].pres, celula[ind + 1].temp, TEMP)) * 9.82 / 98600.;
+        double hidroM = sin(celula[ind].duto.teta) * (0.5 * celula[ind].dx) * (rholmix * (1 - alfE) + alfE * celula[ind].flui.MasEspGas(celula[ind].pres, celula[ind].temp, TEMP)) * 9.82 / units::kPascalPerKgfPerCm2;
+        double hidroJ = sin(celula[ind + 1].duto.teta) * (0.5 * celula[ind + 1].dx) * (rholmixJ * (1 - alfJ) + alfJ * celula[ind + 1].flui.MasEspGas(celula[ind + 1].pres, celula[ind + 1].temp, TEMP)) * 9.82 / units::kPascalPerKgfPerCm2;
 
         double tit = alfE * celula[ind].flui.MasEspGas(celula[ind].pres, celula[ind].temp, TEMP) / (celula[ind].flui.MasEspGas(celula[ind].pres, celula[ind].temp, TEMP) * alfE + rholmix * (1. - alfE));
         double masChk;
@@ -1192,7 +1193,7 @@ void SProdVap::FonteValv(int ind) {
         double ypres = (celula[ind + 1].pres + hidroJ) / (celula[ind].pres - hidroM);
         int check = 1;
         if (ypres < 1. || check == 1) {
-            if ((*vg1dSP).lixo5 > 7059) {
+            if ((*simulationContext).simulationTime > 7059) {
                 int para;
                 para = 1;
             }
@@ -1203,7 +1204,7 @@ void SProdVap::FonteValv(int ind) {
             alfE = celula[ind + 1].alf;
             ypres = 1. / ypres;
             sense = -1;
-            if ((*vg1dSP).lixo5 > 7059) {
+            if ((*simulationContext).simulationTime > 7059) {
                 int para;
                 para = 1;
             }
@@ -1413,15 +1414,15 @@ void SProdVap::CalcC0Ud(int ind, double &c0, double &ud) {
             hns = 1. - celula[ind].alf;
         if (celula[ind].QG < 0)
             hns = 1. - celula[ind].alfPigE;
-        if (fabs(celula[ind].QG) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(celula[ind - 1].alfPigD) > (*vg1dSP).localtiny && fabs(1. - celula[ind - 1].alfPigD) > (*vg1dSP).localtiny)
+        if (fabs(celula[ind].QG) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(celula[ind - 1].alfPigD) > (*simulationContext).smallValueTolerance && fabs(1. - celula[ind - 1].alfPigD) > (*simulationContext).smallValueTolerance)
                 hns = 1. - celula[ind - 1].alfPigD;
-            else if (fabs(celula[ind - 1].alfPigD) < (*vg1dSP).localtiny && fabs(1. - celula[ind - 1].alfPigD) < (*vg1dSP).localtiny && fabs(celula[ind].alfPigE) > (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) > (*vg1dSP).localtiny)
+            else if (fabs(celula[ind - 1].alfPigD) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind - 1].alfPigD) < (*simulationContext).smallValueTolerance && fabs(celula[ind].alfPigE) > (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) > (*simulationContext).smallValueTolerance)
                 hns = 1. - celula[ind].alfPigE;
             else
                 hns = 0.5 * (1. - celula[ind].alfPigE + 1. - celula[ind - 1].alfPigD);
         }
-        if (hns < (*vg1dSP).localtiny || hns > 1. - (*vg1dSP).localtiny)
+        if (hns < (*simulationContext).smallValueTolerance || hns > 1. - (*simulationContext).smallValueTolerance)
             hns = 0.5 * (1. - celula[ind].alfPigE + 1. - celula[ind - 1].alfPigD);
 
         double hol0 = hns;
@@ -1720,15 +1721,15 @@ void SProdVap::CalcC0UdBuf(int ind, double &c0, double &ud) {
             hns = 1. - celula[ind].alf;
         if ((celula[ind].MCBuf - celula[ind].MliqiniBuf) < 0)
             hns = 1. - celula[ind].alfPigE;
-        if (fabs((celula[ind].MCBuf - celula[ind].MliqiniBuf)) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(celula[ind - 1].alfPigD) > (*vg1dSP).localtiny && fabs(1. - celula[ind - 1].alfPigD) > (*vg1dSP).localtiny)
+        if (fabs((celula[ind].MCBuf - celula[ind].MliqiniBuf)) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(celula[ind - 1].alfPigD) > (*simulationContext).smallValueTolerance && fabs(1. - celula[ind - 1].alfPigD) > (*simulationContext).smallValueTolerance)
                 hns = 1. - celula[ind - 1].alfPigD;
-            else if (fabs(celula[ind - 1].alfPigD) < (*vg1dSP).localtiny && fabs(1. - celula[ind - 1].alfPigD) < (*vg1dSP).localtiny && fabs(celula[ind].alfPigE) > (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) > (*vg1dSP).localtiny)
+            else if (fabs(celula[ind - 1].alfPigD) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind - 1].alfPigD) < (*simulationContext).smallValueTolerance && fabs(celula[ind].alfPigE) > (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) > (*simulationContext).smallValueTolerance)
                 hns = 1. - celula[ind].alfPigE;
             else
                 hns = 0.5 * (1. - celula[ind].alfPigE + 1. - celula[ind - 1].alfPigD);
         }
-        if (hns < (*vg1dSP).localtiny || hns > 1. - (*vg1dSP).localtiny)
+        if (hns < (*simulationContext).smallValueTolerance || hns > 1. - (*simulationContext).smallValueTolerance)
             hns = 0.5 * (1. - celula[ind].alfPigE + 1. - celula[ind - 1].alfPigD);
 
         double hol0 = hns;
@@ -1987,15 +1988,15 @@ void SProdVap::CalcC0UdIni(int ind, double &c0, double &ud) {
 
         if (celula[ind].QG < 0)
             hns = 1. - celula[ind].alfPigE;
-        if (fabs(celula[ind].QG) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(alfE) > (*vg1dSP).localtiny && fabs(1. - alfE) > (*vg1dSP).localtiny)
+        if (fabs(celula[ind].QG) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(alfE) > (*simulationContext).smallValueTolerance && fabs(1. - alfE) > (*simulationContext).smallValueTolerance)
                 hns = 1 - alfE;
-            else if (fabs(alfE) < (*vg1dSP).localtiny && fabs(1. - celula[ind - 1].alfPigD) < (*vg1dSP).localtiny && fabs(celula[ind].alfPigE) > (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) > (*vg1dSP).localtiny)
+            else if (fabs(alfE) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind - 1].alfPigD) < (*simulationContext).smallValueTolerance && fabs(celula[ind].alfPigE) > (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) > (*simulationContext).smallValueTolerance)
                 hns = 1. - celula[ind].alfPigE;
             else
                 hns = 0.5 * (1. - celula[ind].alfPigE + 1. - alfE);
         }
-        if (hns < (*vg1dSP).localtiny || hns > 1. - (*vg1dSP).localtiny)
+        if (hns < (*simulationContext).smallValueTolerance || hns > 1. - (*simulationContext).smallValueTolerance)
             hns = 0.5 * (1. - celula[ind].alfPigE + 1. - alfE);
 
         double hol0 = hns;
@@ -2217,15 +2218,15 @@ void SProdVap::CalcC0UdIniBuf(int ind, double &c0, double &ud) {
 
         if ((celula[ind].MCBuf - celula[ind].MliqiniBuf) < 0)
             hns = 1. - celula[ind].alfPigE;
-        if (fabs(celula[ind].MCBuf - celula[ind].MliqiniBuf) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) < (*vg1dSP).localtiny && fabs(alfE) > (*vg1dSP).localtiny && fabs(1. - alfE) > (*vg1dSP).localtiny)
+        if (fabs(celula[ind].MCBuf - celula[ind].MliqiniBuf) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) < (*simulationContext).smallValueTolerance && fabs(alfE) > (*simulationContext).smallValueTolerance && fabs(1. - alfE) > (*simulationContext).smallValueTolerance)
                 hns = 1 - alfE;
-            else if (fabs(alfE) < (*vg1dSP).localtiny && fabs(1. - celula[ind - 1].alfPigD) < (*vg1dSP).localtiny && fabs(celula[ind].alfPigE) > (*vg1dSP).localtiny && fabs(1. - celula[ind].alfPigE) > (*vg1dSP).localtiny)
+            else if (fabs(alfE) < (*simulationContext).smallValueTolerance && fabs(1. - celula[ind - 1].alfPigD) < (*simulationContext).smallValueTolerance && fabs(celula[ind].alfPigE) > (*simulationContext).smallValueTolerance && fabs(1. - celula[ind].alfPigE) > (*simulationContext).smallValueTolerance)
                 hns = 1. - celula[ind].alfPigE;
             else
                 hns = 0.5 * (1. - celula[ind].alfPigE + 1. - alfE);
         }
-        if (hns < (*vg1dSP).localtiny || hns > 1. - (*vg1dSP).localtiny)
+        if (hns < (*simulationContext).smallValueTolerance || hns > 1. - (*simulationContext).smallValueTolerance)
             hns = 0.5 * (1. - celula[ind].alfPigE + 1. - alfE);
 
         double hol0 = hns;
@@ -2519,7 +2520,7 @@ void SProdVap::renovaTemp() {
         double rhol0;
         if (i != 0 && i != ncel) {
 
-            if ((*vg1dSP).lixo5 >= 7059.9 && i == ncel - 1) {
+            if ((*simulationContext).simulationTime >= 7059.9 && i == ncel - 1) {
                 int para;
                 para = 0;
             }
@@ -2565,7 +2566,7 @@ void SProdVap::renovaTemp() {
             double gradfric = 0.5 * f1 * rhomix * (fabs(j) * j) * si * dx / area;
             double gradhidro = 9.82 * sin(celula[i].duto.teta) * rhomix * dx;
 
-            celula[i].presaux = celula[i].pres + (gradfric + gradhidro - celula[i - 1].dpB) / 98066.5;
+            celula[i].presaux = celula[i].pres + (gradfric + gradhidro - celula[i - 1].dpB) / units::kPascalPerKgfPerCm2;
             celula[i - 1].presauxR = celula[i].presaux;
             celula[i + 1].presauxL = celula[i].presaux;
 
@@ -2644,8 +2645,8 @@ void SProdVap::renovaTemp() {
                 celula[i - 1].CoefDTL = 0.;
             }
             if (celula[i - 1].transmassR > 0 &&
-                (celula[i].alfL > (1. - (*vg1dSP).localtiny))) {
-                celula[i].transmassL = celula[i - 1].transmassR = -(*vg1dSP).localtiny;
+                (celula[i].alfL > (1. - (*simulationContext).smallValueTolerance))) {
+                celula[i].transmassL = celula[i - 1].transmassR = -(*simulationContext).smallValueTolerance;
                 celula[i].DTransDxR = 0.;
                 celula[i].DTransDxL = 0.;
                 celula[i].DTransDt1 = 0.;
@@ -2653,8 +2654,8 @@ void SProdVap::renovaTemp() {
                 celula[i - 1].CoefDTR = 0.;
                 celula[i - 1].CoefDTL = 0.;
             }
-            if (celula[i - 1].transmassR < 0 && celula[i].alfL < (*vg1dSP).localtiny) {
-                celula[i].transmassL = celula[i - 1].transmassR = (*vg1dSP).localtiny;
+            if (celula[i - 1].transmassR < 0 && celula[i].alfL < (*simulationContext).smallValueTolerance) {
+                celula[i].transmassL = celula[i - 1].transmassR = (*simulationContext).smallValueTolerance;
                 celula[i].DTransDxR = 0.;
                 celula[i].DTransDxL = 0.;
                 celula[i].DTransDt1 = 0.;
@@ -2729,7 +2730,7 @@ void SProdVap::renovaterm(int aflu) {
         int imax = ncel;
         if (aflu == 1)
             imax = ncel + 1;
-        if (i == ncel && aflu == 1 && (*vg1dSP).lixo5 >= 1560) {
+        if (i == ncel && aflu == 1 && (*simulationContext).simulationTime >= 1560) {
             int para;
             para = 0;
         }
@@ -2844,19 +2845,19 @@ void SProdVap::renovaterm(int aflu) {
 
                 int bif = 1;
 
-                if ((*vg1dSP).lixo5 > 29900) {
+                if ((*simulationContext).simulationTime > 29900) {
                     int para;
                     para = 0;
                 }
 
-                if (celula[i - 1].alfPigD <= (*vg1dSP).localtiny && celula[i].alfPigE <= (*vg1dSP).localtiny && celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5) {
+                if (celula[i - 1].alfPigD <= (*simulationContext).smallValueTolerance && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                } else if (celula[i - 1].alfPigD >= (1. - (*vg1dSP).localtiny) && celula[i].alfPigE >= (1. - (*vg1dSP).localtiny) && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (celula[i - 1].alfPigD >= (1. - (*simulationContext).smallValueTolerance) && celula[i].alfPigE >= (1. - (*simulationContext).smallValueTolerance) && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
@@ -2872,19 +2873,19 @@ void SProdVap::renovaterm(int aflu) {
                     celula[i].arranjo = 0;
                 }
 
-                else if (ugs >= 0 && celula[i - 1].alfPigD <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+                else if (ugs >= 0 && celula[i - 1].alfPigD <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*vg1dSP).localtiny) && uls < 0 && uls0 < 0 && celula[i].duto.teta > 0) {
+                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*simulationContext).smallValueTolerance) && uls < 0 && uls0 < 0 && celula[i].duto.teta > 0) {
                         celula[i].term1 = 0.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
-                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 10 * (*vg1dSP).localtiny) && celula[i].duto.teta < 0) {
+                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 10 * (*simulationContext).smallValueTolerance) && celula[i].duto.teta < 0) {
                         celula[i].term1 = 0.;
                         celula[i].term2 = 0.;
                         bif = 1;
@@ -2892,14 +2893,14 @@ void SProdVap::renovaterm(int aflu) {
                     if (fabs(ugs) <= 1e-15 && celula[i].alf >= celula[i + 1].alf && ugs1 < 0) {
                         bif = 1;
                     }
-                } else if (ugs <= 0 && celula[i].alfPigE <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (ugs <= 0 && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(ugs) <= 1e-15 && celula[i - 1].alfPigD > (1. - (*vg1dSP).localtiny) && uls > 0 && uls1 > 0) {
+                    if (fabs(ugs) <= 1e-15 && celula[i - 1].alfPigD > (1. - (*simulationContext).smallValueTolerance) && uls > 0 && uls1 > 0) {
                         celula[i].term1 = 0.;
                         celula[i].term2 = 0.;
                         bif = 0;
@@ -2907,53 +2908,53 @@ void SProdVap::renovaterm(int aflu) {
                     if (fabs(ugs) <= 1e-15 && celula[i].alfL >= celula[i - 1].alfL && ugs0 > 0) {
                         bif = 1;
                     }
-                } else if (uls >= 0 && celula[i - 1].alfPigD >= 1. - 1 * (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (uls >= 0 && celula[i - 1].alfPigD >= 1. - 1 * (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*vg1dSP).localtiny && uls1 < 0) {
+                    if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && uls1 < 0) {
                         celula[i].term1 = 1.;
                         celula[i].term2 = 0.;
                         bif = 0;
-                    } else if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-                        if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].alfPigE < (*vg1dSP).localtiny && celula[i].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+                    } else if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+                        if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && celula[i].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                             celula[i].term1 = 1.;
                             celula[i].term2 = 0.;
                             bif = 0;
                         }
-                    } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 10 * (*vg1dSP).localtiny + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*vg1dSP).localtiny) || celula[i].alfPigE <= 0.7))
+                    } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 10 * (*simulationContext).smallValueTolerance + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*simulationContext).smallValueTolerance) || celula[i].alfPigE <= 0.7))
                         bif = 1;
 
-                } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && celula[i - 1].alfPigD < (*vg1dSP).localtiny && uls0 > 0) {
+                    if (fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i - 1].alfPigD < (*simulationContext).smallValueTolerance && uls0 > 0) {
                         celula[i].term1 = 1.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
 
-                    if (fabs(uls0) < (*vg1dSP).localtiny * 1e-5) {
-                        if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i - 1].alfPigD < (*vg1dSP).localtiny && celula[i - 1].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+                    if (fabs(uls0) < (*simulationContext).smallValueTolerance * 1e-5) {
+                        if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i - 1].alfPigD < (*simulationContext).smallValueTolerance && celula[i - 1].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                             celula[i].term1 = 1.;
                             celula[i].term2 = 0.;
                             bif = 0;
                         }
-                    } else if (i > 1 && fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
+                    } else if (i > 1 && fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
                         bif = 1;
-                    else if (i > 1 && fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
+                    else if (i > 1 && fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
                         bif = 1;
                     else {
-                        if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
+                        if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
                             bif = 1;
-                        else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
+                        else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
                             bif = 1;
                     }
                 }
@@ -3088,38 +3089,38 @@ void SProdVap::renovaterm(int aflu) {
 
                 int bif = 1;
 
-                if ((*vg1dSP).lixo5 > 29900) {
+                if ((*simulationContext).simulationTime > 29900) {
                     int para;
                     para = 0;
                 }
 
-                if (alfE < (*vg1dSP).localtiny && celula[i].alfPigE <= (*vg1dSP).localtiny && celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5) {
+                if (alfE < (*simulationContext).smallValueTolerance && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                } else if (alfE >= (1. - (*vg1dSP).localtiny) && celula[i].alfPigE >= (1. - (*vg1dSP).localtiny) && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (alfE >= (1. - (*simulationContext).smallValueTolerance) && celula[i].alfPigE >= (1. - (*simulationContext).smallValueTolerance) && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                } else if (ugs >= 0 && alfE <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (ugs >= 0 && alfE <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*vg1dSP).localtiny) && uls < 0 && celula[i].duto.teta > 0) {
+                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*simulationContext).smallValueTolerance) && uls < 0 && celula[i].duto.teta > 0) {
                         celula[i].term1 = 0.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
-                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 1 * (*vg1dSP).localtiny) && celula[i].duto.teta < 0 && uls > 0) {
+                    if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 1 * (*simulationContext).smallValueTolerance) && celula[i].duto.teta < 0 && uls > 0) {
                         celula[i].term1 = 0.;
                         celula[i].term2 = 0.;
                         bif = 1;
@@ -3127,77 +3128,77 @@ void SProdVap::renovaterm(int aflu) {
                     if (fabs(ugs) <= 1e-15 && celula[i].alf >= alfE && uls < 0) {
                         bif = 1;
                     }
-                } else if (ugs <= 0 && celula[i].alfPigE <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (ugs <= 0 && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(ugs) <= 1e-15 && alfE > (1. - (*vg1dSP).localtiny) && uls > 0) {
+                    if (fabs(ugs) <= 1e-15 && alfE > (1. - (*simulationContext).smallValueTolerance) && uls > 0) {
                         celula[i].term1 = 0.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
-                    if (fabs(ugs) <= 1e-15 && alfE > (*vg1dSP).localtiny && uls > 0) {
+                    if (fabs(ugs) <= 1e-15 && alfE > (*simulationContext).smallValueTolerance && uls > 0) {
                         bif = 1;
                     }
-                } else if (uls >= 0 && alfE >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (uls >= 0 && alfE >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*vg1dSP).localtiny && uls1 < 0) {
+                    if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && uls1 < 0) {
                         celula[i].term1 = 1.;
                         celula[i].term2 = 0.;
                         bif = 0;
-                    } else if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-                        if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].alfPigE < (*vg1dSP).localtiny && celula[i].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+                    } else if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+                        if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && celula[i].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                             celula[i].term1 = 1.;
                             celula[i].term2 = 0.;
                             bif = 0;
                         }
-                    } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 1 * (*vg1dSP).localtiny + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*vg1dSP).localtiny) || celula[i].alfPigE <= 0.7))
+                    } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 1 * (*simulationContext).smallValueTolerance + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*simulationContext).smallValueTolerance) || celula[i].alfPigE <= 0.7))
                         bif = 1;
 
-                } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+                } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                     celula[i].c0 = 1 + 0 * xc0;
                     celula[i].ud = 0 * xud;
                     celula[i].arranjo = 0;
-                    if (fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && alfE < (*vg1dSP).localtiny && uls1 < 0) {
+                    if (fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && alfE < (*simulationContext).smallValueTolerance && uls1 < 0) {
                         celula[i].term1 = 1.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
 
-                    if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-                        if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && alfE < (*vg1dSP).localtiny) {
+                    if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+                        if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && alfE < (*simulationContext).smallValueTolerance) {
                             celula[i].term1 = 1.;
                             celula[i].term2 = 0.;
                             bif = 0;
                         }
                     } else {
-                        if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
+                        if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
                             bif = 1;
-                        else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
+                        else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
                             bif = 1;
                     }
                 }
-                if (uls > 0 && fabs(ugs) <= (*vg1dSP).localtiny * 1e-5 && alfE > (*vg1dSP).localtiny && alfE < 1 - (*vg1dSP).localtiny)
+                if (uls > 0 && fabs(ugs) <= (*simulationContext).smallValueTolerance * 1e-5 && alfE > (*simulationContext).smallValueTolerance && alfE < 1 - (*simulationContext).smallValueTolerance)
                     bif = 1;
-                if (ugs > 0 && fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && alfE > (*vg1dSP).localtiny && alfE < 1 - (*vg1dSP).localtiny)
+                if (ugs > 0 && fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && alfE > (*simulationContext).smallValueTolerance && alfE < 1 - (*simulationContext).smallValueTolerance)
                     bif = 1;
-                if (uls >= 0 && alfE > 1 - (*vg1dSP).localtiny) {
+                if (uls >= 0 && alfE > 1 - (*simulationContext).smallValueTolerance) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                 }
-                if (ugs >= 0 && alfE < (*vg1dSP).localtiny) {
+                if (ugs >= 0 && alfE < (*simulationContext).smallValueTolerance) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
@@ -3276,91 +3277,91 @@ void SProdVap::renovaterm(int aflu) {
 
             int bif = 1;
 
-            if (celula[i].alfL <= (*vg1dSP).localtiny && celula[i].alf <= (*vg1dSP).localtiny && celula[i].fontemassGL <= 0 && celula[i].fontemassGR <= 0) {
+            if (celula[i].alfL <= (*simulationContext).smallValueTolerance && celula[i].alf <= (*simulationContext).smallValueTolerance && celula[i].fontemassGL <= 0 && celula[i].fontemassGR <= 0) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
-                celula[i].c0 = 1. - (*vg1dSP).localtiny;
+                celula[i].c0 = 1. - (*simulationContext).smallValueTolerance;
                 celula[i].ud = 0.;
                 celula[i].arranjo = 0;
-            } else if (celula[i].alfL >= (1. - (*vg1dSP).localtiny) && celula[i].alf >= (1. - (*vg1dSP).localtiny) && celula[i].fontemassLL <= 0 && celula[i].fontemassLR <= 0) {
+            } else if (celula[i].alfL >= (1. - (*simulationContext).smallValueTolerance) && celula[i].alf >= (1. - (*simulationContext).smallValueTolerance) && celula[i].fontemassLL <= 0 && celula[i].fontemassLR <= 0) {
                 celula[i].term1 = 0.;
                 celula[i].term2 = 0.;
                 bif = 0;
-                celula[i].c0 = 1. - (*vg1dSP).localtiny;
+                celula[i].c0 = 1. - (*simulationContext).smallValueTolerance;
                 celula[i].ud = 0.;
                 celula[i].arranjo = 0;
-            } else if (ugs > 0 && celula[i].alfL <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= 0. && celula[i].fontemassGR <= 0.)) {
+            } else if (ugs > 0 && celula[i].alfL <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= 0. && celula[i].fontemassGR <= 0.)) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
-                celula[i].c0 = 1. - (*vg1dSP).localtiny;
+                celula[i].c0 = 1. - (*simulationContext).smallValueTolerance;
                 celula[i].ud = 0.;
                 celula[i].arranjo = 0;
-                if (fabs(ugs) <= 1e-15 && celula[i].alf > (1. - (*vg1dSP).localtiny) && uls < 0 && uls0 < 0) {
+                if (fabs(ugs) <= 1e-15 && celula[i].alf > (1. - (*simulationContext).smallValueTolerance) && uls < 0 && uls0 < 0) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                 }
-            } else if (ugs < 0 && celula[i].alf <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= 0. && celula[i].fontemassGR <= 0.)) {
+            } else if (ugs < 0 && celula[i].alf <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= 0. && celula[i].fontemassGR <= 0.)) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
-                celula[i].c0 = 1. - (*vg1dSP).localtiny;
+                celula[i].c0 = 1. - (*simulationContext).smallValueTolerance;
                 celula[i].ud = 0.;
                 celula[i].arranjo = 0;
-                if (fabs(ugs) <= 1e-15 && celula[i].alfL > (1. - (*vg1dSP).localtiny) && uls > 0 && uls1 > 0) {
+                if (fabs(ugs) <= 1e-15 && celula[i].alfL > (1. - (*simulationContext).smallValueTolerance) && uls > 0 && uls1 > 0) {
                     celula[i].term1 = 0.;
                     celula[i].term2 = 0.;
                     bif = 0;
                 }
-            } else if (uls >= 0 && celula[i - 1].alf >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+            } else if (uls >= 0 && celula[i - 1].alf >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                 celula[i].term1 = 0.;
                 celula[i].term2 = 0.;
                 bif = 0;
                 celula[i].c0 = 1;
                 celula[i].ud = 0;
                 celula[i].arranjo = 0;
-                if (fabs(uls) <= 1e-15 && celula[i].alf < (*vg1dSP).localtiny && uls1 < 0) {
+                if (fabs(uls) <= 1e-15 && celula[i].alf < (*simulationContext).smallValueTolerance && uls1 < 0) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
-                } else if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-                    if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].alf < (*vg1dSP).localtiny && celula[i].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+                } else if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+                    if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].alf < (*simulationContext).smallValueTolerance && celula[i].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                         celula[i].term1 = 1.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
-                } else if (fabs(uls) < 1e-15 && uls1 < 0 && celula[i].alf <= (1 - 1 * (*vg1dSP).localtiny))
+                } else if (fabs(uls) < 1e-15 && uls1 < 0 && celula[i].alf <= (1 - 1 * (*simulationContext).smallValueTolerance))
                     bif = 1;
             }
 
-            else if (uls <= 0 && celula[i].alf >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+            else if (uls <= 0 && celula[i].alf >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
                 celula[i].term1 = 0.;
                 celula[i].term2 = 0.;
                 bif = 0;
                 celula[i].c0 = 1;
                 celula[i].ud = 0;
                 celula[i].arranjo = 0;
-                if (fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && celula[i - 1].alf < (*vg1dSP).localtiny && uls0 > 0) {
+                if (fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i - 1].alf < (*simulationContext).smallValueTolerance && uls0 > 0) {
                     celula[i].term1 = 1.;
                     celula[i].term2 = 0.;
                     bif = 0;
                 }
-                if (fabs(uls0) < (*vg1dSP).localtiny * 1e-5) {
-                    if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i - 1].alf < (*vg1dSP).localtiny && celula[i - 1].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+                if (fabs(uls0) < (*simulationContext).smallValueTolerance * 1e-5) {
+                    if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i - 1].alf < (*simulationContext).smallValueTolerance && celula[i - 1].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                         celula[i].term1 = 1.;
                         celula[i].term2 = 0.;
                         bif = 0;
                     }
-                } else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
+                } else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
                     bif = 1;
-                else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
+                else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
                     bif = 1;
                 else {
-                    if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
+                    if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
                         bif = 1;
-                    else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
+                    else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
                         bif = 1;
                 }
 
@@ -3488,19 +3489,19 @@ void SProdVap::renovatermAfluFim() {
 
     int bif = 1;
 
-    if ((*vg1dSP).lixo5 > 29900) {
+    if ((*simulationContext).simulationTime > 29900) {
         int para;
         para = 0;
     }
 
-    if (celula[i - 1].alfPigD <= (*vg1dSP).localtiny && celula[i].alfPigE <= (*vg1dSP).localtiny && celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5) {
+    if (celula[i - 1].alfPigD <= (*simulationContext).smallValueTolerance && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5) {
         celula[i].term1 = 1.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-    } else if (celula[i - 1].alfPigD >= (1. - (*vg1dSP).localtiny) && celula[i].alfPigE >= (1. - (*vg1dSP).localtiny) && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (celula[i - 1].alfPigD >= (1. - (*simulationContext).smallValueTolerance) && celula[i].alfPigE >= (1. - (*simulationContext).smallValueTolerance) && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 0.;
         celula[i].term2 = 0.;
         bif = 0;
@@ -3516,19 +3517,19 @@ void SProdVap::renovatermAfluFim() {
         celula[i].arranjo = 0;
     }
 
-    else if (ugs >= 0 && celula[i - 1].alfPigD <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+    else if (ugs >= 0 && celula[i - 1].alfPigD <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 1.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*vg1dSP).localtiny) && uls < 0 && uls0 < 0 && celula[i].duto.teta > 0) {
+        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*simulationContext).smallValueTolerance) && uls < 0 && uls0 < 0 && celula[i].duto.teta > 0) {
             celula[i].term1 = 0.;
             celula[i].term2 = 0.;
             bif = 0;
         }
-        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 10 * (*vg1dSP).localtiny) && celula[i].duto.teta < 0) {
+        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 10 * (*simulationContext).smallValueTolerance) && celula[i].duto.teta < 0) {
             celula[i].term1 = 0.;
             celula[i].term2 = 0.;
             bif = 1;
@@ -3536,14 +3537,14 @@ void SProdVap::renovatermAfluFim() {
         if (fabs(ugs) <= 1e-15 && celula[i].alf >= celula[i + 1].alf && ugs1 < 0) {
             bif = 1;
         }
-    } else if (ugs <= 0 && celula[i].alfPigE <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (ugs <= 0 && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 1.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(ugs) <= 1e-15 && celula[i - 1].alfPigD > (1. - (*vg1dSP).localtiny) && uls > 0 && uls1 > 0) {
+        if (fabs(ugs) <= 1e-15 && celula[i - 1].alfPigD > (1. - (*simulationContext).smallValueTolerance) && uls > 0 && uls1 > 0) {
             celula[i].term1 = 0.;
             celula[i].term2 = 0.;
             bif = 0;
@@ -3551,58 +3552,58 @@ void SProdVap::renovatermAfluFim() {
         if (fabs(ugs) <= 1e-15 && celula[i].alfL >= celula[i - 1].alfL && ugs0 > 0) {
             bif = 1;
         }
-    } else if (uls >= 0 && celula[i - 1].alfPigD >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (uls >= 0 && celula[i - 1].alfPigD >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 0.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*vg1dSP).localtiny && uls1 < 0) {
+        if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && uls1 < 0) {
             celula[i].term1 = 1.;
             celula[i].term2 = 0.;
             bif = 0;
-        } else if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].alfPigE < (*vg1dSP).localtiny && celula[i].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+        } else if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && celula[i].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
             }
-        } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 1 * (*vg1dSP).localtiny + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*vg1dSP).localtiny) || celula[i].alfPigE <= 0.7))
+        } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 1 * (*simulationContext).smallValueTolerance + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*simulationContext).smallValueTolerance) || celula[i].alfPigE <= 0.7))
             bif = 1;
 
-    } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 0.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && celula[i - 1].alfPigD < (*vg1dSP).localtiny && uls0 > 0) {
+        if (fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i - 1].alfPigD < (*simulationContext).smallValueTolerance && uls0 > 0) {
             celula[i].term1 = 1.;
             celula[i].term2 = 0.;
             bif = 0;
         }
 
-        if (fabs(uls0) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i - 1].alfPigD < (*vg1dSP).localtiny && celula[i - 1].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+        if (fabs(uls0) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i - 1].alfPigD < (*simulationContext).smallValueTolerance && celula[i - 1].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
             }
-        } else if (i > 1 && fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
+        } else if (i > 1 && fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
             bif = 1;
-        else if (i > 1 && fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
+        else if (i > 1 && fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 2].alfPigD && celula[i - 2].alfPigD < 0.99) || celula[i - 1].alfPigD < 0.7))
             bif = 1;
         else {
-            if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
+            if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
                 bif = 1;
-            else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
+            else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && uls0 > 0 && ((celula[i - 1].alfPigD <= 1.0 * celula[i - 1].alfL) || celula[i - 1].alfPigD < 0.7))
                 bif = 1;
         }
     }
 
-    if (ugs < 0 && celula[i].alf > (*vg1dSP).localtiny && celula[i].alf < 1. - (*vg1dSP).localtiny)
+    if (ugs < 0 && celula[i].alf > (*simulationContext).smallValueTolerance && celula[i].alf < 1. - (*simulationContext).smallValueTolerance)
         bif = 1;
 
     if (bif == 1) {
@@ -3722,38 +3723,38 @@ void SProdVap::renovatermColIni() {
 
     int bif = 1;
 
-    if ((*vg1dSP).lixo5 > 29900) {
+    if ((*simulationContext).simulationTime > 29900) {
         int para;
         para = 0;
     }
 
-    if (alfE < (*vg1dSP).localtiny && celula[i].alfPigE <= (*vg1dSP).localtiny && celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5) {
+    if (alfE < (*simulationContext).smallValueTolerance && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5) {
         celula[i].term1 = 1.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-    } else if (alfE >= (1. - (*vg1dSP).localtiny) && celula[i].alfPigE >= (1. - (*vg1dSP).localtiny) && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (alfE >= (1. - (*simulationContext).smallValueTolerance) && celula[i].alfPigE >= (1. - (*simulationContext).smallValueTolerance) && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 0.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-    } else if (ugs >= 0 && alfE <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (ugs >= 0 && alfE <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 1.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*vg1dSP).localtiny) && uls < 0 && celula[i].duto.teta > 0) {
+        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - (*simulationContext).smallValueTolerance) && uls < 0 && celula[i].duto.teta > 0) {
             celula[i].term1 = 0.;
             celula[i].term2 = 0.;
             bif = 0;
         }
-        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 1 * (*vg1dSP).localtiny) && celula[i].duto.teta < 0 && uls > 0) {
+        if (fabs(ugs) <= 1e-15 && celula[i].alfPigE > (1. - 1 * (*simulationContext).smallValueTolerance) && celula[i].duto.teta < 0 && uls > 0) {
             celula[i].term1 = 0.;
             celula[i].term2 = 0.;
             bif = 1;
@@ -3761,70 +3762,70 @@ void SProdVap::renovatermColIni() {
         if (fabs(ugs) <= 1e-15 && celula[i].alf >= alfE && uls < 0) {
             bif = 1;
         }
-    } else if (ugs <= 0 && celula[i].alfPigE <= (*vg1dSP).localtiny && (celula[i].fontemassGL <= (*vg1dSP).localtiny * 1e-5 && celula[i].fontemassGR <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (ugs <= 0 && celula[i].alfPigE <= (*simulationContext).smallValueTolerance && (celula[i].fontemassGL <= (*simulationContext).smallValueTolerance * 1e-5 && celula[i].fontemassGR <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 1.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(ugs) <= 1e-15 && alfE > (1. - (*vg1dSP).localtiny) && uls > 0) {
+        if (fabs(ugs) <= 1e-15 && alfE > (1. - (*simulationContext).smallValueTolerance) && uls > 0) {
             celula[i].term1 = 0.;
             celula[i].term2 = 0.;
             bif = 0;
         }
-        if (fabs(ugs) <= 1e-15 && alfE > (*vg1dSP).localtiny && uls > 0) {
+        if (fabs(ugs) <= 1e-15 && alfE > (*simulationContext).smallValueTolerance && uls > 0) {
             bif = 1;
         }
-    } else if (uls >= 0 && alfE >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (uls >= 0 && alfE >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 0.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*vg1dSP).localtiny && uls1 < 0) {
+        if (fabs(uls) <= 1e-15 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && uls1 < 0) {
             celula[i].term1 = 1.;
             celula[i].term2 = 0.;
             bif = 0;
-        } else if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].alfPigE < (*vg1dSP).localtiny && celula[i].fontemassGR >= (*vg1dSP).localtiny * 1e-5) {
+        } else if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].alfPigE < (*simulationContext).smallValueTolerance && celula[i].fontemassGR >= (*simulationContext).smallValueTolerance * 1e-5) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
             }
-        } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 1 * (*vg1dSP).localtiny + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*vg1dSP).localtiny) || celula[i].alfPigE <= 0.7))
+        } else if (fabs(uls) < 1e-15 && uls1 < 0 && ((celula[i].alfPigE <= (1 - 1 * (*simulationContext).smallValueTolerance + .0 * celula[i].alfPigER) && celula[i].alfPigER < 1 - 1 * (*simulationContext).smallValueTolerance) || celula[i].alfPigE <= 0.7))
             bif = 1;
 
-    } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*vg1dSP).localtiny && ((celula[i].fontemassLL) <= (*vg1dSP).localtiny * 1e-5 && (celula[i].fontemassLR) <= (*vg1dSP).localtiny * 1e-5)) {
+    } else if (uls <= 0 && celula[i].alfPigE >= 1. - (*simulationContext).smallValueTolerance && ((celula[i].fontemassLL) <= (*simulationContext).smallValueTolerance * 1e-5 && (celula[i].fontemassLR) <= (*simulationContext).smallValueTolerance * 1e-5)) {
         celula[i].term1 = 0.;
         celula[i].term2 = 0.;
         bif = 0;
         celula[i].c0 = 1 + 0 * xc0;
         celula[i].ud = 0 * xud;
         celula[i].arranjo = 0;
-        if (fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && alfE < (*vg1dSP).localtiny && uls1 < 0) {
+        if (fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && alfE < (*simulationContext).smallValueTolerance && uls1 < 0) {
             celula[i].term1 = 1.;
             celula[i].term2 = 0.;
             bif = 0;
         }
 
-        if (fabs(uls1) < (*vg1dSP).localtiny * 1e-5) {
-            if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && alfE < (*vg1dSP).localtiny) {
+        if (fabs(uls1) < (*simulationContext).smallValueTolerance * 1e-5) {
+            if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && alfE < (*simulationContext).smallValueTolerance) {
                 celula[i].term1 = 1.;
                 celula[i].term2 = 0.;
                 bif = 0;
             }
         } else {
-            if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
+            if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta < 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
                 bif = 1;
-            else if (fabs(uls) < (*vg1dSP).localtiny * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
+            else if (fabs(uls) < (*simulationContext).smallValueTolerance * 1e-5 && celula[i].duto.teta >= 0.95 * M_PI / 2. && ugs < 0 && (alfE < 0.7))
                 bif = 1;
         }
     }
-    if (uls > 0 && fabs(ugs) <= (*vg1dSP).localtiny * 1e-5 && alfE > (*vg1dSP).localtiny && alfE < 1 - (*vg1dSP).localtiny)
+    if (uls > 0 && fabs(ugs) <= (*simulationContext).smallValueTolerance * 1e-5 && alfE > (*simulationContext).smallValueTolerance && alfE < 1 - (*simulationContext).smallValueTolerance)
         bif = 1;
-    if (ugs > 0 && fabs(uls) <= (*vg1dSP).localtiny * 1e-5 && alfE > (*vg1dSP).localtiny && alfE < 1 - (*vg1dSP).localtiny)
+    if (ugs > 0 && fabs(uls) <= (*simulationContext).smallValueTolerance * 1e-5 && alfE > (*simulationContext).smallValueTolerance && alfE < 1 - (*simulationContext).smallValueTolerance)
         bif = 1;
 
     if (bif == 1) {
@@ -3876,7 +3877,7 @@ void SProdVap::calcCCpres(double titRev, double alfRev) {
     else if (massgas <= 0 && celula[ncel - 1].MliqiniR >= 0)
         tit = 0.;
     else if (masentrada < 0) {
-        if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+        if ((*simulationContext).networkMode == 0 || noextremo == 1)
             tit = 1.;
         else {
             tit = titRev;
@@ -3887,7 +3888,7 @@ void SProdVap::calcCCpres(double titRev, double alfRev) {
     if (tit > 1)
         tit = 1;
     if (presfim < pGSup) {
-        if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+        if ((*simulationContext).networkMode == 0 || noextremo == 1)
             tit = 1.;
         else {
             tit = titRev;
@@ -3898,7 +3899,7 @@ void SProdVap::calcCCpres(double titRev, double alfRev) {
     double rholmix = rholp;
     double romix = alfSup * celula[ncel].flui.MasEspGas(celula[ncel].pres, celula[ncel].temp) + (1 - alfSup) * rholmix;
 
-    double delp = (0.5 / 98066.5) * (1 / romix) * (1 / (chokeSup.AreaGarg * chokeSup.AreaGarg) - 1 / (celula[ncel - 1].duto.area * celula[ncel - 1].duto.area)) * masentrada * masentrada;
+    double delp = (0.5 / units::kPascalPerKgfPerCm2) * (1 / romix) * (1 / (chokeSup.AreaGarg * chokeSup.AreaGarg) - 1 / (celula[ncel - 1].duto.area * celula[ncel - 1].duto.area)) * masentrada * masentrada;
     double masChk;
 
     double sinal = 1.;
@@ -3910,7 +3911,7 @@ void SProdVap::calcCCpres(double titRev, double alfRev) {
             sinal = -1.;
         else
             sinal = 0.;
-        if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+        if ((*simulationContext).networkMode == 0 || noextremo == 1)
             tit = 1.;
         else {
             tit = titRev;
@@ -3961,7 +3962,7 @@ void SProdVap::calcCCpres(double titRev, double alfRev) {
     double masgas;
     int abertoini = aberto;
 
-    if (chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && ((((*vg1dSP).lixo5 > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < 0.5 && fabs(jMedMov) < 0.5) || (((*vg1dSP).lixo5 > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < (0.05 * pGSup) && fabs(jMedMov) < 5. && delp < 0.1 * pGSup) || (((*vg1dSP).lixo5 > tMedMov || arq.perm == 2) && (pGSup - presMedMov) > 0.01) || (fabs(delp) < 0.1 && chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && alfSup > 0.95 && (presfim - pGSup) < 0.5))) {
+    if (chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && ((((*simulationContext).simulationTime > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < 0.5 && fabs(jMedMov) < 0.5) || (((*simulationContext).simulationTime > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < (0.05 * pGSup) && fabs(jMedMov) < 5. && delp < 0.1 * pGSup) || (((*simulationContext).simulationTime > tMedMov || arq.perm == 2) && (pGSup - presMedMov) > 0.01) || (fabs(delp) < 0.1 && chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && alfSup > 0.95 && (presfim - pGSup) < 0.5))) {
         aberto = 1;
         if (abertoini != aberto)
             tempoaberto = 1;
@@ -4002,12 +4003,12 @@ void SProdVap::calcCCpres(double titRev, double alfRev) {
                                       celula[ncel].QL);
             else
                 delp = 0.;
-            presfim = pGSup + sens * delp / 98066.5;
+            presfim = pGSup + sens * delp / units::kPascalPerKgfPerCm2;
         }
         masChkSup = 0;
     }
 
-    if (masChkSup == 0 && (*vg1dSP).chaverede == 1) {
+    if (masChkSup == 0 && (*simulationContext).networkMode == 1) {
 
         if (arq.chkv == 0 || celula[ncel - 1].MR > 0.)
             sinal = 1.;
@@ -4035,7 +4036,7 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
     else if (massgas <= 0 && celula[ncel - 1].MliqiniRBuf >= 0)
         tit = 0.;
     else if (masentrada < 0) {
-        if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+        if ((*simulationContext).networkMode == 0 || noextremo == 1)
             tit = 1.;
         else {
             tit = titRev;
@@ -4046,7 +4047,7 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
     if (tit > 1)
         tit = 1;
     if (celula[ncel].presBuf < pGSup) {
-        if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+        if ((*simulationContext).networkMode == 0 || noextremo == 1)
             tit = 1.;
         else {
             tit = titRev;
@@ -4057,7 +4058,7 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
     double rholmix = rholp;
     double romix = alfSup * celula[ncel].flui.MasEspGas(celula[ncel].presBuf, celula[ncel].temp) + (1 - alfSup) * rholmix;
 
-    double delp = (0.5 / 98066.5) * (1 / romix) * (1 / (chokeSup.AreaGarg * chokeSup.AreaGarg) - 1 / (celula[ncel - 1].duto.area * celula[ncel - 1].duto.area)) * masentrada * masentrada;
+    double delp = (0.5 / units::kPascalPerKgfPerCm2) * (1 / romix) * (1 / (chokeSup.AreaGarg * chokeSup.AreaGarg) - 1 / (celula[ncel - 1].duto.area * celula[ncel - 1].duto.area)) * masentrada * masentrada;
     double masChk;
 
     double sinal = 1.;
@@ -4069,7 +4070,7 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
             sinal = -1.;
         else
             sinal = 0.;
-        if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+        if ((*simulationContext).networkMode == 0 || noextremo == 1)
             tit = 1.;
         else {
             tit = titRev;
@@ -4095,9 +4096,9 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
     int abertoini = aberto;
 
     if (chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area &&
-        ((((*vg1dSP).lixo5 > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < 0.5 && fabs(jMedMov) < 0.5) ||
-         (((*vg1dSP).lixo5 > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < (0.05 * pGSup) && fabs(jMedMov) < 5. && delp < 0.1 * pGSup) ||
-         (((*vg1dSP).lixo5 > tMedMov || arq.perm == 2) && (pGSup - presMedMov) > 0.01) ||
+        ((((*simulationContext).simulationTime > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < 0.5 && fabs(jMedMov) < 0.5) ||
+         (((*simulationContext).simulationTime > tMedMov || arq.perm == 2) && fabs(presMedMov - pGSup) < (0.05 * pGSup) && fabs(jMedMov) < 5. && delp < 0.1 * pGSup) ||
+         (((*simulationContext).simulationTime > tMedMov || arq.perm == 2) && (pGSup - presMedMov) > 0.01) ||
          (fabs(delp) < 0.1 && chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && alfSup > 0.95 && (celula[ncel].presBuf - pGSup) < 0.5))) {
         aberto = 1;
         if (abertoini != aberto)
@@ -4115,13 +4116,13 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
         fontemassPRBuf = -masliq * rholp / rholmix;
         fontemassGRBuf = -masgas;
     }
-    if (masChkSup == 1 && (*vg1dSP).chaverede == 1) {
+    if (masChkSup == 1 && (*simulationContext).networkMode == 1) {
         celula[ncel].fontemassLR = fontemassPRBuf;
         celula[ncel].fontemassGR = fontemassGRBuf;
 
         celula[ncel].DmasschokeG = 0.;
         celula[ncel].DmasschokeL = 0.;
-    } else if (masChkSup == 0 && (*vg1dSP).chaverede == 1) {
+    } else if (masChkSup == 0 && (*simulationContext).networkMode == 1) {
         if (arq.chkv == 0 || celula[ncel - 1].MRBuf > 0.)
             sinal = 1.;
         else
@@ -4135,9 +4136,9 @@ void SProdVap::calcCCBuffer(double titRev, double alfRev) {
 }
 
 void SProdVap::determinaDT() {
-    if ((*vg1dSP).lixo5 < (*vg1dSP).localtiny && (*vg1dSP).chaverede == 0) {
-        arq.imprimeProfile(celula, flut, (*vg1dSP).lixo5, indTramo);
-        arq.imprimeProfileTrans(celula, ncelperftransp, (*vg1dSP).lixo5, indTramo);
+    if ((*simulationContext).simulationTime < (*simulationContext).smallValueTolerance && (*simulationContext).networkMode == 0) {
+        arq.imprimeProfile(celula, flut, (*simulationContext).simulationTime, indTramo);
+        arq.imprimeProfileTrans(celula, ncelperftransp, (*simulationContext).simulationTime, indTramo);
     }
     dt = arq.dtmax;
     if (chokeSup.AreaGarg >= 0.6 * celula[ncel - 1].duto.area)
@@ -4146,12 +4147,12 @@ void SProdVap::determinaDT() {
         dt =
             1.;
     for (int i = 0; i < arq.eventoabre; i++) {
-        if ((*vg1dSP).lixo5 > arq.Tevento[i] - arq.dtmax && (*vg1dSP).lixo5 < arq.Tevento[i] + 30) {
+        if ((*simulationContext).simulationTime > arq.Tevento[i] - arq.dtmax && (*simulationContext).simulationTime < arq.Tevento[i] + 30) {
             if (dt > menorDx / 100.)
                 dt = menorDx / 100.;
         }
     }
-    if (((*vg1dSP).lixo5 > tMedMov && (fabs(presMedMov - presfim) > 4.)) || (presfim < pGSup && masChkSup == 1 && chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area) || (celula[ncel].alf <= 0.06 && chokeSup.AreaGarg < 0.6 * celula[ncel - 1].duto.area)) {
+    if (((*simulationContext).simulationTime > tMedMov && (fabs(presMedMov - presfim) > 4.)) || (presfim < pGSup && masChkSup == 1 && chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area) || (celula[ncel].alf <= 0.06 && chokeSup.AreaGarg < 0.6 * celula[ncel - 1].duto.area)) {
         double denominador = 10.;
         double progres = 0.95;
 
@@ -4198,23 +4199,23 @@ void SProdVap::determinaDT() {
     if (dt > arq.dtmax)
         dt = arq.dtmax;
     if (arq.evento.size() > indevento) {
-        if ((*vg1dSP).lixo5 < arq.evento[indevento] && ((*vg1dSP).lixo5 + dt) > (arq.evento[indevento] + 0.1)) {
-            dt = arq.evento[indevento] - (*vg1dSP).lixo5;
+        if ((*simulationContext).simulationTime < arq.evento[indevento] && ((*simulationContext).simulationTime + dt) > (arq.evento[indevento] + 0.1)) {
+            dt = arq.evento[indevento] - (*simulationContext).simulationTime;
             indevento++;
-        } else if ((*vg1dSP).lixo5 < arq.evento[indevento] && ((*vg1dSP).lixo5 + dt) >= (arq.evento[indevento]))
+        } else if ((*simulationContext).simulationTime < arq.evento[indevento] && ((*simulationContext).simulationTime + dt) >= (arq.evento[indevento]))
             indevento++;
     }
 
     EstadoMaster1 = 1;
     for (int i = 0; i < nfechaM1; i++) {
-        if ((*vg1dSP).lixo5 > fechaM1[i]) {
+        if ((*simulationContext).simulationTime > fechaM1[i]) {
             for (int j = 0; j < nabreM1; j++) {
-                if ((*vg1dSP).lixo5 < abreM1[j]) {
+                if ((*simulationContext).simulationTime < abreM1[j]) {
                     EstadoMaster1 = 0;
                     contaMaster1++;
                     if (contaMaster1 > 19)
                         contaMaster1 = 20;
-                    if ((*vg1dSP).lixo5 >= abreM1[j] - dt)
+                    if ((*simulationContext).simulationTime >= abreM1[j] - dt)
                         contaMaster1 = 0;
                     break;
                 }
@@ -4237,7 +4238,7 @@ void SProdVap::EvoluiFrac(double alfrev) {
             celula[i].avancalf(reinicia, ncel);
         }
         if (i == ncel) {
-            if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+            if ((*simulationContext).networkMode == 0 || noextremo == 1)
                 celula[i].alf = celula[i - 1].alf;
 
             if (celula[i].alf < 0.05)
@@ -4284,7 +4285,7 @@ void SProdVap::AtualizaPig() {
     for (int i = 1; i <= ncel; i++) {
         if (i < ncel && celula[i].estadoPig == 1) {
             if (celula[i].velPig >= 0) {
-                if (celula[i].razPig >= 1. - (*vg1dSP).localtiny) {
+                if (celula[i].razPig >= 1. - (*simulationContext).smallValueTolerance) {
                     celula[i].estadoPig = 0;
                     celula[i + 1].estadoPig = 1;
                     celula[i].razPig = 0.;
@@ -4295,7 +4296,7 @@ void SProdVap::AtualizaPig() {
                     celula[i + 1].alfPigE = celula[i].alf;
                 }
             } else {
-                if (celula[i].razPig <= (*vg1dSP).localtiny) {
+                if (celula[i].razPig <= (*simulationContext).smallValueTolerance) {
                     celula[i].estadoPig = 0;
                     celula[i - 1].estadoPig = 1;
                     celula[i].razPig = 0.;
@@ -4325,12 +4326,12 @@ void SProdVap::SolveAcopPV() {
 }
 
 void SProdVap::SolveTrans(double titRev, double alfRev) {
-    if ((*vg1dSP).chaverede == 0) {
+    if ((*simulationContext).networkMode == 0) {
         determinaDT();
 
         reinicia = 0;
 
-        arq.atualiza(noinicial, noextremo, chokeSup, celula, pGSup, temperatura, presE, tempE, titE, (*vg1dSP).lixo5);
+        arq.atualiza(noinicial, noextremo, chokeSup, celula, pGSup, temperatura, presE, tempE, titE, (*simulationContext).simulationTime);
 
         EvoluiFrac(alfRev);
         if (reinicia == -1) {
@@ -4349,7 +4350,7 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
 
     renova();
 
-    if (((*vg1dSP).chaverede == 0 || noextremo == 1) && arq.chkv == 0) {
+    if (((*simulationContext).networkMode == 0 || noextremo == 1) && arq.chkv == 0) {
         if (celula[ncel - 1].MliqiniR < 0) {
 
             celula[ncel - 1].MR = celula[ncel - 1].MR - celula[ncel - 1].MliqiniR;
@@ -4402,7 +4403,7 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
         if (i < ncel || (i == ncel && celula[i].VTemper >= 0.)) {
             calcTempEntalp(i, tempantiga);
         } else {
-            if ((*vg1dSP).chaverede == 0 || noextremo == 1)
+            if ((*simulationContext).networkMode == 0 || noextremo == 1)
                 celula[i].temp = celula[i].calor.Textern1;
             else
                 celula[i].temp = tGSup;
@@ -4427,7 +4428,7 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
     pTotal += presfim * dt;
     jTotal += jtemporario * dt;
     alfTotal += celula[ncel - 1].alf * dt;
-    if ((*vg1dSP).lixo5 > tMedMov) {
+    if ((*simulationContext).simulationTime > tMedMov) {
         pTotal -= presVet.front();
         presVet.erase(presVet.begin());
         jTotal -= jVet.front();
@@ -4440,25 +4441,25 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
         jMedMov = jTotal / ktMedMov;
         alfMedMov = alfTotal / ktMedMov;
     }
-    if ((*vg1dSP).lixo5 >= 6000) {
+    if ((*simulationContext).simulationTime >= 6000) {
         int para;
         para = 0;
     }
-    if ((*vg1dSP).chaverede != 0)
-        (*vg1dSP).lixo5 = (*vg1dSP).lixo5R;
+    if ((*simulationContext).networkMode != 0)
+        (*simulationContext).simulationTime = (*simulationContext).networkSimulationTime;
     if (arq.nperfisp > 0) {
-        if (((*vg1dSP).lixo5 > (*vg1dSP).localtiny && (*vg1dSP).lixo5 <= arq.profp.tempo[kontaTempoProf] && (*vg1dSP).lixo5 + dt >= arq.profp.tempo[kontaTempoProf])) {
-            arq.imprimeProfile(celula, flut, (*vg1dSP).lixo5, indTramo);
-            arq.profp.tempo[kontaTempoProf] = (*vg1dSP).lixo5;
+        if (((*simulationContext).simulationTime > (*simulationContext).smallValueTolerance && (*simulationContext).simulationTime <= arq.profp.tempo[kontaTempoProf] && (*simulationContext).simulationTime + dt >= arq.profp.tempo[kontaTempoProf])) {
+            arq.imprimeProfile(celula, flut, (*simulationContext).simulationTime, indTramo);
+            arq.profp.tempo[kontaTempoProf] = (*simulationContext).simulationTime;
             kontaTempoProf++;
             if (kontaTempoProf >= arq.profp.n)
                 kontaTempoProf--;
         }
     }
     if (arq.nperfistransp > 0) {
-        if (((*vg1dSP).lixo5 > (*vg1dSP).localtiny && (*vg1dSP).lixo5 <= arq.proftransp.tempo[kontaTempoTransProf] && (*vg1dSP).lixo5 + dt >= arq.proftransp.tempo[kontaTempoTransProf])) {
-            arq.imprimeProfileTrans(celula, ncelperftransp, (*vg1dSP).lixo5, indTramo);
-            arq.proftransp.tempo[kontaTempoTransProf] = (*vg1dSP).lixo5;
+        if (((*simulationContext).simulationTime > (*simulationContext).smallValueTolerance && (*simulationContext).simulationTime <= arq.proftransp.tempo[kontaTempoTransProf] && (*simulationContext).simulationTime + dt >= arq.proftransp.tempo[kontaTempoTransProf])) {
+            arq.imprimeProfileTrans(celula, ncelperftransp, (*simulationContext).simulationTime, indTramo);
+            arq.proftransp.tempo[kontaTempoTransProf] = (*simulationContext).simulationTime;
             kontaTempoTransProf++;
             if (kontaTempoTransProf >= arq.proftransp.n)
                 kontaTempoTransProf--;
@@ -4467,7 +4468,7 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
     if (arq.ntendp > 0) {
         for (int i = 0; i < arq.ntendp; i++) {
             if (resettrend[i] == 0) {
-                arq.imprimeTrend(celula, MatTrendP[i], (*vg1dSP).lixo5, i, ntrend[i]);
+                arq.imprimeTrend(celula, MatTrendP[i], (*simulationContext).simulationTime, i, ntrend[i]);
                 ntrend[i]++;
             }
             resettrend[i] += dt;
@@ -4478,7 +4479,7 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
     if (arq.ntendtransp > 0) {
         for (int i = 0; i < arq.ntendtransp; i++) {
             if (resettrendtrans[i] == 0) {
-                MatTrendTransP[i][ntrendtrans[i]][0] = (*vg1dSP).lixo5;
+                MatTrendTransP[i][ntrendtrans[i]][0] = (*simulationContext).simulationTime;
                 int poscel = arq.trendtransp[i].posic;
                 int poscam = arq.trendtransp[i].camada - 1;
                 int posdiscre = arq.trendtransp[i].discre - 1;
@@ -4490,8 +4491,8 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
                 resettrendtrans[i] = 0;
         }
     }
-    (*vg1dSP).contador = kSP;
-    cout << kSP << "  " << (*vg1dSP).lixo5 << " " << dt;
+    (*simulationContext).timeStepIndex = kSP;
+    cout << kSP << "  " << (*simulationContext).simulationTime << " " << dt;
     for (int i = 0; i < arq.ntela; i++) {
         int posic = arq.tela[i].posic;
         if (arq.tela[i].col == 1) {
@@ -4518,7 +4519,7 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
 
     int MaxKontaImpres = 1000;
 
-    while (fabs(arq.logevento[contaLog].instante - (*vg1dSP).lixo5) < dt) {
+    while (fabs(arq.logevento[contaLog].instante - (*simulationContext).simulationTime) < dt) {
         // current date/time based on current system
         time_t now = time(0);
         tm *ltm = localtime(&now); ///////////Retirado de https://www.tutorialspoint.com/cplusplus/cpp_date_time.htm
@@ -4543,13 +4544,13 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
 
         escreveIni.close();
     }
-    if ((fabs((*vg1dSP).lixo5 * (100. / 5.) / arq.tfinal - round((*vg1dSP).lixo5 * (100. / 5.) / arq.tfinal)) < 0.5 * dt * (100 / 5.) / arq.tfinal) || KontaImprime > MaxKontaImpres) {
+    if ((fabs((*simulationContext).simulationTime * (100. / 5.) / arq.tfinal - round((*simulationContext).simulationTime * (100. / 5.) / arq.tfinal)) < 0.5 * dt * (100 / 5.) / arq.tfinal) || KontaImprime > MaxKontaImpres) {
         KontaImprime = 0;
         ofstream escreveIni(tmpLog.c_str(), ios_base::app);
         escreveIni << "************************************************************************************************"
                    << "\n";
-        escreveIni << "Percentual alcancado = " << (*vg1dSP).lixo5 * (100.) / arq.tfinal << " % da simulacao alcancado" << "\n";
-        escreveIni << "| Passo de Tempo = " << kSP << "| Tempo (s) = " << (*vg1dSP).lixo5 << "| Incremento de Tempo (s) = " << dt
+        escreveIni << "Percentual alcancado = " << (*simulationContext).simulationTime * (100.) / arq.tfinal << " % da simulacao alcancado" << "\n";
+        escreveIni << "| Passo de Tempo = " << kSP << "| Tempo (s) = " << (*simulationContext).simulationTime << "| Incremento de Tempo (s) = " << dt
                    << " |" << "\n";
         for (int i = 0; i < arq.ntela; i++) {
             int posic = arq.tela[i].posic;
@@ -4592,8 +4593,8 @@ void SProdVap::SolveTrans(double titRev, double alfRev) {
 
     kSP++;
     KontaImprime++;
-    if ((*vg1dSP).chaverede == 0)
-        (*vg1dSP).lixo5 += dt;
+    if ((*simulationContext).networkMode == 0)
+        (*simulationContext).simulationTime += dt;
 }
 
 void SProdVap::ImprimeTrend() {
@@ -4786,7 +4787,7 @@ double SProdVap::marchaProdPerm1(double pchute) {
                 celula[0].alfPigEini = celula[0].alf;
             }
             i = 1;
-            while (i <= ncel && celula[i - 1].pres >= 1. && fabs(pchute - celula[0].pres) < (*vg1dSP).localtiny) {
+            while (i <= ncel && celula[i - 1].pres >= 1. && fabs(pchute - celula[0].pres) < (*simulationContext).smallValueTolerance) {
                 if (i == 199) {
                     int para = 0;
                     para++;
@@ -4830,7 +4831,7 @@ double SProdVap::marchaProdPerm1(double pchute) {
 
                 if (celula[i - 1].pres <= 1)
                     return -1e10;
-                else if ((celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.ipr.Pres - celula[i - 1].pres) > (*vg1dSP).localtiny))
+                else if ((celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.ipr.Pres - celula[i - 1].pres) > (*simulationContext).smallValueTolerance))
                     return -1e10;
             }
             if (i == ncel + 1)
@@ -4915,7 +4916,7 @@ double SProdVap::marchaProdPerm2(double pchute) {
                 celula[0].alfPigEini = celula[0].alf;
             }
             i = 1;
-            while (i <= ncel && celula[i - 1].pres >= 1. && fabs(pchute - celula[0].pres) < (*vg1dSP).localtiny) {
+            while (i <= ncel && celula[i - 1].pres >= 1. && fabs(pchute - celula[0].pres) < (*simulationContext).smallValueTolerance) {
                 calcHmixPerm(i);
                 RenovaPresPermMon(i, 0);
                 atualizaPeriPmonProd(i);
@@ -4949,7 +4950,7 @@ double SProdVap::marchaProdPerm2(double pchute) {
                 i++;
                 if (celula[i - 1].pres <= 1 || ((i - 1) >= ncel && celula[i - 1].pres <= pGSup))
                     return -1e10;
-                else if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - celula[i - 1].pres) > (*vg1dSP).localtiny)
+                else if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - celula[i - 1].pres) > (*simulationContext).smallValueTolerance)
                     return -1e10;
             }
             if (i == ncel + 1)
@@ -5001,7 +5002,7 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
         rmis = rP;
         double rlpA = celula[0].flui.MasEspLiq(1., 15.);
         double massic = celula[0].acsr.injmvap.Mass;
-        if ((*vg1dSP).chaverede == 1)
+        if ((*simulationContext).networkMode == 1)
             massic *= 50;
         else
             massic *= 50;
@@ -5029,10 +5030,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
         double alfa = 0.;
         double rhomix = (1. - alfa) * rhol + alfa * rhog;
         double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-        pchute += ((rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5);
+        pchute += ((rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2);
         if (celula[i - 1].acsr.tipo == 7)
             pchute -= celula[i - 1].acsr.delp;
-        if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchute) > -(*vg1dSP).localtiny)
+        if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchute) > -(*simulationContext).smallValueTolerance)
             pchute = 1.01 * celula[i - 1].acsr.iprvap.Pres;
     }
 
@@ -5053,10 +5054,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
             double alfa = 0.;
             double rhomix = (1. - alfa) * rhol + alfa * rhog;
             double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5;
+            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2;
             if (celula[i - 1].acsr.tipo == 7)
                 pchuteAux -= celula[i - 1].acsr.delp;
-            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*vg1dSP).localtiny)
+            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*simulationContext).smallValueTolerance)
                 pchuteAux = 1.01 * celula[i - 1].acsr.iprvap.Pres;
         }
 
@@ -5069,10 +5070,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
             double alfa = 0.8;
             double rhomix = (1. - alfa) * rhol + alfa * rhog;
             double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5;
+            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2;
             if (celula[i - 1].acsr.tipo == 7)
                 pchuteAux -= celula[i - 1].acsr.delp;
-            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*vg1dSP).localtiny)
+            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*simulationContext).smallValueTolerance)
                 pchuteAux = 1.01 * celula[i - 1].acsr.iprvap.Pres;
         }
     }
@@ -5087,7 +5088,7 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
         pchute = 0.5 * (pchute + pchuteAux);
         if ((fabs(pchute - pchuteAux) / pchute) < 0.001 && val < -0.9e10) {
             pchute = 1.05 * pchute;
-            if (celula[0].acsr.tipo == 11 && (celula[0].acsr.iprvap.Pres - pchute) > -(*vg1dSP).localtiny)
+            if (celula[0].acsr.tipo == 11 && (celula[0].acsr.iprvap.Pres - pchute) > -(*simulationContext).smallValueTolerance)
                 pchute = 1.001 * celula[0].acsr.iprvap.Pres;
 
             pchuteAux = pchute;
@@ -5112,10 +5113,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
             val = marchaProdPerm1(pchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5127,10 +5128,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
                 val = marchaProdPerm1(pchute2);
                 kontaiter++;
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5147,10 +5148,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
             val = marchaProdPerm1(pchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5162,10 +5163,10 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
                 val = marchaProdPerm1(pchute2);
                 kontaiter++;
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5198,7 +5199,7 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
         double rlpA = celula[0].flui.MasEspLiq(1., 15.);
 
         double massic = celula[0].acsr.injmvap.Mass;
-        if ((*vg1dSP).chaverede == 1)
+        if ((*simulationContext).networkMode == 1)
             massic *= 50;
         else
             massic *= 50;
@@ -5226,8 +5227,8 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
         double alfa = 0.;
         double rhomix = (1. - alfa) * rhol + alfa * rhog;
         double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-        pchute += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5;
-        if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchute) > -(*vg1dSP).localtiny)
+        pchute += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2;
+        if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchute) > -(*simulationContext).smallValueTolerance)
             pchute = 1.05 * celula[i - 1].acsr.iprvap.Pres;
     }
 
@@ -5249,8 +5250,8 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
             double alfa = 0.;
             double rhomix = (1. - alfa) * rhol + alfa * rhog;
             double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5;
-            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*vg1dSP).localtiny)
+            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2;
+            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*simulationContext).smallValueTolerance)
                 pchuteAux = 1.01 * celula[i - 1].acsr.iprvap.Pres;
         }
     } else if (val > 0.9e10) {
@@ -5262,8 +5263,8 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
             double alfa = 0.8;
             double rhomix = (1. - alfa) * rhol + alfa * rhog;
             double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5;
-            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*vg1dSP).localtiny)
+            pchuteAux += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2;
+            if (celula[i - 1].acsr.tipo == 11 && (celula[i - 1].acsr.iprvap.Pres - pchuteAux) > -(*simulationContext).smallValueTolerance)
                 pchuteAux = 1.15 * celula[i - 1].acsr.iprvap.Pres;
         }
     }
@@ -5277,7 +5278,7 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
         pchute = 0.5 * (pchute + pchuteAux);
         if ((fabs(pchute - pchuteAux) / pchute) < 0.001 && val < -0.9e10) {
             pchute = 1.05 * pchute;
-            if (celula[0].acsr.tipo == 3 && (celula[0].acsr.iprvap.Pres - pchute) > -(*vg1dSP).localtiny)
+            if (celula[0].acsr.tipo == 3 && (celula[0].acsr.iprvap.Pres - pchute) > -(*simulationContext).smallValueTolerance)
                 pchute = 1.001 * celula[0].acsr.iprvap.Pres;
             pchuteAux = pchute;
         }
@@ -5295,22 +5296,22 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
         chuteNeg = pchute;
         while (val < 0) {
             pchuteAux = pchute2;
-            if ((*vg1dSP).chaverede == 0)
+            if ((*simulationContext).networkMode == 0)
                 pchute2 *= 0.9;
             else
                 pchute2 *= mult1;
             if (pchute2 <= chutelim)
                 pchute2 = 0.5 * (pchuteAux + chutelim);
-            if (celula[0].acsr.tipo == 11 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*vg1dSP).localtiny)
+            if (celula[0].acsr.tipo == 11 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*simulationContext).smallValueTolerance)
                 pchute2 = 1.001 * celula[0].acsr.iprvap.Pres;
             val = marchaProdPerm2(pchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5319,16 +5320,16 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
             while (val < -0.9e10) {
                 chutelim = pchute2;
                 pchute2 = 0.5 * (pchute2 + pchuteAux);
-                if (celula[0].acsr.tipo == 3 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*vg1dSP).localtiny)
+                if (celula[0].acsr.tipo == 3 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*simulationContext).smallValueTolerance)
                     pchute2 = 1.001 * celula[0].acsr.iprvap.Pres;
                 val = marchaProdPerm2(pchute2);
                 kontaiter++;
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError(
                             "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5341,20 +5342,20 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
         chutePos = pchute;
         while (val > 0) {
             pchuteAux = pchute2;
-            if ((*vg1dSP).chaverede == 0)
+            if ((*simulationContext).networkMode == 0)
                 pchute2 *= 1.1;
             else
                 pchute2 *= mult2;
-            if (celula[0].acsr.tipo == 3 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*vg1dSP).localtiny)
+            if (celula[0].acsr.tipo == 3 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*simulationContext).smallValueTolerance)
                 pchute2 = 1.001 * celula[0].acsr.iprvap.Pres;
             val = marchaProdPerm2(pchute2);
             kontaiter++;
             if (kontaiter > 800) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5363,17 +5364,17 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
             while (val > 0.9e10) {
                 chutelim = pchute2;
                 pchute2 = 0.5 * (pchute2 + pchuteAux);
-                if (celula[0].acsr.tipo == 11 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*vg1dSP).localtiny)
+                if (celula[0].acsr.tipo == 11 && (celula[0].acsr.iprvap.Pres - pchute2) > -(*simulationContext).smallValueTolerance)
                     pchute2 = 1.001 * celula[0].acsr.iprvap.Pres;
                 val = marchaProdPerm2(pchute2);
                 kontaiter++;
 
                 if (kontaiter > 800) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError(
                             "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5513,11 +5514,11 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
             mchute *= 0.9;
             val = marchaProdPresPres1(mchute);
             if (mchute < 1e-5) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5543,11 +5544,11 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
             val = marchaProdPresPres1(mchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5559,11 +5560,11 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
                 val = marchaProdPresPres1(mchute2);
                 kontaiter++;
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError(
                             "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5581,11 +5582,11 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
             val = marchaProdPresPres1(mchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm  atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5599,11 +5600,11 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
                 kontaiter++;
 
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError(
                             "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5740,11 +5741,11 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
             mchute *= 0.9;
             val = marchaProdPresPres2(mchute);
             if (mchute < 1e-5) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5770,11 +5771,11 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
             val = marchaProdPresPres1(mchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5786,11 +5787,11 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
                 val = marchaProdPresPres1(mchute2);
                 kontaiter++;
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError(
                             "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5807,11 +5808,11 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
             val = marchaProdPresPres1(mchute2);
             kontaiter++;
             if (kontaiter > 200) {
-                if ((*vg1dSP).chaverede == 0)
+                if ((*simulationContext).networkMode == 0)
                     NumError(
                         "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm  atingiu m�ximo de itera��es");
                 else {
-                    if ((*vg1dSP).iterRede > 0)
+                    if ((*simulationContext).networkIteration > 0)
                         return -1.1e6;
                     else
                         return 1.e6;
@@ -5824,11 +5825,11 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
                 kontaiter++;
 
                 if (kontaiter > 200) {
-                    if ((*vg1dSP).chaverede == 0)
+                    if ((*simulationContext).networkMode == 0)
                         NumError(
                             "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
                     else {
-                        if ((*vg1dSP).iterRede > 0)
+                        if ((*simulationContext).networkIteration > 0)
                             return -1.1e6;
                         else
                             return 1.e6;
@@ -5868,7 +5869,7 @@ void SProdVap::RenovaPresPermMon(int i, int RK) {
         double f1 = celula[i - 1].fric(re1, celula[i].dutoL.rug / dia);
         double gradfric = 0.5 * f1 * rhomix * (fabs(j) * j) * si * dx / area;
         double gradhidro = 9.82 * sin(celula[i].dutoL.teta) * rhomix * dx;
-        celula[i].presaux = celula[i - 1].pres - (gradfric + gradhidro) / 98066.5;
+        celula[i].presaux = celula[i - 1].pres - (gradfric + gradhidro) / units::kPascalPerKgfPerCm2;
     } else {
         double alfmed = celula[i].alf;
         double razdx = celula[i].dx / (celula[i].dx + celula[i].dxL);
@@ -5893,7 +5894,7 @@ void SProdVap::RenovaPresPermMon(int i, int RK) {
         double f1 = celula[i - 1].fric(re1, celula[i].dutoL.rug / dia);
         double gradfric = 0.5 * f1 * rhomix * (fabs(j) * j) * si * dx / area;
         double gradhidro = 9.82 * sin(celula[i].dutoL.teta) * rhomix * dx;
-        celula[i].presaux = celula[i - 1].pres - (gradfric + gradhidro) / 98066.5;
+        celula[i].presaux = celula[i - 1].pres - (gradfric + gradhidro) / units::kPascalPerKgfPerCm2;
     }
 }
 
@@ -5927,7 +5928,7 @@ void SProdVap::RenovaPresPermJus(int i, int RK) {
         alfmed = celula[i].alf;
         double razdx = celula[i].dx / (celula[i].dx + celula[i].dxL);
         tmed = razdx * celula[i].temp + (1. - razdx) * celula[i - 1].temp;
-        double pmed = celula[i].presaux + celula[i - 1].dpB / 98066.5;
+        double pmed = celula[i].presaux + celula[i - 1].dpB / units::kPascalPerKgfPerCm2;
         rhog = celula[i].flui.MasEspGas(pmed, tmed);
         rhol = celula[i].flui.MasEspLiq(pmed, tmed);
         ugsmed = (celula[i].QG) / (area);
@@ -5947,7 +5948,7 @@ void SProdVap::RenovaPresPermJus(int i, int RK) {
         gradfric = 0.5 * f1 * rhomix * (fabs(j) * j) * si * dx / area;
         gradhidro = 9.82 * sin(celula[i].duto.teta) * rhomix * dx;
 
-        celula[i].pres = pmed - (gradfric + gradhidro) / 98066.5;
+        celula[i].pres = pmed - (gradfric + gradhidro) / units::kPascalPerKgfPerCm2;
     } else {
         alfmed = celula[i].alf;
         double razdx = celula[i].dx / (celula[i].dx + celula[i].dxL);
@@ -5972,7 +5973,7 @@ void SProdVap::RenovaPresPermJus(int i, int RK) {
         gradfric = 0.5 * f1 * rhomix * (fabs(j) * j) * si * dx / area;
         gradhidro = 9.82 * sin(celula[i].duto.teta) * rhomix * dx;
 
-        celula[i].pres = celula[i].presaux + celula[i - 1].dpB / 98066.5 - (gradfric + gradhidro) / 98066.5;
+        celula[i].pres = celula[i].presaux + celula[i - 1].dpB / units::kPascalPerKgfPerCm2 - (gradfric + gradhidro) / units::kPascalPerKgfPerCm2;
     }
 }
 
@@ -6013,7 +6014,7 @@ void SProdVap::RenovaMassPerm(int i) {
     celula[i].QL = celula[i].Mliqini / rhol;
     celula[i].QG = (celula[i].MC - celula[i].Mliqini) / rhog;
 
-    if (celula[i].QG < (*vg1dSP).localtiny) {
+    if (celula[i].QG < (*simulationContext).smallValueTolerance) {
         celula[i].alf = 0.;
         celula[i].alfini = celula[i].alf;
         celula[i - 1].alfR = celula[i].alf;
@@ -6026,7 +6027,7 @@ void SProdVap::RenovaMassPerm(int i) {
         celula[i].alfPigDini = celula[i].alf;
         celula[i].alfPigE = celula[i].alf;
         celula[i].alfPigEini = celula[i].alf;
-    } else if (celula[i].QL < (*vg1dSP).localtiny) {
+    } else if (celula[i].QL < (*simulationContext).smallValueTolerance) {
         celula[i].alf = 1.;
         celula[i].alfini = celula[i].alf;
         celula[i - 1].alfR = celula[i].alf;
@@ -6044,9 +6045,9 @@ void SProdVap::RenovaMassPerm(int i) {
     } else {
         double c0 = 1.;
         double ud = 0.;
-        if (celula[i].QL > (*vg1dSP).localtiny) {
+        if (celula[i].QL > (*simulationContext).smallValueTolerance) {
             if (iterperm == 0) {
-                if (fabs(celula[i].QG + celula[i].QL) > (*vg1dSP).localtiny)
+                if (fabs(celula[i].QG + celula[i].QL) > (*simulationContext).smallValueTolerance)
                     celula[i].alf = celula[i].QG / (celula[i].QG + celula[i].QL);
                 else
                     celula[i].alf = 0.;
@@ -6065,16 +6066,16 @@ void SProdVap::RenovaMassPerm(int i) {
             if (fabs(rhog) / rhol > 0.9) {
                 c0 = 1.;
                 ud = 0.;
-            } else if (fabs(celula[i].QG) > (*vg1dSP).localtiny && fabs(celula[i].QL) > (*vg1dSP).localtiny)
+            } else if (fabs(celula[i].QG) > (*simulationContext).smallValueTolerance && fabs(celula[i].QL) > (*simulationContext).smallValueTolerance)
                 CalcC0UdPerm(i, c0, ud);
             celula[i].c0 = c0;
             celula[i].ud = ud;
             double area = celula[i].duto.area;
-            if (fabs(celula[i].QG + celula[i].QL) > (*vg1dSP).localtiny)
+            if (fabs(celula[i].QG + celula[i].QL) > (*simulationContext).smallValueTolerance)
                 celula[i].alf = celula[i].QG / (c0 * (celula[i].QG + celula[i].QL) + ud * area);
             else
                 celula[i].alf = 0.;
-            if (celula[i].alf > (1 - (*vg1dSP).localtiny))
+            if (celula[i].alf > (1 - (*simulationContext).smallValueTolerance))
                 celula[i].alf = celula[i].QG / (celula[i].QG + celula[i].QL);
         } else {
             c0 = 1.;
@@ -6500,13 +6501,13 @@ void SProdVap::RenovaTransMassPerm(int i) {
     double alfmed = celula[i].alf;
     double ugsmed;
 
-    if (celula[i].alf > (*vg1dSP).localtiny)
+    if (celula[i].alf > (*simulationContext).smallValueTolerance)
         ugsmed = celula[i].QG / area;
     else {
         ugsmed = 0.;
     }
     double ulsmed;
-    if (celula[i].alf < 1. - (*vg1dSP).localtiny)
+    if (celula[i].alf < 1. - (*simulationContext).smallValueTolerance)
         ulsmed = celula[i].QL / area;
     else {
         ulsmed = 0.;
@@ -6541,11 +6542,11 @@ void SProdVap::RenovaTransMassPerm(int i) {
     double coefdxP = (rhol * ulsmed * jtl + rhog * ugsmed * jtg) * area;
     double dpdx;
     if (i < ncel)
-        dpdx = 2. * (celula[i + 1].presaux - celula[i].pres) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i + 1].presaux - celula[i].pres) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     else
-        dpdx = 2. * (celula[i].pres - celula[i].presaux) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i].pres - celula[i].presaux) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     if (celula[i].acsr.tipo == 5 && celula[i].acsr.chk.AreaGarg <= (1e-3 + arq.master1.razareaativ) * celula[i].duto.area)
-        dpdx = 2. * (celula[i].pres - celula[i].presaux) * 98066.5 / celula[i].dx;
+        dpdx = 2. * (celula[i].pres - celula[i].presaux) * units::kPascalPerKgfPerCm2 / celula[i].dx;
     celula[i].VTemper = coefdxT / coefTempo;
     double dtdx = (celula[i].temp - celula[i - 1].temp) / dxmed;
     if (i < ncel)
@@ -6561,7 +6562,7 @@ void SProdVap::RenovaTransMassPerm(int i) {
         dpdx = 0.;
     }
     if (celula[i].acsr.tipo == 8 && celula[i].acsr.bvol.freq > 1.) {
-        dpdx = (celula[i].pres - celula[i - 1].pres) * 98066.5 / dxmed;
+        dpdx = (celula[i].pres - celula[i - 1].pres) * units::kPascalPerKgfPerCm2 / dxmed;
     }
 
     double cinetico = 0;
@@ -6662,20 +6663,20 @@ void SProdVap::RenovaTransMassPerm(int i) {
         alfinterL = celula[i].alf;
     }
     double delvel;
-    if (alfinter > (*vg1dSP).localtiny && alfinter < (1. - (*vg1dSP).localtiny))
+    if (alfinter > (*simulationContext).smallValueTolerance && alfinter < (1. - (*simulationContext).smallValueTolerance))
         delvel = ugsmed / alfinter - ulsmed / (1. - alfinter);
-    else if (alfinter > (*vg1dSP).localtiny)
+    else if (alfinter > (*simulationContext).smallValueTolerance)
         delvel = ugsmed;
     else
         delvel = ulsmed;
-    double verifica = area * celula[i].pres * 98066.5 * delvel * (alfinter - alfinterL) / celula[i].dx;
+    double verifica = area * celula[i].pres * units::kPascalPerKgfPerCm2 * delvel * (alfinter - alfinterL) / celula[i].dx;
 
     if (celula[i].temp < 0 || celula[i].temp > 100) {
         int para;
         para = 0.;
     }
 
-    celula[i].FonteMudaFase = (-(coefPresTempo * (celula[i].pres - celula[i].presini) * 98066.5 / celula[i].dt) - coefdxT * dtdx + coefdxP * dpdx - cinetico - (hidro - 0. * verifica) + celula[i - 1].potB / dxmed + fontemassL + fontemassG + fluxcal); // / (coefTempo / celula[i].dt);
+    celula[i].FonteMudaFase = (-(coefPresTempo * (celula[i].pres - celula[i].presini) * units::kPascalPerKgfPerCm2 / celula[i].dt) - coefdxT * dtdx + coefdxP * dpdx - cinetico - (hidro - 0. * verifica) + celula[i - 1].potB / dxmed + fontemassL + fontemassG + fluxcal); // / (coefTempo / celula[i].dt);
 
     celula[i].FonteMudaFase /= latente;
 
@@ -6709,7 +6710,7 @@ void SProdVap::atualizaPeriPmonProd(int i) {
         celula[i - 1].potB = (1. - celula[i - 1].acsr.bcs.Evis / 100. + 100. * (1. - celula[i - 1].acsr.bcs.eficM / 100.) / celula[i - 1].acsr.bcs.eficM) * celula[i - 1].acsr.bcs.Pvis * 745.7;
 
     } else if (celula[i - 1].acsr.tipo == 7)
-        celula[i - 1].dpB = celula[i - 1].acsr.delp * 98066.5;
+        celula[i - 1].dpB = celula[i - 1].acsr.delp * units::kPascalPerKgfPerCm2;
 }
 void SProdVap::atualizaPeriPjusProd(int i) {
     if (celula[i].pres < 0.99)
@@ -6730,7 +6731,7 @@ void SProdVap::atualizaPeriTempProd(int i) {
 
 void SProdVap::calcTempFim() {
 
-    if (arq.chokep.abertura[0] <= 0.6 && arq.chokep.abertura[0] > (*vg1dSP).localtiny && presfim < pGSup) {
+    if (arq.chokep.abertura[0] <= 0.6 && arq.chokep.abertura[0] > (*simulationContext).smallValueTolerance && presfim < pGSup) {
         double masentrada = celula[ncel - 1].MR;
         double massgas = celula[ncel - 1].MR - celula[ncel - 1].MliqiniR;
         double rholp = celula[ncel].flui.MasEspLiq(celula[ncel].pres, celula[ncel].temp);
@@ -6867,10 +6868,10 @@ double SProdVap::hidroreverso(double hol, double vaz) {
         double alfa = 1. - hol;
         double rhomix = (1. - alfa) * rhol + alfa * rhog;
         double dxmed = 0.5 * (celula[i].dx + celula[i - 1].dx);
-        pchute += ((rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5);
+        pchute += ((rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / units::kPascalPerKgfPerCm2);
         if (celula[i - 1].acsr.tipo == 7)
             pchute -= celula[i - 1].acsr.delp;
-        if (celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - pchute) < (*vg1dSP).localtiny)
+        if (celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - pchute) < (*simulationContext).smallValueTolerance)
             pchute = 0.99 * celula[i - 1].acsr.ipr.Pres;
 
         celula[i - 1].dpB = 0.;
@@ -6882,7 +6883,7 @@ double SProdVap::hidroreverso(double hol, double vaz) {
             celula[i - 1].acsr.bcs.NovaVis(vismis, rhomis, vazmix);
             celula[i - 1].dpB = 0.3048 * celula[i - 1].acsr.bcs.Hvis * rhomis * 9.82;
         }
-        pchute -= celula[i - 1].dpB / 98066.5;
+        pchute -= celula[i - 1].dpB / units::kPascalPerKgfPerCm2;
         celula[i - 1].pres = pchute;
     }
     return pchute;

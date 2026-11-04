@@ -6,8 +6,9 @@
  */
 #include "dados1PoissonAxiSim.h"
 #include "solverPoissonAxiSim.h"
+#include <algorithm>
 
-solverPAxiSim::solverPAxiSim(varGlob1D *Vvg1dSP, string nomeArquivoEntrada, double* vresGlob,
+solverPAxiSim::solverPAxiSim(SimulationContext *context, string nomeArquivoEntrada, double* vresGlob,
                  double* vTint,double* vdiamI
 				 , double* dxCel, int vncel, double* vgeoterm, double vtempProd) :
 				 //dados(nomeArquivoEntrada, vresGlob, vTint, vdiamI,dxCel, vncel,vgeoterm),
@@ -18,8 +19,8 @@ solverPAxiSim::solverPAxiSim(varGlob1D *Vvg1dSP, string nomeArquivoEntrada, doub
 	termolivre=Vcr<double>(dados->nele);
 	matglob=SparseMtx<double>(dados->nele, dados->noZero, dados->vecsra, dados->veclm, dados->vecfnz);
 
-    vg1dSP = Vvg1dSP;
-    malha = malha2dAxiSim(vg1dSP, dados->xcoor, dados->noEle, dados->tipo, dados->atributo, dados->nVert,
+    simulationContext = context;
+    malha = malha2dAxiSim(simulationContext, dados->xcoor, dados->noEle, dados->tipo, dados->atributo, dados->nVert,
     		dados->nele, dados->nno, dados->temp.perm, dados->temp.trans,dados->acopDirichlet);
     tempProd=vtempProd;
     int kontaEle=0;
@@ -27,10 +28,10 @@ solverPAxiSim::solverPAxiSim(varGlob1D *Vvg1dSP, string nomeArquivoEntrada, doub
     for (int i = 0; i < dados->ncelPoco; i++){
     	for(int j=0;j<dados->ndR;j++){
             double xc = 2*malha.mlh2d[kontaEle].cel2D.centroideElem[0];
-            double yc = malha.mlh2d[kontaEle].cel2D.centroideElem[1];
+            double yc = -malha.mlh2d[kontaEle].cel2D.centroideElem[1];
             int indx;
             int indy;
-    		for(int iD=0;iD<dados->ncorte; iD++){
+    		for(int iD=0;iD<dados->corte[0].ncam; iD++){
     			indx=iD;
     			double dmenor;
     			double dmaior=dados->corte[0].diam[iD];
@@ -63,12 +64,12 @@ solverPAxiSim::solverPAxiSim(varGlob1D *Vvg1dSP, string nomeArquivoEntrada, doub
             			malha.mlh2d[kontaEle].CC.ccRic[0].hAmb[0]=dados->CC.ccRic[0].hAmb[0]=dados->hE;
             		}
             		else if( malha.mlh2d[kontaEle].cel2D.ccFace[iface]==2){
-            			malha.mlh2d[kontaEle].CC.ccRic[0].valAmb[0]=dados->CC.ccRic[1].valAmb[0]=dados->perfiGeoterm[i];
+            			malha.mlh2d[kontaEle].CC.ccRic[1].valAmb[0]=dados->CC.ccRic[1].valAmb[0]=dados->perfiGeoterm[i];
             			int camFim=dados->corte[0].ncam-1;
             			imat=dados->corte[indy].indmat[camFim];
             			double resFim=ResForm(tempProd, dados->corte[0].diam[camFim],
             					dados->mat[imat].cond, dados->mat[imat].rho, dados->mat[imat].cp);
-            			malha.mlh2d[kontaEle].CC.ccRic[0].hAmb[0]=dados->CC.ccRic[1].hAmb[0]=1 / (resFim);
+            			malha.mlh2d[kontaEle].CC.ccRic[1].hAmb[0]=dados->CC.ccRic[1].hAmb[0]=1 / (M_PI * dados->corte[0].diam[camFim] * resFim);
             		}
             	}
             }
@@ -176,7 +177,7 @@ solverPAxiSim::solverPAxiSim() :
 		//dados(),
 				termolivre(1), matglob(1, 1) {
 	dados = new dadosPAxiSim();
-    vg1dSP = 0;
+    simulationContext = 0;
     kontaTempo = 0;
     tempProd=0.;
     malha = malha2dAxiSim();
@@ -195,8 +196,8 @@ solverPAxiSim::solverPAxiSim(const solverPAxiSim &vPoisson) :
 				 vPoisson.dados->dxPoco,vPoisson.dados->ncelPoco, vPoisson.dados->perfiGeoterm);
 	termolivre=Vcr<double>(dados->nele);
 	matglob=SparseMtx<double>(dados->nele, dados->noZero, dados->vecsra, dados->veclm, dados->vecfnz);
-	vg1dSP = vPoisson.vg1dSP;
-    malha = malha2dAxiSim(vg1dSP, dados->xcoor, dados->noEle, dados->tipo, dados->atributo, dados->nVert,
+	simulationContext = vPoisson.simulationContext;
+    malha = malha2dAxiSim(simulationContext, dados->xcoor, dados->noEle, dados->tipo, dados->atributo, dados->nVert,
     		dados->nele, dados->nno, dados->temp.perm, dados->temp.trans, dados->acopDirichlet);
 
     tempProd=vPoisson.tempProd;
@@ -205,10 +206,10 @@ solverPAxiSim::solverPAxiSim(const solverPAxiSim &vPoisson) :
     for (int i = 0; i < dados->ncelPoco; i++){
     	for(int j=0;j<dados->ndR;j++){
             double xc = 2*malha.mlh2d[kontaEle].cel2D.centroideElem[0];
-            double yc = malha.mlh2d[kontaEle].cel2D.centroideElem[1];
+            double yc = -malha.mlh2d[kontaEle].cel2D.centroideElem[1];
             int indx;
             int indy;
-    		for(int iD=0;iD<dados->ncorte; iD++){
+    		for(int iD=0;iD<dados->corte[0].ncam; iD++){
     			indx=iD;
     			double dmenor;
     			double dmaior=dados->corte[0].diam[iD];
@@ -241,12 +242,12 @@ solverPAxiSim::solverPAxiSim(const solverPAxiSim &vPoisson) :
             			malha.mlh2d[kontaEle].CC.ccRic[0].hAmb[0]=dados->CC.ccRic[0].hAmb[0]=dados->hE;
             		}
             		else if( malha.mlh2d[kontaEle].cel2D.ccFace[iface]==2){
-            			malha.mlh2d[kontaEle].CC.ccRic[0].valAmb[0]=dados->CC.ccRic[1].valAmb[0]=dados->perfiGeoterm[i];
+            			malha.mlh2d[kontaEle].CC.ccRic[1].valAmb[0]=dados->CC.ccRic[1].valAmb[0]=dados->perfiGeoterm[i];
             			int camFim=dados->corte[0].ncam-1;
             			imat=dados->corte[indy].indmat[camFim];
             			double resFim=ResForm(tempProd, dados->corte[0].diam[camFim],
             					dados->mat[imat].cond, dados->mat[imat].rho, dados->mat[imat].cp);
-            			malha.mlh2d[kontaEle].CC.ccRic[0].hAmb[0]=dados->CC.ccRic[1].hAmb[0]=1 / (resFim);
+            			malha.mlh2d[kontaEle].CC.ccRic[1].hAmb[0]=dados->CC.ccRic[1].hAmb[0]=1 / (M_PI * dados->corte[0].diam[camFim] * resFim);
             		}
             	}
             }
@@ -351,7 +352,7 @@ solverPAxiSim::solverPAxiSim(const solverPAxiSim &vPoisson) :
 
 solverPAxiSim &solverPAxiSim::operator=(const solverPAxiSim &vPoisson) {
     if (this != &vPoisson && vPoisson.malha.nele>0) {
-        vg1dSP = vPoisson.vg1dSP;
+        simulationContext = vPoisson.simulationContext;
         delete dados;
         //dados = vPoisson.dados;
         dados = new dadosPAxiSim(vPoisson.dados->entrada, vPoisson.dados->resGlob,
@@ -360,7 +361,7 @@ solverPAxiSim &solverPAxiSim::operator=(const solverPAxiSim &vPoisson) {
         termolivre = vPoisson.termolivre;
         matglob = vPoisson.matglob;
 
-        malha = malha2dAxiSim(vg1dSP, dados->xcoor, dados->noEle, dados->tipo, dados->atributo,
+        malha = malha2dAxiSim(simulationContext, dados->xcoor, dados->noEle, dados->tipo, dados->atributo,
         		dados->nVert, dados->nele, dados->nno, dados->temp.perm, dados->temp.trans,
 				dados->acopDirichlet);
         tempProd=vPoisson.tempProd;
@@ -369,10 +370,10 @@ solverPAxiSim &solverPAxiSim::operator=(const solverPAxiSim &vPoisson) {
         for (int i = 0; i < dados->ncelPoco; i++){
         	for(int j=0;j<dados->ndR;j++){
                 double xc = 2*malha.mlh2d[kontaEle].cel2D.centroideElem[0];
-                double yc = malha.mlh2d[kontaEle].cel2D.centroideElem[1];
+                double yc = -malha.mlh2d[kontaEle].cel2D.centroideElem[1];
                 int indx;
                 int indy;
-        		for(int iD=0;iD<dados->ncorte; iD++){
+        		for(int iD=0;iD<dados->corte[0].ncam; iD++){
         			indx=iD;
         			double dmenor;
         			double dmaior=dados->corte[0].diam[iD];
@@ -405,12 +406,12 @@ solverPAxiSim &solverPAxiSim::operator=(const solverPAxiSim &vPoisson) {
                 			malha.mlh2d[kontaEle].CC.ccRic[0].hAmb[0]=dados->CC.ccRic[0].hAmb[0]=dados->hE;
                 		}
                 		else if( malha.mlh2d[kontaEle].cel2D.ccFace[iface]==2){
-                			malha.mlh2d[kontaEle].CC.ccRic[0].valAmb[0]=dados->CC.ccRic[1].valAmb[0]=dados->perfiGeoterm[i];
+                			malha.mlh2d[kontaEle].CC.ccRic[1].valAmb[0]=dados->CC.ccRic[1].valAmb[0]=dados->perfiGeoterm[i];
                 			int camFim=dados->corte[0].ncam-1;
                 			imat=dados->corte[indy].indmat[camFim];
                 			double resFim=ResForm(tempProd, dados->corte[0].diam[camFim],
                 					dados->mat[imat].cond, dados->mat[imat].rho, dados->mat[imat].cp);
-                			malha.mlh2d[kontaEle].CC.ccRic[0].hAmb[0]=dados->CC.ccRic[1].hAmb[0]=1 / (resFim);
+                			malha.mlh2d[kontaEle].CC.ccRic[1].hAmb[0]=dados->CC.ccRic[1].hAmb[0]=1 / (M_PI * dados->corte[0].diam[camFim] * resFim);
                 		}
                 	}
                 }
@@ -539,9 +540,9 @@ void solverPAxiSim::indrazT(int &ind, double &raz) {
 
     for (int i = 0; i <= dados->temp.parserie - 1; i++) {
         if (i < dados->temp.parserie - 1) {
-            if ((*vg1dSP).lixo5 >= dados->temp.tempo[i] && (*vg1dSP).lixo5 < dados->temp.tempo[i + 1]) {
+            if ((*simulationContext).simulationTime >= dados->temp.tempo[i] && (*simulationContext).simulationTime < dados->temp.tempo[i + 1]) {
                 ind = i;
-                raz = 1 - ((*vg1dSP).lixo5 - dados->temp.tempo[i]) / (dados->temp.tempo[i + 1] - dados->temp.tempo[i]);
+                raz = 1 - ((*simulationContext).simulationTime - dados->temp.tempo[i]) / (dados->temp.tempo[i + 1] - dados->temp.tempo[i]);
                 break;
             }
         } else if (i == dados->temp.parserie - 1) {
@@ -585,9 +586,9 @@ void solverPAxiSim::permanentePoisson() {
 		int iter=malha.nele;
 		int retorna;
 		if (dados->solverMat == 0)
-			retorna=matglob.GMRES(malha.vecSolv,termolivre,eps,iter,1,40);
+			retorna=matglob.GMRES(malha.vecSolv,termolivre,eps,iter,1,std::min(40, malha.nele));
 		else if (dados->solverMat == 1)
-			retorna=matglob.FGMRES(malha.vecSolv,termolivre,eps,iter,1,40);
+			retorna=matglob.FGMRES(malha.vecSolv,termolivre,eps,iter,1,std::min(40, malha.nele));
 		else
 			retorna=matglob.BiCGStab(malha.vecSolv, termolivre, eps, iter, precn);
         norma = 0.;
@@ -728,7 +729,7 @@ void solverPAxiSim::inicializaTransientePoisson(std::vector<double>& tInicial) {
 			vTcamada[i][j] = dados->perfiGeoterm[0];
 	}
 
-    TransCal transfer(vg1dSP, dutosMRT[0], 1, dados->corte[0].discre, vdrcamada, vTcamada,
+    TransCal transfer(simulationContext, dutosMRT[0], 1, dados->corte[0].discre, vdrcamada, vTcamada,
     		tInicial[0], dados->perfiGeoterm[0], 0., 1000., 1000., 0, 1., 0.6, 4186., 1000., 1., 1.,
                         0., 0., 0., 1, 1, 365,dutosMRT[0].cond[dutosMRT[0].ncamadas-1], dutosMRT[0].cp[dutosMRT[0].ncamadas-1],
 						dutosMRT[0].rhoC[dutosMRT[0].ncamadas-1], 1.);
@@ -739,9 +740,10 @@ void solverPAxiSim::inicializaTransientePoisson(std::vector<double>& tInicial) {
             vecTransfer[i] = transfer;
             vecTransfer[i].Tint=tInicial[i];
             vecTransfer[i].Textern1=dados->perfiGeoterm[i];
-            int indFor=0;
-            for(int iF=0;iF<dados->nzonas-1;iF++){
-            	if(prof<=dados->zonaProf[iF]){
+            int indFor=dados->nzonas-1;
+            const double cellDepth=prof+0.5*dados->dxPoco[i];
+            for(int iF=0;iF<dados->nzonas;iF++){
+            	if(cellDepth<dados->zonaProf[iF]){
             		indFor=iF;
             		break;
             	}
@@ -750,6 +752,7 @@ void solverPAxiSim::inicializaTransientePoisson(std::vector<double>& tInicial) {
             vecTransfer[i].condform=dutosMRT[indFor].cond[dutosMRT[indFor].ncamadas-1];
             vecTransfer[i].cpform=dutosMRT[indFor].cp[dutosMRT[indFor].ncamadas-1];
             vecTransfer[i].rhoform=dutosMRT[indFor].rhoC[dutosMRT[indFor].ncamadas-1];
+            vecTransfer[i].resFim=vecTransfer[i].ResForm();
             vecTransfer[i].Textern1=dados->perfiGeoterm[i];
             vecTransfer[i].Textern2=dados->perfiGeoterm[i];
             vecTransfer[i].Tint=tInicial[i];
@@ -846,9 +849,9 @@ void solverPAxiSim::transientePoissonDummy(double vdelt) {
 		int iter=malha.nele;
 		int retorna;
 		if (dados->solverMat == 0)
-			retorna=matglob.GMRES(malha.vecSolv,termolivre,eps,iter,1,40);
+			retorna=matglob.GMRES(malha.vecSolv,termolivre,eps,iter,1,std::min(40, malha.nele));
 		else if (dados->solverMat == 1)
-			retorna=matglob.FGMRES(malha.vecSolv,termolivre,eps,iter,1,40);
+			retorna=matglob.FGMRES(malha.vecSolv,termolivre,eps,iter,1,std::min(40, malha.nele));
 		else
 			retorna=matglob.BiCGStab(malha.vecSolv, termolivre, eps, iter, precn);
         norma = 0.;
@@ -973,9 +976,9 @@ void solverPAxiSim::transientePoisson(double vdelt) {
 		int iter=malha.nele;
 		int retorna;
 		if (dados->solverMat == 0)
-			retorna=matglob.GMRES(malha.vecSolv,termolivre,eps,iter,1,40);
+			retorna=matglob.GMRES(malha.vecSolv,termolivre,eps,iter,1,std::min(40, malha.nele));
 		else if (dados->solverMat == 1)
-			retorna=matglob.FGMRES(malha.vecSolv,termolivre,eps,iter,1,40);
+			retorna=matglob.FGMRES(malha.vecSolv,termolivre,eps,iter,1,std::min(40, malha.nele));
 		else
 			retorna=matglob.BiCGStab(malha.vecSolv, termolivre, eps, iter, precn);
         norma = 0.;
@@ -1045,8 +1048,8 @@ void solverPAxiSim::finalizaPassoTransiente(double vdelt, int indTramo) {
         malha.mlh2d[i].cel2D.tempC0 = malha.mlh2d[i].cel2D.tempC;
     }
 
-    if (((*vg1dSP).lixo5 <= dados->temp.tempoImp[kontaTempo] && (*vg1dSP).lixo5 + delt >= dados->temp.tempoImp[kontaTempo])) {
-        malha.imprime((*vg1dSP).lixo5, indTramo);
+    if (((*simulationContext).simulationTime <= dados->temp.tempoImp[kontaTempo] && (*simulationContext).simulationTime + delt >= dados->temp.tempoImp[kontaTempo])) {
+        malha.imprime((*simulationContext).simulationTime, indTramo);
         kontaTempo++;
         if (kontaTempo >= dados->temp.parserieImp)
             kontaTempo--;

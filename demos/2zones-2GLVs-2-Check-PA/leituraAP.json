@@ -1,12 +1,12 @@
 {
 	"IPR":[
 		{
-	   	"indiceIPR":0,
-	   	"presEstatica":[240, 250]
+        "indiceIPR":0,
+        "presEstatica":[240, 250]
 		},
 		{
-	   	"indiceIPR":1,
-	   	"IP":[20, 30]
+        "indiceIPR":1,
+        "IP":[20, 30]
 		}
 	],
 	"psep":{

@@ -15,7 +15,7 @@
 #include "TrocaCalor.h"
 #include "Vetor.h"
 #include "acessorios.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -152,9 +152,9 @@ class CelVap {
     double DmasschokeL;
     double corrigeMassaPres;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
-    CelVap(varGlob1D *Vvg1dSP = 0, const DadosGeo vdutoL = DadosGeo(),
+    CelVap(SimulationContext *context = 0, const DadosGeo vdutoL = DadosGeo(),
            const DadosGeo vduto = DadosGeo(),
            const DadosGeo vdutoR = DadosGeo(),
            const ProVap vflui = ProVap(),
