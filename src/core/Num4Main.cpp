@@ -250,6 +250,15 @@ Logger logger("");
 // criar string do path do arquivo de entrada
 string pathArqEntrada("");
 
+// Nomes de arquivos auxiliares sao relativos a pasta do modelo. Copias dos leitores reabrem o nome ja
+// resolvido, por isso nomes absolutos ou ja prefixados ficam como estao.
+string resolveArquivoEntrada(const string &nome) {
+    const bool absoluto = !nome.empty() && (nome[0] == '/' || nome[0] == '\\' || (nome.size() > 1 && nome[1] == ':'));
+    if (absoluto || pathArqEntrada.empty() || nome.compare(0, pathArqEntrada.size(), pathArqEntrada) == 0)
+        return nome;
+    return pathArqEntrada + nome;
+}
+
 // criar string do path dos arquivos de entrada PVTSIM e SnapShot
 string pathArqExtEntrada("");
 
@@ -12643,6 +12652,13 @@ void determinarPathSaida(string path) {
  * sigNumber - numero que indica o tipo de sinal de interrupcao
  */
 void signalHandler(int sigNumber) {
+    // sinais repetidos (ex.: timeout envia ao processo e ao grupo) nao duplicam o registro
+    static volatile sig_atomic_t tratando = 0;
+    signal(SIGINT, SIG_IGN);
+    signal(SIGTERM, SIG_IGN);
+    if (tratando)
+        std::_Exit(EXIT_FAILURE);
+    tratando = 1;
     string signalDescription = "";
     int exitCode = EXIT_FAILURE;
     switch (sigNumber) {

@@ -283,8 +283,11 @@ void dadosPoro::parse_materiais(Value &material_json) {
 
 void dadosPoro::lerPoroso(string nomeArquivoEntrada) {
 
-    entrada = nomeArquivoEntrada;
-    FILE *fp = fopen(nomeArquivoEntrada.c_str(), "r");
+    entrada = resolveArquivoEntrada(nomeArquivoEntrada);
+    FILE *fp = fopen(entrada.c_str(), "r");
+    if (!fp)
+        logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                       "Arquivo nao encontrado", entrada, "leitura de json");
     char readBuffer[125536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));
     Document elementoPorosoRaiz;
