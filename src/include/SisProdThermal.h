@@ -112,8 +112,6 @@ void computeThermalMassTransfer(const ThermalState &state, int cellIndex);
 /// Updates one control-volume temperature from the thermal energy balance.
 /// previousTemperature does not participate in the calculation.
 /// Uses previous pressure, current temperature, and prior face temperatures.
-/// Transient mode integrates the frozen local equation with a fixed donor;
-/// the field advance synchronizes donors over the complete production column.
 void computeTemperature(const ThermalState &state, int cellIndex,
                         double previousTemperature, int steadyStateMode = 0);
 
@@ -136,14 +134,6 @@ void prepareNonDimensionalHeatDiffusion(const ThermalState &state,
                                         int cellIndex);
 
 /// Advances the transient thermal-energy solution by one coupling cycle.
-/// The inlet characteristic uses the saved internal temperature and updated flow.
-/// Incoming open or network characteristics use the configured temperature.
-/// An isolated closed endpoint evolves its stored energy and local sources.
-/// Thermal substeps use updated flow with donor Courant numbers at most 0.8;
-/// affine sources are integrated exactly. Excessive kinetic-driven temperature
-/// changes are safeguarded without truncating compensated changes or unrelated
-/// heat sources. Wall diffusion advances once per coupling cycle, not once per
-/// thermal substep.
 void advanceTransientEnergy(const ThermalState &state, const transient::TransientStepState &transientStep, int cycle,
                             int maximumCycle);
 

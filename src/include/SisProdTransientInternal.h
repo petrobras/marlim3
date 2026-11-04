@@ -198,9 +198,6 @@ void restrictTimeStepByTransport(const TransientStepState &state);
 /// Aligns the limited step to events and updates the master-valve schedule state.
 void applyScheduledTimeStepEvents(const TransientStepState &state);
 
-/// Limits phase transport during pressure-temperature coupling with a mass-flow outlet.
-/// Uses stored face flows, individual upwind fractions, and the kinetic phase threshold.
-void restrictOutletCouplingTimeStep(const TransientStepState &state);
 
 /// Detects the current three-cell oscillation pattern behind closed chokes and penalizes the step.
 void penalizeOscillatingFractions(const TransientStepState &state);

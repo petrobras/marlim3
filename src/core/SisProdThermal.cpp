@@ -3,6 +3,7 @@
 #include "SisProdSources.h"
 #include "SisProdThermalInternal.h"
 #include "TransientKineticResponse.h"
+#include "TransientTemperatureUpdate.h"
 
 #include "SisProdConstants.h"
 
@@ -148,24 +149,6 @@ template <typename Axis>
                                 .spatialCoefficient = spatialCoefficient};
 }
 
-[[nodiscard]] TransientInletTemperature prepareTransientInletTemperature(const ThermalState &state) {
-    Cel &cell = state.cells[0];
-    TransientInletTemperature inlet{};
-    inlet.prescribed = true;
-    if (!state.thermalSourceDisabled) {
-        inlet.transport = temperatureTransportOf(state, 0);
-        const double thermalVelocity = inlet.transport.spatialCoefficient / inlet.transport.timeCoefficient;
-        const bool closedEndpoint = state.input.ConContEntrada == 0 &&
-                                    state.globals->networkMode == 0;
-        inlet.prescribed = !closedEndpoint && thermalVelocity > 0.;
-    }
-    if (inlet.prescribed) {
-        cell.temp = state.input.ConContEntrada > 0
-                        ? state.inletTemperature
-                        : state.defaultInletTemperature;
-    }
-    return inlet;
-}
 
 TemperatureBalance prepareTemperatureBalance(const ThermalState &state,
                                              int cellIndex,
@@ -254,8 +237,11 @@ double computeKineticTemperatureTerm(const ThermalState &state, int cellIndex,
     double rightFaceMeanLiquidVelocity = 0;
     double previousRightFaceMeanGasVelocity = 0;
     double previousRightFaceMeanLiquidVelocity = 0;
-    if (!(cellIndex <= state.lastCell - 1 && cell.acsr.tipo == kAccessoryNone &&
-          state.cells[cellIndex + 1].acsr.tipo == kAccessoryNone))
+    const bool ordinaryAccessories = cellIndex < state.lastCell - 1 &&
+                                     cell.acsr.tipo == kAccessoryNone &&
+                                     state.cells[cellIndex + 1].acsr.tipo == kAccessoryNone;
+    if (!detail::includesTransientKineticWork(cellIndex, state.lastCell, ordinaryAccessories,
+                                            state.surfaceChoke.AreaGarg, state.surfaceChoke.AreaTub))
         return kineticTerm;
     Cel &rightCell = state.cells[cellIndex + 1];
 
@@ -332,7 +318,7 @@ double computeKineticTemperatureTerm(const ThermalState &state, int cellIndex,
         previousRightFaceMeanLiquidVelocity /= previousRightFaceLiquidFraction;
     }
 
-    kineticTerm = kineticLiquidDensity * rightFaceLiquidFraction * cellFlowArea * (0.5 * (rightFaceMeanLiquidVelocity * rightFaceMeanLiquidVelocity - previousRightFaceMeanLiquidVelocity * previousRightFaceMeanLiquidVelocity)) / cell.dt +
+    kineticTerm = kineticLiquidDensity * (1. - rightFaceVoidFraction) * cellFlowArea * (0.5 * (rightFaceMeanLiquidVelocity * rightFaceMeanLiquidVelocity - previousRightFaceMeanLiquidVelocity * previousRightFaceMeanLiquidVelocity)) / cell.dt +
                   kineticGasDensity * rightFaceVoidFraction * cellFlowArea * (0.5 * (rightFaceMeanGasVelocity * rightFaceMeanGasVelocity - previousRightFaceMeanGasVelocity * previousRightFaceMeanGasVelocity)) / cell.dt +
                   ((rightCell.MC - rightCell.Mliqini) * rightFaceMeanGasVelocity * (rightFaceMeanGasVelocity - leftFaceMeanGasVelocity) / kineticCellLength +
                    rightCell.Mliqini * rightFaceMeanLiquidVelocity * (rightFaceMeanLiquidVelocity - leftFaceMeanLiquidVelocity) / kineticCellLength);
@@ -1701,42 +1687,38 @@ void selectAndApplyBufferedInletFlowRegime(
         gasDensity, liquidDensity, flowArea);
 }
 
-void refreshTemperatureField(const ThermalState &state, const TransientInletTemperature &inlet) {
-    thread_local std::vector<TransientTemperatureStep> cachedSteps;
-    auto &steps = cachedSteps;
-    steps.resize(state.lastCell + 1);
-    const auto prepareCell = [&](int cellIndex) {
-        steps[cellIndex] = prepareTransientTemperatureStep(
-            state, cellIndex, cellIndex == 0 ? &inlet : nullptr);
-    };
-    if (state.poisson2DCellCount == 1)
-        prepareCell(state.poisson2DCellIndices[0]);
+void refreshTemperatureCell(const ThermalState &state, int cellIndex) {
+    computeCellTemperature(state, cellIndex, 0);
+    Cel &cell = state.cells[cellIndex];
+    cell.dTdt = (cell.temp - cell.tempini) / state.timeStep;
+    cell.dTdtIni = cell.dTdt;
+}
 
-    const int parallelPoissonCount = state.poisson2DCellCount == 1 ? 0 : state.poisson2DCellCount;
-    const int regularCellCount = state.lastCell + 1 - state.poisson2DCellCount;
-    const int threadCount = std::max(1, std::min(state.globals->solverThreadCount,
-                                              std::max(parallelPoissonCount, regularCellCount)));
-    if (threadCount == 1) {
-        for (int i = 0; i < parallelPoissonCount; ++i)
-            prepareCell(state.poisson2DCellIndices[i]);
-        for (int i = 0; i <= state.lastCell; ++i)
-            if (state.cells[i].calor.difus2D == 0)
-                prepareCell(i);
-    } else {
-#pragma omp parallel num_threads(threadCount) default(none) shared(state, prepareCell) firstprivate(parallelPoissonCount)
-        {
-            if (parallelPoissonCount > 0) {
-#pragma omp for schedule(static)
-                for (int i = 0; i < parallelPoissonCount; ++i)
-                    prepareCell(state.poisson2DCellIndices[i]);
-            }
-#pragma omp for schedule(static) nowait
-            for (int i = 0; i <= state.lastCell; ++i)
-                if (state.cells[i].calor.difus2D == 0)
-                    prepareCell(i);
-        }
+void refreshPoissonTemperatures(const ThermalState &state) {
+    if (state.poisson2DCellCount <= 0)
+        return;
+    if (state.poisson2DCellCount == 1) {
+        refreshTemperatureCell(state, state.poisson2DCellIndices[0]);
+        return;
     }
-    integrateTransientTemperatureField(state, steps);
+    const int threadCount = std::max(1, std::min(state.globals->solverThreadCount, state.poisson2DCellCount));
+#pragma omp parallel for num_threads(threadCount) default(none) shared(state) schedule(static)
+    for (int index = 0; index < state.poisson2DCellCount; ++index)
+        refreshTemperatureCell(state, state.poisson2DCellIndices[index]);
+}
+
+void refreshRegularTemperatures(const ThermalState &state) {
+    const int regularCellCount = state.lastCell + 1 - state.poisson2DCellCount;
+    const int threadCount = std::max(1, std::min(state.globals->solverThreadCount, regularCellCount));
+#pragma omp parallel for num_threads(threadCount) default(none) shared(state) schedule(static)
+    for (int index = 0; index <= state.lastCell; ++index)
+        if (state.cells[index].calor.difus2D == 0)
+            refreshTemperatureCell(state, index);
+}
+
+void refreshTemperatureField(const ThermalState &state) {
+    refreshPoissonTemperatures(state);
+    refreshRegularTemperatures(state);
 }
 
 TemperatureSourceTerms computeSteadySourceTerms(const ThermalState &state,
@@ -2345,7 +2327,7 @@ double temperatureSpatialGradientOf(const ThermalState &state, int cellIndex,
             temperatureGradient = 0.;
         }
     }
-    if ((cellIndex <= 1 && cell.VTemper == 0) || (cellIndex == state.lastCell && cell.VTemper <= 0))
+    if ((cellIndex <= 1 && cell.VTemper <= 0) || (cellIndex == state.lastCell && cell.VTemper <= 0))
         temperatureGradient = 0.;
     if (cellIndex > 0 && cell.acsr.tipo == kAccessoryVolumetricPump && cell.acsr.bvol.freq > 1.) {
         pressureGradient = (cell.pres - state.cells[cellIndex - 1].pres) * units::kPascalPerKgfPerCm2 / balance.meanCellLength;
@@ -2602,8 +2584,7 @@ void prepareTransientOutletFlow(const ThermalState &state) {
     }
 }
 
-void advanceCoupledThermalField(const ThermalState &state, int cycle, int maximumCycle,
-                                const TransientInletTemperature &inlet) {
+void advanceCoupledThermalField(const ThermalState &state, int cycle, int maximumCycle) {
     const auto prepareInterface = [&](int coupled) {
         const int cellIndex = state.input.celAcop[coupled].indCel;
         prepareNonDimensionalHeatDiffusion(state, cellIndex);
@@ -2626,7 +2607,7 @@ void advanceCoupledThermalField(const ThermalState &state, int cycle, int maximu
             state.poissonSolver3D.FeiticoDoTempo();
         state.poissonSolver3D.transientePoisson(state.timeStep);
     }
-    refreshTemperatureField(state, inlet);
+    refreshTemperatureField(state);
 }
 
 MassTransferWaterCuts prepareMassTransferDonors(
@@ -2999,292 +2980,70 @@ void finalizeFlowPartitionCell(
     }
 }
 
-TransientTemperatureStep prepareTransientTemperatureStep(
-    const ThermalState &state, int cellIndex, const TransientInletTemperature *inlet) {
-    Cel &cell = state.cells[cellIndex];
-    TransientTemperatureStep step;
-    step.initialTemperature = cell.temp;
-    if (state.thermalSourceDisabled) {
-        step.initialTemperature = cell.calor.Textern1;
-        return step;
-    }
 
-    const auto transport = inlet ? inlet->transport : temperatureTransportOf(state, cellIndex);
-    step.timeCoefficient = transport.timeCoefficient;
-    cell.VTemper = transport.spatialCoefficient / transport.timeCoefficient;
-    step.evolves = cellIndex == 0
-                       ? (inlet ? !inlet->prescribed : cell.VTemper <= 0.)
-                       : cellIndex < state.lastCell || cell.VTemper >= 0. ||
-                             state.surfaceChokeMassFlag == 1 || state.input.chkv == 1;
-    if (!step.evolves && cellIndex == state.lastCell) {
-        cell.temp = state.globals->networkMode == 0 || state.endNode == 1 ||
-                            state.globals->parallelNetworkMode == 1
-                        ? cell.calor.Textern1
-                        : state.gasSurfaceTemperature;
-        step.initialTemperature = cell.temp;
-    }
+double temperatureInterfacialWorkOf(const ThermalState &state, int cellIndex,
+                                    const TemperatureBalance &balance) {
+    const Cel &cell = state.cells[cellIndex];
+    const bool positiveGasFlow = balance.gasSuperficialVelocity > 0.;
+    const double fraction = positiveGasFlow ? cell.alf : cell.alfR;
+    const double leftFraction = positiveGasFlow ? cell.alfL : cell.alf;
+    double slipVelocity = balance.liquidSuperficialVelocity;
+    if (fraction > state.globals->smallValueTolerance && fraction < 1. - state.globals->smallValueTolerance)
+        slipVelocity = balance.gasSuperficialVelocity / fraction -
+                       balance.liquidSuperficialVelocity / (1. - fraction);
+    else if (fraction > state.globals->smallValueTolerance)
+        slipVelocity = balance.gasSuperficialVelocity;
+    return balance.flowArea * cell.pres * units::kPascalPerKgfPerCm2 *
+           slipVelocity * (fraction - leftFraction) / cell.dx;
+}
 
-    const auto wallProperties = step.evolves ? transport : temperatureTransportOf(state, cellIndex);
-    TemperatureBalance balance = prepareTemperatureBalance(state, cellIndex, 0, wallProperties);
-    if (!step.evolves)
-        return step;
-
+double explicitTemperatureCandidate(const ThermalState &state, int cellIndex, TemperatureBalance &balance) {
+    const Cel &cell = state.cells[cellIndex];
     double pressureGradient = temperaturePressureGradientOf(state, cellIndex, balance);
-    if (cellIndex > 0 && cell.acsr.tipo == kAccessoryVolumetricPump && cell.acsr.bvol.freq > 1.)
-        pressureGradient = (cell.pres - state.cells[cellIndex - 1].pres) *
-                           units::kPascalPerKgfPerCm2 / balance.meanCellLength;
+    const double temperatureGradient = temperatureSpatialGradientOf(state, cellIndex, balance, pressureGradient);
     const double kineticTerm = computeKineticTemperatureTerm(state, cellIndex, balance);
-    step.kineticIncrement = -cell.dt * cell.dTdLCor * kineticTerm / transport.timeCoefficient;
-    const auto source = computeTemperatureSourceTerms(state, cellIndex, cell.dx);
-    const double latentHeatTerm = computeTemperatureLatentHeatTerm(state, cellIndex);
+    const auto source = computeTemperatureSourceTerms(state, cellIndex, balance.cellLength);
+    const double latentHeat = computeTemperatureLatentHeatTerm(state, cellIndex);
+    const double interfacialWork = temperatureInterfacialWorkOf(state, cellIndex, balance);
     const double leftThermalPower = cellIndex > 0 ? state.cells[cellIndex - 1].acsr.potTermo : 0.;
-    const double pressureIncrement = balance.pressureTimeCoefficient *
-                                     (cell.pres - cell.presini) * units::kPascalPerKgfPerCm2;
-    const double compositionWork = (balance.rc - balance.rp) * (1. - balance.voidFraction) *
-                                   cell.pres * units::kPascalPerKgfPerCm2 * balance.flowArea *
-                                   (cell.bet - cell.betini) / balance.liquidDensity;
-    const double heatingRate = balance.pressureSpatialCoefficient * pressureGradient -
-                               kineticTerm - balance.hydrostaticPower +
-                               (leftThermalPower + cell.fonteCal) / balance.meanCellLength +
-                               source.liquid + source.gas + balance.heatFlux - latentHeatTerm;
-    step.sourceIncrement = (pressureIncrement - compositionWork +
-                            cell.dt * cell.dTdLCor * heatingRate) / transport.timeCoefficient;
-    step.sourceDecay = cell.dt * cell.dTdLCor * source.heatCapacityRate / transport.timeCoefficient;
-
-    const bool closedRightFace = cell.acsr.tipo == kAccessoryChoke &&
-        cell.acsr.chk.AreaGarg <= (1e-3 + state.input.master1.razareaativ) * cell.duto.area;
-    const bool closedLeftFace = cellIndex > 0 &&
-        state.cells[cellIndex - 1].acsr.tipo == kAccessoryChoke &&
-        state.cells[cellIndex - 1].acsr.chk.AreaGarg <=
-            (1e-3 + state.input.master1.razareaativ) * state.cells[cellIndex - 1].duto.area;
-    if (cell.VTemper < 0. && cellIndex < state.lastCell && !closedRightFace)
-        step.donor = cellIndex + 1;
-    else if (cell.VTemper > 0. && cellIndex > 0 && !closedLeftFace)
-        step.donor = cellIndex - 1;
-    if (step.donor >= 0) {
-        const double donorDistance = 0.5 * (cell.dx + state.cells[step.donor].dx);
-        step.courant = cell.dTdLCor * fabs(cell.VTemper) * cell.dt / donorDistance;
-    }
-    return step;
+    return ((balance.timeCoefficient / cell.dt) * cell.temp -
+            (-balance.pressureTimeCoefficient * (cell.pres - cell.presini) * units::kPascalPerKgfPerCm2 / cell.dt) +
+            cell.dTdLCor * (-balance.temperatureSpatialCoefficient * temperatureGradient +
+                balance.pressureSpatialCoefficient * pressureGradient - kineticTerm -
+                (balance.hydrostaticPower - 0. * interfacialWork) +
+                (leftThermalPower + cell.fonteCal) / balance.meanCellLength +
+                source.liquid + source.gas + balance.heatFlux - latentHeat) -
+            (balance.rc - balance.rp) * (1. - balance.voidFraction) * cell.pres * units::kPascalPerKgfPerCm2 *
+                balance.flowArea * (cell.bet - cell.betini) / (balance.liquidDensity * cell.dt)) /
+           (balance.timeCoefficient / cell.dt);
 }
 
-double integrateTemperatureSource(const TransientTemperatureStep &step,
-                                   double temperature, double fraction) {
-    const double scale = step.sourceDecay == 0.
-                             ? fraction
-                             : -std::expm1(-step.sourceDecay * fraction) / step.sourceDecay;
-    return temperature +
-           (step.sourceIncrement - step.sourceDecay * (temperature - step.initialTemperature)) * scale;
-}
-
-double integrateKineticTemperatureResponse(const TransientTemperatureStep &step,
-                                           double response, double fraction) {
-    const double scale = step.sourceDecay == 0.
-                             ? fraction
-                             : -std::expm1(-step.sourceDecay * fraction) / step.sourceDecay;
-    return response + (step.kineticIncrement - step.sourceDecay * response) * scale;
-}
-
-void integrateTransientTemperatureField(const ThermalState &state,
-                                        const std::vector<TransientTemperatureStep> &steps) {
-    constexpr double maximumCourant = 0.8;
-    double largestCourant = 0.;
-    bool trackKineticResponse = false;
-    for (int i = 0; i <= state.lastCell; ++i) {
-        const auto &step = steps[i];
-        if (!std::isfinite(step.initialTemperature) || !std::isfinite(step.timeCoefficient) ||
-            step.timeCoefficient <= 0. || !std::isfinite(step.sourceIncrement) ||
-            !std::isfinite(step.sourceDecay) || !std::isfinite(step.courant) ||
-            step.sourceDecay < 0. || step.courant < 0. || state.cells[i].dt <= 0. ||
-            !std::isfinite(state.cells[i].dt) || !std::isfinite(state.cells[i].VTemper) ||
-            !std::isfinite(state.cells[i].dTdLCor) || state.cells[i].dTdLCor < 0.)
-            throw std::domain_error("Invalid transient energy coefficients in cell " + std::to_string(i));
-        largestCourant = std::max(largestCourant, step.courant);
-        trackKineticResponse = trackKineticResponse ||
-            std::abs(step.kineticIncrement) > 10. * state.cells[i].dt;
-    }
-    const double requiredSteps = std::max(1., std::ceil(largestCourant / maximumCourant));
-    if (requiredSteps > std::numeric_limits<int>::max())
-        throw std::domain_error("Transient energy Courant number exceeds the supported substep count");
-    const int substepCount = static_cast<int>(requiredSteps);
-    const double fraction = 1. / substepCount;
-    thread_local std::vector<double> cachedTemperatures, cachedAdvected;
-    auto &temperatures = cachedTemperatures;
-    auto &advected = cachedAdvected;
-    temperatures.resize(steps.size());
-    advected.resize(steps.size());
-    for (int i = 0; i <= state.lastCell; ++i)
-        temperatures[i] = steps[i].initialTemperature;
-
-    thread_local std::vector<double> cachedKineticCurrent, cachedKineticNext;
-    if (trackKineticResponse) {
-        cachedKineticCurrent.assign(steps.size(), 0.);
-        cachedKineticNext.resize(steps.size());
-    }
-    const int cellCount = state.lastCell + 1;
-    const int threadCount = std::max(1, std::min(state.globals->solverThreadCount, cellCount));
-    const auto applyHalfSource = [&](int i, double *current, double *kineticCurrent) {
-        if (steps[i].evolves)
-            current[i] = integrateTemperatureSource(steps[i], current[i], 0.5 * fraction);
-        if (trackKineticResponse && steps[i].evolves)
-            kineticCurrent[i] = integrateKineticTemperatureResponse(steps[i], kineticCurrent[i], 0.5 * fraction);
-    };
-    const auto advectAndRelax = [&](int i, const double *current, double *next,
-                                     const double *kineticCurrent, double *kineticNext) {
-        const auto &step = steps[i];
-        double temperature = current[i];
-        if (step.evolves && step.donor >= 0)
-            temperature += step.courant * fraction * (current[step.donor] - current[i]);
-        next[i] = step.evolves
-                      ? integrateTemperatureSource(step, temperature, 0.5 * fraction)
-                      : temperature;
-        if (trackKineticResponse) {
-            double response = kineticCurrent[i];
-            if (step.evolves && step.donor >= 0)
-                response += step.courant * fraction * (kineticCurrent[step.donor] - kineticCurrent[i]);
-            kineticNext[i] = step.evolves
-                ? integrateKineticTemperatureResponse(step, response, 0.5 * fraction)
-                : response;
-        }
-    };
-    double *current = temperatures.data();
-    double *next = advected.data();
-    double *kineticCurrent = cachedKineticCurrent.data();
-    double *kineticNext = cachedKineticNext.data();
-    if (threadCount == 1) {
-        for (int substep = 0; substep < substepCount; ++substep) {
-            for (int i = 0; i < cellCount; ++i)
-                applyHalfSource(i, current, kineticCurrent);
-            for (int i = 0; i < cellCount; ++i)
-                advectAndRelax(i, current, next, kineticCurrent, kineticNext);
-            std::swap(current, next);
-            std::swap(kineticCurrent, kineticNext);
-        }
-    } else {
-#pragma omp parallel num_threads(threadCount) default(none) shared(applyHalfSource, advectAndRelax) firstprivate(current, next, kineticCurrent, kineticNext, cellCount, substepCount)
-        {
-            for (int substep = 0; substep < substepCount; ++substep) {
-#pragma omp for schedule(static)
-                for (int i = 0; i < cellCount; ++i)
-                    applyHalfSource(i, current, kineticCurrent);
-#pragma omp for schedule(static) nowait
-                for (int i = 0; i < cellCount; ++i)
-                    advectAndRelax(i, current, next, kineticCurrent, kineticNext);
-                if (substep + 1 < substepCount) {
-#pragma omp barrier
-                }
-                std::swap(current, next);
-                std::swap(kineticCurrent, kineticNext);
-            }
-        }
-    }
-    const auto &finalTemperatures = substepCount % 2 ? advected : temperatures;
-    for (int i = 0; i <= state.lastCell; ++i) {
-        double temperature = finalTemperatures[i];
-        if (trackKineticResponse) {
-            const auto &responses = substepCount % 2 ? cachedKineticNext : cachedKineticCurrent;
-            temperature = detail::stabilizeKineticTemperatureResponse(
-                steps[i].initialTemperature, temperature, responses[i], state.cells[i].dt);
-        }
-        if (!std::isfinite(temperature) || temperature <= -units::kZeroCelsiusInKelvin)
-            throw std::domain_error("Invalid absolute temperature in transient energy cell " + std::to_string(i));
-        Cel &cell = state.cells[i];
-        cell.temp = temperature;
-        cell.dTdt = (cell.temp - cell.tempini) / state.timeStep;
-        cell.dTdtIni = cell.dTdt;
-    }
-}
-
-void computeCellTemperature(const ThermalState &state, int cellIndex, int steadyMode,
-                            const TransientInletTemperature *inlet) {
-    SimulationContext &globals = *state.globals;
+void advanceExplicitCellTemperature(const ThermalState &state, int cellIndex, TemperatureBalance &balance) {
     Cel &cell = state.cells[cellIndex];
-    if (steadyMode == 0) {
-        TransientInletTemperature localInlet{};
-        if (cellIndex == 0 && !inlet) {
-            localInlet = prepareTransientInletTemperature(state);
-            inlet = &localInlet;
-        }
-        auto step = prepareTransientTemperatureStep(state, cellIndex, inlet);
-        if (step.evolves && step.donor >= 0) {
-            const double donorTemperature = state.cells[step.donor].tempini;
-            step.sourceIncrement += step.courant * (donorTemperature - step.initialTemperature);
-            step.sourceDecay += step.courant;
-        }
-        cell.temp = step.evolves
-                        ? integrateTemperatureSource(step, step.initialTemperature, 1.)
-                        : step.initialTemperature;
-        if (step.evolves)
-            cell.temp = detail::stabilizeKineticTemperatureResponse(step.initialTemperature, cell.temp,
-                integrateKineticTemperatureResponse(step, 0., 1.), cell.dt);
-        if (!std::isfinite(cell.temp) || cell.temp <= -units::kZeroCelsiusInKelvin)
-            throw std::domain_error("Invalid absolute temperature in transient energy cell " + std::to_string(cellIndex));
-        return;
-    }
+    const double candidate = explicitTemperatureCandidate(state, cellIndex, balance);
+    const double minimumTemperature = state.input.usaTabela == 1
+                                          ? state.input.tabent.tmin + 1.
+                                          : kMinimumTemperatureCelsius;
+    cell.temp = detail::limitExplicitTemperature(cell.tempini, candidate, cell.dt,
+        cell.VTemper, balance.referenceMixtureVelocity, minimumTemperature);
+}
+
+void computeCellTemperature(const ThermalState &state, int cellIndex, int steadyMode) {
+    Cel &cell = state.cells[cellIndex];
     if (state.thermalSourceDisabled != 0) {
         cell.temp = cell.calor.Textern1;
         return;
     }
-
-    const TemperatureTransport transport = inlet ? inlet->transport : temperatureTransportOf(state, cellIndex);
-    TemperatureBalance balance = prepareTemperatureBalance(state, cellIndex, steadyMode, transport);
-    double pressureGradient = temperaturePressureGradientOf(state, cellIndex, balance);
-
+    const auto transport = temperatureTransportOf(state, cellIndex);
+    auto balance = prepareTemperatureBalance(state, cellIndex, steadyMode, transport);
     cell.VTemper = balance.temperatureSpatialCoefficient / balance.timeCoefficient;
-    const bool evolveInlet = cellIndex == 0 && (inlet ? !inlet->prescribed : cell.VTemper <= 0.);
-    if (evolveInlet || (((cellIndex < state.lastCell || cell.VTemper >= 0.) && cellIndex > 0) ||
-                                                  (cellIndex == state.lastCell && state.surfaceChokeMassFlag == 1) || (cellIndex == state.lastCell && state.input.chkv == 1))) {
-        const double temperatureGradient =
-            temperatureSpatialGradientOf(state, cellIndex, balance, pressureGradient);
-
-        double kineticTerm = computeKineticTemperatureTerm(state, cellIndex, balance);
-
-        TemperatureSourceTerms sourceTerms =
-            computeTemperatureSourceTerms(state, cellIndex, balance.cellLength);
-
-        const double latentHeatTerm = computeTemperatureLatentHeatTerm(state, cellIndex);
-
-        double interfaceVoidFraction;
-        double leftInterfaceVoidFraction;
-        if (balance.gasSuperficialVelocity > 0) {
-            interfaceVoidFraction = cell.alf;
-            leftInterfaceVoidFraction = cell.alfL;
-        } else {
-            interfaceVoidFraction = cell.alfR;
-            leftInterfaceVoidFraction = cell.alf;
-        }
-        double slipVelocity;
-        if (interfaceVoidFraction > globals.smallValueTolerance && interfaceVoidFraction < (1. - globals.smallValueTolerance))
-            slipVelocity = balance.gasSuperficialVelocity / interfaceVoidFraction - balance.liquidSuperficialVelocity / (1. - interfaceVoidFraction);
-        else if (interfaceVoidFraction > globals.smallValueTolerance)
-            slipVelocity = balance.gasSuperficialVelocity;
-        else
-            slipVelocity = balance.liquidSuperficialVelocity;
-        double interfacialWorkTerm = balance.flowArea * cell.pres * units::kPascalPerKgfPerCm2 * slipVelocity * (interfaceVoidFraction - leftInterfaceVoidFraction) / cell.dx;
-
-        double leftCellThermalPower = 0.;
-        if (cellIndex > 0)
-            leftCellThermalPower = state.cells[cellIndex - 1].acsr.potTermo;
-        cell.temp = ((balance.timeCoefficient / cell.dt) * cell.temp - (-balance.pressureTimeCoefficient * (cell.pres - cell.presini) * units::kPascalPerKgfPerCm2 / cell.dt) + cell.dTdLCor * (-balance.temperatureSpatialCoefficient * temperatureGradient + balance.pressureSpatialCoefficient * pressureGradient - kineticTerm - (balance.hydrostaticPower - 0. * interfacialWorkTerm) + (leftCellThermalPower + cell.fonteCal) / balance.meanCellLength + sourceTerms.liquid + sourceTerms.gas + balance.heatFlux - latentHeatTerm) - (balance.rc - balance.rp) * (1 - balance.voidFraction) * cell.pres * units::kPascalPerKgfPerCm2 * balance.flowArea * (cell.bet - cell.betini) / (balance.liquidDensity * cell.dt)) / (balance.timeCoefficient / cell.dt);
-
-        if (fabs(cell.temp - cell.tempini) / cell.dt > 10.) {
-            cell.temp = cell.tempini +
-                        (fabs(cell.temp - cell.tempini) / (cell.temp - cell.tempini)) * 10 * cell.dt;
-        } else if (fabs(cell.temp - cell.tempini) / cell.dt > 1. && fabs(cell.VTemper) > 10 * balance.referenceMixtureVelocity)
-            cell.temp = cell.tempini;
-        double minimumTemperature = kMinimumTemperatureCelsius;
-        if (state.input.usaTabela == 1)
-            minimumTemperature = state.input.tabent.tmin + 1.;
-        if (cell.temp < minimumTemperature)
-            cell.temp = minimumTemperature;
-        if (cell.temp > kMaximumTemperatureCelsius)
-            cell.temp = kMaximumTemperatureCelsius;
-    } else if (cellIndex == state.lastCell) {
-        if (globals.networkMode == 0 || state.endNode == 1 || globals.parallelNetworkMode == 1)
-            cell.temp = cell.calor.Textern1;
-        else
-            cell.temp = state.gasSurfaceTemperature;
-    }
+    if ((cellIndex == 0 && cell.VTemper < 0.) ||
+        (cellIndex > 0 && (cellIndex < state.lastCell || cell.VTemper >= 0.)) ||
+        (cellIndex == state.lastCell && (state.surfaceChokeMassFlag == 1 || state.input.chkv == 1)))
+        advanceExplicitCellTemperature(state, cellIndex, balance);
+    else if (cellIndex == state.lastCell)
+        cell.temp = state.globals->networkMode == 0 || state.endNode == 1 || state.globals->parallelNetworkMode == 1
+                        ? cell.calor.Textern1 : state.gasSurfaceTemperature;
 }
 
 } // namespace
@@ -3501,7 +3260,7 @@ void updateTemperatureFromEnthalpy(const ThermalState &state, int cellIndex) {
 }
 
 void computeTemperature(const ThermalState &state, int cellIndex, double, int steadyMode) {
-    computeCellTemperature(state, cellIndex, steadyMode, nullptr);
+    computeCellTemperature(state, cellIndex, steadyMode);
 }
 
 void computeThermalMassTransfer(const ThermalState &state, int cellIndex) {
@@ -3916,7 +3675,8 @@ void advanceTransientEnergy(const ThermalState &state, const transient::Transien
     prepareTransientOutletFlow(state);
 
     state.cells[0].tempini = state.cells[0].temp;
-    const TransientInletTemperature inlet = prepareTransientInletTemperature(state);
+    state.cells[0].temp = state.input.ConContEntrada > 0
+                              ? state.inletTemperature : state.defaultInletTemperature;
     state.cells[0].dTdt = (state.cells[0].temp - state.cells[0].tempini) / state.timeStep;
     state.cells[0].dTdtL = state.cells[0].dTdt;
     state.cells[1].tempLini = state.cells[1].tempL;
@@ -3925,13 +3685,9 @@ void advanceTransientEnergy(const ThermalState &state, const transient::Transien
         state.cells[cellIndex].tempini = state.cells[cellIndex].temp;
     }
     if (state.input.modoDifus3D == 0) {
-        refreshTemperatureField(state, inlet);
+        refreshTemperatureField(state);
     } else if (state.input.modoDifus3D == 1) {
-        advanceCoupledThermalField(state, cycle, maximumCycle, inlet);
-    }
-    if (!inlet.prescribed) {
-        state.cells[1].tempL = state.cells[0].temp;
-        state.cells[0].dTdtL = state.cells[0].dTdt;
+        advanceCoupledThermalField(state, cycle, maximumCycle);
     }
     for (int cellIndex = 1; cellIndex <= state.lastCell; cellIndex++) {
         Cel &cell = state.cells[cellIndex];

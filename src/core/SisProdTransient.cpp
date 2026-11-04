@@ -873,27 +873,6 @@ void restrictTimeStepByTransport(const TransientStepState &state) {
     }
 }
 
-void restrictOutletCouplingTimeStep(const TransientStepState &state) {
-    if (state.surfaceChokeMassFlag != 1 || state.fullModel != 1)
-        return;
-    constexpr double maximumCourant = 0.25;
-    constexpr double minimumPhaseFraction = 1e-3;
-    for (int i = 1; i <= state.lastCell; i++) {
-        const Cel &cell = state.cells[i];
-        const double gasFraction = cell.QG > 0. ? state.cells[i - 1].alf : cell.alf;
-        const double liquidFraction = 1. - (cell.QL > 0. ? state.cells[i - 1].alf : cell.alf);
-        double maximumSpeed = 0.;
-        if (gasFraction > minimumPhaseFraction)
-            maximumSpeed = std::max(maximumSpeed, fabs(cell.QG / (cell.duto.area * gasFraction)));
-        if (liquidFraction > minimumPhaseFraction)
-            maximumSpeed = std::max(maximumSpeed, fabs(cell.QL / (cell.duto.area * liquidFraction)));
-        if (maximumSpeed > 1e-5) {
-            const double transportTimeStep = maximumCourant * cell.dx / maximumSpeed;
-            if (transportTimeStep < state.timeStep)
-                state.timeStep = transportTimeStep;
-        }
-    }
-}
 
 void applyScheduledTimeStepEvents(const TransientStepState &state) {
     if (state.input.evento.size() > state.eventIndex) {
@@ -2111,7 +2090,6 @@ void computeImplicitTimeStep(const TransientStepState &state, int explicitScheme
     if (state.timeStep > state.input.dtmax)
         state.timeStep = state.input.dtmax;
 
-    restrictOutletCouplingTimeStep(state);
     applyScheduledTimeStepEvents(state);
 
     if (explicitScheme != 0)

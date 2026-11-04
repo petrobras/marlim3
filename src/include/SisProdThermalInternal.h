@@ -53,27 +53,6 @@ struct TemperatureTransport {
     double spatialCoefficient;
 };
 
-/// Inlet policy selected from the thermal characteristic before applying external temperature.
-struct TransientInletTemperature {
-    TemperatureTransport transport;
-    bool prescribed;
-};
-
-/// Frozen linearized energy equation over one hydrodynamic step. Source
-/// increments and decay are integrated over the full cell time step; the donor
-/// Courant number is divided among simultaneous thermal substeps.
-struct TransientTemperatureStep {
-    double initialTemperature = 0.;
-    double timeCoefficient = 1.;
-    double sourceIncrement = 0.;
-    /// Temperature increment from kinetic work before affine source decay.
-    double kineticIncrement = 0.;
-    double sourceDecay = 0.;
-    double courant = 0.;
-    int donor = -1;
-    bool evolves = false;
-};
-
 struct TemperatureBalance {
     double cellLength;
     double meanCellLength;
@@ -191,37 +170,6 @@ template <typename Axis>
 [[nodiscard]] TemperatureTransport temperatureTransportOf(const ThermalState &state,
                                                           int cellIndex);
 
-/// Selects the inlet characteristic at the saved internal temperature. Incoming
-/// characteristics use the configured external or source temperature; outgoing
-/// and stationary characteristics retain the stored internal temperature.
-/// An isolated closed endpoint evolves as a finite control volume. The selected
-/// transport coefficients remain fixed throughout the linearized energy step.
-[[nodiscard]] TransientInletTemperature prepareTransientInletTemperature(const ThermalState &state);
-
-/// Prepares one transient operator and advances its wall exactly once. The
-/// external inlet/outlet temperature is imposed only on incoming characteristics.
-[[nodiscard]] TransientTemperatureStep prepareTransientTemperatureStep(
-    const ThermalState &state, int cellIndex, const TransientInletTemperature *inlet);
-
-/// Integrates the affine local source over a fraction of the full cell step.
-/// Uses expm1 for a stable evaluation when the source relaxation is small.
-[[nodiscard]] double integrateTemperatureSource(const TransientTemperatureStep &step,
-                                               double temperature, double fraction);
-
-/// Integrates the kinetic-only response with the same frozen source decay.
-double integrateKineticTemperatureResponse(const TransientTemperatureStep &step,
-                                           double response, double fraction);
-
-
-/// Integrates frozen energy operators with simultaneous upwind updates and
-/// donor Courant numbers at most 0.8. Source relaxation is integrated exactly
-/// between the advection updates. A transported kinetic-only response safeguards
-/// excessive changes while preserving compensating work and unrelated heat.
-/// Distinct read/write buffers synchronize the source and donor passes. The
-/// final donor pass is synchronized by the end of the parallel region.
-void integrateTransientTemperatureField(const ThermalState &state,
-                                        const std::vector<TransientTemperatureStep> &steps);
-
 /// Prepares heat-transfer state and energy coefficients using previous pressure
 /// and current temperature, reusing transport properties at that temperature.
 /// Advances the wall heat-transfer state once and publishes the mean cell heat flux.
@@ -230,11 +178,7 @@ TemperatureBalance prepareTemperatureBalance(const ThermalState &state,
                                              int steadyStateMode,
                                              const TemperatureTransport &transport);
 
-/// Advances a cell with its current transport coefficients. The transient inlet
-/// policy fixes whether cell zero is prescribed or evolved throughout the cycle.
-/// A null inlet selects the local characteristic, including stationary evolution.
-void computeCellTemperature(const ThermalState &state, int cellIndex, int steadyStateMode,
-                            const TransientInletTemperature *inlet);
+void computeCellTemperature(const ThermalState &state, int cellIndex, int steadyStateMode);
 
 /// Computes the transient kinetic-energy term where both cells have no accessory.
 /// Also replaces the balance velocities with downstream face velocities for the
@@ -374,8 +318,7 @@ void selectAndApplyBufferedInletFlowRegime(
 
 /// Prepares Poisson-2D cells and the remaining column using one outer team.
 /// A single 2D wall runs on the caller so its solver can distribute its own mesh.
-/// Integrates the complete frozen field with synchronized thermal substeps.
-void refreshTemperatureField(const ThermalState &state, const TransientInletTemperature &inlet);
+void refreshTemperatureField(const ThermalState &state);
 
 /// Computes steady source heating from the left cell accessory.
 TemperatureSourceTerms computeSteadySourceTerms(const ThermalState &state,
@@ -482,8 +425,7 @@ void prepareTransientOutletFlow(const ThermalState &state);
 
 /// Prepares coupled-cell interface data in parallel, advances the 3D Poisson
 /// thermal solver when the cycle requires it, and refreshes the temperature field.
-void advanceCoupledThermalField(const ThermalState &state, int cycle, int maximumCycle,
-                                const TransientInletTemperature &inlet);
+void advanceCoupledThermalField(const ThermalState &state, int cycle, int maximumCycle);
 
 /// Copies the two donors selected by liquid-flow direction and evaluates their
 /// water cuts and the upstream cell water cut in property-call order.
