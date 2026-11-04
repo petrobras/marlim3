@@ -38,7 +38,7 @@ IPR::IPR(double vpres, double vtres, double vip, double vij, double vqm, int tip
     presAnul=-1.;
 }
 
-IPR::IPR(const IPR &vipr) { // construtor de c�pia
+IPR::IPR(const IPR &vipr) { // construtor de cópia
     Pres = vipr.Pres;
     Tres = vipr.Tres;
     ip = vipr.ip;
@@ -487,7 +487,7 @@ InjGas::InjGas(double qgij, double vtemp, double vqcomp) {
     this->fluidocol = ProFluCol();
 }
 
-InjGas::InjGas(const InjGas &vinj) { // construtor de c�pia
+InjGas::InjGas(const InjGas &vinj) { // construtor de cópia
     QGas = vinj.QGas;
     razCompGas = vinj.razCompGas;
     temp = vinj.temp;
@@ -530,7 +530,7 @@ InjLiq::InjLiq(double qlij, double vtemp, double vbet) {
     fluidocol = ProFluCol();
 }
 
-InjLiq::InjLiq(const InjLiq &vinj) { // construtor de c�pia
+InjLiq::InjLiq(const InjLiq &vinj) { // construtor de cópia
     QLiq = vinj.QLiq;
     temp = vinj.temp;
     bet = vinj.bet;
@@ -573,7 +573,7 @@ InjMult::InjMult(double vmp, double vmc, double vmg, double vtemp) {
     fluidocol = ProFluCol();
 }
 
-InjMult::InjMult(const InjMult &vinj) { // construtor de c�pia
+InjMult::InjMult(const InjMult &vinj) { // construtor de cópia
     MassP = vinj.MassP;
     MassC = vinj.MassC;
     MassG = vinj.MassG;

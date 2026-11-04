@@ -141,7 +141,7 @@ void dadosP3D::lerPoisson(string nomeArquivoEntrada){
 	  }
 
 	  string val;
-	  //nno;//vari�vel inteira indicando o n�mero de n�s da malha
+	  //nno;//variável inteira indicando o número de nós da malha
 
 	  vector<cordaNo> cordas;
 	  vector<faceNo> faces;

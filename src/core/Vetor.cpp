@@ -23,7 +23,7 @@ Vcr<T>::Vcr(int n, T d) { // construtor a partir de um valor
 }
 
 template <class T>
-Vcr<T>::Vcr(const Vcr &v) { // construtor de c�pia
+Vcr<T>::Vcr(const Vcr &v) { // construtor de cópia
     vr = new T[lenth = v.lenth];
     for (int i = 0; i < lenth; i++)
         vr[i] = v[i]; // copiando os valores de um vetor para outro vetor
@@ -41,13 +41,13 @@ void Vcr<T>::resize(int n) { // redimensionamento de vetor
             vr[i] = v[i];
     } // copiando os valores de um vetor para outro vetor
     for (int i = v.lenth; i < lenth; i++)
-        vr[i] = 0; // espa�o redimensionado todo inicializado com zeros
+        vr[i] = 0; // espaço redimensionado todo inicializado com zeros
 }
 
 template <class T>
 Vcr<T> &Vcr<T>::operator=(const Vcr &v) { // iguala dois vetores
     if (lenth > 0) {
-        if (this != &v) { // verifica se se est� igualando o mesmo vetor
+        if (this != &v) { // verifica se se está igualando o mesmo vetor
             if (lenth != v.lenth) {
                 if (vr)
                     delete[] vr;
@@ -67,7 +67,7 @@ Vcr<T> &Vcr<T>::operator=(const Vcr &v) { // iguala dois vetores
 }
 
 template <class T>
-ostream &Vcr<T>::saida(ostream &s, const Vcr &v) const { // sa�da
+ostream &Vcr<T>::saida(ostream &s, const Vcr &v) const { // saída
     if (lenth != v.lenth)
         cout << "Dimensao de vetores diferentes para impressao em paralelo";
     for (int i = 0; i < lenth; i++) {
@@ -82,7 +82,7 @@ template <class T>
 T Vcr<T>::maxnorm() const {
     T nm = fabs(vr[0]);
     for (int i = 1; i < lenth; i++)
-        nm = max<T>(nm, fabs(vr[i])); // busca o maior elemento de vr em m�dulo
+        nm = max<T>(nm, fabs(vr[i])); // busca o maior elemento de vr em módulo
     return nm;
 }
 
@@ -90,7 +90,7 @@ template <class T>
 T Vcr<T>::onenorm() const {
     T nm = fabs(vr[0]);
     for (int i = 1; i < lenth; i++)
-        nm += fabs(vr[i]); // soma os m�dulos dos elementos de vr
+        nm += fabs(vr[i]); // soma os módulos dos elementos de vr
     return nm;
 }
 
@@ -101,13 +101,13 @@ T Vcr<T>::twonorm() const {
 #pragma omp parallel for reduction(+ : nm) num_threads(nthrdMatriz)
     for (int i = 0; i < lenth; i++)
         nm += vr[i] * vr[i]; // soma os quadrados dos elementos de vr
-    return sqrt(nm);         // retorna a raiz do somat�rio
+    return sqrt(nm);         // retorna a raiz do somatório
 }
 
 template <class T>
-Vcr<T> &Vcr<T>::operator+=(const Vcr &v) { // soma o pr�prio vetor com outro vetor e iguala com o primeiro
+Vcr<T> &Vcr<T>::operator+=(const Vcr &v) { // soma o próprio vetor com outro vetor e iguala com o primeiro
     if (lenth != v.lenth)
-        cout << "dimens�es de vetores diferem, imposs�vel igualar e somar"; // mesmo tamanho de vetores?
+        cout << "dimensões de vetores diferem, impossível igualar e somar"; // mesmo tamanho de vetores?
 #pragma omp parallel for num_threads(nthrdMatriz)
     for (int i = 0; i < lenth; i++)
         vr[i] += v[i]; // igualando vetores, lembre-se da sobrecarga do operador [] em v[i]
@@ -115,7 +115,7 @@ Vcr<T> &Vcr<T>::operator+=(const Vcr &v) { // soma o pr�prio vetor com outro v
 }
 
 template <class T>
-Vcr<T> &Vcr<T>::operator+=(T a) { // soma o pr�prio vetor com um escalar
+Vcr<T> &Vcr<T>::operator+=(T a) { // soma o próprio vetor com um escalar
 #pragma omp parallel for num_threads(nthrdMatriz)
     for (int i = 0; i < lenth; i++)
         vr[i] += a; // igualando vetores, lembre-se da sobrecarga do operador [] em v[i]
@@ -123,9 +123,9 @@ Vcr<T> &Vcr<T>::operator+=(T a) { // soma o pr�prio vetor com um escalar
 }
 
 template <class T>
-Vcr<T> &Vcr<T>::operator-=(const Vcr &v) { // subtrai o pr�prio vetor com outro vetor e iguala com o primeiro
+Vcr<T> &Vcr<T>::operator-=(const Vcr &v) { // subtrai o próprio vetor com outro vetor e iguala com o primeiro
     if (lenth != v.lenth)
-        cout << "dimens�es de vetores diferem, imposs�vel igualar e somar"; // mesmo tamanho de vetores?
+        cout << "dimensões de vetores diferem, impossível igualar e somar"; // mesmo tamanho de vetores?
 #pragma omp parallel for num_threads(nthrdMatriz)
     for (int i = 0; i < lenth; i++)
         vr[i] -= v[i]; // igualando vetores, lembre-se da sobrecarga do operador [] em v[i]
@@ -133,7 +133,7 @@ Vcr<T> &Vcr<T>::operator-=(const Vcr &v) { // subtrai o pr�prio vetor com outr
 }
 
 template <class T>
-Vcr<T> &Vcr<T>::operator-=(T a) { // subtrai o pr�prio vetor com um escalar
+Vcr<T> &Vcr<T>::operator-=(T a) { // subtrai o próprio vetor com um escalar
 #pragma omp parallel for num_threads(nthrdMatriz)
     for (int i = 0; i < lenth; i++)
         vr[i] -= a; // igualando vetores, lembre-se da sobrecarga do operador [] em v[i]
@@ -141,24 +141,24 @@ Vcr<T> &Vcr<T>::operator-=(T a) { // subtrai o pr�prio vetor com um escalar
 }
 
 template <class T>
-Vcr<T> Vcr<T>::operator-(const Vcr<T> &v) const { // subtra��o de vetores
+Vcr<T> Vcr<T>::operator-(const Vcr<T> &v) const { // subtração de vetores
     if (lenth != v.lenth)
-        cout << "tamanho de vetores n�o confere\n";
-    Vcr<T> sum = *this; // c�pia de vetores
+        cout << "tamanho de vetores não confere\n";
+    Vcr<T> sum = *this; // cópia de vetores
     sum -= v;
     return sum;
 }
 
 template <class T>
 Vcr<T> Vcr<T>::operator+(T a) const { // soma de vetor com escalar
-    Vcr<T> sum = *this;               // c�pia de vetores
+    Vcr<T> sum = *this;               // cópia de vetores
     sum += a;
     return sum;
 }
 
 template <class T>
-Vcr<T> Vcr<T>::operator-(T a) const { // subtra��o de vetor com escalar
-    Vcr<T> sum = *this;               // c�pia de vetores
+Vcr<T> Vcr<T>::operator-(T a) const { // subtração de vetor com escalar
+    Vcr<T> sum = *this;               // cópia de vetores
     sum -= a;
     return sum;
 }
@@ -166,8 +166,8 @@ Vcr<T> Vcr<T>::operator-(T a) const { // subtra��o de vetor com escalar
 template <class T>
 Vcr<T> Vcr<T>::operator+(const Vcr<T> &v) const { // soma de vetores
     if (lenth != v.lenth)
-        cout << "tamanho de vetores n�o confere\n";
-    Vcr<T> sum = *this; // c�pia de vetores
+        cout << "tamanho de vetores não confere\n";
+    Vcr<T> sum = *this; // cópia de vetores
     sum += v;
     return sum;
 }
@@ -193,12 +193,12 @@ Vcr<T> Vcr<T>::operator*(T a) const { // multiplicacao de um vetor por um escala
 template <class T>
 Vcr<T> Vcr<T>::operator*(const Vcr<T> &v) const { // multiplicacao de um vetor por outro
     if (lenth != v.lenth)
-        cout << "tamanho de vetores n�o confere\n";
+        cout << "tamanho de vetores não confere\n";
     int n = lenth;
     Vcr<T> tm(n);
 #pragma omp parallel for num_threads(nthrdMatriz)
     for (int i = 0; i < n; i++)
-        tm[i] = vr[i] * v[i]; // observe que na multiplicacao, ao contr�rio do "dot", o resultado ainda � um vetor e n�o um escalar
+        tm[i] = vr[i] * v[i]; // observe que na multiplicacao, ao contrário do "dot", o resultado ainda � um vetor e não um escalar
     return tm;
 }
 
@@ -206,7 +206,7 @@ Vcr<T> Vcr<T>::operator*(const Vcr<T> &v) const { // multiplicacao de um vetor p
 
 double dot(const Vcr<double> &v1, const Vcr<double> &v2) { // calcula produto interno
     if (v1.size() != v2.size())
-        cout << "tamanho de vetores n�o confere\n";
+        cout << "tamanho de vetores não confere\n";
     int tam = v1.size();
     double tm = 0;
 #pragma omp parallel for reduction(+ : tm) num_threads(nthrdMatriz)
@@ -228,7 +228,7 @@ ostream &operator<<(ostream &s, Vcr<double> &v1) { // saida de valores de vetor
     for (int i = 0; i < n; i++) {
         s << v1[i] << "  ";
         if (i % 1 == 0 || i == n - 1)
-            s << "\n"; // usa a fatoracao para contar a impressao de 10 em 10, cada linha tem no m�ximo 10 elementos
+            s << "\n"; // usa a fatoracao para contar a impressao de 10 em 10, cada linha tem no máximo 10 elementos
     }
     return s;
 }

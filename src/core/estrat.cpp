@@ -577,17 +577,17 @@ double estratificado::calcC0(double x1,
         if (fabs(dx) < epsn || fabs(f) < tol)
             return (qt - rtn) / (alf * qt);
     }
-    throw("M�ximo n�mero de intera��es em Newton");
+    throw("Máximo número de interações em Newton");
 }
 
 double estratificado::FalsaCorda(double a, double b, double qt,
                                  double alf, double eps, double delta, double epsn, int maxit) {
-    // zero de fun��o por falsa corda
+    // zero de função por falsa corda
     // a e b-> chutes iniciais para a falsa corda
     // epsn -> limite em que se admite F(T) aproximadamente zero
-    // delta-> limite a partir do qual admite-se que j� n�o existe varia��o no c�lculo da raiz
-    // maxit-> m�ximo n�mero de itera��es permitido no c�lculo
-    // F(T)-> fun��o que se quer obter a raiz
+    // delta-> limite a partir do qual admite-se que já não existe variação no cálculo da raiz
+    // maxit-> máximo número de iterações permitido no cálculo
+    // F(T)-> função que se quer obter a raiz
 
     double u = equil2(a, qt, eps);
     double e = b - a;
@@ -601,14 +601,14 @@ double estratificado::FalsaCorda(double a, double b, double qt,
             return c;
         ((u > 0 && w < 0) || (u < 0 && w > 0)) ? (b = c) : (a = c, u = w);
     }
-    cout << "Falsa corda atingiu n�mero m�ximo de itera��es" << "\n"
+    cout << "Falsa corda atingiu número máximo de iterações" << "\n"
          << equil2(c, qt, eps);
     return c;
 }
 
 double estratificado::zbrent(double x1, double x2, double ql, double qg, double eps,
                              double tol, double epsn, int maxit) {
-    // Acha zero de fun��o ver NR
+    // Acha zero de função ver NR
     double EPS = epsn;
     double a = 0.98;
     double b = 0.05;

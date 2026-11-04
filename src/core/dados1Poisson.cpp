@@ -162,7 +162,7 @@ void dadosP::lerPoisson(string nomeArquivoEntrada, double vCondGlob, double vCon
         lendono >> val;
         lendono >> val;
 
-        // teremos os valores de x e y para cada n�, por exemplo, para o n� 53:
+        // teremos os valores de x e y para cada nó, por exemplo, para o nó 53:
         // x=xcoor[53][0] e y=xcoor[53][1]
         xcoor = new double *[nno];
         for (int i = 0; i < nno; i++)

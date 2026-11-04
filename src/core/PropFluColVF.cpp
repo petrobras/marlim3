@@ -53,7 +53,7 @@ ProFluColVF::ProFluColVF(double vrholStd, double vcompresP, double vcompresT, do
     }
 }
 
-ProFluColVF::ProFluColVF(const ProFluColVF &fluido) { // construtor por c�pia
+ProFluColVF::ProFluColVF(const ProFluColVF &fluido) { // construtor por cópia
     rholStd = fluido.rholStd;
     rhogStd = fluido.rhogStd;
     rhog = fluido.rhog;
@@ -96,7 +96,7 @@ ProFluColVF::ProFluColVF(const ProFluColVF &fluido) { // construtor por c�pia
 }
 
 ProFluColVF &ProFluColVF::operator=(const ProFluColVF &fluido) { // iguala duas listas de primitivas
-    if (this != &fluido) {                                       // verifica se se est� igualando a mesma lista
+    if (this != &fluido) {                                       // verifica se se está igualando a mesma lista
         rholStd = fluido.rholStd;
         rhogStd = fluido.rhogStd;
         rhog = fluido.rhog;

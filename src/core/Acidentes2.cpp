@@ -287,16 +287,16 @@ double choke::razpresSachdZ(double a,double b, double presE, double tempE,
 		                         ,double delta ,double epsn,int maxit){
         //a e b-> chutes iniciais para a falsa corda
         //epsn -> limite em que se admite F(double) aproximadamente zero
-        //delta-> limite a partir do qual admite-se que j� n�o existe varia��o no c�lculo da raiz
-        //maxit-> m�ximo n�mero de itera��es permitido no c�lculo
-        //F(double)-> fun��o que se quer obter a raiz
+        //delta-> limite a partir do qual admite-se que já não existe variação no cálculo da raiz
+        //maxit-> máximo número de iterações permitido no cálculo
+        //F(double)-> função que se quer obter a raiz
           double u=razpresSachdF(a, presE,tempE,alf, bet,x, fluido,fluidocol);
           double e=b-a;
           double c = 0.0;
 
           double v=razpresSachdF(b, presE,tempE,alf, bet,x, fluido,fluidocol);
           int inter=0;
-          if(u!=0 && v!=0){//neste primeiro bloco, busca-se assegurar que sempre se estra� trabalhando com valores de fun��o negativa nos chutes iniciais para se garantir maior converg�ncia na falsa corda
+          if(u!=0 && v!=0){//neste primeiro bloco, busca-se assegurar que sempre se estará trabalhando com valores de função negativa nos chutes iniciais para se garantir maior convergência na falsa corda
            if(u/v>0){
             if(u>0){
              double proy=v; double prox=b; double distx=a; double del=a-prox;
@@ -334,7 +334,7 @@ double choke::razpresSachdZ(double a,double b, double presE, double tempE,
             ((u>0&&w<0)||(u<0&&w>0))?(b=c):(a=c,u=w);
             controla++;
           }
-          cout<<"Falsa corda em Choke atingiu n�mero m�ximo de itera��es"<<"\n" ;
+          cout<<"Falsa corda em Choke atingiu número máximo de iterações"<<"\n" ;
           return c;
 }
 
@@ -477,9 +477,9 @@ double choke::razpresSachdZVap(double a,double b, double presE, double tempE,dou
 		                                    ,double delta ,double epsn,int maxit){
         //a e b-> chutes iniciais para a falsa corda
         //epsn -> limite em que se admite F(double) aproximadamente zero
-        //delta-> limite a partir do qual admite-se que j� n�o existe varia��o no c�lculo da raiz
-        //maxit-> m�ximo n�mero de itera��es permitido no c�lculo
-        //F(double)-> fun��o que se quer obter a raiz
+        //delta-> limite a partir do qual admite-se que já não existe variação no cálculo da raiz
+        //maxit-> máximo número de iterações permitido no cálculo
+        //F(double)-> função que se quer obter a raiz
 
           double u=razpresSachdFVap(a, presE,tempE,alf, x);
           double e=b-a;
@@ -487,7 +487,7 @@ double choke::razpresSachdZVap(double a,double b, double presE, double tempE,dou
 
           double v=razpresSachdFVap(b, presE,tempE,alf,x);
           int inter=0;
-          if(u!=0 && v!=0){//neste primeiro bloco, busca-se assegurar que sempre se estra� trabalhando com valores de fun��o negativa nos chutes iniciais para se garantir maior converg�ncia na falsa corda
+          if(u!=0 && v!=0){//neste primeiro bloco, busca-se assegurar que sempre se estará trabalhando com valores de função negativa nos chutes iniciais para se garantir maior convergência na falsa corda
            if(u/v>0){
             if(u>0){
              double proy=v; double prox=b; double distx=a; double del=a-prox;
@@ -525,7 +525,7 @@ double choke::razpresSachdZVap(double a,double b, double presE, double tempE,dou
             ((u>0&&w<0)||(u<0&&w>0))?(b=c):(a=c,u=w);
             controla++;
           }
-          cout<<"Falsa corda em Choke atingiu n�mero m�ximo de itera��es"<<"\n" ;
+          cout<<"Falsa corda em Choke atingiu número máximo de iterações"<<"\n" ;
           return c;
 }
 
