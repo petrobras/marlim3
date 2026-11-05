@@ -4841,7 +4841,7 @@ void SProd::renovaFonte(int ind) {
         celula[iJus].acsr.fontechk.pamb=celula[ind].pres;
         celula[iJus].acsr.fontechk.tamb=celula[ind].temp;
         celula[iJus].acsr.fontechk.fluidoPamb=celula[ind].flui;
-        celula[iJus].acsr.fontechk.titT = alf * rhog / (alf * rhog + (1 - alf) * (bet * rhoC + (1 - bet) * rhoP));
+        celula[iJus].acsr.fontechk.titT = alf* rhog / (alf * rhog + (1 - alf) * (bet * rhoC + (1 - bet) * rhoP));
         celula[iJus].acsr.fontechk.betIST = bet;
         pres = celula[ind].pres;
         temp = celula[ind].temp;
@@ -8322,7 +8322,7 @@ void SProd::renovaRGOdgYco2(ProFlu fluiRev) {
         	int imon=celula[i].acsr.indMonRecic;
         	int ijus=celula[i].acsr.indJusRecic;
             if (celula[ijus].pres>celula[imon].pres)
-                fluF = celula[ijus].acsr.radialPoro.flup;
+                fluF = celula[ijus].flui;
             else
                 fluF = celula[imon].flui;
 
@@ -8367,7 +8367,7 @@ void SProd::renovaRGOdgYco2(ProFlu fluiRev) {
         	int imon=celula[i].acsr.indMonRecic;
         	int ijus=celula[i].acsr.indJusRecic;
             if (celula[ijus].pres>celula[imon].pres)
-                fluF = celula[ijus].acsr.radialPoro.flup;
+                fluF = celula[ijus].flui;
             else
                 fluF = celula[imon].flui;
 
@@ -9819,7 +9819,7 @@ void SProd::renovaFracMol2(ProFlu fluiRev) {
         	int imon=celula[i].acsr.indMonRecic;
         	int ijus=celula[i].acsr.indJusRecic;
             if (celula[ijus].pres>celula[imon].pres)
-                fluF = celula[ijus].acsr.radialPoro.flup;
+                fluF = celula[ijus].flui;
             else
                 fluF = celula[imon].flui;
 
@@ -9842,7 +9842,7 @@ void SProd::renovaFracMol2(ProFlu fluiRev) {
         	int imon=celula[i].acsr.indMonRecic;
         	int ijus=celula[i].acsr.indJusRecic;
             if (celula[ijus].pres>celula[imon].pres)
-                fluF = celula[ijus].acsr.radialPoro.flup;
+                fluF = celula[ijus].flui;
             else
                 fluF = celula[imon].flui;
 
@@ -13148,7 +13148,7 @@ void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, P
         if (arq.flashCompleto == 2 && (*vg1dSP).lixo5 < 1e-15 && arq.miniTabAtraso>0) {
             atualizaMiniTab();
         }
-        if ((*vg1dSP).lixo5 >=40049) {
+        if ((*vg1dSP).lixo5 >=3100) {
             int para;
             para = 0;
            // arq.imprimeProfile(celula, flut, (*vg1dSP).lixo5, indTramo, nrede);
