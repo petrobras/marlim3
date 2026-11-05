@@ -494,7 +494,7 @@ class Branch:
                             shutil.move(origin_file, directory)
 
                         log_path = os.path.join(directory, 'simulacao.log')
-                        with open(log_path, 'r') as fh:
+                        with open(log_path, 'r', encoding='utf-8', errors='replace') as fh:
                             log_data = json.load(fh)
 
                         error_message = None
@@ -546,7 +546,7 @@ class Branch:
                         current_modified_time = os.path.getmtime(log_file)
                         if current_modified_time > last_modified_time:
                             last_modified_time = current_modified_time
-                            with open(log_file, 'r') as fh:
+                            with open(log_file, 'r', encoding='utf-8', errors='replace') as fh:
                                 fh.seek(last_position)
                                 new_content = fh.read()
                                 if new_content:
