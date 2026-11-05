@@ -1,7 +1,7 @@
 // ==============================================================================
-// TuffpModel.cpp - runtime binding to the external TUFFP Unified model library.
+// tuffp_runtime_binding.cpp - runtime binding to the external TUFFP Unified model library.
 // ==============================================================================
-#include "TuffpModel.h"
+#include "tuffp_runtime_binding.h"
 
 #include <cmath>
 #include <cstdio>

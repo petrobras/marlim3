@@ -344,20 +344,20 @@ if(MARLIM_BUILD_TESTS)
 
     # TUFFP adapter test: skipped (exit code 77) when the external TUFFP library
     # is not available (see MARLIM3_TUFFP_LIB).
-    add_executable(test_tuffp_model
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_tuffp_model.cpp
-        ${SRCDIR}/TuffpModel.cpp
+    add_executable(test_tuffp_runtime_binding
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_tuffp_runtime_binding.cpp
+        ${SRCDIR}/tuffp_runtime_binding.cpp
     )
-    target_include_directories(test_tuffp_model PRIVATE ${INCDIR})
+    target_include_directories(test_tuffp_runtime_binding PRIVATE ${INCDIR})
     if(CMAKE_DL_LIBS)
-        target_link_libraries(test_tuffp_model PRIVATE ${CMAKE_DL_LIBS})
+        target_link_libraries(test_tuffp_runtime_binding PRIVATE ${CMAKE_DL_LIBS})
     endif()
     find_package(Threads)
     if(Threads_FOUND)
-        target_link_libraries(test_tuffp_model PRIVATE Threads::Threads)
+        target_link_libraries(test_tuffp_runtime_binding PRIVATE Threads::Threads)
     endif()
-    set_target_properties(test_tuffp_model PROPERTIES
+    set_target_properties(test_tuffp_runtime_binding PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-    add_test(NAME tuffp_model COMMAND test_tuffp_model)
-    set_tests_properties(tuffp_model PROPERTIES SKIP_RETURN_CODE 77)
+    add_test(NAME tuffp_runtime_binding COMMAND test_tuffp_runtime_binding)
+    set_tests_properties(tuffp_runtime_binding PROPERTIES SKIP_RETURN_CODE 77)
 endif()

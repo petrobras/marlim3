@@ -1,7 +1,7 @@
 //Petroleo Brasileiro S.A.
 #include "GradientCorrelations.h"
 #include "CorrelationFits.h"
-#include "TuffpModel.h"
+#include "tuffp_runtime_binding.h"
 #include <atomic>
 #include <mutex>
 #include <string>

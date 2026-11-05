@@ -1,5 +1,5 @@
 // ==============================================================================
-// test_tuffp_model.cpp
+// test_tuffp_runtime_binding.cpp
 // Unit test for the runtime-loaded TUFFP Unified gas-liquid model adapter
 // (ssFlowModel / correlacaoMR2 = 51).
 //
@@ -8,11 +8,11 @@
 // be loaded. Point MARLIM3_TUFFP_LIB to the TUFFP shared library, or place it
 // next to the test executable, to run it:
 //     cmake -S . -B build -DMARLIM_BUILD_TESTS=ON
-//     cmake --build build --target test_tuffp_model
+//     cmake --build build --target test_tuffp_runtime_binding
 //     set MARLIM3_TUFFP_LIB=C:\path\to\tuffp_v2026.0.dll
-//     ctest --test-dir build -R tuffp_model --output-on-failure
+//     ctest --test-dir build -R tuffp_runtime_binding --output-on-failure
 // ==============================================================================
-#include "TuffpModel.h"
+#include "tuffp_runtime_binding.h"
 
 #include <cmath>
 #include <cstddef>

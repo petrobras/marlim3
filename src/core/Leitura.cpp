@@ -7,7 +7,7 @@
 #include "Leitura.h"
 #include "JSONKeyTranslator.h"
 #include "OutputI18n.h"
-#include "TuffpModel.h"
+#include "tuffp_runtime_binding.h"
 #include "rapidjson/filereadstream.h"
 #include <filesystem>
 #ifdef _WIN32

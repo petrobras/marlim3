@@ -1,5 +1,5 @@
 // ==============================================================================
-// TuffpModel.h
+// tuffp_runtime_binding.h
 //
 // Adapter for the Tulsa University Fluid Flow Projects (TUFFP) Unified
 // gas-liquid model (v2026.0). TUFFP is NOT distributed with Marlim3: the
