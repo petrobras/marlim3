@@ -247,6 +247,11 @@ if(MARLIM_FORTRAN_LIBS)
     target_link_libraries(Marlim3 PRIVATE ${MARLIM_FORTRAN_LIBS})
 endif()
 
+# The optional TUFFP model library is loaded at runtime (dlopen on Unix).
+if(CMAKE_DL_LIBS)
+    target_link_libraries(Marlim3 PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
 set_source_files_properties(${FSRCDIR}/Newton.f90            PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
 set_source_files_properties(${FSRCDIR}/PvtSimCTMFileImport.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
 set_source_files_properties(${FSRCDIR}/PvtSimWAXFileImport.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
@@ -328,8 +333,31 @@ if(MARLIM_BUILD_TESTS)
         target_link_libraries(test_friction_factor PRIVATE ${MARLIM_FORTRAN_LIBS})
     endif()
 
+    if(CMAKE_DL_LIBS)
+        target_link_libraries(test_friction_factor PRIVATE ${CMAKE_DL_LIBS})
+    endif()
+
     set_target_properties(test_friction_factor PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     add_test(NAME friction_factor COMMAND test_friction_factor)
+
+    # TUFFP adapter test: skipped (exit code 77) when the external TUFFP library
+    # is not available (see MARLIM3_TUFFP_LIB).
+    add_executable(test_tuffp_runtime_binding
+        ${CMAKE_SOURCE_DIR}/tests/cpp/test_tuffp_runtime_binding.cpp
+        ${SRCDIR}/tuffp_runtime_binding.cpp
+    )
+    target_include_directories(test_tuffp_runtime_binding PRIVATE ${INCDIR})
+    if(CMAKE_DL_LIBS)
+        target_link_libraries(test_tuffp_runtime_binding PRIVATE ${CMAKE_DL_LIBS})
+    endif()
+    find_package(Threads)
+    if(Threads_FOUND)
+        target_link_libraries(test_tuffp_runtime_binding PRIVATE Threads::Threads)
+    endif()
+    set_target_properties(test_tuffp_runtime_binding PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    add_test(NAME tuffp_runtime_binding COMMAND test_tuffp_runtime_binding)
+    set_tests_properties(tuffp_runtime_binding PROPERTIES SKIP_RETURN_CODE 77)
 endif()
