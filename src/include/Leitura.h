@@ -9,6 +9,21 @@
 #define LEITURA_H_
 #define _USE_MATH_DEFINES // Enables access to the M_PI constant
 
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <math.h>
+#include <sstream>
+#include <stdio.h>
+#include <string.h>
+#include <string>
+#include <time.h>
+#include <utility> // Provides std::pair
+#include <vector>
+#include <set>
+//#include <filesystem>
+#include <limits.h>
+#include <stdlib.h>
 #include "Acidentes2.h"
 #include "Bcsm2.h"
 #include "BombaVol.h"
@@ -47,18 +62,6 @@
 #include "variaveisGlobais1D.h"
 #include "SlugFlow_TaitelBarnea.h"
 #include "caixaValvula.h"
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <math.h>
-#include <sstream>
-#include <stdio.h>
-#include <string.h>
-#include <string>
-#include <time.h>
-#include <utility> // Provides std::pair
-#include <vector>
-#include <set>
 
 #ifdef linux
 // Directory separator used on Linux systems
@@ -2071,6 +2074,9 @@ class Ler {
         	delete [] resGlobAxiSim;
         }
     }
+
+    // Absolute, normalized path of impfile (UTF-8), written to output file headers
+    std::string caminhoArquivoEntradaAbs() const;
 
     void copiaSemJson(Ler &);
     void lerArq(); // Organizes JSON parsing and builds the cell-structure array
