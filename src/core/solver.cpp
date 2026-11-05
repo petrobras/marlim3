@@ -2470,6 +2470,9 @@ void solv2D::resolve() {
     double deltCFL;
     double fluxCalMed = 0.;
     double tInicial=transfer.Tint;
+    logger.setEtapa(ETAPA_TRANSIENTE);
+    logger.setRelogio(&(*vg1dSP).tempo);
+    logger.setTempoFinal(tempVF.tmax);
     while ((*vg1dSP).tempo <= tempVF.tmax) {
         int multEps = 1.0;
         chrono::steady_clock::time_point begin, end;

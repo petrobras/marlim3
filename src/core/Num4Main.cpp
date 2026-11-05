@@ -3093,7 +3093,11 @@ void SolveRedeTrans(SProd *malha, Rede &arqRede,
     }
 }
 
-void aviso(int i) {
+void aviso(int i, const string &arquivoTramo) {
+    const string nomeTramo = arquivoTramo.substr(arquivoTramo.find_last_of("/\\") + 1);
+    if (logger.registrarParcial("tramo", nomeTramo))
+        logger.log(LOGGER_AVISO, LOG_WARN_BRANCH_DISCARDED, "dificuldade de convergencia",
+                   "tramo", nomeTramo);
     cout << "*******************************************************************************" << endl;
     cout << "o tramo de indice " << i << " teve dificuldade de convergencia, por isto, sera desligado da rede" << endl;
     cout << "em certas situacoes, a dificuldade de convergencia de um tramo inserido em uma rede se deve ao" << endl;
@@ -3103,7 +3107,11 @@ void aviso(int i) {
     cout << "*******************************************************************************" << endl;
     cout << endl;
 }
-void aviso2(int i) {
+void aviso2(int i, const string &arquivoTramo) {
+    const string nomeTramo = arquivoTramo.substr(arquivoTramo.find_last_of("/\\") + 1);
+    if (logger.registrarParcial("tramo", nomeTramo))
+        logger.log(LOGGER_AVISO, LOG_WARN_BRANCH_DISCARDED, "dificuldade de convergencia",
+                   "tramo", nomeTramo);
     cout << "*******************************************************************************" << endl;
     cout << "o tramo de indice " << i << " teve dificuldade de convergencia, por isto, será desligado da rede" << endl;
     cout << "Isto ocorreu logo na primeira iteracao, geralmente" << endl;
@@ -3685,8 +3693,11 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
         int ntrdLocal = (*arqRede.vg1dSP).ntrd;
         if ((*arqRede.vg1dSP).ntrd > narq)
             ntrdLocal = narq;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(ntrdLocal)
         for (int i = 0; i < narq; i++) {
+    try {
             int permAflu = 0;
             if (arqRede.malha[i].nafluente > 0) {
                 for (int iaflu = 0; iaflu < arqRede.malha[i].nafluente; iaflu++) {
@@ -3756,7 +3767,7 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                                 ciclo = 0.8e10;
                                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
                                                 logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
-                                                           "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
+                                                           "a busca do permanente nao encontrou solucao",
                                                            "", "");
                                             }
                                         }
@@ -3814,7 +3825,7 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                                 ciclo = 0.8e10;
                                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
                                                 logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
-                                                           "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
+                                                           "a busca do permanente nao encontrou solucao",
                                                            "", "");
                                             }
                                         }
@@ -3859,10 +3870,10 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                     inativo[i] = 1;
                     inativoColetor(i, arqRede, inativo, narq);
                     if (valor < -1e9) {
-                        aviso(i);
+                        aviso(i, malha[i].arq.impfile);
                         (*arqRede.vg1dSP).iterRede = 200;
                     } else {
-                        aviso2(i);
+                        aviso2(i, malha[i].arq.impfile);
                         (*arqRede.vg1dSP).iterRede = 200;
                     }
                     (*arqRede.vg1dSP).restartRede = 1;
@@ -3873,7 +3884,12 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                 ciclomalha++;
                 cout << "convergencia tramo: " << i << endl;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         int resolvGlob = 0;
         for (int i = 0; i < narq; i++) {
             resolvGlob += Resolv[i];
@@ -4231,10 +4247,10 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                     inativoColetor(aux, arqRede, inativo, narq);
                                     inativoAfluente(aux, arqRede, inativo);
                                     if (valor < -1e9) {
-                                        aviso(aux);
+                                        aviso(aux, malha[aux].arq.impfile);
                                         (*arqRede.vg1dSP).iterRede = 200;
                                     } else {
-                                        aviso2(aux);
+                                        aviso2(aux, malha[aux].arq.impfile);
                                         (*arqRede.vg1dSP).iterRede = 200;
                                     }
                                     (*arqRede.vg1dSP).restartRede = 1;
@@ -4427,10 +4443,10 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                             inativoColetor(aux, arqRede, inativo, narq);
                                             inativoAfluente(aux, arqRede, inativo);
                                             if (valor < -1e9) {
-                                                aviso(aux);
+                                                aviso(aux, malha[aux].arq.impfile);
                                                 (*arqRede.vg1dSP).iterRede = 200;
                                             } else {
-                                                aviso2(aux);
+                                                aviso2(aux, malha[aux].arq.impfile);
                                                 (*arqRede.vg1dSP).iterRede = 200;
                                             }
                                             (*arqRede.vg1dSP).restartRede = 1;
@@ -4484,10 +4500,10 @@ double cicloRedeComp(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativ
                                             inativoColetor(aux, arqRede, inativo, narq);
                                             inativoAfluente(aux, arqRede, inativo);
                                             if (valor < -1e9) {
-                                                aviso(aux);
+                                                aviso(aux, malha[aux].arq.impfile);
                                                 (*arqRede.vg1dSP).iterRede = 200;
                                             } else {
-                                                aviso2(aux);
+                                                aviso2(aux, malha[aux].arq.impfile);
                                                 (*arqRede.vg1dSP).iterRede = 200;
                                             }
                                             (*arqRede.vg1dSP).restartRede = 1;
@@ -5069,8 +5085,11 @@ void preparaTabDin(SProd &sistem1) {
             sistem1.tabDin[i].viscO[k + 1][0] = sistem1.tabDin[i].viscO[k][0] + sistem1.tabDin[i].delP;
             sistem1.tabDin[i].viscG[k + 1][0] = sistem1.tabDin[i].viscG[k][0] + sistem1.tabDin[i].delP;
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*sistem1.vg1dSP).ntrd)
         for (int k = 1; k < sistem1.tabDin[i].npontosP + 1; k++) {
+    try {
             ProFlu fluF;
             for (int j = 1; j < sistem1.tabDin[i].npontosT + 1; j++) {
                 double pres = sistem1.tabDin[i].rholF[k][0];
@@ -5101,7 +5120,12 @@ void preparaTabDin(SProd &sistem1) {
                 if (k == sistem1.tabDin[i].npontosP)
                     sistem1.tabDin[i].PBF[j - 1] = fluF.PB(pres, temp);
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
     }
 
     for (int i = 0; i < sistem1.ntabDin; i++) {
@@ -5507,8 +5531,11 @@ void cicloRedeCompCego(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indat
         int ntrdLocal = (*arqRede.vg1dSP).ntrd;
         if ((*arqRede.vg1dSP).ntrd > narq)
             ntrdLocal = narq;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(ntrdLocal)
         for (int i = 0; i < narq; i++) {
+    try {
             int permAflu = 0;
             if (arqRede.malha[i].nafluente > 0) {
                 for (int iaflu = 0; iaflu < arqRede.malha[i].nafluente; iaflu++) {
@@ -5531,7 +5558,12 @@ void cicloRedeCompCego(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indat
                 Resolv[i] = 1;
                 ciclomalha++;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         int resolvGlob = 0;
         for (int i = 0; i < narq; i++)
             resolvGlob += Resolv[i];
@@ -6297,8 +6329,11 @@ double cicloRede(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo, v
         int ntrdLocal = (*arqRede.vg1dSP).ntrd;
         if ((*arqRede.vg1dSP).ntrd > narq)
             ntrdLocal = narq;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(ntrdLocal)
         for (int i = 0; i < narq; i++) {
+    try {
             int permAflu = 0;
             if (arqRede.malha[i].nafluente > 0) {
                 for (int iaflu = 0; iaflu < arqRede.malha[i].nafluente; iaflu++) {
@@ -6478,10 +6513,10 @@ double cicloRede(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo, v
                     inativo[i] = 1;
                     inativoColetor(i, arqRede, inativo, narq);
                     if (valor < -1e9) {
-                        aviso(i);
+                        aviso(i, malha[i].arq.impfile);
                         (*arqRede.vg1dSP).iterRede = 200;
                     } else {
-                        aviso2(i);
+                        aviso2(i, malha[i].arq.impfile);
                         (*arqRede.vg1dSP).iterRede = 200;
                     }
                     (*arqRede.vg1dSP).restartRede = 1;
@@ -6492,7 +6527,12 @@ double cicloRede(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo, v
                 ciclomalha++;
                 cout << "convergencia tramo: " << i << endl;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         int resolvGlob = 0;
         for (int i = 0; i < narq; i++) {
             resolvGlob += Resolv[i];
@@ -6942,10 +6982,10 @@ double cicloRede(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo, v
                                     inativoColetor(aux, arqRede, inativo, narq);
                                     inativoAfluente(aux, arqRede, inativo);
                                     if (valor < -1e9) {
-                                        aviso(aux);
+                                        aviso(aux, malha[aux].arq.impfile);
                                         (*arqRede.vg1dSP).iterRede = 200;
                                     } else {
-                                        aviso2(aux);
+                                        aviso2(aux, malha[aux].arq.impfile);
                                         (*arqRede.vg1dSP).iterRede = 200;
                                     }
                                     (*arqRede.vg1dSP).restartRede = 1;
@@ -7180,10 +7220,10 @@ double cicloRede(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo, v
                                             inativoColetor(aux, arqRede, inativo, narq);
                                             inativoAfluente(aux, arqRede, inativo);
                                             if (valor < -1e9) {
-                                                aviso(aux);
+                                                aviso(aux, malha[aux].arq.impfile);
                                                 (*arqRede.vg1dSP).iterRede = 200;
                                             } else {
-                                                aviso2(aux);
+                                                aviso2(aux, malha[aux].arq.impfile);
                                                 (*arqRede.vg1dSP).iterRede = 200;
                                             }
                                             (*arqRede.vg1dSP).restartRede = 1;
@@ -7238,10 +7278,10 @@ double cicloRede(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo, v
                                                 inativoColetor(aux, arqRede, inativo, narq);
                                                 inativoAfluente(aux, arqRede, inativo);
                                                 if (valor < -1e9) {
-                                                    aviso(aux);
+                                                    aviso(aux, malha[aux].arq.impfile);
                                                     (*arqRede.vg1dSP).iterRede = 200;
                                                 } else {
-                                                    aviso2(aux);
+                                                    aviso2(aux, malha[aux].arq.impfile);
                                                     (*arqRede.vg1dSP).iterRede = 200;
                                                 }
                                                 (*arqRede.vg1dSP).restartRede = 1;
@@ -7547,7 +7587,7 @@ double permanenteSimples(SProd &sistem1, double inichute = -1.) {
                                 ciclo = 1.1e10;
                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
                                 logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
-                                           "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
+                                           "a busca do permanente nao encontrou solucao",
                                            "", "");
                             }
                         }
@@ -7620,7 +7660,7 @@ double permanenteSimples(SProd &sistem1, double inichute = -1.) {
                                 ciclo = 1.1e10;
                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
                                 logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
-                                           "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
+                                           "a busca do permanente nao encontrou solucao",
                                            "", "");
                             }
                         }
@@ -8090,7 +8130,7 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
         if (fabs(saida) > 1e9) {
             escreveIni << "    PROBLEMAS NA CONVERGENCIA DO PERMANENTE     " << endl;
             logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
-                       "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################",
+                       "a busca do permanente nao encontrou solucao",
                        "", "");
         }
         if (sistem1.arq.saidaClassica == 1) {
@@ -8195,12 +8235,30 @@ double SolveTramoSolteiro(SProd &sistem1, double chute0 = -1.) {
     return saida;
 }
 
+// Na varredura, uma falha numerica descarta so a sequencia corrente (falha > 0.9e10, como no retorno normal).
+double SolveTramoSolteiroAP(SProd &sistema, double chute = -1.) {
+    try {
+        return SolveTramoSolteiro(sistema, chute);
+    } catch (const std::exception &e) {
+        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION, e.what(), "", "");
+        return 1.1e10;
+    }
+}
+
+void registraSequenciaDescartada(int iSeq) {
+    if (logger.registrarParcial("sequenciaAP", to_string(iSeq)))
+        logger.log(LOGGER_AVISO, LOG_WARN_UNIT_DISCARDED, "sequencia " + to_string(iSeq), "sequenciaAP",
+                   to_string(iSeq));
+}
+
 void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidacaoJson_t validacaoJson, SProd &sistem1) {
     // metodo em que e feita a sequencia de simulacoes de analise parametrica, observando que a analise parametrica e
     // feita apenas para tramos simples.
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
                       sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
     logger.setEtapa(ETAPA_PERMANENTE);
+    logger.entrarVarredura();
+    logger.definirTotalUnidades("sequenciaAP", analisePara.nVariaveis);
     // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
     // testara destas variaveis na analise parametrica
     int imprime = 0;
@@ -8277,7 +8335,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
     }
     double chute=-1;
     if(sistem1.arq.pocinjec==0){
-    	double falha0=SolveTramoSolteiro(sistem1);
+    	double falha0=SolveTramoSolteiroAP(sistem1);
     	if(fabs(falha0)<1e9){
     		if(sistem1.arq.ConContEntrada==0)chute=sistem1.celula[0].pres;
     		else{
@@ -8300,8 +8358,11 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         QGFundo[iSeq]=0;
         QLFundo[iSeq]=0;
     }
+    {
+    CapturaExcecao capturaOmp;
     #pragma omp parallel for num_threads(analisePara.nthrdAP)
-	for(int iSeq=0;iSeq<analisePara.nVariaveis;iSeq++){//laco onde e calculado o permanente de cada combinacao
+	for(int iSeq=0;iSeq<analisePara.nVariaveis;iSeq++){
+        try {//laco onde e calculado o permanente de cada combinacao
 		logger.setSequenciaAP(iSeq);
 		//algumas variaveis ja se encontram na condicao correta para se apolicar no sistema de simulacao,
 		//outras precisam de um "pos procesaamento"
@@ -8397,9 +8458,9 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 			double chuteSeq2=-1;
 			double chuteSeq3=-1;
 			double chuteSeq1b=-1;
-		falha=SolveTramoSolteiro(sistem2,chute);
+		falha=SolveTramoSolteiroAP(sistem2,chute);
 		if(fabs(falha)>(0.9e10) && chute!=-1){
-				falha=SolveTramoSolteiro(sistem2);
+				falha=SolveTramoSolteiroAP(sistem2);
 		}
 		if(iSeq>0 && fabs(falha)>(0.9e10)){
 			if(indfalha[iSeq-1]==1){
@@ -8410,7 +8471,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 	    			else if(sistem2.celula[0].acsr.tipo==2)
 	    				chuteSeq1=QLFundo[iSeq-1];
 	    		}
-	    		falha=SolveTramoSolteiro(sistem2,chuteSeq1);
+	    		falha=SolveTramoSolteiroAP(sistem2,chuteSeq1);
 			}
 		}
 		if(iSeq<analisePara.nVariaveis-1 && fabs(falha)>(0.9e10)){
@@ -8422,7 +8483,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 		    		else if(sistem2.celula[0].acsr.tipo==2)
 		    			chuteSeq2=QLFundo[iSeq+1];
 		    	}
-		    	if(chuteSeq2!=-1)falha=SolveTramoSolteiro(sistem2,chuteSeq2);
+		    	if(chuteSeq2!=-1)falha=SolveTramoSolteiroAP(sistem2,chuteSeq2);
 			}
 		}
 		if(fabs(falha)>(0.9e10) && iSeq>1){
@@ -8434,7 +8495,7 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 		    			else if(sistem2.celula[0].acsr.tipo==2)
 		    				chuteSeq1b=QLFundo[iSeq-2];
 		    		}
-		    		falha=SolveTramoSolteiro(sistem2,chuteSeq1b);
+		    		falha=SolveTramoSolteiroAP(sistem2,chuteSeq1b);
 				}
 		}
 		if(fabs(falha)>(0.9e10)){
@@ -8449,13 +8510,14 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
 		    		else if(sistem2.celula[0].acsr.tipo==2)
 		    			chuteSeq3=QLFundo[testaI];
 		    	}
-		    	if(chuteSeq3!=-1)falha=SolveTramoSolteiro(sistem2,chuteSeq3);
+		    	if(chuteSeq3!=-1)falha=SolveTramoSolteiroAP(sistem2,chuteSeq3);
 			}
 		}
 		if(fabs(falha)>1e9){
 			//caso ocorre uma falha nma busca da solucao para um caso da analise parametrica
 			#pragma omp critical
 				cout<<"----------------------------- falha no caso "<<iSeq<<" -------------------------------"<<endl;
+			registraSequenciaDescartada(iSeq);
 		}
 
         if (fabs(falha) < 1e9){
@@ -8507,6 +8569,11 @@ void leituraAPparalelo(string nomeArquivoAP, string nomeArquivoLog, tipoValidaca
         	}
         }
         (*sistem2.vg1dSP).contaExit = 0;
+            } catch (...) {
+            capturaOmp.guarda();
+        }
+    }
+    capturaOmp.relanca();
     }
 
     // saidaAP << "sucessoAP.dat";//arquivo com o relatorio de sucessos e falhas da AP
@@ -8625,6 +8692,8 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
                       sistem1.arq.flup, sistem1.arq.bcs, sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
     logger.setEtapa(ETAPA_PERMANENTE);
+    logger.entrarVarredura();
+    logger.definirTotalUnidades("sequenciaAP", analisePara.nVariaveis);
     // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
     // testara destas variaveis na analise parametrica
     int imprime = 0;
@@ -8649,7 +8718,7 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
 
     int indfalha[analisePara.nVariaveis];
     if (analisePara.vfp != 1 || analisePara.tipoAP != 0) {
-        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                    "Parâmetros inadequados para a analise parametrica em paralelo",
                    "", "");
     }
@@ -8659,8 +8728,11 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
         string nomeArquivoLogAP = nomeArquivoLog;
         sistem2[iSeq] = SProd(sistem1.arq.impfile, nomeArquivoLogAP, validacaoJson, sistem1.arq.tipoSimulacao, &vg1dTramo[iSeq]);
     }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(analisePara.nthrdAP)
-    for (int iSeq = 0; iSeq < analisePara.nVariaveis; iSeq++) { // laco onde e calculado o permanente de cada combinacao
+    for (int iSeq = 0; iSeq < analisePara.nVariaveis; iSeq++) {
+    try { // laco onde e calculado o permanente de cada combinacao
         // algumas variaveis ja se encontram na condicao correta para se apolicar no sistema de simulacao,
         // outras precisam de um "pos procesaamento"
         double vazgasG;
@@ -8734,10 +8806,11 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
         }
         cout << "Resolvendo Sequencia " << iSeq << " da analise parametrica" << endl;
         (*sistem2[iSeq].vg1dSP).sequenciaAP = iSeq;
-        falha = SolveTramoSolteiro(sistem2[iSeq]);
+        falha = SolveTramoSolteiroAP(sistem2[iSeq]);
         if (fabs(falha) > 0.9e10) {
             // caso ocorre uma falha nma busca da solucao para um caso da analise parametrica
             cout << "----------------------------- falha no caso -------------------------------" << endl;
+            registraSequenciaDescartada(iSeq);
         }
 
         if (fabs(falha) < 1e9)
@@ -8773,7 +8846,12 @@ void leituraAPparaleloReserva(string nomeArquivoAP, string nomeArquivoLog, tipoV
             }
         }
         (*sistem2[iSeq].vg1dSP).contaExit = 0;
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
 
     // saidaAP << "sucessoAP.dat";//arquivo com o relatorio de sucessos e falhas da AP
 
@@ -8845,6 +8923,8 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
     APara analisePara(sistem1.vg1dSP, nomeArquivoAP, sistem1.ncel, sistem1.arq.celp,
                       sistem1.arq.flup, sistem1.arq.bcs,sistem1.arq.multiBcs, sistem1.arq.fonteg); // construtor do sistema de analise parametrica, ver a classe LerAP. Neste cosntrutor é lido um arquivo
     logger.setEtapa(ETAPA_PERMANENTE);
+    logger.entrarVarredura();
+    logger.definirTotalUnidades("sequenciaAP", analisePara.nVariaveis);
     // json onde se esta registradoas variaveis que estao envolvidas na analise parametrica e os valores que se
     // testara destas variaveis na analise parametrica
     double vazgasG;
@@ -8940,7 +9020,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
         if (iSeq == 0 || sistem1.arq.ConContEntrada == 2 || sistem1.arq.pocinjec == 1) {
             // se for o primeiro caso da analise parametrica, não se usa nenhum valor para o chute, chute=-1
             chute = -1.;
-            falha = SolveTramoSolteiro(sistem1, chute);
+            falha = SolveTramoSolteiroAP(sistem1, chute);
         } else {
             // para os casos de analise parametrica subsequentes, se usa o valor da solução da analise parametrica anterior como chute
             int tipoChute = sistem1.arq.ConContEntrada;
@@ -8961,15 +9041,16 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
             if (fabs(falha) > 1e9) {
                 chute = -1;
             }
-            falha = SolveTramoSolteiro(sistem1, chute);
+            falha = SolveTramoSolteiroAP(sistem1, chute);
             // caso a solucao com chute tenha falhado, tenta-se uma nova solucao sem o chute
             if (fabs(falha) > 1e9 && chute > 0) {
-                falha = SolveTramoSolteiro(sistem1);
+                falha = SolveTramoSolteiroAP(sistem1);
             }
         }
         if (fabs(falha) > 0.9e10) {
             // caso ocorre uma falha nma busca da solucao para um caso da analise parametrica
             cout << "----------------------------- falha no caso -------------------------------" << endl;
+            registraSequenciaDescartada(iSeq);
         }
 
         ostringstream saidaAP;
@@ -12215,10 +12296,10 @@ double cicloRedeInj(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo
                     inativo[i] = 1;
                     inativoColetor(i, arqRede, inativo, narq);
                     if (valor < -1e9) {
-                        aviso(i);
+                        aviso(i, malha[i].arq.impfile);
                         (*arqRede.vg1dSP).iterRede = 200;
                     } else {
-                        aviso2(i);
+                        aviso2(i, malha[i].arq.impfile);
                         (*arqRede.vg1dSP).iterRede = 200;
                     }
                     (*arqRede.vg1dSP).restartRede = 1;
@@ -12338,10 +12419,10 @@ double cicloRedeInj(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo
                                 inativoColetor(aux, arqRede, inativo, narq);
                                 inativoAfluente(aux, arqRede, inativo);
                                 if (valor < -1e9) {
-                                    aviso(aux);
+                                    aviso(aux, malha[aux].arq.impfile);
                                     (*arqRede.vg1dSP).iterRede = 200;
                                 } else {
-                                    aviso2(aux);
+                                    aviso2(aux, malha[aux].arq.impfile);
                                     (*arqRede.vg1dSP).iterRede = 200;
                                 }
                                 (*arqRede.vg1dSP).restartRede = 1;
@@ -12405,10 +12486,10 @@ double cicloRedeInj(SProd *malha, Rede &arqRede, Vcr<int> &inativo, int indativo
                                 inativoColetor(aux, arqRede, inativo, narq);
                                 inativoAfluente(aux, arqRede, inativo);
                                 if (valor < -1e9) {
-                                    aviso(aux);
+                                    aviso(aux, malha[aux].arq.impfile);
                                     (*arqRede.vg1dSP).iterRede = 200;
                                 } else {
-                                    aviso2(aux);
+                                    aviso2(aux, malha[aux].arq.impfile);
                                     (*arqRede.vg1dSP).iterRede = 200;
                                 }
                                 (*arqRede.vg1dSP).restartRede = 1;
@@ -12684,8 +12765,10 @@ void signalHandler(int sigNumber) {
         break;
     }
 
-    // incluir log INFO de cancelamento da simulacao
-    logger.log(LOGGER_FALHA, LOG_INFO_SIMULATION_CANCELLED, to_string(sigNumber), "", signalDescription);
+    if (exitCode == EXIT_SUCCESS)
+        logger.log(LOGGER_AVISO, LOG_WARN_SIMULATION_CANCELLED, to_string(sigNumber), "", signalDescription);
+    else
+        logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, to_string(sigNumber), "", signalDescription);
     // gravar o log antes do snapshot, que pode falhar com a memoria corrompida
     logger.writeOutputLog();
     if (tipoSimulacao == tipoSimulacao_t::transiente && ptrSistemaProducao != nullptr) {
@@ -12696,8 +12779,7 @@ void signalHandler(int sigNumber) {
         // fechar arquivo de registro dos arquivos de saida de dados da simulacao
         arqRelatorioPerfis.close();
     }
-    // cancelamento pelo usuario mantem 0; demais sinais saem com a etapa da falha
-    exit(exitCode == EXIT_SUCCESS ? EXIT_SUCCESS : logger.codigoSaida());
+    exit(logger.codigoSaida());
 }
 
 int main(int argc, char **argv) {
@@ -12904,6 +12986,7 @@ int main(int argc, char **argv) {
             Rede arqRede(nomeArquivoEntrada, nomeArquivoLog, validacaoJson, tipoSimulacao, &vg1dRedeSimples); // leitura
             // do arquivo rede
             int narq = arqRede.nsisprod; // numero de tramos
+            logger.definirTotalUnidades("tramo", narq);
             vg1dRedeSimples.narq = narq;
             vg1dRedeSimples.chaveredeT = arqRede.chaveredeT; // indica se vai haver simulacao de rede transiente
             vg1dRedeSimples.chaveAnelGL = arqRede.anelGL;    // indica se a rede e do tipo anel de gas-lift
@@ -12983,8 +13066,11 @@ int main(int argc, char **argv) {
                                             tipoSimulacao_t::transiente, i, contapermRede[i], &vg1dRede[i]);
                         }
                         logger.setTramo("", -1); // a montagem deixou o ultimo tramo no contexto global
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(vg1dRedeSimples.ntrdGlob)
                         for (int i = 0; i < redeLeitura; i++) {
+    try {
                             Vcr<int> inativo(vg1dRede[i].narq, 0); // indica se algum tramo falhou na sua busca pela solução transiente
                             int indativo = 0;                      // indica o numero de tramso que foram inativados na solucao permanente por
                             // falha de convergencia
@@ -13023,7 +13109,12 @@ int main(int argc, char **argv) {
                             logger.setEtapa(ETAPA_HERDADA);
                             logger.setRelogio(nullptr);
                             logger.setTramo("", -1);
-                        }
+                            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
                         logger.setEtapa(ETAPA_POS);
 
                         if (redeLeitura > 0) {
@@ -13172,7 +13263,15 @@ int main(int argc, char **argv) {
             if (sistem1.arq.perm == 1) {
                 if (sistem1.arq.AP == 0) {
                     logger.setEtapa(ETAPA_PERMANENTE);
-                    SolveTramoSolteiro(sistem1, sistem1.arq.chutePerm); // solucao simples de permanente para um tramo simples
+                    const double resulPerm = SolveTramoSolteiro(sistem1, sistem1.arq.chutePerm); // solucao simples de permanente para um tramo simples
+                    if (fabs(resulPerm) > 0.9e10) {
+                        if (sistem1.arq.transiente == 1)
+                            logger.log(LOGGER_AVISO, LOG_WARN_STEADY_STATE_NOT_CONVERGED,
+                                       "pre-processador permanente nao convergiu; o transiente parte do ultimo estado calculado", "", "");
+                        else
+                            logger.log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE,
+                                       "o resultado do permanente nao e valido", "", "");
+                    }
                 }
                 else {
     			ostringstream arquivoAPtemp;
@@ -13183,6 +13282,7 @@ int main(int argc, char **argv) {
     			else
     				leituraAPparalelo(arquivoAP, nomeArquivoLog, validacaoJson, sistem1);//solucao de analise parametrica para tramo simples
 			logger.setSequenciaAP(-1);
+			logger.sairVarredura();
                 }
 
             } else if (sistem1.arq.perm == 2) { // quando a condicao de contorno nao e o resultado de um regime permanente mas a "foto" em algum momento de
@@ -13383,6 +13483,8 @@ int main(int argc, char **argv) {
             solv2D resolucao(nomeArquivoEntrada, nomeArquivoLog, &vg1dConvec2D);
             // solver do problema de conveccao natural em espaco confinado 2D
             resolucao.resolve();
+            logger.setEtapa(ETAPA_POS);
+            logger.setRelogio(nullptr);
         }
     } catch (exception &excInt) {
         cout << "EXCECAO INESPERADA: " << excInt.what() << endl;

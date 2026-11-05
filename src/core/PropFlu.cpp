@@ -1991,6 +1991,8 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
     	varprop=1.225*Deng;
 		if(pres>=presMax|| temp<tempMin || temp>=tempMax){
             // incluir falha
+            if (logger.emVarredura())
+                throw ErroNumerico("Pressão ou temperatura excedeu o limite máximo da tabela de Flash");
             string complementoFalha = string("Limite alto na tabela ") + to_string((*vg1dSP).contaExit);
             logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "Pressão ou temperatura excedeu o limite máximo da tabela de Flash", "N/A",
                 complementoFalha);
@@ -3207,8 +3209,10 @@ double ProFlu::FalsaCorda(double a,double b,double PR,double TR,double delta ,do
           if(controla>=maxit)(*vg1dSP).contaExit++;
           if((*vg1dSP).contaExit>400) {
             // incluir falha
+            if (logger.emVarredura())
+                throw ErroNumerico("Falsa corda em PropFlu atingiu numero maximo de iteracoes");
             string complementoFalha = string("Maximo falhas atingido: ") + to_string((*vg1dSP).contaExit);
-            logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "Falsa corda em PropFlu atingiu numero maximo de iteracoes", "N/A",
+            logger.log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE, "Falsa corda em PropFlu atingiu numero maximo de iteracoes", "N/A",
                 complementoFalha);
             // gravar arquivo de log
             logger.writeOutputLog();

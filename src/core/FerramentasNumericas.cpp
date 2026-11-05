@@ -1,6 +1,8 @@
 #include "FerramentasNumericas.h"
 
 void NumError(const string &t) {
+    if (logger.emVarredura())
+        throw ErroNumerico(t);
     // incluir falha
     logger.log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE,
                t, "", "");

@@ -2642,7 +2642,7 @@ void Ler::parse_configuracao_inicial(
 					if(configuracao_inicial_json.transiente().exists()){
 						transiente = configuracao_inicial_json.transiente();
 						if(transiente==1)
-						logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+						logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
 		  	      		    		"Tentando rodar transiente  com correlacoes caixa preta, transiente sera desconsiderado",
 		  	      		          "", "");
 					}
@@ -18370,13 +18370,13 @@ double Ler::interpolaTempEnvelope(double pres){
 	double temp=-10000.;
 
 	if(pres<=envelopeHidra[0][0]){
- 		logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+ 		logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
  			      		    		"Valor da pressao abaixo do limite inferior do envelope de hidratos cadastrado, valor assumido será a menor pressao",
  			      		          "", "");
  		return envelopeHidra[0][1];
 	}
 	else if(pres>=envelopeHidra[nparEnvelope-1][0]){
- 		logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+ 		logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
  			      		    		"Valor da pressao acima do limite inferior do envelope de hidratos cadastrado, valor assumido será a maior pressao",
  			      		          "", "");
  		return envelopeHidra[nparEnvelope-1][1];

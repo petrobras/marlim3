@@ -14,10 +14,13 @@
 #define LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION "1004"
 #define LOG_ERR_NUMERICAL_FAILURE "1005"
 #define LOG_WARN_STEADY_STATE_NOT_CONVERGED "1006"
+#define LOG_WARN_UNIT_DISCARDED "1007"
+#define LOG_WARN_BRANCH_DISCARDED "1008"
+#define CODIGO_SAIDA_EXECUCAO_PARCIAL 5
 #define LOG_INFO_PARSE_PROCESS_FINISHED "1100"
 #define LOG_INFO_PARSE_PROCESS_GENERIC "1101"
 #define LOG_INFO_SIMULATION_FINISHED "1200"
-#define LOG_INFO_SIMULATION_CANCELLED "1300"
+#define LOG_WARN_SIMULATION_CANCELLED "1300"
 #define ARQUIVO_LOG_PADRAO "simulacao.log"
 #define ARQUIVO_TEMPLATE_LOG "template_log_transiente.json"
 #define TAMANHO_MAXIMO_NOME_ARQUIVO 100
@@ -34,6 +37,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <map>
+#include <exception>
+#include <stdexcept>
 #include <vector>
 #include <omp.h>
 
@@ -63,6 +69,29 @@ typedef enum {
     ETAPA_TRANSIENTE = 3,
     ETAPA_POS = 4
 } etapa_t;
+
+// Falha numerica de uma unidade de varredura (sequencia da analise parametrica): descarta so a unidade.
+class ErroNumerico : public std::runtime_error {
+  public:
+    using std::runtime_error::runtime_error;
+};
+
+// Excecoes nao podem atravessar uma regiao OpenMP: cada iteracao guarda a primeira e a thread mestre a relanca.
+class CapturaExcecao {
+  public:
+    void guarda() {
+#pragma omp critical(marlim_captura_excecao)
+        if (!excecao)
+            excecao = std::current_exception();
+    }
+    void relanca() {
+        if (excecao)
+            std::rethrow_exception(excecao);
+    }
+
+  private:
+    std::exception_ptr excecao;
+};
 
 typedef struct {
     string nomeArqEntrada;
@@ -126,9 +155,17 @@ class Logger {
     void setTramo(const string &arquivoTramo, int redeInterna); // "" e -1 limpam
     string tramoAtual() const;
     int redeInternaAtual() const;
+    // durante uma varredura (analise parametrica) falhas numericas viram ErroNumerico
+    void entrarVarredura();
+    void sairVarredura();
+    bool emVarredura() const;
+    // unidade descartada ("sequenciaAP" ou "tramo"); leva o codigo de saida a 5 se nao houver FALHA
+    bool registrarParcial(const string &tipo, const string &item); // true se o item e novo
+    // total de unidades da varredura; se todas forem descartadas, o log registra FALHA ao ser gravado
+    void definirTotalUnidades(const string &tipo, int total);
     etapa_t etapaAtual() const;
     double tempoAtual() const; // negativo se nao houver relogio ativo
-    // 0 sem FALHA; senao a etapa da primeira FALHA (1 pre, 2 permanente, 3 transiente, 4 pos)
+    // 0 sem FALHA; 5 sem FALHA mas com unidades descartadas; senao a etapa da primeira FALHA (1 a 4)
     int codigoSaida() const;
 
     const stResultadoSimulacao_t &getStResultadoSimulacao() const {
@@ -147,6 +184,12 @@ class Logger {
     int sequenciaAP = -1;
     string tramo;
     int redeInterna = -1;
+    map<string, vector<string>> parciais;
+    map<string, int> totaisUnidades;
+    map<string, etapa_t> etapasDescarte;
+    bool descarteTotalVerificado = false;
+    void verificarDescarteTotal();
+    bool varredura = false;
 };
 
 #endif /* LOG_H_ */

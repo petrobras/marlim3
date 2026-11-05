@@ -1389,7 +1389,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
             arq.gerafPoro2DFonte(celula);
         if (celula[0].acsr.tipo != 0 && arq.ConContEntrada == 1) {
             // RN-302: The inlet has both a pressure boundary condition and a mass source. Report a warning.
-            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                        "Foi escolhida uma condicao de contorno de pressao no inicio da tubulacao e foi colocada uma fonte de massa neste inicio, isto pode causar inconsistencias",
                        "", "");
         }
@@ -1443,7 +1443,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
             InjGas injgasMRT(0, 0, celula[0].flui, celula[0].fluicol);
             celula[1].acsr.injg = injgasMRT;
         } else if (bloq == 1) {
-            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                        "Foi escolhida uma condicao de bloqueio que afeta este tramo, para que a selecao de fontes seja"
                        "feita corretamente, e necessario que a segunda celula do tramo nao tenha fontes catalogadas",
                        "", "");
@@ -1571,7 +1571,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
         if (celula[0].acsr.tipo != 1 && celula[0].acsr.tipo != 2 && celula[0].acsr.tipo != 3 && celula[0].acsr.tipo != 10 && celula[0].acsr.tipo != 15 && celula[0].acsr.tipo != 16) {
             if (arq.perm == 0 && arq.ConContEntrada == 0) {
                 // RN-300: No source is defined in the first production system cell. Report a warning.
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Nao existe nenhuma fonte na primeira celula do sistema de producao, esta nao e a condicao mais adequada para a simulacao transiente, problemas podem ocorrer nesta situacao, embora nao seja impeditivo para o modo",
                            "", "");
             } else {
@@ -3273,8 +3273,11 @@ void SProd::subtempoGas() {
                 celulaG[0].massfonteCH = chokeInj.massica();
             }
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncelGas; i++) {
+    try {
 
             celulaG[i].GeraLocal(ncelGas, presiniG, tempiniG, abertoChk);
             for (int j = 0; j < 9; j++) {
@@ -3285,7 +3288,12 @@ void SProd::subtempoGas() {
             termolivreG[3 * i] = celulaG[i].TL[0];
             termolivreG[3 * i + 1] = celulaG[i].TL[1];
             termolivreG[3 * i + 2] = celulaG[i].TL[2];
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         matglobG.GaussElimPP(termolivreG);
         renovaGas();
 
@@ -3294,19 +3302,37 @@ void SProd::subtempoGas() {
         celulaG[0].dTdt = (celulaG[0].temp - celulaG[0].tempini) / dt;
         if (celulaG[ncelGas].VGasR < 0.)
             celulaG[ncelGas].temp = 20.;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 1; i < celLimi; i++) {
+    try {
             calctempGas(i, celulaG[i - 1].tempini);
             celulaG[i].dTdt = (celulaG[i].temp - celulaG[i].tempini) / dt;
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         if (ciclo < ciclomax)
             for (int k = 0; k <= ncelGas; k++)
                 celulaG[k].FeiticoDoTempo();
     }
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i < celLimi; i++)
-        celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
+        {
+    try {
+celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
 
     for (int i = 0; i < celLimi; i++) {
         if (i > 0)
@@ -3345,8 +3371,11 @@ void SProd::subtempoGasBuf() {
             celulaG[0].massfonteCH = chokeInj.massica();
         }
     }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncelGas; i++) {
+    try {
 
         celulaG[i].GeraLocal(ncelGas, presiniG, tempiniG, abertoChk);
         for (int j = 0; j < 9; j++) {
@@ -3357,7 +3386,12 @@ void SProd::subtempoGasBuf() {
         termolivreG[3 * i] = celulaG[i].TL[0];
         termolivreG[3 * i + 1] = celulaG[i].TL[1];
         termolivreG[3 * i + 2] = celulaG[i].TL[2];
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     matglobG.GaussElimPP(termolivreG);
     renovaGasBuf();
 }
@@ -4991,8 +5025,11 @@ void SProd::renovaMasEsp() {
     celula[0].migC = celula[0].flui.ViscGas(celula[0].pres, celula[0].temp /*,1*/);
     celula[0].micC = celula[0].fluicol.VisFlu(celula[0].pres, celula[0].temp);
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 1; i <= ncel; i++) {
+    try {
         double p;
         double t;
         p = celula[i].pres;
@@ -5016,7 +5053,12 @@ void SProd::renovaMasEsp() {
         celula[i].rpCi = flu.MasEspLiq(celula[i].presaux, tmed);
         celula[i].rgCi = flu.MasEspGas(celula[i].presaux, tmed);
         celula[i].rcCi = celula[i].fluicol.MasEspFlu(celula[i].presaux, tmed);
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     for (int i = 1; i <= ncel; i++) {
 
         celula[i - 1].rpR = celula[i].rpC;
@@ -6696,8 +6738,11 @@ void SProd::auxMiniTab(ProFlu &flui) {
 
 void SProd::geraMiniTabFlu() {
     (*vg1dSP).modoTransiente = 0;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         double delp;
         double delt;
         delp = 0.5 * celula[i].pres;
@@ -6786,7 +6831,12 @@ void SProd::geraMiniTabFlu() {
                 celula[i].acsr.injm.FluidoPro.atualizaPropComp(celula[i].pres, celula[i].temp, -1, NULL, NULL, arq.pocinjec);
             if(arq.miniTabAtraso > 0)auxMiniTab(celula[i].acsr.injm.FluidoPro);
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     (*vg1dSP).modoTransiente = 1;
 }
 
@@ -7796,8 +7846,11 @@ void SProd::renovaRGOdgYco2(ProFlu fluiRev) {
         celula[0].flui.BSW = celula[0].acsr.radialPoro.BSW;
     else if (celula[0].acsr.tipo == 16 && (celula[0].fontemassCR + celula[0].fontemassGR + celula[0].fontemassLR) > 0.)
         celula[0].flui.BSW = celula[0].acsr.poroso2D.dados.transfer.BSW;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = imin; i < ncel; i++) {
+    try {
         double MultOe;
         double MultOd;
         double at = celula[i].duto.area;
@@ -8600,7 +8653,12 @@ void SProd::renovaRGOdgYco2(ProFlu fluiRev) {
         celula[i].VolLeveST = volleveFim;
         celula[i].VolPesaST = volpesFim;
         celula[i].VolAguaST = volaguaFim;
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     for (int i = imin; i <= ncel - 1; i++) {
         if (trackRGO > 0 && celula[i].flui.corrSat != 4)
             celula[i].flui.RGO = rgo[i];
@@ -12634,8 +12692,11 @@ void SProd::solveLinGas() {
 
 void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
 
         if (i < ncel) {
             celula[i].avancalf(reinicia, ncel);
@@ -12656,9 +12717,17 @@ void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
                     celula[i].avancalf(reinicia, ncel);
             }
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         if (i < ncel) {
             celula[i].avancbet(reinicia, ncel);
         }
@@ -12675,9 +12744,17 @@ void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
                     celula[i].bet = celula[i - 1].bet;
             }
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         if (i < ncel && celula[i].estadoPig == 1) {
             celula[i].avancPig(reinicia);
             celula[i].avancalfPig();
@@ -12688,7 +12765,12 @@ void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
             celula[i].alfPigD = celula[i].alf;
             celula[i].betPigD = celula[i].bet;
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     for (int i = 0; i <= ncel; i++) {
         if (celula[i].correrGlobHol == 1) {
             if (celula[i].reiniciaAlf < 0 || celula[i].reiniciaBet < 0 || celula[i].reiniciaPig < 0)
@@ -12810,8 +12892,11 @@ void SProd::AtualizaPig() {
 void SProd::SolveAcopPV(int vexpli, int ciclo) {
     if ((*vg1dSP).chaverede == 1)
         logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         //if(vexpli<1.-1e-15){
         	celula[i].GeraLocal(presfim, masChkSup, ncel, arq.master1.razareaativ, presE, tempE, titE, betaE, ciclo,
                             modeloCompleto, noextremo, arq.corrigeContSep, chokeSup.AreaGarg, vexpli);
@@ -12825,7 +12910,12 @@ void SProd::SolveAcopPV(int vexpli, int ciclo) {
         //else
         	//celula[i].GeraLocalExplicito(presfim, masChkSup, ncel, arq.master1.razareaativ, presE, tempE, titE, betaE, ciclo,
         	             //  modeloCompleto, noextremo, arq.corrigeContSep, chokeSup.AreaGarg, vexpli);
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
 
     //if(vexpli<1.-1e-15)
     	matglobP.GaussElimPP(termolivreP);
@@ -12946,8 +13036,11 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
     }
     if (arq.modoDifus3D == 0) {
         if (nCelulaPoisson2D > 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
             for (int iP2D = 0; iP2D < nCelulaPoisson2D; iP2D++) {
+    try {
                 int i = indCelPoisson2D[iP2D];
                 if (i <= ncel) {
                     calctemp(i, celula[i].tempini);
@@ -12959,10 +13052,18 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 }
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncel; i++) {
+    try {
             if (i == 217) {
                 int para;
                 para = 0;
@@ -12979,10 +13080,18 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
     } else if (arq.modoDifus3D == 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncel; i++) {
+    try {
             int acoplado = -1;
             int icelAcop;
             for (int iacop = 0; iacop < arq.nacop; iacop++) {
@@ -12999,15 +13108,23 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 double hiCel = celula[icelAcop].calor.hInt();
                 poisson3D.dados.hI[iacop1] = hiCel;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         if (ciclo < ciclomax || ciclomax == 0 || dtCicMin != dt) {
             if (ciclo == ciclomax && ciclomax > 0)
                 poisson3D.FeiticoDoTempo();
             poisson3D.transientePoisson(dt);
         }
         if (nCelulaPoisson2D > 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
             for (int iP2D = 0; iP2D < nCelulaPoisson2D; iP2D++) {
+    try {
                 int i = indCelPoisson2D[iP2D];
                 if (i <= ncel) {
                     calctemp(i, celula[i].tempini);
@@ -13019,10 +13136,18 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 }
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncel; i++) {
+    try {
             if (celula[i].calor.difus2D == 0) {
                 if (i <= ncel) {
                     calctemp(i, celula[i].tempini);
@@ -13035,7 +13160,12 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
     }
     for (int i = 1; i <= ncel; i++) {
         celula[i].dTdtL = celula[i - 1].dTdt;
@@ -16073,7 +16203,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         if (fabs(valtemp) > 1.01e10) {
             cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if (kontaTenta < 0)
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             if ((*vg1dSP).iterRede > 0)
@@ -16087,7 +16217,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             if (fabs(valtemp) > 1.01e10) {
                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if (kontaTenta < 0)
-                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                "", "");
                 if ((*vg1dSP).iterRede > 0)
@@ -16123,7 +16253,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             if (fabs(valtemp) > 1.01e10) {
                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if (kontaTenta < 0)
-                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                "", "");
                 if ((*vg1dSP).iterRede > 0)
@@ -16141,7 +16271,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     if (fabs(valtemp) > 1.01e10) {
                         cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         if ((*vg1dSP).iterRede > 0)
@@ -16159,14 +16289,14 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         // a ser feito a seguir e nem se está em uma rede
                         NumError(
                             "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                    "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                    "", "");
                     } else {
                         // apresenta apenas um aviso
                         cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         // se for em uma iteracao de rede, apos a primeira iteracao
@@ -16194,14 +16324,14 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             // a ser feito a seguir e nem se está em uma rede
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             } else {
                 // apresenta apenas um aviso
                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if (kontaTenta < 0)
-                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                "", "");
                 // se for em uma iteracao de rede, apos a primeira iteracao
@@ -16242,7 +16372,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         val = marchaProdPerm1(pchute);
         if (fabs(val) > 1.01e10) {
             if (kontaTenta < 0)
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
@@ -16257,7 +16387,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         if ((*vg1dSP).chaverede == 0) {
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             } else {
@@ -16310,7 +16440,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 val = marchaProdPerm1(pchute2);
                 if (fabs(val) > 1.01e10) {
                     if (kontaTenta < 0)
-                        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                    "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                    "", "");
                     cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
@@ -16341,12 +16471,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     if ((*vg1dSP).chaverede == 0) {
                         if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                             NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         } else {
                             if (kontaTenta < 0)
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16371,7 +16501,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     val = marchaProdPerm1(pchute2);
                     if (fabs(val) > 1.01e10) {
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16388,7 +16518,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         if ((*vg1dSP).chaverede == 0) {
                             if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                                 if (kontaTenta < 0)
-                                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                                "", "");
                                 else {
@@ -16441,7 +16571,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 val = marchaProdPerm1(pchute2);
                 if (fabs(val) > 1.01e10) {
                     if (kontaTenta < 0)
-                        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                    "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                    "", "");
                     cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
@@ -16456,12 +16586,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                             NumError(
                                 "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         } else {
                             if (kontaTenta < 0)
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16494,12 +16624,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     if ((*vg1dSP).chaverede == 0) {
                         if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                             NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         } else {
                             if (kontaTenta < 0)
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16526,7 +16656,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     val = marchaProdPerm1(pchute2);
                     if (fabs(val) > 1.01e10) {
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
@@ -16542,12 +16672,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         if ((*vg1dSP).chaverede == 0) {
                             if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             } else {
                                 if (kontaTenta < 0)
-                                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                                "", "");
                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;

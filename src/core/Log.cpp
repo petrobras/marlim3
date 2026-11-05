@@ -7,6 +7,7 @@
 
 #include "Log.h"
 #include <stdlib.h>
+#include <algorithm>
 #include <cmath>
 #include <string>
 
@@ -133,20 +134,64 @@ double Logger::tempoAtual() const {
     return *r;
 }
 
+void Logger::entrarVarredura() {
+    varredura = true;
+}
+
+void Logger::sairVarredura() {
+    varredura = false;
+}
+
+bool Logger::emVarredura() const {
+    return varredura;
+}
+
+bool Logger::registrarParcial(const string &tipo, const string &item) {
+    bool novo = false;
+#pragma omp critical(marlim_logger_parcial)
+    {
+        vector<string> &itens = parciais[tipo];
+        if (find(itens.begin(), itens.end(), item) == itens.end()) {
+            itens.push_back(item);
+            novo = true;
+        }
+        etapasDescarte[tipo] = etapaAtual();
+    }
+    return novo;
+}
+
+void Logger::definirTotalUnidades(const string &tipo, int total) {
+    totaisUnidades[tipo] = total;
+}
+
+void Logger::verificarDescarteTotal() {
+    if (descarteTotalVerificado)
+        return;
+    descarteTotalVerificado = true;
+    for (const auto &total : totaisUnidades) {
+        const auto descartadas = parciais.find(total.first);
+        if (total.second <= 0 || descartadas == parciais.end() ||
+            static_cast<int>(descartadas->second.size()) < total.second)
+            continue;
+        const etapa_t anterior = etapaAtual();
+        setEtapa(etapasDescarte[total.first]);
+        log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE,
+            total.first == "tramo" ? "todos os tramos da rede foram desligados"
+                                   : "todas as sequencias da analise parametrica foram descartadas",
+            total.first, to_string(total.second));
+        setEtapa(anterior);
+    }
+}
+
 int Logger::codigoSaida() const {
     const stResultadoSimulacao_t &res = getStResultadoSimulacao();
     if (res.sucesso)
-        return 0;
+        return parciais.empty() ? 0 : CODIGO_SAIDA_EXECUCAO_PARCIAL;
     for (size_t i = 0; i < res.evento.tipos.size(); i++) {
-        if (res.evento.tipos[i] != LOGGER_FALHA)
-            continue;
-        // cancelamento pelo usuario (SIGINT=2, SIGTERM=15) nao e falha da simulacao
-        const bool cancelamento = res.evento.codigos[i] == LOG_INFO_SIMULATION_CANCELLED &&
-                                  (res.evento.descricoes[i] == "2" || res.evento.descricoes[i] == "15");
-        if (!cancelamento)
+        if (res.evento.tipos[i] == LOGGER_FALHA)
             return static_cast<int>(res.evento.etapas[i]);
     }
-    return 0;
+    return parciais.empty() ? 0 : CODIGO_SAIDA_EXECUCAO_PARCIAL;
 }
 
 Logger::Logger() {
@@ -258,7 +303,7 @@ void Logger::log(const log_t tipo, const string codigo, const string complemento
 }
 
 Document Logger::parseTemplateLogOutput() {
-    string strTemplateLog("{\"resultadoSimulacao\":{\"arquivo\":\"teste1.mrt\",\"data\":\"19/06/2017\",\"status\":\"falha\",\"logs\":[{\"log\":\"AVISO\",\"codigo\":\"1011\",\"descricao\":\"Campo X do arquivo MRT e obrigatorio.\",\"propriedade\":\"#\",\"causa\":\"#\",\"linha\":0}]},\"excecoesConfiguradas\":{\"1000\":\"Encontrada falha inesperada:\",\"1001\":\"O arquivo lido apresentou falha na sintaxe JSON:\",\"1002\":\"Encontrada falha durante a validacao das propriedades do MRT:\",\"1003\":\"Encontrada falha durante a validacao das regras de negocio do MRT:\",\"1004\":\"Aviso sobre as regras de negocio do simulador:\",\"1005\":\"Falha numerica durante a solucao:\",\"1006\":\"Regime permanente nao convergiu:\",\"1100\":\"Fim de etapa do processo de parse do arquivo MRT:\",\"1101\":\"Informacao:\",\"1200\":\"Fim da execucao do simulador:\",\"1300\":\"Cancelamento da execucao do simulador:\"}}");
+    string strTemplateLog("{\"resultadoSimulacao\":{\"arquivo\":\"teste1.mrt\",\"data\":\"19/06/2017\",\"status\":\"falha\",\"logs\":[{\"log\":\"AVISO\",\"codigo\":\"1011\",\"descricao\":\"Campo X do arquivo MRT e obrigatorio.\",\"propriedade\":\"#\",\"causa\":\"#\",\"linha\":0}]},\"excecoesConfiguradas\":{\"1000\":\"Encontrada falha inesperada:\",\"1001\":\"O arquivo lido apresentou falha na sintaxe JSON:\",\"1002\":\"Encontrada falha durante a validacao das propriedades do MRT:\",\"1003\":\"Encontrada falha durante a validacao das regras de negocio do MRT:\",\"1004\":\"Aviso sobre as regras de negocio do simulador:\",\"1005\":\"Falha numerica durante a solucao:\",\"1006\":\"Regime permanente nao convergiu:\",\"1007\":\"FALHA da sequencia descartada, seguindo para proxima combinacao:\",\"1008\":\"FALHA do tramo, desligado da rede, seguindo com os demais:\",\"1100\":\"Fim de etapa do processo de parse do arquivo MRT:\",\"1101\":\"Informacao:\",\"1200\":\"Fim da execucao do simulador:\",\"1300\":\"Cancelamento da execucao do simulador:\"}}");
     // criar string para mensagem de falha
     char mensagemFalha[5000];
     // criar objeto do elemento raiz do json de saída da simulação
@@ -310,6 +355,7 @@ void Logger::writeJsonFile(Document *outputDoc) {
 }
 
 void Logger::writeOutputLog(int tipoSaida) {
+    verificarDescarteTotal();
     // criar objeto do elemento raiz do json de saída da simulação
     Document logOutDoc = parseTemplateLogOutput();
     // definir alocator para para atribuir valores de chaves e valores de propriedades do json de saída
@@ -326,19 +372,39 @@ void Logger::writeOutputLog(int tipoSaida) {
         resultadoSimulacao["data"].SetString(StringRef(getStResultadoSimulacao().dataExecucao.c_str()));
         // caso o resultado da simulação seja bem sucedido
         if (getStResultadoSimulacao().sucesso) {
-            resultadoSimulacao["status"].SetString("sucesso");
+            resultadoSimulacao["status"].SetString(parciais.empty() ? "sucesso" : "parcial");
         } else {
             resultadoSimulacao["status"].SetString("falha");
         }
         // etapa em que a simulacao terminou (ou falhou) e instante simulado, se no transiente
         const int codigo = codigoSaida();
-        const etapa_t etapaFinal = codigo > 0 ? static_cast<etapa_t>(codigo) : etapaAtual();
+        const etapa_t etapaFinal =
+            codigo >= ETAPA_PRE && codigo <= ETAPA_POS ? static_cast<etapa_t>(codigo) : etapaAtual();
         resultadoSimulacao.AddMember("etapa", StringRef(nomeEtapa(etapaFinal)), allocator);
         resultadoSimulacao.AddMember("codigoSaida", codigo, allocator);
         if (tempoAtual() >= 0.)
             resultadoSimulacao.AddMember("tempoSimulado", arredonda4(tempoAtual()), allocator);
         if (tempoFinal >= 0.)
             resultadoSimulacao.AddMember("tempoFinal", arredonda4(tempoFinal), allocator);
+        if (!parciais.empty()) {
+            Value execucaoParcial(kObjectType);
+            for (const auto &tipo : parciais) {
+                Value itens(kArrayType);
+                for (const string &item : tipo.second) {
+                    if (tipo.first == "sequenciaAP") {
+                        itens.PushBack(atoi(item.c_str()), allocator);
+                    } else {
+                        Value nome;
+                        nome.SetString(item.c_str(), static_cast<SizeType>(item.size()), allocator);
+                        itens.PushBack(nome, allocator);
+                    }
+                }
+                Value chave;
+                chave.SetString(tipo.first.c_str(), static_cast<SizeType>(tipo.first.size()), allocator);
+                execucaoParcial.AddMember(chave, itens, allocator);
+            }
+            resultadoSimulacao.AddMember("execucaoParcial", execucaoParcial, allocator);
+        }
         // recuperar o objeto de excecoesConfiguradas do templateJson
         Value &excCfg = logOutDoc["excecoesConfiguradas"];
         // recuperar o array de logs do templateJson

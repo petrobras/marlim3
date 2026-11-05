@@ -820,18 +820,46 @@ void solverPAxiSim::transientePoissonDummy(double vdelt) {
     }
     itera = 0;
     while (norma > 1.e-5) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados->nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             for (int j = 0; j < malha.mlh2d[i].cel2D.dim; j++) {
                 malha.mlh2d[i].cel2D.gradGreenTI[j] = malha.mlh2d[i].cel2D.gradGreenT[j];
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados->nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh2d[i].calcGradGreen();
+            {
+    try {
+malha.mlh2d[i].calcGradGreen();
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados->nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh2d[i].GeraLocal();
+            {
+    try {
+malha.mlh2d[i].GeraLocal();
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         indsra = 0;
         for (int i = 0; i < malha.nele; i++) {
             int dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
@@ -947,18 +975,46 @@ void solverPAxiSim::transientePoisson(double vdelt) {
     }
     itera = 0;
     while (norma > 1.e-5) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados->nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             for (int j = 0; j < malha.mlh2d[i].cel2D.dim; j++) {
                 malha.mlh2d[i].cel2D.gradGreenTI[j] = malha.mlh2d[i].cel2D.gradGreenT[j];
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados->nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh2d[i].calcGradGreen();
+            {
+    try {
+malha.mlh2d[i].calcGradGreen();
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados->nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh2d[i].GeraLocal();
+            {
+    try {
+malha.mlh2d[i].GeraLocal();
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         indsra = 0;
         for (int i = 0; i < malha.nele; i++) {
             int dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
