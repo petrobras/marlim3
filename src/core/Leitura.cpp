@@ -13443,7 +13443,8 @@ void Ler::lerArq() {
 					tabentCrit.tmin);
 		}
 
-		if(perm==0){
+		// geracelp usa flup[indfluPIni] mesmo com permanente: o id precisa virar indice em qualquer caso
+		{
 			int iflu;
 			for(iflu=0;iflu<nfluP;iflu++){
 				if(indFlup[iflu]==indfluPIni){
@@ -13451,11 +13452,17 @@ void Ler::lerArq() {
 					break;
 				}
 			}
-			if(iflu==nfluP)
-				logger.log(LOGGER_FALHA,
-						LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "#/configuracaoInicial",
-						"#/configuracaoInicial",
-							"Chaves #/indice de fluido de producao inexistente");
+			if(iflu==nfluP){
+				if(perm==0 || indfluPIni<0 || indfluPIni>=nfluP)
+					logger.log(LOGGER_FALHA,
+							LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "#/configuracaoInicial",
+							"#/configuracaoInicial",
+								"Chaves #/indice de fluido de producao inexistente");
+				else
+					logger.log(LOGGER_AVISO,
+							LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION, "iniFluidoP nao corresponde a um id de fluido; usado como posicao na lista de fluidos",
+							"#/configuracaoInicial/iniFluidoP", to_string(indfluPIni));
+			}
 		}
 
 
