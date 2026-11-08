@@ -7,9 +7,64 @@
 #include "Leitura.h"
 #include "JSONKeyTranslator.h"
 #include "OutputI18n.h"
+#include "tuffp_runtime_binding.h"
 #include "rapidjson/filereadstream.h"
+#include <filesystem>
+#ifdef _WIN32
+  #include <direct.h>
+  #include <stdlib.h>    // ← redundante, mas inofensivo (include guard)
+#else
+  #include <limits.h>    // ← redundante, mas inofensivo
+  #include <stdlib.h>    // ← redundante, mas inofensivo
+  #include <string.h>    // ← redundante, mas inofensivo
+#endif
 
 using namespace rapidjson;
+
+// Aborts the run when a pipe selects the TUFFP model (ssFlowModel = 51) but
+// the external TUFFP library cannot be loaded.
+static void validarDisponibilidadeTuffp(int correlacao) {
+	if (correlacao != 51) return;
+	std::string mensagem;
+	if (!tuffpLoad(mensagem)) {
+		logger.log_write_logs_and_exit(LOGGER_FALHA,
+				LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+				"ssFlowModel = 51 (TUFFP Unified gas-liquid)", "correlacaoMR2",
+				mensagem);
+	}
+}
+
+/*std::string Ler::caminhoArquivoEntradaAbs() const {
+    if (impfile.empty())
+        return impfile;
+
+    char actualpath[PATH_MAX + 1];
+    char *ptr = realpath(impfile.c_str(), actualpath);
+    if (ptr != nullptr) {
+        return std::string(ptr, strlen(ptr));
+    }
+    return impfile;
+}*/
+
+std::string Ler::caminhoArquivoEntradaAbs() const {
+    if (impfile.empty())
+        return impfile;
+
+#ifdef _WIN32
+    char full[_MAX_PATH];
+    if (_fullpath(full, impfile.c_str(), _MAX_PATH) != nullptr) {
+        return std::string(full);
+    }
+    return impfile;
+#else
+    char actualpath[PATH_MAX + 1];
+    char *ptr = realpath(impfile.c_str(), actualpath);
+    if (ptr != nullptr) {
+        return std::string(ptr);
+    }
+    return impfile;
+#endif
+}
 
 /*!
  * Iniciar todas as variaveis globais e de instancia.
@@ -2725,10 +2780,16 @@ void Ler::parse_configuracao_inicial(
 			    if (configuracao_inicial_json.Avancado().miniTabDinAtraso().exists())
 			    	miniTabAtraso=configuracao_inicial_json.Avancado().miniTabDinAtraso();
 			    if(miniTabAtraso==0)miniTabAtraso=1;
-			    if (configuracao_inicial_json.Avancado().miniTabDinDp().exists())
+			    if (configuracao_inicial_json.Avancado().miniTabDinDp().exists()){
 			    	miniTabDp=configuracao_inicial_json.Avancado().miniTabDinDp();
-			    if (configuracao_inicial_json.Avancado().miniTabDinDt().exists())
+			    	if(miniTabDp<5)miniTabDp=5.;
+			    }
+			    else miniTabDp=5.;
+			    if (configuracao_inicial_json.Avancado().miniTabDinDt().exists()){
 			    	miniTabDt=configuracao_inicial_json.Avancado().miniTabDinDt();
+			    	if(miniTabDt<5)miniTabDt=5.;
+			    }
+			    else miniTabDt=5.;
 
 			} else {
 				mono = 1e-4;
@@ -2756,6 +2817,9 @@ void Ler::parse_configuracao_inicial(
 		    	Vsonico = new int[1];
 		    	Vsonico[0]=0;
 		    	Tempsonico[0]=0.;
+		    	miniTabAtraso=1;
+		    	miniTabDp=5.;
+		    	miniTabDt=5.;
 			}
 
 			(*vg1dSP).ntrd=nthrd;
@@ -5262,6 +5326,7 @@ void Ler::parse_unidades_producao(
 
 				if(tipoModeloDrift==0)unidadeP[ind].correlacaoMR2 = dutos_producao_json[indAtivo].correlacaoMR2();
 				else unidadeP[ind].correlacaoMR2 =-1;
+				validarDisponibilidadeTuffp(unidadeP[ind].correlacaoMR2);
 
 				double lxy=0.;
 				if(modoXY==0){
@@ -5903,6 +5968,7 @@ void Ler::parse_unidades_producaoAmb(
 
 				if(tipoModeloDrift==0)unidadeP[ind].correlacaoMR2 = dutos_producao_json[indAtivo].correlacaoMR2();
 				else unidadeP[ind].correlacaoMR2 =-1;
+				validarDisponibilidadeTuffp(unidadeP[ind].correlacaoMR2);
 
 				double lxy=0.;
 				if(modoXY==0){
@@ -18767,7 +18833,8 @@ void Ler::imprimeProfile(Cel* const celula,
 		escreveIni << t("# Passo de tempo = ", "# Time step = ") << (*vg1dSP).contador
 				  << t(" # Posicao ANM= ", " # ANM position= ") << master1.comp
 				  << t(" # data e hora da simulacao ", " # simulation date and time ")
-				  << dataStr << " # " << t("Versao ", "Version ") << versao << "\n";
+				  << dataStr << " # " << t("Versao ", "Version ") << versao
+				  << " # " << t("arquivo = ", "file = ") << caminhoArquivoEntradaAbs() << "\n";
 		escreveIni << t(" Comprimento (m) Fronteira F;", " Length (m) Boundary F;");
 		escreveIni << t(" Comprimento (m) Centro Volume C;", " Length (m) Cell center C;");
 		escreveIni << t(" Tempo (s) ;", " Time (s) ;");
@@ -19175,7 +19242,8 @@ void Ler::imprimeProfileG(CelG* const celula,
 		ofstream escreveIni(tmp.c_str(), ios_base::out);
 		escreveIni << t("# Passo de tempo = ", "# Time step = ") << (*vg1dSP).contador
 				  << t(" # data e hora da simulacao ", " # simulation date and time ")
-				  << dataStr << " # " << t("Versao ", "Version ") << versao << "\n";
+				  << dataStr << " # " << t("Versao ", "Version ") << versao
+				  << " # " << t("arquivo = ", "file = ") << caminhoArquivoEntradaAbs() << "\n";
 		escreveIni << t(" Comprimento (m) Fronteira F;", " Length (m) Boundary F;");
 		escreveIni << t(" Comprimento (m) Centro Volume C;", " Length (m) Cell center C;");
 		escreveIni << t(" comprimento_fundoPoco (m) F;", " bottomhole_length (m) F;");

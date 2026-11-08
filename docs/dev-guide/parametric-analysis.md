@@ -20,6 +20,7 @@ This document describes the **parametric analysis** (Análise Paramétrica — A
 4. [Sweepable Parameters](#sweepable-parameters)
 5. [The APara Class](#the-apara-class)
 6. [Sequence Generation — Full Factorial](#sequence-generation--full-factorial)
+   - [Grouped Mode](#grouped-mode-combinacao-false)
 7. [Parameter Selection — selecaoAP](#parameter-selection--selecaoap)
 8. [Serial Execution — leituraAP](#serial-execution--leituraap)
 9. [Parallel Execution — leituraAPparalelo](#parallel-execution--leituraapparalelo)
@@ -31,7 +32,7 @@ This document describes the **parametric analysis** (Análise Paramétrica — A
 
 ## Overview
 
-Parametric analysis performs a **full factorial sweep** (Cartesian product) over user-specified parameter values. For each combination, the simulator:
+By default, parametric analysis performs a **full factorial sweep** (Cartesian product) over user-specified parameter values. With `combinacao: false`, standard analysis instead performs an ordered [grouped sweep](#grouped-mode-combinacao-false). For each case, the simulator:
 
 1. Substitutes the parameter values into the `SProd` system
 2. Solves the steady-state problem via `SolveTramoSolteiro()`
@@ -43,6 +44,10 @@ Parametric analysis performs a **full factorial sweep** (Cartesian product) over
 **Output modes:**
 - `tipoAP == 0` — standard output: writes profiles, trends, and summary per case
 - `tipoAP == 1` — VFP table: builds bottom-hole pressure tables for reservoir simulation coupling
+
+VFP always requires `combinacao: true` (the default). An explicit `false`
+with `tipoAP: 1` is rejected before AP execution or table creation, for every
+`vfp` selector.
 
 The `vfp` selector controls the output/table convention:
 - `vfp == 1` — standard/Eclipse path
@@ -113,12 +118,15 @@ The parametric analysis JSON file defines which parameters to sweep and their ex
 | `tipoAP` | int | 0 | 0 = standard output, 1 = build VFP tables |
 | `vfp` | int | 1 | VFP selector. The code explicitly supports `0`, `1`, `2`, and `3` |
 | `imprimePerfil` | bool | `true` | Enables/disables per-case profile output in standard mode |
+| `combinacao` | bool | `true` | `true`: existing Cartesian sweep. `false`: grouped sweep in input order, with equal nonzero array lengths and no singleton broadcasting. VFP requires `true`. |
 
 ### Parameter sections
 
 Each section corresponds to a component type. Only sections present in the JSON are activated. Values are given as **explicit arrays** — not min/max/step ranges. Each array element defines one level for that sub-parameter.
 
-The parser uses RapidJSON directly and reads the schema filename constant `ARQUIVO_SCHEMA_AS_JSON`, defined as `schema_AS_1_0_0.json` in `LerAP.h`.
+The parser uses RapidJSON directly; it does not apply the AP JSON schema at
+runtime. The engine therefore also validates the type of `combinacao`, the
+VFP restriction, and grouped series lengths explicitly.
 
 ---
 
@@ -156,6 +164,20 @@ The following table lists parameter types that can be swept. Each type maps to a
 
 **Single-instance parameters:** `psep`, `RGO-fluido0`, `BSW-fluido0`, `GasLift`, `choke`, `pentrada`, `vazpentrada`, and `pocoInjetor` are single objects.
 
+For `pocoInjetor`, `pressaoInj` is the upstream injection pressure (`pGSup`),
+and `pressaoFinal` is the downstream bottom-hole pressure (`presE`). Reports
+list downstream pressure before upstream pressure when both are swept.
+Temperature and flow can be swept independently.
+
+`IPR.qMax` contributes its full series length to the Cartesian case count,
+just like the other IPR parameters. Roughness uses its own sequence indices,
+independently of either diameter series. IMEX reports hydrostatic factors
+from `dPdLHidro`, independently of `DP`.
+
+IMEX VFP pump-header metadata uses the first frequency level of each pump's
+own sweep. A BCS stage-only sweep instead reports the first frequency in that
+pump's model time series.
+
 ---
 
 ## The APara Class
@@ -171,10 +193,10 @@ APara analisePara(vg1dSP, arquivoAP, ncel, celp, flup, bcs, multiBcs, fonteg);
 The constructor calls `lerArq()`, which:
 
 1. Parses the JSON input with `parseEntrada()`
-2. Initializes global flags and defaults (`dim`, `nthrdAP`, `nVariaveis`, `tipoAP`, `vfp`)
-3. Calls the individual `parse_*()` methods for active sections
+2. Initializes global flags and defaults (`dim`, `nthrdAP`, `nVariaveis`, `tipoAP`, `vfp`, `combinacao`), then validates the selected mode
+3. Calls the individual `parse_*()` methods for active sections; grouped lengths are validated as each array is read
 4. Populates `varSeq[23]`
-5. Allocates `sequenciaAP`, `genericoAP`, and `vecParSerie` when `nVariaveis > 1`
+5. Allocates `sequenciaAP`, `genericoAP`, and `vecParSerie` for active sweeps, including one-case sweeps
 6. Builds the sweep dimensions with `constroiVecParSerie()` or `constroiVecParSerieImex()`
 7. Generates the generic sequence via `inicializaSequen()`
 8. Converts generic indices to typed indices via `traduzSeq()` or `traduzSeqImex()`
@@ -193,6 +215,7 @@ The constructor calls `lerArq()`, which:
 | `varSeq[23]` | `int[23]` | Activation-order array for the 23 top-level parameter groups |
 | `tipoAP` | `int` | Output mode |
 | `vfp` | `int` | VFP selector |
+| `combinacao` | `bool` | Cartesian (`true`, default) or grouped (`false`, standard output only) |
 | `nthrdAP` | `int` | Thread count for parallel execution |
 | `saidaBHP` | `double**` | BHP output table storage when `tipoAP == 1` |
 | `saidaVazLiq` | `double**` | Liquid-rate table storage when `tipoAP == 1` |
@@ -220,6 +243,39 @@ where $n_k$ is the number of values for dimension $k$, stored in `vecParSerie[k]
 ### Step 3 — traduzSeq
 
 `traduzSeq()` translates each generic tuple into typed indices stored in `sequenciaAP[seq]`, such as `IPRpres`, `PSEPpres`, `BCSfreq`, and others.
+
+### Grouped Mode (`combinacao: false`)
+
+Grouped mode is available only with `tipoAP: 0`, including when `tipoAP` is
+omitted. All explicitly supplied sweep-value arrays must have the same nonzero
+length `N`, including multiple fields of one component, multiple component
+instances, and integer fluid-index arrays. Omitted fields keep their existing
+model values.
+
+Case `i` selects element `i` from every supplied array. Input order and
+duplicates are preserved: numeric arrays are not sorted in grouped mode.
+A singleton array is not broadcast to match a longer array; explicitly
+repeat a constant `N` times when it must participate in an `N`-case sweep.
+One active array and all-singleton sweeps are valid. An empty array, unequal
+lengths, or an input without any sweep-value arrays is rejected with a logged
+parse failure and a nonzero process exit status.
+
+`tamanhoSerie()` validates each supplied array and records the shared case
+count during parsing. Grouped parsing never accumulates the Cartesian product,
+even if that hypothetical product would overflow. `dim` remains the number of
+active arrays, and the existing dimension builders and translators are reused.
+For three active arrays of length four, `genericoAP` contains:
+
+```text
+[0, 0, 0]
+[1, 1, 1]
+[2, 2, 2]
+[3, 3, 3]
+```
+
+Both serial and parallel execution use these four translated cases. The
+`vfp` selector still chooses the standard (`1/3`) or IMEX (`0/2`) translation
+path, but does not itself enable VFP output.
 
 ---
 
@@ -445,3 +501,18 @@ and
 $$nVariaveis = 4 \times 3 \times 3 \times 4 \times 3 = 432$$
 
 Because the parser sorts many numeric arrays after reading them, the actual enumeration order follows the sorted values, not necessarily the original JSON order.
+
+For a grouped comparison:
+
+```json
+{
+  "tipoAP": 0,
+  "combinacao": false,
+  "IPR": [{"indiceIPR": 0, "presEstatica": [240, 250, 260]}],
+  "psep": {"pressao": [25, 10, 30]}
+}
+```
+
+This produces exactly three ordered cases: `(240,25)`, `(250,10)`,
+`(260,30)`. Changing `combinacao` to `true`, or omitting it, produces nine
+Cartesian cases with the existing sorting behavior.

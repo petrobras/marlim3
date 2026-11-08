@@ -49,6 +49,41 @@ def is_temperature_variable(name):
     return any(stripped.startswith(alias) for alias in TEMPERATURE_COLUMN_ALIASES)
 
 
+TREND_METADATA_PREFIXES = ("# Versao", "# Version")
+INPUT_FILE_KEYS = ("arquivo", "file")
+
+
+def parse_header_metadata(line):
+    """Extract version and input file path from a ' # '-separated header line.
+
+    The input file is always the last field, so everything after its key is the path.
+    """
+    metadata = {}
+    for key in INPUT_FILE_KEYS:
+        marker = f"# {key} = "
+        index = line.find(marker)
+        if index >= 0:
+            metadata["input_file"] = line[index + len(marker):].strip()
+            line = line[:index]
+            break
+    for field in line.lstrip("#").split(" # "):
+        field = field.strip()
+        if field.startswith(("Versao ", "Version ")):
+            metadata["version"] = field.split(" ", 1)[1].strip()
+    return metadata
+
+
+def split_trend_header_lines(lines):
+    """Split TEND header lines, supporting files with or without the metadata line.
+
+    Returns (metadata, header_lines, n_header_lines), where header_lines holds the
+    length, label and cell index lines.
+    """
+    if lines and lines[0].strip().startswith(TREND_METADATA_PREFIXES):
+        return parse_header_metadata(lines[0].strip()), list(lines[1:4]), 4
+    return {}, list(lines[:3]), 3
+
+
 def parse_trend_headers(line1, line2, line3):
     measured_length_match = re.search(r"=\s*([-+]?\d+(?:\.\d+)?)", line1)
     cell_index_match = re.search(r"=\s*([-+]?\d+)", line3)

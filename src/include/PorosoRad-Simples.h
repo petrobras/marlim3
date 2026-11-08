@@ -165,6 +165,8 @@ class PorosRadSimp {
     double BSW;
     varGlob1D *vg1dSP;
 
+    double raioFim;
+
     PorosRadSimp();
     PorosRadSimp(string nomeArquivoEntrada, varGlob1D *Vvg1dSP = 0);
     PorosRadSimp(const PorosRadSimp &); // Copy constructor

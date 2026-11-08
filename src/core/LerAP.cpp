@@ -5,6 +5,7 @@
  *      Author: Eduardo
  */
 #include "LerAP.h"
+#include <limits>
 
 using namespace rapidjson;
 
@@ -102,7 +103,7 @@ APara &APara::operator=(const APara &vAP) {
         }
 
         if (listaV.vvalv == 1) {
-            delete APValv;
+            delete[] APValv;
         }
 
         if (listaV.vbvol == 1) {
@@ -137,20 +138,7 @@ APara &APara::operator=(const APara &vAP) {
             delete[] APCondEquiv;
         }
 
-        if (nVariaveis > 1) {
-            delete[] sequenciaAP;
-            delete[] genericoAP;
-            delete[] vecParSerie;
-        }
-
-        if (nVariaveis > 1 && dim > 0) {
-            for (int i = 0; i < nVariaveis; i++) {
-                delete[] saidaBHP[i];
-                delete[] saidaVazLiq[i];
-            }
-            delete[] saidaBHP;
-            delete[] saidaVazLiq;
-        }
+        liberaSequencias();
 
         entrada = vAP.entrada;
         vg1dSP = vAP.vg1dSP;
@@ -183,6 +171,47 @@ APara &APara::operator=(const APara &vAP) {
         lerArq();
     }
     return *this;
+}
+
+void APara::liberaSequencias() {
+    delete[] sequenciaAP;
+    delete[] genericoAP;
+    delete[] vecParSerie;
+    sequenciaAP = nullptr;
+    genericoAP = nullptr;
+    vecParSerie = nullptr;
+    for (int i = 0; i < nVariaveis; i++) {
+        if (saidaBHP)
+            delete[] saidaBHP[i];
+        if (saidaVazLiq)
+            delete[] saidaVazLiq[i];
+    }
+    delete[] saidaBHP;
+    delete[] saidaVazLiq;
+    saidaBHP = nullptr;
+    saidaVazLiq = nullptr;
+}
+
+int APara::tamanhoSerie(const Value &serie, const string &chaveJson) {
+    if (!combinacao) {
+        if (!serie.IsArray() || serie.Empty() ||
+            serie.Size() > static_cast<SizeType>(numeric_limits<int>::max())) {
+            logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                       "Modo agrupado requer uma serie nao vazia", chaveJson, "");
+            logger.writeOutputLog();
+            exit(EXIT_FAILURE);
+        }
+        if (nVariaveis == 0)
+            nVariaveis = static_cast<int>(serie.Size());
+        else if (serie.Size() != static_cast<SizeType>(nVariaveis)) {
+            logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                       "Modo agrupado requer series de mesmo comprimento", chaveJson,
+                       "Esperado = " + to_string(nVariaveis) + ", recebido = " + to_string(serie.Size()));
+            logger.writeOutputLog();
+            exit(EXIT_FAILURE);
+        }
+    }
+    return static_cast<int>(serie.Size());
 }
 
 Document APara::parseEntrada() {
@@ -277,65 +306,71 @@ void APara::parse_IPR(Value &IPR_json) {
                 APIPR[iIPR].indIPR = IPR_json[iIPR]["indiceIPR"].GetInt();
                 if (IPR_json[iIPR].HasMember("presEstatica")) {
                     dim++;
-                    APIPR[iIPR].parseriePres = IPR_json[iIPR]["presEstatica"].Size();
+                    APIPR[iIPR].parseriePres = tamanhoSerie(IPR_json[iIPR]["presEstatica"], chaveJson + "/" + to_string(iIPR) + "/presEstatica");
                     for (int ipesta = 0; ipesta < APIPR[iIPR].parseriePres; ipesta++) {
                         APIPR[iIPR].pres.push_back(IPR_json[iIPR]["presEstatica"][ipesta].GetDouble());
                     }
-                    sort(APIPR[iIPR].pres.begin(), APIPR[iIPR].pres.end());
+                    if (combinacao)
+                        sort(APIPR[iIPR].pres.begin(), APIPR[iIPR].pres.end());
                 } else
                     APIPR[iIPR].parseriePres = 0;
-                if (APIPR[iIPR].parseriePres > 0)
+                if (combinacao && APIPR[iIPR].parseriePres > 0)
                     nVariaveis *= APIPR[iIPR].parseriePres;
                 if (IPR_json[iIPR].HasMember("tempRes")) {
                     dim++;
-                    APIPR[iIPR].parserieTemp = IPR_json[iIPR]["tempRes"].Size();
+                    APIPR[iIPR].parserieTemp = tamanhoSerie(IPR_json[iIPR]["tempRes"], chaveJson + "/" + to_string(iIPR) + "/tempRes");
                     for (int ipesta = 0; ipesta < APIPR[iIPR].parserieTemp; ipesta++) {
                         APIPR[iIPR].temp.push_back(IPR_json[iIPR]["tempRes"][ipesta].GetDouble());
                     }
                 } else
                     APIPR[iIPR].parserieTemp = 0;
-                if (APIPR[iIPR].parserieTemp > 0)
+                if (combinacao && APIPR[iIPR].parserieTemp > 0)
                     nVariaveis *= APIPR[iIPR].parserieTemp;
                 if (IPR_json[iIPR].HasMember("IP")) {
                     dim++;
-                    APIPR[iIPR].parserieIP = IPR_json[iIPR]["IP"].Size();
+                    APIPR[iIPR].parserieIP = tamanhoSerie(IPR_json[iIPR]["IP"], chaveJson + "/" + to_string(iIPR) + "/IP");
                     for (int ipesta = 0; ipesta < APIPR[iIPR].parserieIP; ipesta++) {
                         APIPR[iIPR].ip.push_back(IPR_json[iIPR]["IP"][ipesta].GetDouble());
                     }
-                    sort(APIPR[iIPR].ip.begin(), APIPR[iIPR].ip.end());
+                    if (combinacao)
+                        sort(APIPR[iIPR].ip.begin(), APIPR[iIPR].ip.end());
                 } else
                     APIPR[iIPR].parserieIP = 0;
-                if (APIPR[iIPR].parserieIP > 0)
+                if (combinacao && APIPR[iIPR].parserieIP > 0)
                     nVariaveis *= APIPR[iIPR].parserieIP;
                 if (IPR_json[iIPR].HasMember("qMax")) {
                     dim++;
-                    APIPR[iIPR].parserieqMax = IPR_json[iIPR]["qMax"].Size();
+                    APIPR[iIPR].parserieqMax = tamanhoSerie(IPR_json[iIPR]["qMax"], chaveJson + "/" + to_string(iIPR) + "/qMax");
                     for (int ipesta = 0; ipesta < APIPR[iIPR].parserieqMax; ipesta++) {
                         APIPR[iIPR].qMax.push_back(IPR_json[iIPR]["qMax"][ipesta].GetDouble());
                     }
-                    sort(APIPR[iIPR].qMax.begin(), APIPR[iIPR].qMax.end());
+                    if (combinacao)
+                        sort(APIPR[iIPR].qMax.begin(), APIPR[iIPR].qMax.end());
                 } else
                     APIPR[iIPR].parserieqMax = 0;
+                if (combinacao && APIPR[iIPR].parserieqMax > 0)
+                    nVariaveis *= APIPR[iIPR].parserieqMax;
                 if (IPR_json[iIPR].HasMember("II")) {
                     dim++;
-                    APIPR[iIPR].parserieJP = IPR_json[iIPR]["II"].Size();
+                    APIPR[iIPR].parserieJP = tamanhoSerie(IPR_json[iIPR]["II"], chaveJson + "/" + to_string(iIPR) + "/II");
                     for (int ipesta = 0; ipesta < APIPR[iIPR].parserieJP; ipesta++) {
                         APIPR[iIPR].jp.push_back(IPR_json[iIPR]["II"][ipesta].GetDouble());
                     }
-                    sort(APIPR[iIPR].jp.begin(), APIPR[iIPR].jp.end());
+                    if (combinacao)
+                        sort(APIPR[iIPR].jp.begin(), APIPR[iIPR].jp.end());
                 } else
                     APIPR[iIPR].parserieJP = 0;
-                if (APIPR[iIPR].parserieJP > 0)
+                if (combinacao && APIPR[iIPR].parserieJP > 0)
                     nVariaveis *= APIPR[iIPR].parserieJP;
                 if (IPR_json[iIPR].HasMember("fluido")) {
                     dim++;
-                    APIPR[iIPR].parserieFlup = IPR_json[iIPR]["fluido"].Size();
+                    APIPR[iIPR].parserieFlup = tamanhoSerie(IPR_json[iIPR]["fluido"], chaveJson + "/" + to_string(iIPR) + "/fluido");
                     for (int ipesta = 0; ipesta < APIPR[iIPR].parserieFlup; ipesta++) {
                         APIPR[iIPR].indfluP.push_back(IPR_json[iIPR]["fluido"][ipesta].GetInt());
                     }
                 } else
                     APIPR[iIPR].parserieFlup = 0;
-                if (APIPR[iIPR].parserieFlup > 0)
+                if (combinacao && APIPR[iIPR].parserieFlup > 0)
                     nVariaveis *= APIPR[iIPR].parserieFlup;
 
                 total = APIPR[iIPR].parserieIP + APIPR[iIPR].parserieFlup + APIPR[iIPR].parserieJP +
@@ -372,46 +407,49 @@ void APara::parse_FonLiq(Value &FonLiq_json) {
                 APFonLiq[iFL].indFL = FonLiq_json[iFL]["indiceFL"].GetInt();
                 if (FonLiq_json[iFL].HasMember("temperatura")) {
                     dim++;
-                    APFonLiq[iFL].parserieTemp = FonLiq_json[iFL]["temperatura"].Size();
+                    APFonLiq[iFL].parserieTemp = tamanhoSerie(FonLiq_json[iFL]["temperatura"], chaveJson + "/" + to_string(iFL) + "/temperatura");
                     for (int ifreq = 0; ifreq < APFonLiq[iFL].parserieTemp; ifreq++) {
                         APFonLiq[iFL].temp.push_back(FonLiq_json[iFL]["temperatura"][ifreq].GetDouble());
                     }
-                    sort(APFonLiq[iFL].temp.begin(), APFonLiq[iFL].temp.end());
+                    if (combinacao)
+                        sort(APFonLiq[iFL].temp.begin(), APFonLiq[iFL].temp.end());
                 } else
                     APFonLiq[iFL].parserieTemp = 0;
-                if (APFonLiq[iFL].parserieTemp > 0)
+                if (combinacao && APFonLiq[iFL].parserieTemp > 0)
                     nVariaveis *= APFonLiq[iFL].parserieTemp;
                 if (FonLiq_json[iFL].HasMember("vazLiq")) {
                     dim++;
-                    APFonLiq[iFL].parserieVL = FonLiq_json[iFL]["vazLiq"].Size();
+                    APFonLiq[iFL].parserieVL = tamanhoSerie(FonLiq_json[iFL]["vazLiq"], chaveJson + "/" + to_string(iFL) + "/vazLiq");
                     for (int ifreq = 0; ifreq < APFonLiq[iFL].parserieVL; ifreq++) {
                         APFonLiq[iFL].vazliq.push_back(FonLiq_json[iFL]["vazLiq"][ifreq].GetDouble());
                     }
-                    sort(APFonLiq[iFL].vazliq.begin(), APFonLiq[iFL].vazliq.end());
+                    if (combinacao)
+                        sort(APFonLiq[iFL].vazliq.begin(), APFonLiq[iFL].vazliq.end());
                 } else
                     APFonLiq[iFL].parserieVL = 0;
-                if (APFonLiq[iFL].parserieVL > 0)
+                if (combinacao && APFonLiq[iFL].parserieVL > 0)
                     nVariaveis *= APFonLiq[iFL].parserieVL;
                 if (FonLiq_json[iFL].HasMember("beta")) {
                     dim++;
-                    APFonLiq[iFL].parserieBet = FonLiq_json[iFL]["beta"].Size();
+                    APFonLiq[iFL].parserieBet = tamanhoSerie(FonLiq_json[iFL]["beta"], chaveJson + "/" + to_string(iFL) + "/beta");
                     for (int ifreq = 0; ifreq < APFonLiq[iFL].parserieBet; ifreq++) {
                         APFonLiq[iFL].bet.push_back(FonLiq_json[iFL]["beta"][ifreq].GetDouble());
                     }
-                    sort(APFonLiq[iFL].bet.begin(), APFonLiq[iFL].bet.end());
+                    if (combinacao)
+                        sort(APFonLiq[iFL].bet.begin(), APFonLiq[iFL].bet.end());
                 } else
                     APFonLiq[iFL].parserieBet = 0;
-                if (APFonLiq[iFL].parserieBet > 0)
+                if (combinacao && APFonLiq[iFL].parserieBet > 0)
                     nVariaveis *= APFonLiq[iFL].parserieBet;
                 if (FonLiq_json[iFL].HasMember("fluido")) {
                     dim++;
-                    APFonLiq[iFL].parserieFlu = FonLiq_json[iFL]["fluido"].Size();
+                    APFonLiq[iFL].parserieFlu = tamanhoSerie(FonLiq_json[iFL]["fluido"], chaveJson + "/" + to_string(iFL) + "/fluido");
                     for (int ifreq = 0; ifreq < APFonLiq[iFL].parserieFlu; ifreq++) {
                         APFonLiq[iFL].indfluP.push_back(FonLiq_json[iFL]["fluido"][ifreq].GetInt());
                     }
                 } else
                     APFonLiq[iFL].parserieFlu = 0;
-                if (APFonLiq[iFL].parserieFlu > 0)
+                if (combinacao && APFonLiq[iFL].parserieFlu > 0)
                     nVariaveis *= APFonLiq[iFL].parserieFlu;
                 total = APFonLiq[iFL].parserieTemp + APFonLiq[iFL].parserieBet + APFonLiq[iFL].parserieVL + APFonLiq[iFL].parserieFlu;
                 if (total == 0) {
@@ -446,36 +484,39 @@ void APara::parse_FonGas(Value &FonGas_json) {
                 APFonGas[iFG].indFG = FonGas_json[iFG]["indiceFG"].GetInt();
                 if (FonGas_json[iFG].HasMember("temperatura")) {
                     dim++;
-                    APFonGas[iFG].parserieTemp = FonGas_json[iFG]["temperatura"].Size();
+                    APFonGas[iFG].parserieTemp = tamanhoSerie(FonGas_json[iFG]["temperatura"], chaveJson + "/" + to_string(iFG) + "/temperatura");
                     for (int ifreq = 0; ifreq < APFonGas[iFG].parserieTemp; ifreq++) {
                         APFonGas[iFG].temp.push_back(FonGas_json[iFG]["temperatura"][ifreq].GetDouble());
                     }
-                    sort(APFonGas[iFG].temp.begin(), APFonGas[iFG].temp.end());
+                    if (combinacao)
+                        sort(APFonGas[iFG].temp.begin(), APFonGas[iFG].temp.end());
                 } else
                     APFonGas[iFG].parserieTemp = 0;
-                if (APFonGas[iFG].parserieTemp > 0)
+                if (combinacao && APFonGas[iFG].parserieTemp > 0)
                     nVariaveis *= APFonGas[iFG].parserieTemp;
                 if (FonGas_json[iFG].HasMember("vazGas")) {
                     dim++;
-                    APFonGas[iFG].parserieVazG = FonGas_json[iFG]["vazGas"].Size();
+                    APFonGas[iFG].parserieVazG = tamanhoSerie(FonGas_json[iFG]["vazGas"], chaveJson + "/" + to_string(iFG) + "/vazGas");
                     for (int ifreq = 0; ifreq < APFonGas[iFG].parserieVazG; ifreq++) {
                         APFonGas[iFG].vazgas.push_back(FonGas_json[iFG]["vazGas"][ifreq].GetDouble());
                     }
-                    sort(APFonGas[iFG].vazgas.begin(), APFonGas[iFG].vazgas.end());
+                    if (combinacao)
+                        sort(APFonGas[iFG].vazgas.begin(), APFonGas[iFG].vazgas.end());
                 } else
                     APFonGas[iFG].parserieVazG = 0;
-                if (APFonGas[iFG].parserieVazG > 0)
+                if (combinacao && APFonGas[iFG].parserieVazG > 0)
                     nVariaveis *= APFonGas[iFG].parserieVazG;
                 if (FonGas_json[iFG].HasMember("vazComp")) {
                     dim++;
-                    APFonGas[iFG].parserieVazC = FonGas_json[iFG]["vazComp"].Size();
+                    APFonGas[iFG].parserieVazC = tamanhoSerie(FonGas_json[iFG]["vazComp"], chaveJson + "/" + to_string(iFG) + "/vazComp");
                     for (int ifreq = 0; ifreq < APFonGas[iFG].parserieVazC; ifreq++) {
                         APFonGas[iFG].vazcomp.push_back(FonGas_json[iFG]["vazComp"][ifreq].GetDouble());
                     }
-                    sort(APFonGas[iFG].vazcomp.begin(), APFonGas[iFG].vazcomp.end());
+                    if (combinacao)
+                        sort(APFonGas[iFG].vazcomp.begin(), APFonGas[iFG].vazcomp.end());
                 } else
                     APFonGas[iFG].parserieVazC = 0;
-                if (APFonGas[iFG].parserieVazC > 0)
+                if (combinacao && APFonGas[iFG].parserieVazC > 0)
                     nVariaveis *= APFonGas[iFG].parserieVazC;
                 total = APFonGas[iFG].parserieTemp + APFonGas[iFG].parserieVazC + APFonGas[iFG].parserieVazG;
                 if (total == 0) {
@@ -509,57 +550,61 @@ void APara::parse_FonMas(Value &FonMas_json) {
                 APFonMas[iFM].indFM = FonMas_json[iFM]["indiceFM"].GetInt();
                 if (FonMas_json[iFM].HasMember("temperatura")) {
                     dim++;
-                    APFonMas[iFM].parserieTemp = FonMas_json[iFM]["temperatura"].Size();
+                    APFonMas[iFM].parserieTemp = tamanhoSerie(FonMas_json[iFM]["temperatura"], chaveJson + "/" + to_string(iFM) + "/temperatura");
                     for (int ifreq = 0; ifreq < APFonMas[iFM].parserieTemp; ifreq++) {
                         APFonMas[iFM].temp.push_back(FonMas_json[iFM]["temperatura"][ifreq].GetDouble());
                     }
-                    sort(APFonMas[iFM].temp.begin(), APFonMas[iFM].temp.end());
+                    if (combinacao)
+                        sort(APFonMas[iFM].temp.begin(), APFonMas[iFM].temp.end());
                 } else
                     APFonMas[iFM].parserieTemp = 0;
-                if (APFonMas[iFM].parserieTemp > 0)
+                if (combinacao && APFonMas[iFM].parserieTemp > 0)
                     nVariaveis *= APFonMas[iFM].parserieTemp;
                 if (FonMas_json[iFM].HasMember("vazaoProd")) {
                     dim++;
-                    APFonMas[iFM].parserieMP = FonMas_json[iFM]["vazaoProd"].Size();
+                    APFonMas[iFM].parserieMP = tamanhoSerie(FonMas_json[iFM]["vazaoProd"], chaveJson + "/" + to_string(iFM) + "/vazaoProd");
                     for (int ifreq = 0; ifreq < APFonMas[iFM].parserieMP; ifreq++) {
-                        APFonMas[iFM].vazMasP.push_back(FonMas_json[iFM]["vazaoTotal"][ifreq].GetDouble());
+                        APFonMas[iFM].vazMasP.push_back(FonMas_json[iFM]["vazaoProd"][ifreq].GetDouble());
                     }
-                    sort(APFonMas[iFM].vazMasP.begin(), APFonMas[iFM].vazMasP.end());
+                    if (combinacao)
+                        sort(APFonMas[iFM].vazMasP.begin(), APFonMas[iFM].vazMasP.end());
                 } else
                     APFonMas[iFM].parserieMP = 0;
-                if (APFonMas[iFM].parserieMP > 0)
+                if (combinacao && APFonMas[iFM].parserieMP > 0)
                     nVariaveis *= APFonMas[iFM].parserieMP;
                 if (FonMas_json[iFM].HasMember("VazaoComp")) {
                     dim++;
-                    APFonMas[iFM].parserieMC = FonMas_json[iFM]["VazaoComp"].Size();
+                    APFonMas[iFM].parserieMC = tamanhoSerie(FonMas_json[iFM]["VazaoComp"], chaveJson + "/" + to_string(iFM) + "/VazaoComp");
                     for (int ifreq = 0; ifreq < APFonMas[iFM].parserieMC; ifreq++) {
                         APFonMas[iFM].vazMasC.push_back(FonMas_json[iFM]["VazaoComp"][ifreq].GetDouble());
                     }
-                    sort(APFonMas[iFM].vazMasC.begin(), APFonMas[iFM].vazMasC.end());
+                    if (combinacao)
+                        sort(APFonMas[iFM].vazMasC.begin(), APFonMas[iFM].vazMasC.end());
                 } else
                     APFonMas[iFM].parserieMC = 0;
-                if (APFonMas[iFM].parserieMC > 0)
+                if (combinacao && APFonMas[iFM].parserieMC > 0)
                     nVariaveis *= APFonMas[iFM].parserieMC;
                 if (FonMas_json[iFM].HasMember("VazaoGas")) {
                     dim++;
-                    APFonMas[iFM].parserieMG = FonMas_json[iFM]["VazaoGas"].Size();
+                    APFonMas[iFM].parserieMG = tamanhoSerie(FonMas_json[iFM]["VazaoGas"], chaveJson + "/" + to_string(iFM) + "/VazaoGas");
                     for (int ifreq = 0; ifreq < APFonMas[iFM].parserieMG; ifreq++) {
                         APFonMas[iFM].vazMasG.push_back(FonMas_json[iFM]["VazaoGas"][ifreq].GetDouble());
                     }
-                    sort(APFonMas[iFM].vazMasG.begin(), APFonMas[iFM].vazMasG.end());
+                    if (combinacao)
+                        sort(APFonMas[iFM].vazMasG.begin(), APFonMas[iFM].vazMasG.end());
                 } else
                     APFonMas[iFM].parserieMG = 0;
-                if (APFonMas[iFM].parserieMG > 0)
+                if (combinacao && APFonMas[iFM].parserieMG > 0)
                     nVariaveis *= APFonMas[iFM].parserieMG;
                 if (FonMas_json[iFM].HasMember("fluido")) {
                     dim++;
-                    APFonMas[iFM].parserieFlu = FonMas_json[iFM]["fluido"].Size();
-                    for (int ifreq = 0; ifreq < APFonLiq[iFM].parserieFlu; ifreq++) {
+                    APFonMas[iFM].parserieFlu = tamanhoSerie(FonMas_json[iFM]["fluido"], chaveJson + "/" + to_string(iFM) + "/fluido");
+                    for (int ifreq = 0; ifreq < APFonMas[iFM].parserieFlu; ifreq++) {
                         APFonMas[iFM].indfluP.push_back(FonMas_json[iFM]["fluido"][ifreq].GetInt());
                     }
                 } else
                     APFonMas[iFM].parserieFlu = 0;
-                if (APFonMas[iFM].parserieFlu > 0)
+                if (combinacao && APFonMas[iFM].parserieFlu > 0)
                     nVariaveis *= APFonMas[iFM].parserieFlu;
                 int total = APFonMas[iFM].parserieTemp + APFonMas[iFM].parserieMP + APFonMas[iFM].parserieMC + APFonMas[iFM].parserieMG + APFonMas[iFM].parserieFlu;
                 if (total == 0) {
@@ -593,25 +638,27 @@ void APara::parse_BCS(Value &BCS_json) {
                 APBCS[indBCS].indBCS = BCS_json[indBCS]["indiceBCS"].GetInt();
                 if (BCS_json[indBCS].HasMember("frequencia")) {
                     dim++;
-                    APBCS[indBCS].parserieFreq = BCS_json[indBCS]["frequencia"].Size();
+                    APBCS[indBCS].parserieFreq = tamanhoSerie(BCS_json[indBCS]["frequencia"], chaveJson + "/" + to_string(indBCS) + "/frequencia");
                     for (int ifreq = 0; ifreq < APBCS[indBCS].parserieFreq; ifreq++) {
                         APBCS[indBCS].freq.push_back(BCS_json[indBCS]["frequencia"][ifreq].GetDouble());
                     }
-                    sort(APBCS[indBCS].freq.begin(), APBCS[indBCS].freq.end());
+                    if (combinacao)
+                        sort(APBCS[indBCS].freq.begin(), APBCS[indBCS].freq.end());
                 } else
                     APBCS[indBCS].parserieFreq = 0;
-                if (APBCS[indBCS].parserieFreq > 0)
+                if (combinacao && APBCS[indBCS].parserieFreq > 0)
                     nVariaveis *= APBCS[indBCS].parserieFreq;
                 if (BCS_json[indBCS].HasMember("estagio")) {
                     dim++;
-                    APBCS[indBCS].parserieEstag = BCS_json[indBCS]["estagio"].Size();
+                    APBCS[indBCS].parserieEstag = tamanhoSerie(BCS_json[indBCS]["estagio"], chaveJson + "/" + to_string(indBCS) + "/estagio");
                     for (int iestag = 0; iestag < APBCS[indBCS].parserieEstag; iestag++) {
                         APBCS[indBCS].nestag.push_back(BCS_json[indBCS]["estagio"][iestag].GetInt());
                     }
-                    sort(APBCS[indBCS].nestag.begin(), APBCS[indBCS].nestag.end());
+                    if (combinacao)
+                        sort(APBCS[indBCS].nestag.begin(), APBCS[indBCS].nestag.end());
                 } else
                     APBCS[indBCS].parserieEstag = 0;
-                if (APBCS[indBCS].parserieEstag > 0)
+                if (combinacao && APBCS[indBCS].parserieEstag > 0)
                     nVariaveis *= APBCS[indBCS].parserieEstag;
                 int total = APBCS[indBCS].parserieFreq + APBCS[indBCS].parserieEstag;
                 if (total == 0) {
@@ -645,14 +692,15 @@ void APara::parse_MBCS(Value &MBCS_json) {
                 APMBCS[indMBCS].indBCS = MBCS_json[indMBCS]["indiceMBCS"].GetInt();
                 if (MBCS_json[indMBCS].HasMember("frequencia")) {
                     dim++;
-                    APMBCS[indMBCS].parserieFreq = MBCS_json[indMBCS]["frequencia"].Size();
+                    APMBCS[indMBCS].parserieFreq = tamanhoSerie(MBCS_json[indMBCS]["frequencia"], chaveJson + "/" + to_string(indMBCS) + "/frequencia");
                     for (int ifreq = 0; ifreq < APMBCS[indMBCS].parserieFreq; ifreq++) {
                         APMBCS[indMBCS].freq.push_back(MBCS_json[indMBCS]["frequencia"][ifreq].GetDouble());
                     }
-                    sort(APMBCS[indMBCS].freq.begin(), APMBCS[indMBCS].freq.end());
+                    if (combinacao)
+                        sort(APMBCS[indMBCS].freq.begin(), APMBCS[indMBCS].freq.end());
                 } else
-                    APBCS[indMBCS].parserieFreq = 0;
-                if (APBCS[indMBCS].parserieFreq > 0)
+                    APMBCS[indMBCS].parserieFreq = 0;
+                if (combinacao && APMBCS[indMBCS].parserieFreq > 0)
                     nVariaveis *= APMBCS[indMBCS].parserieFreq;
                 int total = APMBCS[indMBCS].parserieFreq;
                 if (total == 0) {
@@ -686,36 +734,39 @@ void APara::parse_BVol(Value &BVol_json) {
                 APBVOL[indBCS].indBV = BVol_json[indBCS]["indiceBVol"].GetInt();
                 if (BVol_json[indBCS].HasMember("frequencia")) {
                     dim++;
-                    APBVOL[indBCS].parserieFreq = BVol_json[indBCS]["frequencia"].Size();
+                    APBVOL[indBCS].parserieFreq = tamanhoSerie(BVol_json[indBCS]["frequencia"], chaveJson + "/" + to_string(indBCS) + "/frequencia");
                     for (int ifreq = 0; ifreq < APBVOL[indBCS].parserieFreq; ifreq++) {
                         APBVOL[indBCS].freq.push_back(BVol_json[indBCS]["frequencia"][ifreq].GetDouble());
                     }
-                    sort(APBVOL[indBCS].freq.begin(), APBVOL[indBCS].freq.end());
+                    if (combinacao)
+                        sort(APBVOL[indBCS].freq.begin(), APBVOL[indBCS].freq.end());
                 } else
                     APBVOL[indBCS].parserieFreq = 0;
-                if (APBVOL[indBCS].parserieFreq > 0)
+                if (combinacao && APBVOL[indBCS].parserieFreq > 0)
                     nVariaveis *= APBVOL[indBCS].parserieFreq;
                 if (BVol_json[indBCS].HasMember("capacidade")) {
                     dim++;
-                    APBVOL[indBCS].parserieCap = BVol_json[indBCS]["capacidade"].Size();
+                    APBVOL[indBCS].parserieCap = tamanhoSerie(BVol_json[indBCS]["capacidade"], chaveJson + "/" + to_string(indBCS) + "/capacidade");
                     for (int iestag = 0; iestag < APBVOL[indBCS].parserieCap; iestag++) {
                         APBVOL[indBCS].capacidade.push_back(BVol_json[indBCS]["capacidade"][iestag].GetDouble());
                     }
-                    sort(APBVOL[indBCS].capacidade.begin(), APBVOL[indBCS].capacidade.end());
+                    if (combinacao)
+                        sort(APBVOL[indBCS].capacidade.begin(), APBVOL[indBCS].capacidade.end());
                 } else
                     APBVOL[indBCS].parserieCap = 0;
-                if (APBVOL[indBCS].parserieCap > 0)
+                if (combinacao && APBVOL[indBCS].parserieCap > 0)
                     nVariaveis *= APBVOL[indBCS].parserieCap;
                 if (BVol_json[indBCS].HasMember("fatorPoli")) {
                     dim++;
-                    APBVOL[indBCS].parserieNPoli = BVol_json[indBCS]["fatorPoli"].Size();
+                    APBVOL[indBCS].parserieNPoli = tamanhoSerie(BVol_json[indBCS]["fatorPoli"], chaveJson + "/" + to_string(indBCS) + "/fatorPoli");
                     for (int iestag = 0; iestag < APBVOL[indBCS].parserieNPoli; iestag++) {
                         APBVOL[indBCS].npoli.push_back(BVol_json[indBCS]["fatorPoli"][iestag].GetDouble());
                     }
-                    sort(APBVOL[indBCS].npoli.begin(), APBVOL[indBCS].npoli.end());
+                    if (combinacao)
+                        sort(APBVOL[indBCS].npoli.begin(), APBVOL[indBCS].npoli.end());
                 } else
                     APBVOL[indBCS].parserieNPoli = 0;
-                if (APBVOL[indBCS].parserieNPoli > 0)
+                if (combinacao && APBVOL[indBCS].parserieNPoli > 0)
                     nVariaveis *= APBVOL[indBCS].parserieNPoli;
                 int total = APBVOL[indBCS].parserieFreq + APBVOL[indBCS].parserieCap + APBVOL[indBCS].parserieNPoli;
                 if (total == 0) {
@@ -749,14 +800,15 @@ void APara::parse_DP(Value &DP_json) {
                 APDP[indBCS].indDP = DP_json[indBCS]["indiceDP"].GetInt();
                 if (DP_json[indBCS].HasMember("deltapressao")) {
                     dim++;
-                    APDP[indBCS].parserieDP = DP_json[indBCS]["deltapressao"].Size();
+                    APDP[indBCS].parserieDP = tamanhoSerie(DP_json[indBCS]["deltapressao"], chaveJson + "/" + to_string(indBCS) + "/deltapressao");
                     for (int ifreq = 0; ifreq < APDP[indBCS].parserieDP; ifreq++) {
                         APDP[indBCS].dp.push_back(DP_json[indBCS]["deltapressao"][ifreq].GetDouble());
                     }
-                    sort(APDP[indBCS].dp.begin(), APDP[indBCS].dp.end());
+                    if (combinacao)
+                        sort(APDP[indBCS].dp.begin(), APDP[indBCS].dp.end());
                 } else
                     APDP[indBCS].parserieDP = 0;
-                if (APDP[indBCS].parserieDP > 0)
+                if (combinacao && APDP[indBCS].parserieDP > 0)
                     nVariaveis *= APDP[indBCS].parserieDP;
                 int total = APDP[indBCS].parserieDP;
                 if (total == 0) {
@@ -790,14 +842,15 @@ void APara::parse_dPdLH(Value &dPdLHidro_json) {
                 APdPdLH[indBCS].indDPHidro = dPdLHidro_json[indBCS]["indicedPdLHidro"].GetInt();
                 if (dPdLHidro_json[indBCS].HasMember("fator")) {
                     dim++;
-                    APdPdLH[indBCS].parserieDPHidro = dPdLHidro_json[indBCS]["fator"].Size();
+                    APdPdLH[indBCS].parserieDPHidro = tamanhoSerie(dPdLHidro_json[indBCS]["fator"], chaveJson + "/" + to_string(indBCS) + "/fator");
                     for (int ifreq = 0; ifreq < APdPdLH[indBCS].parserieDPHidro; ifreq++) {
                         APdPdLH[indBCS].dPHidro.push_back(dPdLHidro_json[indBCS]["fator"][ifreq].GetDouble());
                     }
-                    sort(APdPdLH[indBCS].dPHidro.begin(), APdPdLH[indBCS].dPHidro.end());
+                    if (combinacao)
+                        sort(APdPdLH[indBCS].dPHidro.begin(), APdPdLH[indBCS].dPHidro.end());
                 } else
                     APdPdLH[indBCS].parserieDPHidro = 0;
-                if (APdPdLH[indBCS].parserieDPHidro > 0)
+                if (combinacao && APdPdLH[indBCS].parserieDPHidro > 0)
                     nVariaveis *= APdPdLH[indBCS].parserieDPHidro;
                 int total = APdPdLH[indBCS].parserieDPHidro;
                 if (total == 0) {
@@ -831,14 +884,15 @@ void APara::parse_dPdLF(Value &dPdLFric_json) {
                 APdPdLF[indBCS].indDPFric = dPdLFric_json[indBCS]["indicedPdLFric"].GetInt();
                 if (dPdLFric_json[indBCS].HasMember("fator")) {
                     dim++;
-                    APdPdLF[indBCS].parserieDPFric = dPdLFric_json[indBCS]["fator"].Size();
+                    APdPdLF[indBCS].parserieDPFric = tamanhoSerie(dPdLFric_json[indBCS]["fator"], chaveJson + "/" + to_string(indBCS) + "/fator");
                     for (int ifreq = 0; ifreq < APdPdLF[indBCS].parserieDPFric; ifreq++) {
                         APdPdLF[indBCS].dPFric.push_back(dPdLFric_json[indBCS]["fator"][ifreq].GetDouble());
                     }
-                    sort(APdPdLF[indBCS].dPFric.begin(), APdPdLF[indBCS].dPFric.end());
+                    if (combinacao)
+                        sort(APdPdLF[indBCS].dPFric.begin(), APdPdLF[indBCS].dPFric.end());
                 } else
                     APdPdLF[indBCS].parserieDPFric = 0;
-                if (APdPdLF[indBCS].parserieDPFric > 0)
+                if (combinacao && APdPdLF[indBCS].parserieDPFric > 0)
                     nVariaveis *= APdPdLF[indBCS].parserieDPFric;
                 int total = APdPdLF[indBCS].parserieDPFric;
                 if (total == 0) {
@@ -872,14 +926,15 @@ void APara::parse_dTdL(Value &dTdL_json) {
                 APdTdL[indBCS].indDT = dTdL_json[indBCS]["indicedTdL"].GetInt();
                 if (dTdL_json[indBCS].HasMember("fator")) {
                     dim++;
-                    APdTdL[indBCS].parserieDT = dTdL_json[indBCS]["fator"].Size();
+                    APdTdL[indBCS].parserieDT = tamanhoSerie(dTdL_json[indBCS]["fator"], chaveJson + "/" + to_string(indBCS) + "/fator");
                     for (int ifreq = 0; ifreq < APdTdL[indBCS].parserieDT; ifreq++) {
                         APdTdL[indBCS].dT.push_back(dTdL_json[indBCS]["fator"][ifreq].GetDouble());
                     }
-                    sort(APdTdL[indBCS].dT.begin(), APdTdL[indBCS].dT.end());
+                    if (combinacao)
+                        sort(APdTdL[indBCS].dT.begin(), APdTdL[indBCS].dT.end());
                 } else
                     APdTdL[indBCS].parserieDT = 0;
-                if (APdTdL[indBCS].parserieDT > 0)
+                if (combinacao && APdTdL[indBCS].parserieDT > 0)
                     nVariaveis *= APdTdL[indBCS].parserieDT;
                 int total = APdTdL[indBCS].parserieDT;
                 if (total == 0) {
@@ -913,25 +968,27 @@ void APara::parse_Valv(Value &Valv_json) {
                 APValv[indBCS].indV = Valv_json[indBCS]["indiceValvula"].GetInt();
                 if (Valv_json[indBCS].HasMember("abertura")) {
                     dim++;
-                    APValv[indBCS].parserieAbre = Valv_json[indBCS]["abertura"].Size();
+                    APValv[indBCS].parserieAbre = tamanhoSerie(Valv_json[indBCS]["abertura"], chaveJson + "/" + to_string(indBCS) + "/abertura");
                     for (int ifreq = 0; ifreq < APValv[indBCS].parserieAbre; ifreq++) {
                         APValv[indBCS].abertura.push_back(Valv_json[indBCS]["abertura"][ifreq].GetDouble());
                     }
-                    sort(APValv[indBCS].abertura.begin(), APValv[indBCS].abertura.end());
+                    if (combinacao)
+                        sort(APValv[indBCS].abertura.begin(), APValv[indBCS].abertura.end());
                 } else
                     APValv[indBCS].parserieAbre = 0;
-                if (APValv[indBCS].parserieAbre > 0)
+                if (combinacao && APValv[indBCS].parserieAbre > 0)
                     nVariaveis *= APValv[indBCS].parserieAbre;
                 if (Valv_json[indBCS].HasMember("CD")) {
                     dim++;
-                    APValv[indBCS].parserieCD = Valv_json[indBCS]["CD"].Size();
+                    APValv[indBCS].parserieCD = tamanhoSerie(Valv_json[indBCS]["CD"], chaveJson + "/" + to_string(indBCS) + "/CD");
                     for (int ifreq = 0; ifreq < APValv[indBCS].parserieCD; ifreq++) {
                         APValv[indBCS].cd.push_back(Valv_json[indBCS]["CD"][ifreq].GetDouble());
                     }
-                    sort(APValv[indBCS].cd.begin(), APValv[indBCS].cd.end());
+                    if (combinacao)
+                        sort(APValv[indBCS].cd.begin(), APValv[indBCS].cd.end());
                 } else
                     APValv[indBCS].parserieCD = 0;
-                if (APValv[indBCS].parserieCD > 0)
+                if (combinacao && APValv[indBCS].parserieCD > 0)
                     nVariaveis *= APValv[indBCS].parserieCD;
                 int total = APValv[indBCS].parserieAbre + APValv[indBCS].parserieCD;
                 if (total == 0) {
@@ -965,67 +1022,73 @@ void APara::parse_Furo(Value &Furo_json) {
                 APFuro[indBCS].indFuro = Furo_json[indBCS]["indiceVazamento"].GetInt();
                 if (Furo_json[indBCS].HasMember("abertura")) {
                     dim++;
-                    APFuro[indBCS].parserieAbre = Furo_json[indBCS]["abertura"].Size();
+                    APFuro[indBCS].parserieAbre = tamanhoSerie(Furo_json[indBCS]["abertura"], chaveJson + "/" + to_string(indBCS) + "/abertura");
                     for (int ifreq = 0; ifreq < APFuro[indBCS].parserieAbre; ifreq++) {
                         APFuro[indBCS].abertura.push_back(Furo_json[indBCS]["abertura"][ifreq].GetDouble());
                     }
-                    sort(APFuro[indBCS].abertura.begin(), APFuro[indBCS].abertura.end());
+                    if (combinacao)
+                        sort(APFuro[indBCS].abertura.begin(), APFuro[indBCS].abertura.end());
                 } else
                     APFuro[indBCS].parserieAbre = 0;
-                if (APFuro[indBCS].parserieAbre > 0)
+                if (combinacao && APFuro[indBCS].parserieAbre > 0)
                     nVariaveis *= APFuro[indBCS].parserieAbre;
                 if (Furo_json[indBCS].HasMember("CD")) {
                     dim++;
-                    APFuro[indBCS].parserieCD = Furo_json[indBCS]["CD"].Size();
+                    APFuro[indBCS].parserieCD = tamanhoSerie(Furo_json[indBCS]["CD"], chaveJson + "/" + to_string(indBCS) + "/CD");
                     for (int ifreq = 0; ifreq < APFuro[indBCS].parserieCD; ifreq++) {
                         APFuro[indBCS].cd.push_back(Furo_json[indBCS]["CD"][ifreq].GetDouble());
                     }
-                    sort(APFuro[indBCS].cd.begin(), APFuro[indBCS].cd.end());
+                    if (combinacao)
+                        sort(APFuro[indBCS].cd.begin(), APFuro[indBCS].cd.end());
                 } else
                     APFuro[indBCS].parserieCD = 0;
-                if (APFuro[indBCS].parserieCD > 0)
+                if (combinacao && APFuro[indBCS].parserieCD > 0)
                     nVariaveis *= APFuro[indBCS].parserieCD;
                 if (Furo_json[indBCS].HasMember("beta")) {
-                    APFuro[indBCS].parserieBeta = Furo_json[indBCS]["beta"].Size();
+                    dim++;
+                    APFuro[indBCS].parserieBeta = tamanhoSerie(Furo_json[indBCS]["beta"], chaveJson + "/" + to_string(indBCS) + "/beta");
                     for (int ifreq = 0; ifreq < APFuro[indBCS].parserieBeta; ifreq++) {
                         APFuro[indBCS].beta.push_back(Furo_json[indBCS]["beta"][ifreq].GetDouble());
                     }
-                    sort(APFuro[indBCS].beta.begin(), APFuro[indBCS].beta.end());
+                    if (combinacao)
+                        sort(APFuro[indBCS].beta.begin(), APFuro[indBCS].beta.end());
                 } else
                     APFuro[indBCS].parserieBeta = 0;
-                if (APFuro[indBCS].parserieBeta > 0)
+                if (combinacao && APFuro[indBCS].parserieBeta > 0)
                     nVariaveis *= APFuro[indBCS].parserieBeta;
                 if (Furo_json[indBCS].HasMember("pressao")) {
                     dim++;
-                    APFuro[indBCS].parseriePres = Furo_json[indBCS]["pressao"].Size();
+                    APFuro[indBCS].parseriePres = tamanhoSerie(Furo_json[indBCS]["pressao"], chaveJson + "/" + to_string(indBCS) + "/pressao");
                     for (int ifreq = 0; ifreq < APFuro[indBCS].parseriePres; ifreq++) {
                         APFuro[indBCS].pres.push_back(Furo_json[indBCS]["pressao"][ifreq].GetDouble());
                     }
-                    sort(APFuro[indBCS].pres.begin(), APFuro[indBCS].pres.end());
+                    if (combinacao)
+                        sort(APFuro[indBCS].pres.begin(), APFuro[indBCS].pres.end());
                 } else
                     APFuro[indBCS].parseriePres = 0;
-                if (APFuro[indBCS].parseriePres > 0)
+                if (combinacao && APFuro[indBCS].parseriePres > 0)
                     nVariaveis *= APFuro[indBCS].parseriePres;
                 if (Furo_json[indBCS].HasMember("temperatura")) {
                     dim++;
-                    APFuro[indBCS].parserieTemp = Furo_json[indBCS]["tempertatura"].Size();
+                    APFuro[indBCS].parserieTemp = tamanhoSerie(Furo_json[indBCS]["temperatura"], chaveJson + "/" + to_string(indBCS) + "/temperatura");
                     for (int ifreq = 0; ifreq < APFuro[indBCS].parserieTemp; ifreq++) {
                         APFuro[indBCS].temp.push_back(Furo_json[indBCS]["temperatura"][ifreq].GetDouble());
                     }
-                    sort(APFuro[indBCS].temp.begin(), APFuro[indBCS].temp.end());
+                    if (combinacao)
+                        sort(APFuro[indBCS].temp.begin(), APFuro[indBCS].temp.end());
                 } else
                     APFuro[indBCS].parserieTemp = 0;
-                if (APFuro[indBCS].parserieTemp > 0)
+                if (combinacao && APFuro[indBCS].parserieTemp > 0)
                     nVariaveis *= APFuro[indBCS].parserieTemp;
                 if (Furo_json[indBCS].HasMember("fluido")) {
                     dim++;
-                    APFuro[indBCS].parserieFlu = Furo_json[indBCS]["fluido"].Size();
+                    APFuro[indBCS].parserieFlu = tamanhoSerie(Furo_json[indBCS]["fluido"], chaveJson + "/" + to_string(indBCS) + "/fluido");
                     for (int ifreq = 0; ifreq < APFuro[indBCS].parserieFlu; ifreq++) {
                         APFuro[indBCS].indFlu.push_back(Furo_json[indBCS]["fluido"][ifreq].GetInt());
                     }
                 } else
                     APFuro[indBCS].parserieFlu = 0;
-                if (APFuro[indBCS].parserieFlu > 0)
+                if (combinacao && APFuro[indBCS].parserieFlu > 0)
                     nVariaveis *= APFuro[indBCS].parserieFlu;
                 int total = APFuro[indBCS].parserieAbre + APFuro[indBCS].parserieCD + APFuro[indBCS].parserieBeta + APFuro[indBCS].parseriePres +
                             APFuro[indBCS].parserieTemp + APFuro[indBCS].parserieFlu;
@@ -1061,36 +1124,39 @@ void APara::parse_Diam(Value &secaoTransversal_json) {
                 APGeom[iG].indGeom = secaoTransversal_json[iG]["indiceSec"].GetInt();
                 if (secaoTransversal_json[iG].HasMember("DiamIntMaior")) {
                     dim++;
-                    APGeom[iG].parserieA = secaoTransversal_json[iG]["DiamIntMaior"].Size();
+                    APGeom[iG].parserieA = tamanhoSerie(secaoTransversal_json[iG]["DiamIntMaior"], chaveJson + "/" + to_string(iG) + "/DiamIntMaior");
                     for (int ia = 0; ia < APGeom[iG].parserieA; ia++) {
                         APGeom[iG].dA.push_back(secaoTransversal_json[iG]["DiamIntMaior"][ia].GetDouble());
                     }
-                    sort(APGeom[iG].dA.begin(), APGeom[iG].dA.end());
+                    if (combinacao)
+                        sort(APGeom[iG].dA.begin(), APGeom[iG].dA.end());
                 } else
                     APGeom[iG].parserieA = 0;
-                if (APGeom[iG].parserieA > 0)
+                if (combinacao && APGeom[iG].parserieA > 0)
                     nVariaveis *= APGeom[iG].parserieA;
                 if (secaoTransversal_json[iG].HasMember("DiamIntMenor")) {
                     dim++;
-                    APGeom[iG].parserieB = secaoTransversal_json[iG]["DiamIntMenor"].Size();
+                    APGeom[iG].parserieB = tamanhoSerie(secaoTransversal_json[iG]["DiamIntMenor"], chaveJson + "/" + to_string(iG) + "/DiamIntMenor");
                     for (int ib = 0; ib < APGeom[iG].parserieB; ib++) {
                         APGeom[iG].dB.push_back(secaoTransversal_json[iG]["DiamIntMenor"][ib].GetDouble());
                     }
-                    sort(APGeom[iG].dB.begin(), APGeom[iG].dB.end());
+                    if (combinacao)
+                        sort(APGeom[iG].dB.begin(), APGeom[iG].dB.end());
                 } else
                     APGeom[iG].parserieB = 0;
-                if (APGeom[iG].parserieB > 0)
+                if (combinacao && APGeom[iG].parserieB > 0)
                     nVariaveis *= APGeom[iG].parserieB;
                 if (secaoTransversal_json[iG].HasMember("Rugosidade")) {
                     dim++;
-                    APGeom[iG].parserieRug = secaoTransversal_json[iG]["Rugosidade"].Size();
+                    APGeom[iG].parserieRug = tamanhoSerie(secaoTransversal_json[iG]["Rugosidade"], chaveJson + "/" + to_string(iG) + "/Rugosidade");
                     for (int ir = 0; ir < APGeom[iG].parserieRug; ir++) {
                         APGeom[iG].rug.push_back(secaoTransversal_json[iG]["Rugosidade"][ir].GetDouble());
                     }
-                    sort(APGeom[iG].rug.begin(), APGeom[iG].rug.end());
+                    if (combinacao)
+                        sort(APGeom[iG].rug.begin(), APGeom[iG].rug.end());
                 } else
                     APGeom[iG].parserieRug = 0;
-                if (APGeom[iG].parserieRug > 0)
+                if (combinacao && APGeom[iG].parserieRug > 0)
                     nVariaveis *= APGeom[iG].parserieRug;
                 total = APGeom[iG].parserieA + APGeom[iG].parserieB + APGeom[iG].parserieRug;
                 if (total == 0) {
@@ -1125,14 +1191,15 @@ void APara::parse_CondEquiv(Value &CondEquiv_json) {
                 APCondEquiv[ik].indMat = CondEquiv_json[ik]["indiceMat"].GetInt();
                 if (CondEquiv_json[ik].HasMember("condutividade")) {
                     dim++;
-                    APCondEquiv[ik].parserieK = CondEquiv_json[ik]["condutividade"].Size();
+                    APCondEquiv[ik].parserieK = tamanhoSerie(CondEquiv_json[ik]["condutividade"], chaveJson + "/" + to_string(ik) + "/condutividade");
                     for (int ia = 0; ia < APCondEquiv[ik].parserieK; ia++) {
                         APCondEquiv[ik].cond.push_back(CondEquiv_json[ik]["condutividade"][ia].GetDouble());
                     }
-                    sort(APCondEquiv[ik].cond.begin(), APCondEquiv[ik].cond.end());
+                    if (combinacao)
+                        sort(APCondEquiv[ik].cond.begin(), APCondEquiv[ik].cond.end());
                 } else
                     APCondEquiv[ik].parserieK = 0;
-                if (APCondEquiv[ik].parserieK > 0)
+                if (combinacao && APCondEquiv[ik].parserieK > 0)
                     nVariaveis *= APCondEquiv[ik].parserieK;
                 total = APCondEquiv[ik].parserieK;
                 if (total == 0) {
@@ -1155,14 +1222,15 @@ void APara::parse_Psep(Value &Psep_json) {
 
     if (Psep_json.HasMember("pressao")) {
         dim++;
-        APPsep.parseriePres = Psep_json["pressao"].Size();
+        APPsep.parseriePres = tamanhoSerie(Psep_json["pressao"], chaveJson + "/pressao");
         for (int ifreq = 0; ifreq < APPsep.parseriePres; ifreq++) {
             APPsep.pres.push_back(Psep_json["pressao"][ifreq].GetDouble());
         }
-        sort(APPsep.pres.begin(), APPsep.pres.end());
+        if (combinacao)
+            sort(APPsep.pres.begin(), APPsep.pres.end());
     } else
         APPsep.parseriePres = 0;
-    if (APPsep.parseriePres > 0)
+    if (combinacao && APPsep.parseriePres > 0)
         nVariaveis *= APPsep.parseriePres;
     int total = APPsep.parseriePres;
     if (total == 0) {
@@ -1180,14 +1248,15 @@ void APara::parse_RGO(Value &RGO_json) {
 
     if (RGO_json.HasMember("RGO")) {
         dim++;
-        APRGO.parserieRGO = RGO_json["RGO"].Size();
+        APRGO.parserieRGO = tamanhoSerie(RGO_json["RGO"], chaveJson + "/RGO");
         for (int ifreq = 0; ifreq < APRGO.parserieRGO; ifreq++) {
             APRGO.RGO.push_back(RGO_json["RGO"][ifreq].GetDouble());
         }
-        sort(APRGO.RGO.begin(), APRGO.RGO.end());
+        if (combinacao)
+            sort(APRGO.RGO.begin(), APRGO.RGO.end());
     } else
         APRGO.parserieRGO = 0;
-    if (APRGO.parserieRGO > 0)
+    if (combinacao && APRGO.parserieRGO > 0)
         nVariaveis *= APRGO.parserieRGO;
     int total = APRGO.parserieRGO;
     if (total == 0) {
@@ -1205,14 +1274,15 @@ void APara::parse_BSW(Value &BSW_json) {
 
     if (BSW_json.HasMember("BSW")) {
         dim++;
-        APBSW.parserieBSW = BSW_json["BSW"].Size();
+        APBSW.parserieBSW = tamanhoSerie(BSW_json["BSW"], chaveJson + "/BSW");
         for (int ifreq = 0; ifreq < APBSW.parserieBSW; ifreq++) {
             APBSW.BSW.push_back(BSW_json["BSW"][ifreq].GetDouble());
         }
-        sort(APBSW.BSW.begin(), APBSW.BSW.end());
+        if (combinacao)
+            sort(APBSW.BSW.begin(), APBSW.BSW.end());
     } else
         APBSW.parserieBSW = 0;
-    if (APBSW.parserieBSW > 0)
+    if (combinacao && APBSW.parserieBSW > 0)
         nVariaveis *= APBSW.parserieBSW;
     int total = APBSW.parserieBSW;
     if (total == 0) {
@@ -1230,36 +1300,39 @@ void APara::parse_GasInj(Value &GasInj_json) {
 
     if (GasInj_json.HasMember("presInj")) {
         dim++;
-        APGasInj.parseriePresInj = GasInj_json["presInj"].Size();
+        APGasInj.parseriePresInj = tamanhoSerie(GasInj_json["presInj"], chaveJson + "/presInj");
         for (int ifreq = 0; ifreq < APGasInj.parseriePresInj; ifreq++) {
             APGasInj.presinj.push_back(GasInj_json["presInj"][ifreq].GetDouble());
         }
-        sort(APGasInj.presinj.begin(), APGasInj.presinj.end());
+        if (combinacao)
+            sort(APGasInj.presinj.begin(), APGasInj.presinj.end());
     } else
         APGasInj.parseriePresInj = 0;
-    if (APGasInj.parseriePresInj > 0)
+    if (combinacao && APGasInj.parseriePresInj > 0)
         nVariaveis *= APGasInj.parseriePresInj;
     if (GasInj_json.HasMember("temperatura")) {
         dim++;
-        APGasInj.parserieTemp = GasInj_json["temperatura"].Size();
+        APGasInj.parserieTemp = tamanhoSerie(GasInj_json["temperatura"], chaveJson + "/temperatura");
         for (int ifreq = 0; ifreq < APGasInj.parserieTemp; ifreq++) {
             APGasInj.temperatura.push_back(GasInj_json["temperatura"][ifreq].GetDouble());
         }
-        sort(APGasInj.temperatura.begin(), APGasInj.temperatura.end());
+        if (combinacao)
+            sort(APGasInj.temperatura.begin(), APGasInj.temperatura.end());
     } else
         APGasInj.parserieTemp = 0;
-    if (APGasInj.parserieTemp > 0)
+    if (combinacao && APGasInj.parserieTemp > 0)
         nVariaveis *= APGasInj.parserieTemp;
     if (GasInj_json.HasMember("vazGas")) {
         dim++;
-        APGasInj.parserieVazGas = GasInj_json["vazGas"].Size();
+        APGasInj.parserieVazGas = tamanhoSerie(GasInj_json["vazGas"], chaveJson + "/vazGas");
         for (int ifreq = 0; ifreq < APGasInj.parserieVazGas; ifreq++) {
             APGasInj.vazgas.push_back(GasInj_json["vazGas"][ifreq].GetDouble());
         }
-        sort(APGasInj.vazgas.begin(), APGasInj.vazgas.end());
+        if (combinacao)
+            sort(APGasInj.vazgas.begin(), APGasInj.vazgas.end());
     } else
         APGasInj.parserieVazGas = 0;
-    if (APGasInj.parserieVazGas > 0)
+    if (combinacao && APGasInj.parserieVazGas > 0)
         nVariaveis *= APGasInj.parserieVazGas;
     int total = APGasInj.parseriePresInj + APGasInj.parseriePresInj + APGasInj.parserieVazGas;
     if (total == 0) {
@@ -1277,25 +1350,27 @@ void APara::parse_CHK(Value &CHK_json) {
 
     if (CHK_json.HasMember("abertura")) {
         dim++;
-        APCHK.parserieAbre = CHK_json["abertura"].Size();
+        APCHK.parserieAbre = tamanhoSerie(CHK_json["abertura"], chaveJson + "/abertura");
         for (int ifreq = 0; ifreq < APCHK.parserieAbre; ifreq++) {
             APCHK.abertura.push_back(CHK_json["abertura"][ifreq].GetDouble());
         }
-        sort(APCHK.abertura.begin(), APCHK.abertura.end());
+        if (combinacao)
+            sort(APCHK.abertura.begin(), APCHK.abertura.end());
     } else
         APCHK.parserieAbre = 0;
-    if (APCHK.parserieAbre > 0)
+    if (combinacao && APCHK.parserieAbre > 0)
         nVariaveis *= APCHK.parserieAbre;
     if (CHK_json.HasMember("CD")) {
         dim++;
-        APCHK.parserieCD = CHK_json["CD"].Size();
+        APCHK.parserieCD = tamanhoSerie(CHK_json["CD"], chaveJson + "/CD");
         for (int ifreq = 0; ifreq < APCHK.parserieCD; ifreq++) {
             APCHK.cd.push_back(CHK_json["CD"][ifreq].GetDouble());
         }
-        sort(APCHK.cd.begin(), APCHK.cd.end());
+        if (combinacao)
+            sort(APCHK.cd.begin(), APCHK.cd.end());
     } else
         APCHK.parserieCD = 0;
-    if (APCHK.parserieCD > 0)
+    if (combinacao && APCHK.parserieCD > 0)
         nVariaveis *= APCHK.parserieCD;
     int total = APCHK.parserieAbre + APCHK.parserieCD;
     if (total == 0) {
@@ -1313,47 +1388,51 @@ void APara::parse_Pent(Value &Pent_json) {
 
     if (Pent_json.HasMember("pressao")) {
         dim++;
-        APpEntrada.parseriePres = Pent_json["pressao"].Size();
+        APpEntrada.parseriePres = tamanhoSerie(Pent_json["pressao"], chaveJson + "/pressao");
         for (int ifreq = 0; ifreq < APpEntrada.parseriePres; ifreq++) {
             APpEntrada.pres.push_back(Pent_json["pressao"][ifreq].GetDouble());
         }
-        sort(APpEntrada.pres.begin(), APpEntrada.pres.end());
+        if (combinacao)
+            sort(APpEntrada.pres.begin(), APpEntrada.pres.end());
     } else
         APpEntrada.parseriePres = 0;
-    if (APpEntrada.parseriePres > 0)
+    if (combinacao && APpEntrada.parseriePres > 0)
         nVariaveis *= APpEntrada.parseriePres;
     if (Pent_json.HasMember("temperatura")) {
         dim++;
-        APpEntrada.parserieTemp = Pent_json["temperatura"].Size();
+        APpEntrada.parserieTemp = tamanhoSerie(Pent_json["temperatura"], chaveJson + "/temperatura");
         for (int ifreq = 0; ifreq < APpEntrada.parserieTemp; ifreq++) {
             APpEntrada.temperatura.push_back(Pent_json["temperatura"][ifreq].GetDouble());
         }
-        sort(APpEntrada.temperatura.begin(), APpEntrada.temperatura.end());
+        if (combinacao)
+            sort(APpEntrada.temperatura.begin(), APpEntrada.temperatura.end());
     } else
         APpEntrada.parserieTemp = 0;
-    if (APpEntrada.parserieTemp > 0)
+    if (combinacao && APpEntrada.parserieTemp > 0)
         nVariaveis *= APpEntrada.parserieTemp;
     if (Pent_json.HasMember("titulo")) {
         dim++;
-        APpEntrada.parserieTit = Pent_json["titulo"].Size();
+        APpEntrada.parserieTit = tamanhoSerie(Pent_json["titulo"], chaveJson + "/titulo");
         for (int ifreq = 0; ifreq < APpEntrada.parserieTit; ifreq++) {
             APpEntrada.tit.push_back(Pent_json["titulo"][ifreq].GetDouble());
         }
-        sort(APpEntrada.tit.begin(), APpEntrada.tit.end());
+        if (combinacao)
+            sort(APpEntrada.tit.begin(), APpEntrada.tit.end());
     } else
         APpEntrada.parserieTit = 0;
-    if (APpEntrada.parserieTit > 0)
+    if (combinacao && APpEntrada.parserieTit > 0)
         nVariaveis *= APpEntrada.parserieTit;
     if (Pent_json.HasMember("beta")) {
         dim++;
-        APpEntrada.parserieBet = Pent_json["beta"].Size();
+        APpEntrada.parserieBet = tamanhoSerie(Pent_json["beta"], chaveJson + "/beta");
         for (int ifreq = 0; ifreq < APpEntrada.parserieBet; ifreq++) {
             APpEntrada.bet.push_back(Pent_json["beta"][ifreq].GetDouble());
         }
-        sort(APpEntrada.bet.begin(), APpEntrada.bet.end());
+        if (combinacao)
+            sort(APpEntrada.bet.begin(), APpEntrada.bet.end());
     } else
         APpEntrada.parserieBet = 0;
-    if (APpEntrada.parserieBet > 0)
+    if (combinacao && APpEntrada.parserieBet > 0)
         nVariaveis *= APpEntrada.parserieBet;
     int total = APpEntrada.parseriePres + APpEntrada.parserieTemp + APpEntrada.parserieTit + APpEntrada.parserieBet;
     if (total == 0) {
@@ -1371,47 +1450,51 @@ void APara::parse_VPent(Value &VPent_json) {
 
     if (VPent_json.HasMember("pressao")) {
         dim++;
-        APvpEntrada.parseriePres = VPent_json["pressao"].Size();
+        APvpEntrada.parseriePres = tamanhoSerie(VPent_json["pressao"], chaveJson + "/pressao");
         for (int ifreq = 0; ifreq < APvpEntrada.parseriePres; ifreq++) {
             APvpEntrada.pres.push_back(VPent_json["pressao"][ifreq].GetDouble());
         }
-        sort(APvpEntrada.pres.begin(), APvpEntrada.pres.end());
+        if (combinacao)
+            sort(APvpEntrada.pres.begin(), APvpEntrada.pres.end());
     } else
         APvpEntrada.parseriePres = 0;
-    if (APvpEntrada.parseriePres > 0)
+    if (combinacao && APvpEntrada.parseriePres > 0)
         nVariaveis *= APvpEntrada.parseriePres;
     if (VPent_json.HasMember("temperatura")) {
         dim++;
-        APvpEntrada.parserieTemp = VPent_json["temperatura"].Size();
+        APvpEntrada.parserieTemp = tamanhoSerie(VPent_json["temperatura"], chaveJson + "/temperatura");
         for (int ifreq = 0; ifreq < APvpEntrada.parserieTemp; ifreq++) {
             APvpEntrada.temperatura.push_back(VPent_json["temperatura"][ifreq].GetDouble());
         }
-        sort(APvpEntrada.temperatura.begin(), APvpEntrada.temperatura.end());
+        if (combinacao)
+            sort(APvpEntrada.temperatura.begin(), APvpEntrada.temperatura.end());
     } else
         APvpEntrada.parserieTemp = 0;
-    if (APvpEntrada.parserieTemp > 0)
+    if (combinacao && APvpEntrada.parserieTemp > 0)
         nVariaveis *= APvpEntrada.parserieTemp;
     if (VPent_json.HasMember("vazMass")) {
         dim++;
-        APvpEntrada.parserieMass = VPent_json["vazMass"].Size();
+        APvpEntrada.parserieMass = tamanhoSerie(VPent_json["vazMass"], chaveJson + "/vazMass");
         for (int ifreq = 0; ifreq < APvpEntrada.parserieMass; ifreq++) {
             APvpEntrada.mass.push_back(VPent_json["vazMass"][ifreq].GetDouble());
         }
-        sort(APvpEntrada.mass.begin(), APvpEntrada.mass.end());
+        if (combinacao)
+            sort(APvpEntrada.mass.begin(), APvpEntrada.mass.end());
     } else
         APvpEntrada.parserieMass = 0;
-    if (APvpEntrada.parserieMass > 0)
+    if (combinacao && APvpEntrada.parserieMass > 0)
         nVariaveis *= APvpEntrada.parserieMass;
     if (VPent_json.HasMember("beta")) {
         dim++;
-        APvpEntrada.parserieBet = VPent_json["beta"].Size();
+        APvpEntrada.parserieBet = tamanhoSerie(VPent_json["beta"], chaveJson + "/beta");
         for (int ifreq = 0; ifreq < APvpEntrada.parserieBet; ifreq++) {
             APvpEntrada.bet.push_back(VPent_json["beta"][ifreq].GetDouble());
         }
-        sort(APvpEntrada.bet.begin(), APvpEntrada.bet.end());
+        if (combinacao)
+            sort(APvpEntrada.bet.begin(), APvpEntrada.bet.end());
     } else
         APvpEntrada.parserieBet = 0;
-    if (APvpEntrada.parserieBet > 0)
+    if (combinacao && APvpEntrada.parserieBet > 0)
         nVariaveis *= APvpEntrada.parserieBet;
     int total = APvpEntrada.parseriePres + APvpEntrada.parserieTemp + APvpEntrada.parserieMass + APvpEntrada.parserieBet;
     if (total == 0) {
@@ -1429,47 +1512,51 @@ void APara::parse_injecPoco(Value &injecP_json) {
 
     if (injecP_json.HasMember("pressaoInj")) {
         dim++;
-        APPInj.parseriePresI = injecP_json["pressaoInj"].Size();
+        APPInj.parseriePresI = tamanhoSerie(injecP_json["pressaoInj"], chaveJson + "/pressaoInj");
         for (int ifreq = 0; ifreq < APPInj.parseriePresI; ifreq++) {
             APPInj.presinj.push_back(injecP_json["pressaoInj"][ifreq].GetDouble());
         }
-        sort(APPInj.presinj.begin(), APPInj.presinj.end());
+        if (combinacao)
+            sort(APPInj.presinj.begin(), APPInj.presinj.end());
     } else
         APPInj.parseriePresI = 0;
-    if (APPInj.parseriePresI > 0)
+    if (combinacao && APPInj.parseriePresI > 0)
         nVariaveis *= APPInj.parseriePresI;
     if (injecP_json.HasMember("pressaoFinal")) {
         dim++;
-        APPInj.parseriePresFundo = injecP_json["pressaoFinal"].Size();
+        APPInj.parseriePresFundo = tamanhoSerie(injecP_json["pressaoFinal"], chaveJson + "/pressaoFinal");
         for (int ifreq = 0; ifreq < APPInj.parseriePresFundo; ifreq++) {
             APPInj.presfundo.push_back(injecP_json["pressaoFinal"][ifreq].GetDouble());
         }
-        sort(APPInj.presfundo.begin(), APPInj.presfundo.end());
+        if (combinacao)
+            sort(APPInj.presfundo.begin(), APPInj.presfundo.end());
     } else
         APPInj.parseriePresFundo = 0;
-    if (APPInj.parseriePresFundo > 0)
+    if (combinacao && APPInj.parseriePresFundo > 0)
         nVariaveis *= APPInj.parseriePresFundo;
     if (injecP_json.HasMember("temperatura")) {
         dim++;
-        APPInj.parserieTemp = injecP_json["temperatura"].Size();
+        APPInj.parserieTemp = tamanhoSerie(injecP_json["temperatura"], chaveJson + "/temperatura");
         for (int ifreq = 0; ifreq < APPInj.parserieTemp; ifreq++) {
             APPInj.tempinj.push_back(injecP_json["temperatura"][ifreq].GetDouble());
         }
-        sort(APPInj.tempinj.begin(), APPInj.tempinj.end());
+        if (combinacao)
+            sort(APPInj.tempinj.begin(), APPInj.tempinj.end());
     } else
         APPInj.parserieTemp = 0;
-    if (APPInj.parserieTemp > 0)
+    if (combinacao && APPInj.parserieTemp > 0)
         nVariaveis *= APPInj.parserieTemp;
-    if (injecP_json.HasMember("temperatura")) {
+    if (injecP_json.HasMember("vazao")) {
         dim++;
-        APPInj.parserieVaz = injecP_json["vazao"].Size();
+        APPInj.parserieVaz = tamanhoSerie(injecP_json["vazao"], chaveJson + "/vazao");
         for (int ifreq = 0; ifreq < APPInj.parserieVaz; ifreq++) {
             APPInj.vazinj.push_back(injecP_json["vazao"][ifreq].GetDouble());
         }
-        sort(APPInj.vazinj.begin(), APPInj.vazinj.end());
+        if (combinacao)
+            sort(APPInj.vazinj.begin(), APPInj.vazinj.end());
     } else
         APPInj.parserieVaz = 0;
-    if (APPInj.parserieVaz > 0)
+    if (combinacao && APPInj.parserieVaz > 0)
         nVariaveis *= APPInj.parserieVaz;
     int total = APPInj.parseriePresI + APPInj.parseriePresFundo + APPInj.parserieTemp + APPInj.parserieVaz;
     if (total == 0) {
@@ -1478,7 +1565,7 @@ void APara::parse_injecPoco(Value &injecP_json) {
                    "#/pocoInjetorEntrada", "multiplas variaveis");
     }
 
-    listaV.vvazpresent = 1;
+    listaV.vpocinj = 1;
 }
 
 void APara::lerArq() {
@@ -1539,6 +1626,25 @@ void APara::lerArq() {
 
     if (jsonDoc.HasMember("imprimePerfil"))
         imprimePerfil = jsonDoc["imprimePerfil"].GetBool();
+
+    combinacao = true;
+    if (jsonDoc.HasMember("combinacao")) {
+        if (!jsonDoc["combinacao"].IsBool()) {
+            logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                       "combinacao deve ser um booleano", "#/combinacao", "");
+            logger.writeOutputLog();
+            exit(EXIT_FAILURE);
+        }
+        combinacao = jsonDoc["combinacao"].GetBool();
+    }
+    if (!combinacao && tipoAP == 1) {
+        logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                   "VFP requer combinacao=true", "#/combinacao", "tipoAP=1");
+        logger.writeOutputLog();
+        exit(EXIT_FAILURE);
+    }
+    if (!combinacao)
+        nVariaveis = 0;
 
     APIPR = 0;
     if (jsonDoc.HasMember("IPR")) {
@@ -1625,6 +1731,11 @@ void APara::lerArq() {
         parse_injecPoco(jsonDoc["pocoInjetor"]);
     }
 
+    if (!combinacao && logger.getStResultadoSimulacao().totalFalhas > 0) {
+        logger.writeOutputLog();
+        exit(EXIT_FAILURE);
+    }
+
     varSeq[0] = listaV.vpsep;
     varSeq[1] = listaV.vRGO;
     varSeq[2] = listaV.vBSW;
@@ -1649,8 +1760,13 @@ void APara::lerArq() {
     varSeq[21] = listaV.vchk;
     varSeq[22] = listaV.vpocinj;
 
-    sequenciaAP = 0;
-    if (nVariaveis > 1) {
+    if (!combinacao && dim == 0) {
+        logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                   "Modo agrupado requer ao menos uma serie", "#/combinacao", "");
+        logger.writeOutputLog();
+        exit(EXIT_FAILURE);
+    }
+    if (nVariaveis >= 1 && dim > 0) {
         sequenciaAP = new casoVEC[nVariaveis];
         genericoAP = new genericoVEC[nVariaveis];
         vecParSerie = new int[dim];
@@ -3173,6 +3289,12 @@ void APara::traduzSeqImex() {
 
 int APara::inicializaSequen(int iSeq, int tipo) {
 
+    if (!combinacao) {
+        for (int seq = 0; seq < nVariaveis; seq++)
+            genericoAP[seq].generico.assign(dim, seq);
+        return 1;
+    }
+
     int locDim = 0;
     int nvar = 0;
     int kontaDim = 0;
@@ -3734,10 +3856,10 @@ void APara::cabecalhoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, 
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
+        if (APPInj.parseriePresFundo > 0) {
             escreveIni << " Pressao a Jusante; ";
         }
-        if (APPInj.parseriePresFundo > 0) {
+        if (APPInj.parseriePresI > 0) {
             escreveIni << " Pressao a Montante; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -4095,10 +4217,10 @@ void APara::cabecalhoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celul
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
+        if (APPInj.parseriePresFundo > 0) {
             escreveIni << " Pressao a Jusante; ";
         }
-        if (APPInj.parseriePresFundo > 0) {
+        if (APPInj.parseriePresI > 0) {
             escreveIni << " Pressao a Montante; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -4431,7 +4553,7 @@ void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG 
                 konta2++;
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 escreveIni << "   " << APGeom[iG].rug[ind] << " ; ";
                 konta3++;
             }
@@ -4508,12 +4630,12 @@ void APara::imprimeVarInteresseAP(int ncelG, choke &chokeSup, Cel *celula, CelG 
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             escreveIni << " : " << APPInj.presinj[ind] << " ; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -4956,7 +5078,7 @@ void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, Pr
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 if (imprime == 1)
                     escreveIni << seq << " : " << " indice Secao Transversal = " << konta3 << " secao transversal " << igeo << " indice Rugosidade = " << ind << " Rugosidade= " << APGeom[iG].rug[ind] << "\n";
@@ -5066,14 +5188,14 @@ void APara::selecaoAP(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG, Pr
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
+        if (APPInj.parseriePresFundo > 0) {
+            ind = sequenciaAP[seq].PIpresfundo;
             presE = APPInj.presfundo[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Jusante = " << ind << " Pres Jusante= " << presE << "\n";
         }
-        if (APPInj.parseriePresFundo > 0) {
-            ind = sequenciaAP[seq].PIpresfundo;
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Montante = " << ind << " Pres Montante= " << pGSup << "\n";
@@ -5431,7 +5553,7 @@ void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *cel
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 konta3++;
                 atualizaGeom(ncelG, celula, celulaG, igeo, 2, APGeom[iG].rug[ind]);
@@ -5511,12 +5633,12 @@ void APara::selecaoAPsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG *cel
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            presE = APPInj.presfundo[ind];
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            presE = APPInj.presfundo[ind];
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
         }
         if (APPInj.parserieTemp > 0) {
@@ -5724,10 +5846,10 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
     }
     if (listaV.vdpH == 1) {
         int konta1 = 0;
-        for (int indBCS = 0; indBCS < nAPDP; indBCS++) {
-            if (APDP[indBCS].parserieDP > 0) {
-                ind = sequenciaAP[seq].DPdp[konta1];
-                escreveIni << "   " << APDP[indBCS].dp[ind] << " ; ";
+        for (int indBCS = 0; indBCS < nAPdPdLH; indBCS++) {
+            if (APdPdLH[indBCS].parserieDPHidro > 0) {
+                ind = sequenciaAP[seq].DPdLH[konta1];
+                escreveIni << "   " << APdPdLH[indBCS].dPHidro[ind] << " ; ";
                 konta1++;
             }
         }
@@ -5847,7 +5969,7 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
                 konta2++;
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 escreveIni << "   " << APGeom[iG].rug[ind] << " ; ";
                 konta3++;
             }
@@ -5924,12 +6046,12 @@ void APara::imprimeVarInteresseAPImex(int ncelG, choke &chokeSup, Cel *celula, C
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            escreveIni << " : " << APPInj.presfundo[ind] << " ; ";
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             escreveIni << " : " << APPInj.presinj[ind] << " ; ";
         }
         if (APPInj.parserieTemp > 0) {
@@ -6367,7 +6489,7 @@ void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 if (imprime == 1)
                     escreveIni << seq << " : " << " indice Secao Transversal = " << konta3 << " secao transversal " << igeo << " indice Rugosidade = " << ind << " Rugosidade= " << APGeom[iG].rug[ind] << "\n";
@@ -6477,14 +6599,14 @@ void APara::selecaoAPImex(int ncelG, choke &chokeSup, Cel *celula, CelG *celulaG
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
+        if (APPInj.parseriePresFundo > 0) {
+            ind = sequenciaAP[seq].PIpresfundo;
             presE = APPInj.presfundo[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Jusante = " << ind << " Pres Jusante= " << presE << "\n";
         }
-        if (APPInj.parseriePresFundo > 0) {
-            ind = sequenciaAP[seq].PIpresfundo;
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
             if (imprime == 1)
                 escreveIni << seq << " : " << " indice Pres. Montante = " << ind << " Pres Montante= " << pGSup << "\n";
@@ -6840,7 +6962,7 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
                 atualizaGeom(ncelG, celula, celulaG, igeo, 1, APGeom[iG].dB[ind]);
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 int igeo = APGeom[iG].indGeom;
                 konta3++;
                 atualizaGeom(ncelG, celula, celulaG, igeo, 2, APGeom[iG].rug[ind]);
@@ -6920,12 +7042,12 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
-            presE = APPInj.presfundo[ind];
-        }
         if (APPInj.parseriePresFundo > 0) {
             ind = sequenciaAP[seq].PIpresfundo;
+            presE = APPInj.presfundo[ind];
+        }
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
         }
         if (APPInj.parserieTemp > 0) {
@@ -7005,7 +7127,8 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		for (int i = 0; i < nAPBCS; ++i) {
 		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 		    escreveIni1 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
-		    escreveIni1 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
+		    escreveIni1 << "** Frequencia da BCS (Hz): "
+		                << (APBCS[i].parserieFreq > 0 ? APBCS[i].freq.front() : bcs[APBCS[i].indBCS].freq[0]) << endl;
 		}
 		escreveIni1 << "\n" << endl;
 		}
@@ -7014,7 +7137,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		for (int i = 0; i < nAPMBCS; ++i) {
 		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 		    escreveIni1 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
-		    escreveIni1 << "** Frequencia da BCS (Hz): " << APMBCS->freq[i] << endl;
+		    escreveIni1 << "** Frequencia da BCS (Hz): " << APMBCS[i].freq.front() << endl;
 		}
 		escreveIni1 << "\n" << endl;
 		}
@@ -7129,7 +7252,8 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			for (int i = 0; i < nAPBCS; ++i) {
 			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 			    escreveIni3 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
-			    escreveIni3 << "** Frequencia da BCS (Hz): " << APBCS->freq[i] << endl;
+			    escreveIni3 << "** Frequencia da BCS (Hz): "
+			                << (APBCS[i].parserieFreq > 0 ? APBCS[i].freq.front() : bcs[APBCS[i].indBCS].freq[0]) << endl;
 			}
 			escreveIni3 << "\n" << endl;
 			}
@@ -7138,7 +7262,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			for (int i = 0; i < nAPMBCS; ++i) {
 			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
 			    escreveIni3 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
-			    escreveIni3 << "** Frequencia da BCS (Hz): " << APMBCS->freq[i] << endl;
+			    escreveIni3 << "** Frequencia da BCS (Hz): " << APMBCS[i].freq.front() << endl;
 			}
 			escreveIni3 << "\n" << endl;
 			}
@@ -7883,10 +8007,10 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
+        if (APPInj.parseriePresFundo > 0) {
             escreveIni << " Pres Jusante ;";
         }
-        if (APPInj.parseriePresFundo > 0) {
+        if (APPInj.parseriePresI > 0) {
             escreveIni << " Pres Montante ;";
         }
         if (APPInj.parserieTemp > 0) {
@@ -8465,7 +8589,7 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
                 konta2++;
             }
             if (APGeom[iG].parserieRug > 0) {
-                ind = sequenciaAP[seq].GeomdB[konta3];
+                ind = sequenciaAP[seq].GeomRug[konta3];
                 saidaBHP[seq][coluna] = APGeom[iG].rug[ind];
                 coluna++;
                 escreveIni << APGeom[iG].rug[ind] << " ;";
@@ -8586,15 +8710,15 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
         }
     }
     if (listaV.vpocinj == 1) {
-        if (APPInj.parseriePresI > 0) {
-            ind = sequenciaAP[seq].PIpresinj;
+        if (APPInj.parseriePresFundo > 0) {
+            ind = sequenciaAP[seq].PIpresfundo;
             presE = APPInj.presfundo[ind];
             saidaBHP[seq][coluna] = presE;
             coluna++;
             escreveIni << presE << " ;";
         }
-        if (APPInj.parseriePresFundo > 0) {
-            ind = sequenciaAP[seq].PIpresfundo;
+        if (APPInj.parseriePresI > 0) {
+            ind = sequenciaAP[seq].PIpresinj;
             pGSup = APPInj.presinj[ind];
             saidaBHP[seq][coluna] = pGSup;
             coluna++;

@@ -8999,7 +8999,7 @@ void leituraAP(string nomeArquivoAP, SProd &sistem1) {
                     sistem1.ImprimeTrendG(i);
                 }
             }
-        } else {
+        } else if (analisePara.tipoAP != 0) {
             // caso de construcao de tabela VFP:
             double BHP;
             if (fabs(falha) < 1e9)

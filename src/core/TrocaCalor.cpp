@@ -765,12 +765,12 @@ double TransCal::NussConf2(double Ra, double heigth, double delD, double teta) {
         double nu90 = 0.;
         double nu60 = 0.;
         double nufim;
-        double nu1 = 0.0605 * pow(Ra, 1. / 3);
+        double nu1 = 0.0605 * pow(Ra, 1. / 3.);
 
         double val1 = pow(Ra, 0.293);
         double val2 = pow(6310 / Ra, 1.36);
         double val3 = pow(0.104 * val1 / (1 + val2), 3.);
-        double nu2 = pow(1 + val3, 1 / 3);
+        double nu2 = pow(1 + val3, 1. / 3.);
 
         double a = heigth / delD;
         double nu3 = 0.242 * pow(Ra / a, 0.272);

@@ -9,6 +9,8 @@ on:
       - main
     tags:
       - "v*"
+  # Used by tag-release.yml, whose GITHUB_TOKEN tag push does not trigger this workflow.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -34,6 +36,18 @@ jobs:
     outputs:
       should_skip: ${{ steps.decide.outputs.should_skip }}
     steps:
+      - name: Checkout (tag version guard)
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      # A release tag must match _version.py, which sets the PyPI, CMake and
+      # desktop versions and the download URL used by the Python package.
+      - name: Check tag matches _version.py
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        run: python3 .github/scripts/release_version.py check-tag "${GITHUB_REF_NAME}"
+
       - id: skip_check
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         uses: step-security/skip-duplicate-actions@v5
@@ -109,6 +123,9 @@ jobs:
 
       - name: Test schema Markdown batch discovery
         run: uv run pytest tests/test_schema_to_markdown.py
+
+      - name: Test release version helpers
+        run: uv run pytest tests/test_release_version.py
 
       - name: Lint (syntax / undefined names)
         run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
