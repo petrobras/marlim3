@@ -38,11 +38,12 @@ simulation engine:
 
 | Platform | Release asset |
 |----------|---------------|
-| Linux x64 | `Marlim3-desktop-linux-x64` |
-| Windows x64 | `Marlim3-desktop-windows-x64.exe` |
-| macOS Apple Silicon | `Marlim3-desktop-macos-arm64.dmg` |
+| Linux x64 | `Marlim3-xGUI-vX.Y.Z-linux-x64` |
+| Windows x64 | `Marlim3-xGUI-vX.Y.Z-windows-x64.exe` |
+| macOS Apple Silicon | `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg` |
 
-Download the matching asset from the GitHub Releases page and run it. No Python
+Download the matching asset from the GitHub Releases page, where `vX.Y.Z` is
+the release tag and `xGUI` stands for external GUI, and run it. No Python
 installation or compiler is required. The Linux desktop application requires
 only glibc 2.34 or newer from the operating system.
 
@@ -52,8 +53,10 @@ details, checksum verification, and diagnostic logs.
 ### Command-line executable
 
 You can also download the native `Marlim3` executable for Linux, Windows, or
-macOS from the GitHub Releases page. This smaller standalone executable runs
-simulations directly from a terminal without installing the Python package.
+macOS from the GitHub Releases page (`Marlim3-vX.Y.Z-linux-x64`,
+`Marlim3-vX.Y.Z-windows-x64.exe` or `Marlim3-vX.Y.Z-macos-arm64`). This
+smaller standalone executable runs simulations directly from a terminal without
+installing the Python package.
 
 ### Developer setup
 
@@ -111,16 +114,16 @@ Streamlit process tree and releases its dynamically allocated port.
 **Linux**
 
 ```bash
-chmod +x Marlim3-desktop-linux-x64
-./Marlim3-desktop-linux-x64
+chmod +x Marlim3-xGUI-vX.Y.Z-linux-x64
+./Marlim3-xGUI-vX.Y.Z-linux-x64
 ```
 
 The Linux desktop executable is a self-contained ELF binary. Its only system
 runtime requirement is glibc 2.34 or newer.
 
-**Windows** — double-click `Marlim3-desktop-windows-x64.exe`.
+**Windows** — double-click `Marlim3-xGUI-vX.Y.Z-windows-x64.exe`.
 
-**macOS** — open `Marlim3-desktop-macos-arm64.dmg`, then drag `Marlim3.app` to
+**macOS** — open `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg`, then drag `Marlim3.app` to
 the `Applications` folder. The current macOS release targets Apple Silicon
 (`arm64`). A signed and notarized release opens normally through Gatekeeper.
 Unsigned development or fork builds may require the user to explicitly allow the
@@ -137,7 +140,8 @@ uv run python -m marlim3_desktop.build
 ```
 
 The script detects the platform, builds the native engine, installs the desktop
-dependencies, and writes one release-named artifact to `dist/`.
+dependencies, and writes one artifact to `dist/`, which the release pipeline
+publishes as `Marlim3-xGUI-vX.Y.Z-<platform>`.
 
 ### Python package
 

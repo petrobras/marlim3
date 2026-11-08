@@ -8,9 +8,11 @@ without installing Python, Streamlit, Qt, or a compiler.
 
 | Platform | Download |
 |----------|----------|
-| Linux x64 | `Marlim3-desktop-linux-x64` |
-| Windows x64 | `Marlim3-desktop-windows-x64.exe` |
-| macOS Apple Silicon | `Marlim3-desktop-macos-arm64.dmg` |
+| Linux x64 | `Marlim3-xGUI-vX.Y.Z-linux-x64` |
+| Windows x64 | `Marlim3-xGUI-vX.Y.Z-windows-x64.exe` |
+| macOS Apple Silicon | `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg` |
+
+`vX.Y.Z` is the release tag and `xGUI` stands for external GUI.
 
 The Linux application requires glibc 2.34 or newer. Ubuntu 22.04 or newer and
 Debian 12 or newer satisfy this requirement.
@@ -20,13 +22,13 @@ Debian 12 or newer satisfy this requirement.
 Make the downloaded file executable, then open it:
 
 ```bash
-chmod +x Marlim3-desktop-linux-x64
-./Marlim3-desktop-linux-x64
+chmod +x Marlim3-xGUI-vX.Y.Z-linux-x64
+./Marlim3-xGUI-vX.Y.Z-linux-x64
 ```
 
 ## Windows
 
-Double-click `Marlim3-desktop-windows-x64.exe`.
+Double-click `Marlim3-xGUI-vX.Y.Z-windows-x64.exe`.
 
 Windows may display a security warning because early Marlim3 Desktop releases
 are not code-signed. Only run files downloaded from the official Marlim3
@@ -34,7 +36,7 @@ release page.
 
 ## macOS
 
-Open `Marlim3-desktop-macos-arm64.dmg` and drag `Marlim3.app` into the
+Open `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg` and drag `Marlim3.app` into the
 Applications folder.
 
 Unsigned releases may be blocked on first launch. If this happens, try to open
@@ -54,7 +56,7 @@ resources.
 Each release includes a matching SHA-256 file. On Linux:
 
 ```bash
-sha256sum -c Marlim3-desktop-linux-x64.sha256
+sha256sum -c Marlim3-xGUI-vX.Y.Z-linux-x64.sha256
 ```
 
 Use the equivalent SHA-256 verification tool for Windows or macOS.
