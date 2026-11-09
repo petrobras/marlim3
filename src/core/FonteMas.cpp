@@ -303,7 +303,11 @@ double IPR::buscaRaiz(double pfundo, double tfundo, double alfa, double beta,
 		presAnul=Pres;
 		massICV=0.;
 	}
-	if (chokeICV.AreaGarg >= (1e-3 + 0.5) * chokeICV.AreaTub)presAnul=pfundo;
+	if (chokeICV.AreaGarg >= (1e-3 + 0.5) * chokeICV.AreaTub){
+		presAnul=pfundo;
+		massL=MasL(pfundo,temp);
+		massG=MasG(pfundo,temp);
+	}
 	double massIPR=VMas(presAnul, temp);
 	double rhomix=1.;
 	if(pfundo>Pres){
