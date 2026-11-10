@@ -1,15 +1,10 @@
----
-name: marlim3-valves-choke
-description: Use when adding flow restrictions or events to a Marlim3 simulation — inline two-phase valves, production/service master valves (Wet Christmas Tree), surface and injection chokes, PIG runs, and pressure-coupled leaks/openings (pressureSource). Essential for shutdown/restart scenarios.
----
-
 # Marlim3 Valves, Chokes, PIG & Leaks
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/accessories.md](../../../docs/single-branch-model-reference/accessories.md) — all devices below (open only for what this skill doesn't cover)
-- [docs/single-branch-model-reference/boundary-conditions.md](../../../docs/single-branch-model-reference/boundary-conditions.md) — `surfaceChoke`, `injectionChoke` context
-- [demos/extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3](../../../demos/extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3) — shutdown with valves + PIG
+- [docs/single-branch-model-reference/accessories.md](../../../../docs/single-branch-model-reference/accessories.md) — all devices below (open only for what this reference doesn't cover)
+- [docs/single-branch-model-reference/boundary-conditions.md](../../../../docs/single-branch-model-reference/boundary-conditions.md) — `surfaceChoke`, `injectionChoke` context
+- [demos/extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3](../../../../demos/extended-shutdown-combined-ESP-CGL-PIG-complete/extended-shutdown-combined-ESP-CGL-PIG-complete.mr3) — shutdown with valves + PIG
 
 ## Common pattern
 

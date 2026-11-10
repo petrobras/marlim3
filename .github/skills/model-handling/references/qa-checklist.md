@@ -1,8 +1,3 @@
----
-name: marlim3-qa-checklist
-description: Use when verifying a Marlim3 simulation implementation against its ADR — the full validation checklist (plan conformance, schema validation, ID cross-references, array consistency, physical plausibility, tests), and the QA report template written to the session folder (agent_sessions/<session>/<slug>.qa.md).
----
-
 # Marlim3 QA Checklist & Report
 
 QA compares the implementation (`.mr3` / Python / tests) against its ADR at `agent_sessions/<session>/<slug>.adr.md` and produces `agent_sessions/<session>/<slug>.qa.md`. QA **reports**; it does not fix (small, unambiguous typos may be flagged with a suggested patch).
@@ -20,12 +15,12 @@ QA compares the implementation (`.mr3` / Python / tests) against its ADR at `age
 One command covers sections 2–4 and most of 5: the schema (every violation at once, EN or PT by the `language` marker), unknown keys (typos the schema would let through), loading through `marlim3.Branch`, ID references and duplicates, paired and monotonic arrays, positions within the lines, and plausibility ranges. Run it instead of scripting checks by hand:
 
 ```bash
-uv run python .github/skills/marlim3-json-schema/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
+uv run python .github/skills/model-handling/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
 ```
 
 Each ERROR it prints is an ERROR finding; review each WARNING. The lists below document what it covers — items marked *(manual)* are not automated.
 
-## 3. Cross-references (validate each per the table in [marlim3-json-schema](../marlim3-json-schema/SKILL.md))
+## 3. Cross-references (validate each per the table in [json-schema](json-schema.md))
 
 - [ ] `crossSectionId`, `materialId`, `formationId`, `prodFluidId`, `initialFluidId` all resolve.
 - [ ] No duplicate IDs within an array.
@@ -60,7 +55,7 @@ The checker flags API, GOR, BSW, gas density, inner diameter, roughness, angle, 
 
 - [ ] Run the case's tests: `uv run pytest agent_sessions/<session>/test_<slug>.py -v` (the `simulacao` test runs when the executable is available). Record pass/fail/skips verbatim.
 - [ ] If the simulation ran: inspect `simulacao.log` for `FALHA` entries; confirm expected result keys/DataFrames exist; check ADR acceptance criteria against actual numbers.
-- [ ] Each reported number comes from the column that measures it — `stdLiqFlowRate` is dead oil only; the liquid rate is `stdLiqWaterFlowRate` (see [marlim3-output-configuration](../marlim3-output-configuration/SKILL.md)) *(manual)*.
+- [ ] Each reported number comes from the column that measures it — `stdLiqFlowRate` is dead oil only; the liquid rate is `stdLiqWaterFlowRate` (see [output-configuration](output-configuration.md)) *(manual)*.
 - [ ] Cross-check the steady state with mass balances: with a linear IPR, liquid = IP × (Pe − Pwf), Pwf read at the first cell; gas/oil ≈ GOR, so gas/liquid ≈ GOR × (1 − BSW). A mismatch usually means a mislabeled column *(manual)*.
 - [ ] Readings at a line end come from the first/last cell: cell-centred values (pressure, temperature) sit half a cell from the boundary. Accept them as the inlet/arrival values even when the ADR names the boundary coordinate — that offset is never a finding, and undocumented outputs must not be used to close it.
 - [ ] Confirm nothing was written outside the session folder: `git status` lists no files created by the pipeline (the folder itself is git-ignored), and no stray run outputs sit in the repo root — git ignores result folders, `*.log`, and `*.dat`, so `git status` alone won't show those.

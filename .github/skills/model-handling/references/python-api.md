@@ -1,19 +1,14 @@
----
-name: marlim3-python-api
-description: Use when writing Python code that builds or runs Marlim3 simulations — the bilingual Branch/Tramo class, to_json/from_json, simulate() behavior and its side effects, result DataFrames, plotting helpers, Scenarios comparison, the command-line executable, and the uv-based dev environment.
----
-
 # Marlim3 Python API & Execution
 
 ## Authoritative files
 
-- [marlim3/README.md](../../../marlim3/README.md) — API guide: bilingual interface and a worked scripting example (open only for what this skill doesn't cover)
-- [docs/getting-started.md](../../../docs/getting-started.md) — installation, developer setup, CLI usage, and building from source
-- [marlim3/_tramo/_branch.py](../../../marlim3/_tramo/_branch.py) — `Branch` implementation (`simulate`, `to_json`, `from_json`, plotting)
-- [marlim3/_tramo/_keys.py](../../../marlim3/_tramo/_keys.py) — bilingual key system
-- [docs/tutorials/](../../../docs/tutorials/index.md) — 5 notebook walkthroughs (steady, nodal, gas-lift, correlations, transient)
-- [marlim3/_cenarios/_cenarios.py](../../../marlim3/_cenarios/_cenarios.py) — `Scenarios` multi-case comparison
-- [marlim3/_rede/_rede.py](../../../marlim3/_rede/_rede.py) — `Network` (flow networks, `-s REDE`)
+- [tools/marlim3/README.md](../../../../tools/marlim3/README.md) — API guide: bilingual interface and a worked scripting example (open only for what this reference doesn't cover)
+- [docs/getting-started.md](../../../../docs/getting-started.md) — installation, developer setup, CLI usage, and building from source
+- [tools/marlim3/_tramo/_branch.py](../../../../tools/marlim3/_tramo/_branch.py) — `Branch` implementation (`simulate`, `to_json`, `from_json`, plotting)
+- [tools/marlim3/_tramo/_keys.py](../../../../tools/marlim3/_tramo/_keys.py) — bilingual key system
+- [docs/tutorials/](../../../../docs/tutorials/index.md) — 5 notebook walkthroughs (steady, nodal, gas-lift, correlations, transient)
+- [tools/marlim3/_cenarios/_cenarios.py](../../../../tools/marlim3/_cenarios/_cenarios.py) — `Scenarios` multi-case comparison
+- [tools/marlim3/_rede/_rede.py](../../../../tools/marlim3/_rede/_rede.py) — `Network` (flow networks, `-s REDE`)
 
 ## Canonical workflow
 
@@ -39,7 +34,7 @@ df = case.resultados["productionProfile"]    # pandas DataFrame
 case.plot_profiles()
 ```
 
-## Bilingual behavior (see [docs/dev-guide/translations.md](../../../docs/dev-guide/translations.md))
+## Bilingual behavior (see [docs/dev-guide/translations.md](../../../../docs/dev-guide/translations.md))
 
 - Attributes, nested dict keys, and enum values accept **both** EN and PT everywhere (`case.dutosProducao` ≡ `case.productionPipe`; `fluid["rgo"]` ≡ `fluid["gor"]`). Internal storage is always English.
 - `case.to_json("name")` writes `name.mr3` (EN keys + `"language": "en"`); `to_json("name", language='pt')` exports PT.
@@ -56,11 +51,11 @@ case.plot_profiles()
 5. On failure, raises with the `FALHA` entry parsed from `simulacao.log` — always read that log when debugging. If the executable crashes instead (e.g., segmentation fault), there is no `simulacao.log` and no exception: it only prints `No PERFISP*.dat files found` and the result entries are `None`. Run `check_case.py` on the case, then the executable directly (`mkdir out && <path>/Marlim3 -d out -i <label>.mr3`) to see the exit code.
 6. Auxiliary files (`.tab`/`.ctm` PVT, snapshots) must be in the CWD at run time.
 
-Executable availability: `from marlim3._download import executable_exists, get_executable_path`. On import, the package tries to resolve/download the executable (skippable via `MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1`). The agents' environment preflight is [scripts/check_environment.py](scripts/check_environment.py) — `uv run python .github/skills/marlim3-python-api/scripts/check_environment.py` prints `READY`, or `NOT READY` with the fix (exit 1), without downloading or building anything.
+Executable availability: `from marlim3._download import executable_exists, get_executable_path`. On import, the package tries to resolve/download the executable (skippable via `MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1`). The agents' environment preflight is [scripts/check_environment.py](../scripts/check_environment.py) — `uv run python .github/skills/model-handling/scripts/check_environment.py` prints `READY`, or `NOT READY` with the fix (exit 1), without downloading or building anything.
 
 ## Post-processing
 
-- Profiles DataFrame: MultiIndex (time, cell); columns like `Pressure (kgf/cm2) C`, `Length (m) Cell center C` (`C` center, `F` face). Canonical names: [marlim3/_output_headers.py](../../../marlim3/_output_headers.py).
+- Profiles DataFrame: MultiIndex (time, cell); columns like `Pressure (kgf/cm2) C`, `Length (m) Cell center C` (`C` center, `F` face). Canonical names: [tools/marlim3/_output_headers.py](../../../../tools/marlim3/_output_headers.py).
 - Trends: dict {gauge → DataFrame indexed by time, `.attrs['measured_length'/'label'/'cell_index']`}.
 - Plots: `plot_profiles(line=..., gradient=..., indicate_anm=...)`, `plot_trends(positions=...)`, `plot_geometry()`, `plot_animated_profiles()`.
 - Multi-case: `marlim3.Scenarios(casos={label: branch, ...})` → `plot_profiles()` / `plot_trends()`.
@@ -78,4 +73,4 @@ uv run python my_script.py              # run anything inside the env
 ./Marlim3 -d ./output -i case.mr3 -s CONVECNAT   # natural convection
 ```
 
-Build from source if needed (see [docs/getting-started.md](../../../docs/getting-started.md#building-from-source)): `cmake --preset gcc-release && cmake --build --preset gcc-release -j$(nproc)` — the executable is auto-copied into `marlim3/`; then `MARLIM3_SKIP_BUILD=1 uv sync --locked`.
+Build from source if needed (see [docs/getting-started.md](../../../../docs/getting-started.md#building-from-source)): `cmake --preset gcc-release && cmake --build --preset gcc-release -j$(nproc)` — the executable is auto-copied into `marlim3/`; then `MARLIM3_SKIP_BUILD=1 uv sync --locked`.

@@ -1,18 +1,13 @@
----
-name: marlim3-testing
-description: Use when writing or running tests for Marlim3 simulations — repo pytest conventions (simulacao marker, executable skip guard, tmp_path pattern), the test-suite layout, the test file for a session case (agent_sessions/<session>/test_<slug>.py), and the manifest-based regression workflow.
----
-
 # Marlim3 Testing Conventions
 
 ## Authoritative files
 
-- [tests/README.md](../../../tests/README.md) — suite overview, demos manifest, and reference workflow (open only for what this skill doesn't cover)
-- [tests/test_configure_simulation.py](../../../tests/test_configure_simulation.py) — the template for new simulation tests (fixtures + tmp_path + markers)
-- [tests/test_demos_steady_state.py](../../../tests/test_demos_steady_state.py) — runs every case in [demos/manifest.json](../../../demos/manifest.json) (with its auxiliary files) through `marlim3.testing`
-- [tests/test_marlim3.py](../../../tests/test_marlim3.py) — unit-test patterns (no executable needed)
-- [marlim3/testing.py](../../../marlim3/testing.py) — manifest runner: runs cases and compares them with `demos/<case>/reference/`
-- [pyproject.toml](../../../pyproject.toml) — pytest config and marker definition
+- [tools/tests/README.md](../../../../tools/tests/README.md) — suite overview, demos manifest, and reference workflow (open only for what this reference doesn't cover)
+- [tools/tests/test_configure_simulation.py](../../../../tools/tests/test_configure_simulation.py) — the template for new simulation tests (fixtures + tmp_path + markers)
+- [tools/tests/test_demos_steady_state.py](../../../../tools/tests/test_demos_steady_state.py) — runs every case in [demos/manifest.json](../../../../demos/manifest.json) (with its auxiliary files) through `marlim3.testing`
+- [tools/tests/test_marlim3.py](../../../../tools/tests/test_marlim3.py) — unit-test patterns (no executable needed)
+- [tools/marlim3/testing.py](../../../../tools/marlim3/testing.py) — manifest runner: runs cases and compares them with `demos/<case>/reference/`
+- [pyproject.toml](../../../../pyproject.toml) — pytest config and marker definition
 
 ## Commands
 
@@ -23,11 +18,11 @@ uv run pytest -m simulacao -v                              # simulation tests (n
 uv run pytest agent_sessions/<session>/test_<slug>.py -v   # a session's tests
 ```
 
-Registered marker (defined in [pyproject.toml](../../../pyproject.toml)): `simulacao` (runs the simulator, requires compiled executable). Unmarked tests must run without the executable. Session tests live outside `testpaths` (`tests/`), so the main suite never collects them — run them by path.
+Registered marker (defined in [pyproject.toml](../../../../pyproject.toml)): `simulacao` (runs the simulator, requires compiled executable). Unmarked tests must run without the executable. Session tests live outside `testpaths` (`tests/`), so the main suite never collects them — run them by path.
 
 ## Mandatory pattern for simulation tests
 
-Every test that calls `simulate()` must (copy from [tests/test_configure_simulation.py](../../../tests/test_configure_simulation.py)):
+Every test that calls `simulate()` must (copy from [tools/tests/test_configure_simulation.py](../../../../tools/tests/test_configure_simulation.py)):
 
 1. Guard on the executable:
 
@@ -52,10 +47,10 @@ def _simular(caso, label, tmp_path):
         os.chdir(original_cwd)
 ```
 
-4. Copy any auxiliary files (PVT `.tab`/`.ctm`, snapshots) from the session folder into the run directory first — the demo runner (`run_case` in [marlim3/testing.py](../../../marlim3/testing.py)) does the same with each manifest entry's `aux` files.
+4. Copy any auxiliary files (PVT `.tab`/`.ctm`, snapshots) from the session folder into the run directory first — the demo runner (`run_case` in [tools/marlim3/testing.py](../../../../tools/marlim3/testing.py)) does the same with each manifest entry's `aux` files.
 5. Assert on results: `resultados` non-empty, expected keys present, DataFrame non-empty, plus the physical acceptance criteria from the ADR (e.g., pressure monotonicity, value ranges).
 6. Simulate the delivered `.mr3` as is: no flags outside the schema, no `language=` argument, no other in-memory edits — copying auxiliary files (item 4) and the steady-state variant below are the only exceptions. An output the ADR needs belongs in the `.mr3` itself.
-7. Label every number the test prints or asserts by the column it came from — `stdLiqFlowRate` is dead oil only; the liquid rate is `stdLiqWaterFlowRate` (see [marlim3-output-configuration](../marlim3-output-configuration/SKILL.md)).
+7. Label every number the test prints or asserts by the column it came from — `stdLiqFlowRate` is dead oil only; the liquid rate is `stdLiqWaterFlowRate` (see [output-configuration](output-configuration.md)).
 
 ## Test template for a session case `<slug>`
 
@@ -85,7 +80,7 @@ def test_input_loads():                              # no executable needed
     caso.from_json(CASE)
     assert caso.productionPipe
     # ...ADR-specific invariants (line totals, key positions); generic
-    # cross-references are covered by check_case.py (marlim3-json-schema skill)...
+    # cross-references are covered by check_case.py (json-schema reference)...
 
 
 @skip_sem_executavel
@@ -111,4 +106,4 @@ Steady-state variants of transient cases: set `caso.initialConfig["transient"] =
 
 ## Promoting a session case to the demos (manual, outside the pipeline)
 
-Session cases are not regression cases, and agents never write outside the session folder. Promoting one is a deliberate human decision: create `demos/<case>/` with the Portuguese model, its hand-written English twin, and the auxiliary files; register it in [demos/manifest.json](../../../demos/manifest.json) (`model`, `native`, `languages`, `aux`); generate the references with `uv run python -m marlim3.testing demos/manifest.json <case>/<model>.mr3`; inspect the CSV diff; and commit `demos/<case>/reference/` — see [tests/README.md](../../../tests/README.md).
+Session cases are not regression cases, and agents never write outside the session folder. Promoting one is a deliberate human decision: create `demos/<case>/` with the Portuguese model, its hand-written English twin, and the auxiliary files; register it in [demos/manifest.json](../../../../demos/manifest.json) (`model`, `native`, `languages`, `aux`); generate the references with `uv run python -m marlim3.testing demos/manifest.json <case>/<model>.mr3`; inspect the CSV diff; and commit `demos/<case>/reference/` — see [tools/tests/README.md](../../../../tools/tests/README.md).

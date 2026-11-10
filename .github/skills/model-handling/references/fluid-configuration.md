@@ -1,16 +1,11 @@
----
-name: marlim3-fluid-configuration
-description: Use when defining fluids for a Marlim3 simulation — production fluid (black-oil, flash-table, or compositional), gas fluid for service lines/gas sources, complementary fluid (glycol, brine, inhibitors), viscosity and emulsion correlations, PVT files, and precomputed property tables.
----
-
 # Marlim3 Fluid Configuration
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/fluids.md](../../../docs/single-branch-model-reference/fluids.md) — full field catalog and model-applicability tables (open only for what this skill doesn't cover)
-- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) §6 — fluid model flags in `initialConfig`
-- [demos/extended-ESP-pumpEfic/PVTSIM-MARLIM.tab](../../../demos/extended-ESP-pumpEfic/PVTSIM-MARLIM.tab) — example PVT table file
-- [docs/schemas/branch.en.json](../../../docs/schemas/branch.en.json) — field-level schema (`productionFluid`, `gasFluid`, `complementaryFluid`, `compTable`)
+- [docs/single-branch-model-reference/fluids.md](../../../../docs/single-branch-model-reference/fluids.md) — full field catalog and model-applicability tables (open only for what this reference doesn't cover)
+- [docs/single-branch-model-reference/general.md](../../../../docs/single-branch-model-reference/general.md) §6 — fluid model flags in `initialConfig`
+- [demos/extended-ESP-pumpEfic/PVTSIM-MARLIM.tab](../../../../demos/extended-ESP-pumpEfic/PVTSIM-MARLIM.tab) — example PVT table file
+- [docs/schemas/branch.en.json](../../../../docs/schemas/branch.en.json) — field-level schema (`productionFluid`, `gasFluid`, `complementaryFluid`, `compTable`)
 
 ## Choosing the thermodynamic model (flags in `initialConfig`)
 

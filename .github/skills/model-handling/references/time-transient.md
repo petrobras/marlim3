@@ -1,15 +1,10 @@
----
-name: marlim3-time-transient
-description: Use when configuring steady-state vs transient mode, initial-condition strategy (user-defined, steady-state, snapshot restart, gas-lift unloading), the time-step schedule (finalTime, times, maxDT), segregation windows, and snapshot saving for a Marlim3 simulation.
----
-
 # Marlim3 Time & Transient Configuration
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/time.md](../../../docs/single-branch-model-reference/time.md) — full time-block reference with examples (open only for what this skill doesn't cover)
-- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) §2, §12 — simulation-mode flags and unloading
-- [docs/tutorials/5_temperature_pulse.ipynb](../../../docs/tutorials/5_temperature_pulse.ipynb) — complete transient walkthrough
+- [docs/single-branch-model-reference/time.md](../../../../docs/single-branch-model-reference/time.md) — full time-block reference with examples (open only for what this reference doesn't cover)
+- [docs/single-branch-model-reference/general.md](../../../../docs/single-branch-model-reference/general.md) §2, §12 — simulation-mode flags and unloading
+- [docs/tutorials/5_temperature_pulse.ipynb](../../../../docs/tutorials/5_temperature_pulse.ipynb) — complete transient walkthrough
 
 ## Mode selection — `initialConfig`
 
@@ -23,7 +18,7 @@ description: Use when configuring steady-state vs transient mode, initial-condit
 | 0 | User-defined initial fields | per-segment `initialConditions` profiles (`pressure`, `temp`, `holdup`, `usl`, `usg`, …); optional `initialFluidId` (default 0) |
 | 1 | From steady-state solution (**default**) | — |
 | 2 | Restart from snapshot | `snapshotFile` (`.snp`) — parsing fails if missing |
-| 3 | Gas-lift unloading | interface lengths + salinity (see artificial-lift skill) |
+| 3 | Gas-lift unloading | interface lengths + salinity (see artificial-lift.md) |
 
 ## Time schedule — top-level `time` object
 
@@ -46,7 +41,7 @@ Design the schedule around events: small `maxDT` (0.1–1 s) during valve closur
 
 `segregationTime` (PT `tempoSegrega`) + `segregation` (PT `segrega`, 0 = normal, 1 = segregation) schedule a special mode for liquid-gas segregation during shutdowns. If omitted, a default schedule starts at t=0 in segregation mode.
 
-## Related knobs (see advanced-settings skill for the full list)
+## Related knobs (see advanced-settings.md for the full list)
 
 - `initialConfig.steadyGuess` — initial guess for the steady-state solver.
 - Timestep penalization controls (`relaxChokeTimestep`, `valveTimestepControl`, `disablePenalizeTimestep`) — leave at defaults unless justified.

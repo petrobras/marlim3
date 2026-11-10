@@ -1,8 +1,3 @@
----
-name: marlim3-planning-interview
-description: Use when planning a Marlim3 simulation from a user's natural-language request — how to interview the user with structured questions, which decisions must be captured, safe engineering defaults, and the ADR (Architecture Decision Record) template written to the session folder agent_sessions/<session>/<slug>.adr.md that drives implementation.
----
-
 # Marlim3 Planning Interview & ADR Authoring
 
 The planner turns a request like "simulate a shutdown of a gas-lifted well" into a complete, implementable ADR. The ADR is the **single source of truth** for the specialist and QA.
@@ -99,14 +94,14 @@ All in agent_sessions/<session>/ (git-ignored):
 ## Acceptance criteria
 <Checkable statements the QA agent will verify.>
 
-## Skills referenced
-<List of .github/skills/* consulted.>
+## References
+<List of .github/skills/model-handling/references/*.md consulted.>
 ```
 
 ## Rules
 
 - The planner **never** writes simulation JSON/Python — only the ADR, inside the session folder.
 - The user approves the ADR in the planner's last question (status `Accepted`), or up front by bringing a complete plan; there is no separate approval step afterwards.
-- Quantify everything: lengths, pressures, times, positions — with units from the json-schema skill.
+- Quantify everything: lengths, pressures, times, positions — with units from the json-schema.md.
 - The cross-reference table must be complete enough that QA can validate without guessing.
 - If the user's request is infeasible (e.g., service-line features without a gas line), resolve it in the interview, not in implementation.

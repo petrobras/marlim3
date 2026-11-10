@@ -1,16 +1,11 @@
----
-name: marlim3-output-configuration
-description: Use when configuring Marlim3 simulation outputs — spatial profiles along the line (productionProfile/serviceProfile), time trends at gauge points (productionTrend/serviceTrend), radial cross-section outputs, the .dat result files the engine writes, and how results surface as pandas DataFrames.
----
-
 # Marlim3 Output Configuration & Results
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/results.md](../../../docs/single-branch-model-reference/results.md) — output objects and variable flags (open only for what this skill doesn't cover)
-- [marlim3/_output_headers.py](../../../marlim3/_output_headers.py) — canonical result-column names (EN/PT)
-- [marlim3/_tramo/_branch.py](../../../marlim3/_tramo/_branch.py) — `_process_profiles` / `_process_trends` (how `.dat` files become DataFrames)
-- [demos/simplifiedProduction/reference/](../../../demos/simplifiedProduction/reference/) — reference CSVs showing real output shapes (every demo case has one)
+- [docs/single-branch-model-reference/results.md](../../../../docs/single-branch-model-reference/results.md) — output objects and variable flags (open only for what this reference doesn't cover)
+- [tools/marlim3/_output_headers.py](../../../../tools/marlim3/_output_headers.py) — canonical result-column names (EN/PT)
+- [tools/marlim3/_tramo/_branch.py](../../../../tools/marlim3/_tramo/_branch.py) — `_process_profiles` / `_process_trends` (how `.dat` files become DataFrames)
+- [demos/simplifiedProduction/reference/](../../../../demos/simplifiedProduction/reference/) — reference CSVs showing real output shapes (every demo case has one)
 
 ## Profiles — snapshot along the line (`productionProfile` / `serviceProfile`, objects)
 

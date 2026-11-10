@@ -1,16 +1,11 @@
----
-name: marlim3-advanced-settings
-description: Use when tuning Marlim3 solver behavior, performance, or special models — slip/drift correlations, mass-transfer model, threading, precomputed tables, convergence and timestep controls in the initialConfig advanced block, sensitivity analysis, wax, and 3D thermal diffusion. Only needed beyond defaults.
----
-
 # Marlim3 Advanced Settings (`initialConfig` + `advanced` block)
 
 **Golden rule:** keep defaults until a baseline result is validated; change one parameter at a time.
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/general.md](../../../docs/single-branch-model-reference/general.md) — every flag below with defaults and warnings (open only for what this skill doesn't cover)
-- [docs/tutorials/4_black_box_correlations.ipynb](../../../docs/tutorials/4_black_box_correlations.ipynb) — black-box correlation usage
+- [docs/single-branch-model-reference/general.md](../../../../docs/single-branch-model-reference/general.md) — every flag below with defaults and warnings (open only for what this reference doesn't cover)
+- [docs/tutorials/4_black_box_correlations.ipynb](../../../../docs/tutorials/4_black_box_correlations.ipynb) — black-box correlation usage
 
 ## Physics & correlation selection (`initialConfig`)
 
@@ -23,7 +18,7 @@ description: Use when tuning Marlim3 solver behavior, performance, or special mo
 
 ## Performance
 
-- `pressureTable` / `gasTable` + `compTable` grid — precomputed property tables (recommended for long transients; see fluid skill).
+- `pressureTable` / `gasTable` + `compTable` grid — precomputed property tables (recommended for long transients; see fluid-configuration.md).
 - `RsPbTable` — pre-build Rs table (essential with `RsPbModel: 4`).
 - `advanced.threads` (PT `nthrd`, default 1) and `advanced.matrixThreads` — parallel execution.
 - `dynamicTableModel` — posterior compositional tables for steady-state network cases.
@@ -42,7 +37,7 @@ description: Use when tuning Marlim3 solver behavior, performance, or special mo
 
 ## Special features
 
-- `parametricAnalysis` (PT `AP`) + `parametricAnalysisFile` (PT `arquivoAP`, default `leituraAP.json`) + `parallelizePA` (PT `paralelizaAP`) — steady-state parametric analysis driven by an auxiliary JSON file (schema [docs/schemas/leituraAP.pt.json](../../../docs/schemas/leituraAP.pt.json); example [demos/2zones-2GLVs-2-Check-PA/leituraAP.json](../../../demos/2zones-2GLVs-2-Check-PA/leituraAP.json)).
+- `parametricAnalysis` (PT `AP`) + `parametricAnalysisFile` (PT `arquivoAP`, default `leituraAP.json`) + `parallelizePA` (PT `paralelizaAP`) — steady-state parametric analysis driven by an auxiliary JSON file (schema [docs/schemas/leituraAP.pt.json](../../../../docs/schemas/leituraAP.pt.json); example [demos/2zones-2GLVs-2-Check-PA/leituraAP.json](../../../../demos/2zones-2GLVs-2-Check-PA/leituraAP.json)).
 - `waxMode` + top-level `wax` object — wax deposition.
 - `diffusion3dMode` + `diffusion3dJson` + `diffusion3dThreads` — 3D thermal diffusion coupled to 1D flow.
 - `severeSlugging` top-level object — severe-slugging detection.

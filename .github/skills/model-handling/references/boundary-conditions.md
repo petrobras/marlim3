@@ -1,15 +1,10 @@
----
-name: marlim3-boundary-conditions
-description: Use when closing a Marlim3 model with boundary conditions and inflow sources — inlet pressure or flow-rate conditions, separator outlet, IPR reservoir inflow, liquid/mass/gas/pressure sources, service-line gas injection (gasInj), and injection-well boundary modes.
----
-
 # Marlim3 Boundary Conditions & Sources
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/boundary-conditions.md](../../../docs/single-branch-model-reference/boundary-conditions.md) — closure strategies and BC objects (open only for what this skill doesn't cover)
-- [docs/single-branch-model-reference/accessories.md](../../../docs/single-branch-model-reference/accessories.md) — source objects (`ipr`, `liquidSource`, `massSource`, `gasSource`, `pressureSource`)
-- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — IPR + separator + gasInj working example
+- [docs/single-branch-model-reference/boundary-conditions.md](../../../../docs/single-branch-model-reference/boundary-conditions.md) — closure strategies and BC objects (open only for what this reference doesn't cover)
+- [docs/single-branch-model-reference/accessories.md](../../../../docs/single-branch-model-reference/accessories.md) — source objects (`ipr`, `liquidSource`, `massSource`, `gasSource`, `pressureSource`)
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../../demos/simplifiedProduction/simplifiedProduction.mr3) — IPR + separator + gasInj working example
 
 ## Closure strategy (pick exactly one inlet approach)
 
@@ -36,7 +31,7 @@ Reverse-flow protection at outlet: `initialConfig.checkValve` (0 = reverse gas i
 - `liquidSource`: `liquidFlowRate` [sm³/d] standard-condition liquid; associated gas inferred from the fluid. Optional `beta` (complementary-fluid ratio).
 - `massSource`: `totalMassFlowRate` [kg/s]; `thermType` 0 = equilibrium gas split, 1 = explicit `gasMassFlow`; `complementaryMassFlowRate`.
 - `gasSource`: `gasFlowRate` [sm³/d]; `dry: true` uses `gasFluid`, `dry: false` links `prodFluidId`.
-- `pressureSource`: leak/opening coupled to an external pressurized medium — see the valves-choke skill.
+- `pressureSource`: leak/opening coupled to an external pressurized medium — see the valves-choke.md.
 - `porousRadialSource` / `porous2DSource`: near-wellbore models delegated to external files (`measuredLength`, `file`).
 
 ## Service-line gas injection — `gasInj` (requires `gasLine: true`)

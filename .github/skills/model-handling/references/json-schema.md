@@ -1,8 +1,3 @@
----
-name: marlim3-json-schema
-description: Use when creating, reading, or validating a Marlim3 simulation input file (.mr3 / JSON). Covers the top-level structure, the bilingual EN/PT key system, units conventions, ID cross-reference rules, and how to validate against the official JSON schemas. Load this FIRST for any simulation-building task.
----
-
 # Marlim3 JSON Input — Structure, Bilingual Keys & Validation
 
 Marlim3 simulations are defined in a single JSON file (conventionally `.mr3`). The Python API (`marlim3.Branch`) and the C++ engine both consume this format.
@@ -13,14 +8,14 @@ The schemas are large (EN ~157 KB, PT ~203 KB): search them for the field you ne
 
 | File | What it defines |
 |------|-----------------|
-| [docs/schemas/branch.en.json](../../../docs/schemas/branch.en.json) | Full JSON Schema, **English keys** (recommended format) |
-| [docs/schemas/branch.pt.json](../../../docs/schemas/branch.pt.json) | Full JSON Schema, Portuguese keys |
-| [docs/single-branch-model-reference/json-schema.md](../../../docs/single-branch-model-reference/json-schema.md) | Human-readable top-level catalog + units |
-| [marlim3/translations.json](../../../marlim3/translations.json) | EN ↔ PT key/value mapping (single source of truth) |
-| [docs/dev-guide/translations.md](../../../docs/dev-guide/translations.md) | How the bilingual system works |
-| [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) | Working English-keyed example (well + gas-lift line) |
-| `demos/<case>/` | One folder per case: the Portuguese model, its hand-written English twin, and auxiliary files (listed in [demos/manifest.json](../../../demos/manifest.json)) |
-| [docs/single-branch-model-reference/migration.md](../../../docs/single-branch-model-reference/migration.md) | Discontinued keys the engine now rejects — never write them |
+| [docs/schemas/branch.en.json](../../../../docs/schemas/branch.en.json) | Full JSON Schema, **English keys** (recommended format) |
+| [docs/schemas/branch.pt.json](../../../../docs/schemas/branch.pt.json) | Full JSON Schema, Portuguese keys |
+| [docs/single-branch-model-reference/json-schema.md](../../../../docs/single-branch-model-reference/json-schema.md) | Human-readable top-level catalog + units |
+| [tools/marlim3/translations.json](../../../../tools/marlim3/translations.json) | EN ↔ PT key/value mapping (single source of truth) |
+| [docs/dev-guide/translations.md](../../../../docs/dev-guide/translations.md) | How the bilingual system works |
+| [demos/simplifiedProduction/simplifiedProduction.mr3](../../../../demos/simplifiedProduction/simplifiedProduction.mr3) | Working English-keyed example (well + gas-lift line) |
+| `demos/<case>/` | One folder per case: the Portuguese model, its hand-written English twin, and auxiliary files (listed in [demos/manifest.json](../../../../demos/manifest.json)) |
+| [docs/single-branch-model-reference/migration.md](../../../../docs/single-branch-model-reference/migration.md) | Discontinued keys the engine now rejects — never write them |
 
 ## Language rules
 
@@ -97,10 +92,10 @@ Additional structural rules:
 
 ## Validation — `check_case.py`
 
-Run the bundled [check_case.py](scripts/check_case.py) on every case before handing it over (it never runs the simulator):
+Run the bundled [check_case.py](../scripts/check_case.py) on every case before handing it over (it never runs the simulator):
 
 ```bash
-uv run python .github/skills/marlim3-json-schema/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
+uv run python .github/skills/model-handling/scripts/check_case.py agent_sessions/<session>/<slug>.mr3
 ```
 
 It reports everything in one run — every schema violation (EN or PT schema, chosen by the `language` marker), unknown keys (typos the schema lets through), loading errors from `marlim3.Branch`, the cross-reference and structural rules above, and inputs that crash the executable although the schema accepts them (e.g., an `ipr` without `ii`/`iiTime`) — and exits with status 1 on any ERROR. `jsonschema` already ships with the project environment (marlim3 depends on nbformat, which depends on it), so no extra dependency group is needed.

@@ -25,7 +25,7 @@ Track phases with the todo tool so the user sees progress. Short questions to th
 Before anything else, run:
 
 ```bash
-uv run python .github/skills/marlim3-python-api/scripts/check_environment.py
+uv run python .github/skills/model-handling/scripts/check_environment.py
 ```
 
 It must print `READY`. If it prints `NOT READY`, or fails in any other way (e.g., uv refusing to run because its version doesn't match the one the project pins), **stop the pipeline — do not start the interview**. Tell the user exactly what the check reported (verbatim), what is missing, and how to fix it (the output says how; see also [Before you start](../README-agents.md#before-you-start)), and ask them to repeat the request once it is fixed. When it passes, tell every subagent you invoke that the preflight passed.
@@ -69,6 +69,6 @@ Summarize for the user: what was simulated, the session folder, the ADR and QA r
 ## Key context
 
 - Session folder `agent_sessions/<session>/` (git-ignored; `<session>` = `<YYYY-MM-DD>-<slug>`): ADR `<slug>.adr.md` · case `<slug>.mr3` (+ auxiliary files, optional `build_model.py`) · tests `test_<slug>.py` · QA report `<slug>.qa.md`.
-- Skills live in [.github/skills/](../skills/marlim3-json-schema/SKILL.md) — the subagents load them; don't load them yourself.
-- Docs hub: [docs/index.md](../../docs/index.md) · schema: [docs/schemas/branch.en.json](../../docs/schemas/branch.en.json) · examples: [demos/](../../demos/simplifiedProduction/simplifiedProduction.mr3) · test conventions: [tests/README.md](../../tests/README.md).
+- The [model-handling skill](../skills/model-handling/SKILL.md) holds the references the subagents load; don't load them yourself.
+- Docs hub: [docs/index.md](../../docs/index.md) · schema: [docs/schemas/branch.en.json](../../docs/schemas/branch.en.json) · examples: [demos/](../../demos/simplifiedProduction/simplifiedProduction.mr3) · test conventions: [tools/tests/README.md](../../tools/tests/README.md).
 - Tests requiring the compiled executable are marked `simulacao` and auto-skip when it is absent — a skip is not a pass; surface it in the final report.

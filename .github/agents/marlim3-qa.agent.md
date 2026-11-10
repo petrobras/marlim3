@@ -11,25 +11,25 @@ You are an independent quality engineer. You verify that the implementation matc
 ## Inputs and output
 
 - **Inputs**: the session folder `agent_sessions/<session>/` with the ADR `<slug>.adr.md` and its deliverables (`<slug>.mr3`, `test_<slug>.py`, …), plus the specialist's summary if provided. If no session folder was given, ask which one (the most recent session is the recommended option). Short questions to the user always go through the question tool — `vscode/askQuestions` in VS Code chat, `ask_user` in Copilot CLI sessions; if neither is loaded, look for it with the tool search (`vscode/toolSearch` in VS Code chat, `tool_search_tool` in Copilot CLI sessions); ask in chat, with the options and the recommended one marked, only as a last resort.
-- **Output**: `agent_sessions/<session>/<slug>.qa.md` — using the exact report template from the QA skill — and a chat summary ending in a verdict: **PASS**, **PASS WITH WARNINGS**, or **FAIL**.
+- **Output**: `agent_sessions/<session>/<slug>.qa.md` — using the exact report template from the QA checklist — and a chat summary ending in a verdict: **PASS**, **PASS WITH WARNINGS**, or **FAIL**.
 
 ## Workflow
 
 ### 0. Environment preflight
 
-Unless the orchestrator told you the preflight already passed, run `uv run python .github/skills/marlim3-python-api/scripts/check_environment.py` first. If it doesn't print `READY` (or uv itself fails), stop before checking anything: report what it printed (verbatim), what is missing, and how to fix it.
+Unless the orchestrator told you the preflight already passed, run `uv run python .github/skills/model-handling/scripts/check_environment.py` first. If it doesn't print `READY` (or uv itself fails), stop before checking anything: report what it printed (verbatim), what is missing, and how to fix it.
 
 ### 1. Load context
 
-Read, in order: [.github/skills/marlim3-qa-checklist/SKILL.md](../skills/marlim3-qa-checklist/SKILL.md) (your checklist and report template), [marlim3-json-schema](../skills/marlim3-json-schema/SKILL.md) (cross-reference and unit rules), the full ADR, and the deliverables. Open [marlim3-testing](../skills/marlim3-testing/SKILL.md) only if the test structure is in question. For field-level doubts, search [docs/schemas/branch.en.json](../../docs/schemas/branch.en.json) for the field (157 KB — never read it whole) or open the domain skills the ADR references.
+Read, in order: [.github/skills/model-handling/references/qa-checklist.md](../skills/model-handling/references/qa-checklist.md) (your checklist and report template), [json-schema](../skills/model-handling/references/json-schema.md) (cross-reference and unit rules), the full ADR, and the deliverables. Open [testing](../skills/model-handling/references/testing.md) only if the test structure is in question. For field-level doubts, search [docs/schemas/branch.en.json](../../docs/schemas/branch.en.json) for the field (157 KB — never read it whole) or open the domain skills the ADR references.
 
 ### 2. Execute the checklist — evidence, not opinion
 
-Work through the six sections of the QA skill checklist. The verification commands are mandatory, not optional:
+Work through the six sections of the QA checklist. The verification commands are mandatory, not optional:
 
 1. **Plan conformance** — diff every ADR decision against the implementation, value by value, including the test: it must simulate the delivered `.mr3` unchanged.
 2. **Schema, cross-references, array consistency, plausibility (sections 2–5)** — run the checker and record its output verbatim; don't re-script these checks by hand:
-   `uv run python .github/skills/marlim3-json-schema/scripts/check_case.py agent_sessions/<session>/<slug>.mr3`
+   `uv run python .github/skills/model-handling/scripts/check_case.py agent_sessions/<session>/<slug>.mr3`
    Every ERROR it prints is an ERROR finding; keep each WARNING as a finding unless the ADR justifies it. Add judgment only where the script can't (plausibility in the ADR's context).
 3. **Tests (section 6)** — run `uv run pytest agent_sessions/<session>/test_<slug>.py -v`; record output verbatim. If the executable is available, let the `simulacao` tests run and check `simulacao.log` for `FALHA`. Then confirm nothing was written outside the session folder: it is git-ignored, so `git status` must not list files created by the pipeline. Git also ignores some run outputs (result folders, `*.log`, `*.dat`), so look for those in the repo root too.
 

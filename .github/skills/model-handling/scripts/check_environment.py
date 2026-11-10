@@ -2,7 +2,7 @@
 
 Usage, from the repository root:
 
-    uv run python .github/skills/marlim3-python-api/scripts/check_environment.py
+    uv run python .github/skills/model-handling/scripts/check_environment.py
 
 Reaching the script already proves that uv (the version the project pins) and the project
 environment work. It then checks that jsonschema (used by check_case.py) is installed and that
@@ -33,7 +33,7 @@ def problems():
     except RuntimeError as exc:  # no prebuilt executable for this platform
         return found + [f"{exc} — {BUILD}"]
     if not executable_exists():
-        return found + [f"the Marlim3 executable is not in marlim3/ or build/ — {INSTALL}"]
+        return found + [f"the Marlim3 executable is not in tools/marlim3/ or build/ — {INSTALL}"]
     try:
         subprocess.run([str(path), "--help"], capture_output=True, timeout=5)
     except (OSError, subprocess.TimeoutExpired) as exc:

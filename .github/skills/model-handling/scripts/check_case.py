@@ -2,7 +2,7 @@
 
 Usage, from the repository root:
 
-    uv run python .github/skills/marlim3-json-schema/scripts/check_case.py <case.mr3>
+    uv run python .github/skills/model-handling/scripts/check_case.py <case.mr3>
 
 Checks the JSON schema (every violation, plus keys the schema does not know), loading
 through marlim3.Branch, ID cross-references, gasLine/transient dependencies, inputs that
@@ -10,6 +10,7 @@ crash the executable, paired and monotonic arrays, positions along the lines and
 plausibility ranges. Prints one finding per line and exits with status 1 when there is
 any ERROR. The simulator is never run.
 """
+import argparse
 import copy
 import json
 import math
@@ -85,6 +86,16 @@ def _forbid_unknown_keys(node):
             _forbid_unknown_keys(value)
 
 
+def _schema_finding(error):
+    # The engine upper-cases these values before comparing them, so a case-only difference still runs.
+    if (error.validator == "enum" and isinstance(error.instance, str)
+            and any(isinstance(v, str) and v.upper() == error.instance.upper() for v in error.validator_value)):
+        expected = next(v for v in error.validator_value if isinstance(v, str) and v.upper() == error.instance.upper())
+        return ("WARNING", _where(error.absolute_path),
+                f"{error.instance!r} differs from the schema value {expected!r} only in letter case; write {expected!r}")
+    return ("ERROR", _where(error.absolute_path), error.message)
+
+
 def schema_findings(raw):
     try:
         import jsonschema
@@ -95,10 +106,10 @@ def schema_findings(raw):
     english = str(raw.get("language", "")).lower() == "en"
     schema = _read_json(SCHEMAS / ("branch.en.json" if english else "branch.pt.json"))
     data = {k: v for k, v in raw.items() if k != "language"}
-    found = [("ERROR", _where(e.absolute_path), e.message) for e in jsonschema.Draft7Validator(schema).iter_errors(data)]
+    found = [_schema_finding(e) for e in jsonschema.Draft7Validator(schema).iter_errors(data)]
     # The schema does not list every key in use (labels, ids, legacy sections), so a key only
     # counts as unknown when the API's translation table does not know it either.
-    translations = _read_json(ROOT / "marlim3" / "translations.json")["keys"]
+    translations = _read_json(ROOT / "tools" / "marlim3" / "translations.json")["keys"]
     known = set(translations) | set(translations.values())
     strict = copy.deepcopy(schema)
     _forbid_unknown_keys(strict)
@@ -108,7 +119,7 @@ def schema_findings(raw):
                              if k not in known and not k.endswith("_reserva"))
             if unknown:
                 found.append(("WARNING", _where(e.absolute_path),
-                              f"unknown key(s) {unknown} — not in the schema nor in marlim3/translations.json; "
+                              f"unknown key(s) {unknown} — not in the schema nor in tools/marlim3/translations.json; "
                               "check for typos"))
     return found
 
@@ -333,10 +344,9 @@ def plausibility_findings(d):
 
 
 def main(argv):
-    if len(argv) != 1:
-        print(__doc__)
-        return 2
-    path = Path(argv[0]).resolve()
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("case", type=Path, help="input file (.mr3 / .json)")
+    path = parser.parse_args(argv).case.resolve()
     found = schema_findings(_read_json(path))
     try:
         data = load_through_api(path)

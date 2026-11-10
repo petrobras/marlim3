@@ -1,16 +1,11 @@
----
-name: marlim3-materials-cross-sections
-description: Use when defining pipe wall materials, radial cross-section geometry (diameters, roughness, concentric layers, annular flow), or rock formation thermal properties for a Marlim3 simulation. Covers material types (solid, user fluid, water, air), layer construction, and formation coupling.
----
-
 # Marlim3 Materials, Cross-Sections & Formation
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/materials.md](../../../docs/single-branch-model-reference/materials.md) — material types and properties (open only for what this skill doesn't cover)
-- [docs/single-branch-model-reference/cross-sections.md](../../../docs/single-branch-model-reference/cross-sections.md) — radial geometry and layers (open only for what this skill doesn't cover)
-- [docs/single-branch-model-reference/rock-formation.md](../../../docs/single-branch-model-reference/rock-formation.md) — formation thermal properties
-- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — realistic well/flowline/riser cross-sections
+- [docs/single-branch-model-reference/materials.md](../../../../docs/single-branch-model-reference/materials.md) — material types and properties (open only for what this reference doesn't cover)
+- [docs/single-branch-model-reference/cross-sections.md](../../../../docs/single-branch-model-reference/cross-sections.md) — radial geometry and layers (open only for what this reference doesn't cover)
+- [docs/single-branch-model-reference/rock-formation.md](../../../../docs/single-branch-model-reference/rock-formation.md) — formation thermal properties
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../../demos/simplifiedProduction/simplifiedProduction.mr3) — realistic well/flowline/riser cross-sections
 
 ## Materials — `material` (top-level array)
 

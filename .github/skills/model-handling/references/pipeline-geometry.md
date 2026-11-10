@@ -1,15 +1,10 @@
----
-name: marlim3-pipeline-geometry
-description: Use when building the axial geometry of a Marlim3 simulation — production and service pipe segments, inclination angles or XY coordinates, cell discretization, ambient environment (formation, seawater, atmosphere), initial condition profiles, and production/service thermal coupling.
----
-
 # Marlim3 Pipeline Geometry
 
 ## Authoritative files
 
-- [docs/single-branch-model-reference/pipes.md](../../../docs/single-branch-model-reference/pipes.md) — segment fields and both examples (open only for what this skill doesn't cover)
-- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../demos/simplifiedProduction/simplifiedProduction.mr3) — full well + flowline + riser + service line in XY mode
-- [docs/single-branch-model-reference/cross-sections.md](../../../docs/single-branch-model-reference/cross-sections.md) — the radial geometry referenced by `crossSectionId`
+- [docs/single-branch-model-reference/pipes.md](../../../../docs/single-branch-model-reference/pipes.md) — segment fields and both examples (open only for what this reference doesn't cover)
+- [demos/simplifiedProduction/simplifiedProduction.mr3](../../../../demos/simplifiedProduction/simplifiedProduction.mr3) — full well + flowline + riser + service line in XY mode
+- [docs/single-branch-model-reference/cross-sections.md](../../../../docs/single-branch-model-reference/cross-sections.md) — the radial geometry referenced by `crossSectionId`
 
 ## Segments — `productionPipe` / `servicePipe` (arrays)
 
