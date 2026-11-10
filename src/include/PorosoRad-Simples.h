@@ -26,6 +26,7 @@ extern Logger logger;
 
 // Path to the simulation input file
 extern string pathArqEntrada;
+string resolveArquivoEntrada(const string &nome);
 
 // Path to the PVTSIM and snapshot input files
 extern string pathArqExtEntrada;

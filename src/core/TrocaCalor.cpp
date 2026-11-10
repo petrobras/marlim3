@@ -376,7 +376,7 @@ TransCal &TransCal::operator=(const TransCal &vTransCal) {
             dimExt = vTransCal.dimExt;
 
             if (lenth != vTransCal.lenth)
-                cout << "dimensoes de vetores diferem em número de camadas, imposs�vel igualar na TransCal";
+                cout << "dimensoes de vetores diferem em número de camadas, impossível igualar na TransCal";
             for (int i = 0; i < lenth; i++)
                 drcamada[i] = vTransCal.drcamada[i];
             for (int i = 0; i < lenth; i++) {

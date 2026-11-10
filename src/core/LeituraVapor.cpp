@@ -2724,10 +2724,10 @@ void LerVap::imprimeProfile(CelVap *const celula,
         if (profp.masstrans == 1)
             escreveIni << " Transferencia de Massa entre Fases (kgf/(s m)) ;";
         if (profp.cpg == 1)
-            escreveIni << " Calor Especifico a press�o constante Gas (J/(kg C)) ;";
+            escreveIni << " Calor Especifico a pressão constante Gas (J/(kg C)) ;";
         if (profp.cpl == 1)
             escreveIni
-                << " Calor Especifico a press�o constante Liquido (J/(kg C)) ;";
+                << " Calor Especifico a pressão constante Liquido (J/(kg C)) ;";
         escreveIni << " Unidade de Producao;";
         escreveIni << " Elevação (m);";
         escreveIni << "\n";

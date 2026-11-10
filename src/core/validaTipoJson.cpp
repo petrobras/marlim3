@@ -6573,6 +6573,6 @@ void validadorTipo::validaGeral(Document &jsonDoc) {
         std::string mensagem;
         int nele = erros.size();
         for (int i = 0; i < nele; i++)
-            logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "validacao de tipo " + erros[i], "jsonDoc", "erro de tipo");
+            logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_PARSE_SCHEMA_VALIDATION, "validacao de tipo " + erros[i], "jsonDoc", "erro de tipo");
     }
 }

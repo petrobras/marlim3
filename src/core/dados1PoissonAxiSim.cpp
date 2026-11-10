@@ -327,14 +327,13 @@ void dadosPAxiSim::lerPoisson(string nomeArquivoEntrada, double* vresGlob,
 		int vncel, double* vgeoterm) {
 
 	ostringstream arquivotemp;
-	arquivotemp<<pathArqEntrada<<nomeArquivoEntrada;
+	arquivotemp<<resolveArquivoEntrada(nomeArquivoEntrada);
 	entrada = arquivotemp.str();
     FILE *fp = fopen(entrada.c_str(), "r");
 
-	if (!fp) {
-		logger.log(LOGGER_FALHA,LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION, "Arquivo não encontrado: ",entrada, "leitura de json");
-		return;
-	}
+    if (!fp)
+        logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                       "Arquivo nao encontrado", entrada, "leitura de json");
 
     char readBuffer[125536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));

@@ -157,7 +157,7 @@ double arranjo::fricm(){
 
 double arranjo::zbrent(double x1,double x2,
                             double tol, double epsn, int maxit){
-//Acha zero de fun��o ver NR
+//Acha zero de função ver NR
  double EPS=epsn;
  double a=0.98;
  double b=0.05;

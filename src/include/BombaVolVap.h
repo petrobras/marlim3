@@ -17,8 +17,8 @@ using namespace std;
 #include "PropVapor.h"
 
 class BomVolVapor{ // BCS � uma  classe que trabalha com spline,
-//a princ�pio ter�amos apenas dois vetores para a interpola��o, mas iremos trabalhar com quatro vetores, onde 3 fun��es
-//s�o interpoladas pelo primeiro vetor
+//a princípio teríamos apenas dois vetores para a interpolação, mas iremos trabalhar com quatro vetores, onde 3 funções
+//são interpoladas pelo primeiro vetor
     public:
 
 	double capacidade;
@@ -32,7 +32,7 @@ class BomVolVapor{ // BCS � uma  classe que trabalha com spline,
 
     BomVolVapor(double vcap=0., double vfreq=0.,double vnpoli=1.2,
     		  double VMG=0., double VMP=0.); //construtor
-    BomVolVapor(const BomVolVapor&);//construtor de c�pia
+    BomVolVapor(const BomVolVapor&);//construtor de cópia
     BomVolVapor& operator=(const BomVolVapor&);//sobrecarga do operador =
     void vazmass(double pres,double pres1, double temp,double temp1,
     		     double alf);

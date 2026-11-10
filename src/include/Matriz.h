@@ -165,7 +165,7 @@ class SparseMtx : public AbsMtx<T> { // Sparse matrix implementation derived fro
     // c: pointer to the column-index storage for each nonzero entry
     // f: pointer to the sra index of the first nonzero term in each row
     SparseMtx(int, int);          // Constructor com todas as entradas = zero
-    SparseMtx(const SparseMtx &); // Constructor c�pia
+    SparseMtx(const SparseMtx &); // Constructor cópia
     ~SparseMtx() {
         if (lenth > 0) {
             delete[] sra;

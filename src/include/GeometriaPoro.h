@@ -15,7 +15,7 @@ class DadosGeoPoro{ //Vcr � um template para vetores
         double dia;
         double peri;
         int ncamadas;
-        double* kX;//condutividade da tubula��o
+        double* kX;//condutividade da tubulação
         double* diamC;
         double* espessuR;
         double* kY;
@@ -93,12 +93,12 @@ class DadosGeoPoro{ //Vcr � um template para vetores
              poro = 0;
              compRoc = 0;
             }
-        } //construtor c�pia
+        } //construtor cópia
 
         DadosGeoPoro& operator=(const DadosGeoPoro& vgeo){
         	if(ncamadas>0){
-        	     if(this!=&vgeo){//verifica se se est� igualando o mesmo vetor
-        	     if(ncamadas!=vgeo.ncamadas) cout<<"dimens�es de vetores diferem, imposs�vel igualar na geometria";//mesmo tamanho de vetores?
+        	     if(this!=&vgeo){//verifica se se está igualando o mesmo vetor
+        	     if(ncamadas!=vgeo.ncamadas) cout<<"dimensões de vetores diferem, impossível igualar na geometria";//mesmo tamanho de vetores?
         	     a=vgeo.a;
         	     b=vgeo.b;
         	     dia=vgeo.dia;

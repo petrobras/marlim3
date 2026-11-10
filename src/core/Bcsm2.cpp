@@ -26,7 +26,7 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         potTermo=0.;
 
 	for (int i=0; i<lenth; i++){
-         vaz[i]= *(Vvaz+i);//copiando de uma �rea apontada por um ponteiro
+         vaz[i]= *(Vvaz+i);//copiando de uma área apontada por um ponteiro
          head[i]= *(Vhead+i);
          power[i]= *(Vpower+i);
          efic[i]= *(Vefic+i);
@@ -111,7 +111,7 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
        }
 }
 BomCentSub::BomCentSub(const BomCentSub& bombaantiga){
-//construtor de c�pia
+//construtor de cópia
 
         int n=bombaantiga.lenth;
         n--;
@@ -348,15 +348,15 @@ double BomCentSub::Defic(double xvaz) const{
 double BomCentSub::FalsaCorda(int qfunc,double a,double b,double delta ,double epsn,int maxit)const{
         //a e b-> chutes iniciais para a falsa corda
         //epsn -> limite em que se admite F(double) aproximadamente zero
-        //delta-> limite a partir do qual admite-se que j� n�o existe varia��o no c�lculo da raiz
-        //maxit-> m�ximo n�mero de itera��es permitido no c�lculo
-        //F(double)-> fun��o que se quer obter a raiz
+        //delta-> limite a partir do qual admite-se que já não existe variação no cálculo da raiz
+        //maxit-> máximo número de iterações permitido no cálculo
+        //F(double)-> função que se quer obter a raiz
           double u=(qfunc==1)?Defic(a):Fhead(a)/nestag;
           double e=b-a;
           double c;
 
           double v=(qfunc==1)?Defic(b):Fhead(b)/nestag;
-          if(u!=0 && v!=0){//neste primeiro bloco, busca-se assegurar que sempre se estra� trabalhando com valores de fun��o negativa nos chutes iniciais para se garantir maior converg�ncia na falsa corda
+          if(u!=0 && v!=0){//neste primeiro bloco, busca-se assegurar que sempre se estará trabalhando com valores de função negativa nos chutes iniciais para se garantir maior convergência na falsa corda
            if(u/v>0){
             if(u>0){
              double proy=v; double prox=b; double distx=a; double del=a-prox;
@@ -397,7 +397,7 @@ double BomCentSub::FalsaCorda(int qfunc,double a,double b,double delta ,double e
               if(fabs(e)<delta||fabs(w)<epsn) return c;
               ((u>0&&w<0)||(u<0&&w>0))?(b=c):(a=c,u=w);
           }
-          cout<<"Falsa corda em Bomba atingiu n�mero m�ximo de itera��es"<<"\n" ;
+          cout<<"Falsa corda em Bomba atingiu número máximo de iterações"<<"\n" ;
           c=-1;
           return c;
 }
@@ -463,18 +463,18 @@ ostream& operator<<(ostream& s, const BomCentSub& vb){
         vhpe=vb[i];
         s.width(6);
         s.precision(5);
-        s<<"Vaz�o BPD = "<<vhpe<<"  "<<"HEAD ft = "<<vb.Fhead(vhpe)/vb.nestag<<"  "<<"Pot�ncia hp="<<vb.Fpower(vhpe)/vb.nestag<<"  "<<"efici�ncia ="<<vb.Fefic(vhpe)<<"\n";
+        s<<"Vazão BPD = "<<vhpe<<"  "<<"HEAD ft = "<<vb.Fhead(vhpe)/vb.nestag<<"  "<<"Potência hp="<<vb.Fpower(vhpe)/vb.nestag<<"  "<<"eficiência ="<<vb.Fefic(vhpe)<<"\n";
         }
         double QE=vb.MelhorVaz();
         double QM=vb.MaxVaz();
-        s<<"M�xima Efici�ncia:"<<"\n";
+        s<<"Máxima Eficiência:"<<"\n";
         s.width(6);
         s.precision(5);
-        s<<"Vaz�o BPD = "<<QE<<"  "<<"HEAD ft = "<<vb.Fhead(QE)/vb.nestag<<"  "<<"Pot�ncia hp="<<vb.Fpower(QE)/vb.nestag<<"  "<<"efici�ncia ="<<vb.Fefic(QE)<<"\n";
-        s<<"M�xima Vaz�o:"<<"\n";
+        s<<"Vazão BPD = "<<QE<<"  "<<"HEAD ft = "<<vb.Fhead(QE)/vb.nestag<<"  "<<"Potência hp="<<vb.Fpower(QE)/vb.nestag<<"  "<<"eficiência ="<<vb.Fefic(QE)<<"\n";
+        s<<"Máxima Vazão:"<<"\n";
         s.width(6);
         s.precision(5);
-        s<<"Vaz�o BPD = "<<QM<<"  "<<"HEAD ft = "<<vb.Fhead(QM)/vb.nestag<<"  "<<"Pot�ncia hp="<<vb.Fpower(QM)/vb.nestag<<"  "<<"efici�ncia ="<<vb.Fefic(QM)<<"\n";
+        s<<"Vazão BPD = "<<QM<<"  "<<"HEAD ft = "<<vb.Fhead(QM)/vb.nestag<<"  "<<"Potência hp="<<vb.Fpower(QM)/vb.nestag<<"  "<<"eficiência ="<<vb.Fefic(QM)<<"\n";
         s<<"\n";
 	for ( int i = 0; i<n-1; i++){
         s.width(6);
@@ -490,7 +490,7 @@ ostream& BomCentSub::curva(ostream& s, double Vfreq, double estag, int npontos) 
    for ( int i = 0; i<npontos; i++){
         s.width(6);
         s.precision(5);
-        s<<"Vaz�o BPD =  "<<Vvaz<<" HEAD ft =  "<<Fhead(Vvaz)/nestag<<" Pot�ncia hp= "<<Fpower(Vvaz)/nestag<<" efici�ncia = "<<Fefic(Vvaz)<<"\n";
+        s<<"Vazão BPD =  "<<Vvaz<<" HEAD ft =  "<<Fhead(Vvaz)/nestag<<" Potência hp= "<<Fpower(Vvaz)/nestag<<" eficiência = "<<Fefic(Vvaz)<<"\n";
         Vvaz=Vvaz+dvaz;
         }
         s<<"\n";

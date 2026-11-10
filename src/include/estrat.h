@@ -167,7 +167,7 @@ class estratificado {
                 if (fabs(dx) < epsn || fabs(f) < tol || rtn < dia / 50)
                     return rtn;
             }
-            throw("M�ximo n�mero de intera��es em Newton");
+            throw("Máximo número de interações em Newton");
         } else {
             return hol * dia;
         }

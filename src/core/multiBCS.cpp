@@ -61,7 +61,7 @@ multiBomCentSub::multiBomCentSub(int vnBCS ,BomCentSub* BCStemp ,int* nestagParc
        }
 }
 multiBomCentSub::multiBomCentSub(const multiBomCentSub& bombaantiga){
-//construtor de c�pia
+//construtor de cópia
 	nBCS=bombaantiga.nBCS;
 	equilTerm=bombaantiga.equilTerm;
 	if(nBCS>0){

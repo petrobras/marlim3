@@ -303,7 +303,7 @@ class Network:
             return None
             
         try:
-            with open(log_file_path, 'r') as f:
+            with open(log_file_path, 'r', encoding='utf-8', errors='replace') as f:
                 log_data = json.load(f)
                 
             # Verificar se a simulação falhou
@@ -360,7 +360,7 @@ class Network:
                 file_path = os.path.join(input_dir, file)
                 
                 try:
-                    with open(file_path, 'r') as f:
+                    with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
                         network_data = json.load(f)
                         self.redes_internas.append(Rede().from_json(network_data,is_string=True))
                         #print("CARREGANDO JSON: ", network_data)
@@ -472,7 +472,7 @@ class Network:
                         current_modified_time = os.path.getmtime(log_file)
                         if current_modified_time > last_modified_time:
                             last_modified_time = current_modified_time
-                            with open(log_file, 'r') as f:
+                            with open(log_file, 'r', encoding='utf-8', errors='replace') as f:
                                 f.seek(last_position)
                                 new_content = f.read()
                                 if new_content:
