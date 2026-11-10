@@ -21,16 +21,19 @@ def get_platform_asset_info():
     
     Returns tuple: (asset_name, executable_name)
     """
+    from . import __version__
+
+    prefix = f"Marlim3-v{__version__}"
     system = platform.system()
     machine = platform.machine().lower()
     
     if system == 'Windows':
-        return ('Marlim3-windows-x64.exe', 'Marlim3.exe')
+        return (f'{prefix}-windows-x64.exe', 'Marlim3.exe')
     elif system == 'Linux':
-        return ('Marlim3-linux-x64', 'Marlim3')
+        return (f'{prefix}-linux-x64', 'Marlim3')
     elif system == 'Darwin':  # macOS
         if machine in ['arm64', 'aarch64']:
-            return ('Marlim3-macos-arm64', 'Marlim3')
+            return (f'{prefix}-macos-arm64', 'Marlim3')
         elif machine in ['x86_64', 'amd64']:
             raise RuntimeError("macOS Intel is not supported by the Marlim3 prebuilt executable.")
         else:

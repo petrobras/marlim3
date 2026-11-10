@@ -964,35 +964,30 @@ jobs:
           ( cd artifacts/desktop-windows     && sha256sum -c Marlim3-desktop-windows-x64.exe.sha256 )
           ( cd artifacts/desktop-macos-arm64 && sha256sum -c Marlim3-desktop-macos-arm64.dmg.sha256 )
 
+      # The release page sorts assets by name: Marlim3-v* (engine) before Marlim3-xGUI-* (desktop app).
       - name: Prepare release assets
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          mv artifacts/linux/Marlim3              artifacts/linux/Marlim3-linux-x64
-          mv artifacts/windows/Marlim3.exe         artifacts/windows/Marlim3-windows-x64.exe
-          mv artifacts/macos-arm64/Marlim3        artifacts/macos-arm64/Marlim3-macos-arm64
-          # Rebuild .sha256 files referencing the final release filenames so users
-          # can run e.g. `sha256sum -c Marlim3-linux-x64.sha256` after downloading.
-          ( cd artifacts/linux       && sha256sum Marlim3-linux-x64       > Marlim3-linux-x64.sha256       && rm Marlim3.sha256 )
-          ( cd artifacts/windows     && sha256sum Marlim3-windows-x64.exe > Marlim3-windows-x64.exe.sha256 && rm Marlim3.exe.sha256 )
-          ( cd artifacts/macos-arm64 && sha256sum Marlim3-macos-arm64     > Marlim3-macos-arm64.sha256     && rm Marlim3.sha256 )
-          ls -la artifacts/linux artifacts/windows artifacts/macos-arm64 artifacts/desktop-linux artifacts/desktop-windows artifacts/desktop-macos-arm64
+          mkdir release
+          # Each .sha256 names the final asset, so `sha256sum -c` works after download.
+          publish() {
+            mv "artifacts/$1/$2" "release/$3"
+            ( cd release && sha256sum "$3" > "$3.sha256" )
+          }
+          publish linux               Marlim3                         "Marlim3-${TAG}-linux-x64"
+          publish windows             Marlim3.exe                     "Marlim3-${TAG}-windows-x64.exe"
+          publish macos-arm64         Marlim3                         "Marlim3-${TAG}-macos-arm64"
+          publish desktop-linux       Marlim3-desktop-linux-x64       "Marlim3-xGUI-${TAG}-linux-x64"
+          publish desktop-windows     Marlim3-desktop-windows-x64.exe "Marlim3-xGUI-${TAG}-windows-x64.exe"
+          publish desktop-macos-arm64 Marlim3-desktop-macos-arm64.dmg "Marlim3-xGUI-${TAG}-macos-arm64.dmg"
+          ls -la release
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: |
-            artifacts/linux/Marlim3-linux-x64
-            artifacts/linux/Marlim3-linux-x64.sha256
-            artifacts/windows/Marlim3-windows-x64.exe
-            artifacts/windows/Marlim3-windows-x64.exe.sha256
-            artifacts/macos-arm64/Marlim3-macos-arm64
-            artifacts/macos-arm64/Marlim3-macos-arm64.sha256
-            artifacts/desktop-linux/Marlim3-desktop-linux-x64
-            artifacts/desktop-linux/Marlim3-desktop-linux-x64.sha256
-            artifacts/desktop-windows/Marlim3-desktop-windows-x64.exe
-            artifacts/desktop-windows/Marlim3-desktop-windows-x64.exe.sha256
-            artifacts/desktop-macos-arm64/Marlim3-desktop-macos-arm64.dmg
-            artifacts/desktop-macos-arm64/Marlim3-desktop-macos-arm64.dmg.sha256
+          files: release/*
           draft: false
           prerelease: false
           generate_release_notes: true

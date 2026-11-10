@@ -536,18 +536,18 @@ flowchart TD
 
 **4. Desktop apps** *(only on `v*` tags)* — builds the desktop applications with PyInstaller/PySide6 for each platform. On macOS, the app is signed with an Apple Developer ID certificate and notarised by Apple before being packaged into a `.dmg`.
 
-**5. Release** *(only on `v*` tags)* — after all tests and desktop builds pass, automatically creates a **GitHub Release** with the following executables attached:
+**5. Release** *(only on `v*` tags)* — after all tests and desktop builds pass, automatically creates a **GitHub Release** with the following executables attached, where `vX.Y.Z` is the release tag:
 
 | File | Platform |
 |---|---|
-| `Marlim3-linux-x64` | Engine — Linux x64 |
-| `Marlim3-windows-x64.exe` | Engine — Windows x64 |
-| `Marlim3-macos-arm64` | Engine — macOS ARM64 |
-| `Marlim3-desktop-linux-x64` | Desktop app — Linux x64 |
-| `Marlim3-desktop-windows-x64.exe` | Desktop app — Windows x64 |
-| `Marlim3-desktop-macos-arm64.dmg` | Desktop app — macOS ARM64 (DMG) |
+| `Marlim3-vX.Y.Z-linux-x64` | Engine — Linux x64 |
+| `Marlim3-vX.Y.Z-windows-x64.exe` | Engine — Windows x64 |
+| `Marlim3-vX.Y.Z-macos-arm64` | Engine — macOS ARM64 |
+| `Marlim3-xGUI-vX.Y.Z-linux-x64` | Desktop app — Linux x64 |
+| `Marlim3-xGUI-vX.Y.Z-windows-x64.exe` | Desktop app — Windows x64 |
+| `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg` | Desktop app — macOS ARM64 (DMG) |
 
-Each executable comes with a `.sha256` file for integrity verification. The Python package is then published to **PyPI** and a smoke test verifies the installation on clean runners.
+Each executable comes with a `.sha256` file for integrity verification. `xGUI` (external GUI) marks the desktop application; since the release page sorts assets by name, the engine executables (`Marlim3-vX.Y.Z-*`) are listed before it. The Python package downloads the engine executable of its own version, so the asset names in `marlim3/_download.py` and in the release job must match (checked by `tests/test_download.py`). The Python package is then published to **PyPI** and a smoke test verifies the installation on clean runners.
 
 ### Releasing a new version
 
