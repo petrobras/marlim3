@@ -317,36 +317,13 @@ if(MARLIM_BUILD_TESTS)
 
     add_executable(test_friction_factor
         ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_friction_factor.cpp
-        ${SRCDIR}/GradientCorrelations.cpp
     )
 
-    target_include_directories(test_friction_factor PRIVATE
-        ${INCDIR}
-        ${LIBDIR}
-    )
-
-    # Keep the tested numerical routine and discard unrelated correlations.
-    if(MSVC)
-        target_compile_options(test_friction_factor PRIVATE /Gy /Gw)
-        target_link_options(test_friction_factor PRIVATE /OPT:REF)
-    else()
-        target_compile_options(test_friction_factor PRIVATE -ffunction-sections -fdata-sections
-            $<$<CONFIG:Release>:-ffp-contract=off>)
-        if(APPLE)
-            target_link_options(test_friction_factor PRIVATE -Wl,-dead_strip)
-        else()
-            target_link_options(test_friction_factor PRIVATE -Wl,--gc-sections)
-        endif()
-    endif()
-
-    if(OpenMP_CXX_FOUND)
-        target_link_libraries(test_friction_factor PRIVATE OpenMP::OpenMP_CXX)
-    endif()
-
-
-    if(CMAKE_DL_LIBS)
-        target_link_libraries(test_friction_factor PRIVATE ${CMAKE_DL_LIBS})
-    endif()
+    # Test the same inline routine as the engine without pulling in the
+    # unrelated correlations or relying on platform-specific section pruning.
+    target_include_directories(test_friction_factor PRIVATE ${INCDIR})
+    target_compile_options(test_friction_factor PRIVATE
+        $<$<AND:$<CONFIG:Release>,$<COMPILE_LANG_AND_ID:CXX,GNU,Clang,AppleClang>>:-ffp-contract=off>)
 
     set_target_properties(test_friction_factor PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})

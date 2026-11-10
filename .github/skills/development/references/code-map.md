@@ -72,7 +72,8 @@ Guides: `docs/dev-guide/core-domain-classes.md`, `docs/dev-guide/fluid-thermodyn
 | File | Symbols | Role |
 |---|---|---|
 | `src/core/celula3.cpp` | `Cel::fric` | cell (`Cel`) and its friction factor |
-| `src/core/GradientCorrelations.cpp` | `executarCorrelacao`, `frictionFactor` | black-box (MR2) gradient correlations and their Darcy friction factor |
+| `src/core/GradientCorrelations.cpp` | `executarCorrelacao` | black-box (MR2) gradient correlations |
+| `src/include/FrictionFactor.h` | `frictionFactor` | standalone inline Moody-Darcy friction factor shared by the engine and its unit test |
 | `src/core/DriftFluxClosure.cpp` | | drift-flux closure and exact gas-root reuse |
 | `src/core/GomezModel.cpp` | | Gomez mechanistic model |
 | `src/core/SlugFlow_TaitelBarnea.cpp` | | unit-cell report (Taitel-Barnea) |

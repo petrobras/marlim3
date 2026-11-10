@@ -14,7 +14,7 @@
 //     cmake --build build --target test_friction_factor
 //     ctest --test-dir build --output-on-failure
 // ==============================================================================
-#include "GradientCorrelations.h"
+#include "FrictionFactor.h"
 
 #include <cmath>
 #include <cstdio>
