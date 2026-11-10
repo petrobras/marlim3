@@ -38,22 +38,25 @@ simulation engine:
 
 | Platform | Release asset |
 |----------|---------------|
-| Linux x64 | `Marlim3-desktop-linux-x64` |
-| Windows x64 | `Marlim3-desktop-windows-x64.exe` |
-| macOS Apple Silicon | `Marlim3-desktop-macos-arm64.dmg` |
+| Linux x64 | `Marlim3-xGUI-vX.Y.Z-linux-x64` |
+| Windows x64 | `Marlim3-xGUI-vX.Y.Z-windows-x64.exe` |
+| macOS Apple Silicon | `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg` |
 
-Download the matching asset from the GitHub Releases page and run it. No Python
+Download the matching asset from the GitHub Releases page, where `vX.Y.Z` is
+the release tag and `xGUI` stands for external GUI, and run it. No Python
 installation or compiler is required. The Linux desktop application requires
 only glibc 2.34 or newer from the operating system.
 
-See [marlim3_desktop/README.md](https://github.com/petrobras/marlim3/blob/main/marlim3_desktop/README.md) for platform
+See [tools/marlim3_desktop/README.md](https://github.com/petrobras/marlim3/blob/main/tools/marlim3_desktop/README.md) for platform
 details, checksum verification, and diagnostic logs.
 
 ### Command-line executable
 
 You can also download the native `Marlim3` executable for Linux, Windows, or
-macOS from the GitHub Releases page. This smaller standalone executable runs
-simulations directly from a terminal without installing the Python package.
+macOS from the GitHub Releases page (`Marlim3-vX.Y.Z-linux-x64`,
+`Marlim3-vX.Y.Z-windows-x64.exe` or `Marlim3-vX.Y.Z-macos-arm64`). This
+smaller standalone executable runs simulations directly from a terminal without
+installing the Python package.
 
 ### Developer setup
 
@@ -83,7 +86,7 @@ uv run --locked python -c "import marlim3; print(marlim3.__version__)"
 simulations):
 
 See [Building from source](#building-from-source) below. The CMake build
-automatically copies the executable into `marlim3/` after each successful build
+automatically copies the executable into `tools/marlim3/` after each successful build
 (via a `POST_BUILD` step), so no manual copy is needed. Then run:
 
 ```bash
@@ -111,16 +114,16 @@ Streamlit process tree and releases its dynamically allocated port.
 **Linux**
 
 ```bash
-chmod +x Marlim3-desktop-linux-x64
-./Marlim3-desktop-linux-x64
+chmod +x Marlim3-xGUI-vX.Y.Z-linux-x64
+./Marlim3-xGUI-vX.Y.Z-linux-x64
 ```
 
 The Linux desktop executable is a self-contained ELF binary. Its only system
 runtime requirement is glibc 2.34 or newer.
 
-**Windows** — double-click `Marlim3-desktop-windows-x64.exe`.
+**Windows** — double-click `Marlim3-xGUI-vX.Y.Z-windows-x64.exe`.
 
-**macOS** — open `Marlim3-desktop-macos-arm64.dmg`, then drag `Marlim3.app` to
+**macOS** — open `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg`, then drag `Marlim3.app` to
 the `Applications` folder. The current macOS release targets Apple Silicon
 (`arm64`). A signed and notarized release opens normally through Gatekeeper.
 Unsigned development or fork builds may require the user to explicitly allow the
@@ -133,16 +136,17 @@ Developers can build the standalone application for the current operating system
 with:
 
 ```bash
-uv run python -m marlim3_desktop.build
+uv run --directory tools python -m marlim3_desktop.build
 ```
 
 The script detects the platform, builds the native engine, installs the desktop
-dependencies, and writes one release-named artifact to `dist/`.
+dependencies, and writes one artifact to `dist/`, which the release pipeline
+publishes as `Marlim3-xGUI-vX.Y.Z-<platform>`.
 
 ### Python package
 
 Use Marlim3 as a Python library in your scripts or notebooks. See
-[marlim3/README.md](https://github.com/petrobras/marlim3/blob/main/marlim3/README.md) for the API guide, including the
+[tools/marlim3/README.md](https://github.com/petrobras/marlim3/blob/main/tools/marlim3/README.md) for the API guide, including the
 bilingual interface and a worked example.
 
 **Graphical interface.** Marlim3 includes a Streamlit-based GUI for
@@ -151,10 +155,10 @@ the browser. From a local clone:
 
 ```bash
 uv sync --group gui
-uv run streamlit run gui/app.py
+uv run streamlit run tools/gui/app.py
 ```
 
-The GUI auto-detects an executable from `build/` or `marlim3/` under the
+The GUI auto-detects an executable from `build/` or `tools/marlim3/` under the
 repository root. If neither is available, provide the executable path manually
 in the app.
 
@@ -164,10 +168,10 @@ inspecting the execution flow graph and LLVM coverage:
 
 ```bash
 uv sync --group regression_tool
-uv run regression_tool/run.py
+uv run tools/regression_tool/run.py
 ```
 
-See [regression_tool/README.md](https://github.com/petrobras/marlim3/blob/main/regression_tool/README.md) for the toolchain
+See [tools/regression_tool/README.md](https://github.com/petrobras/marlim3/blob/main/tools/regression_tool/README.md) for the toolchain
 requirements, local data locations, and the full workflow.
 
 ### Command-line executable
@@ -278,7 +282,7 @@ require external DLLs.
 The compiled executable is placed at `build/Marlim3` on Linux and macOS, or
 `build/Marlim3.exe` on Windows.
 
-A CMake `POST_BUILD` step automatically copies the executable to `marlim3/`
+A CMake `POST_BUILD` step automatically copies the executable to `tools/marlim3/`
 after each successful build, so the Python package always picks up the latest
 binary. No manual copy is needed.
 
@@ -302,8 +306,8 @@ ctest --test-dir build --output-on-failure
 ### Run the Python test suite
 
 ```bash
-uv run pytest tests/ -v
+uv run pytest tools/tests/ -v
 ```
 
-See [tests/README.md](https://github.com/petrobras/marlim3/blob/main/tests/README.md) for markers, regression references,
+See [tools/tests/README.md](https://github.com/petrobras/marlim3/blob/main/tools/tests/README.md) for markers, regression references,
 and how to update them.

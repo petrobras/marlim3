@@ -84,11 +84,11 @@ jobs:
           version: "0.13.1"
           enable-cache: false
       - name: Validate public sources, hashes and lock consistency
-        run: python scripts/dependencies.py check
+        run: python tools/scripts/dependencies.py check
       - name: Test dependency workflow
         run: |
           uv sync --locked --group dev
-          uv run --locked python -m pytest tests/test_dependency_workflow.py
+          uv run --locked python -m pytest tools/tests/test_dependency_workflow.py
 
   # Python-only package sanity. Does not depend on the native executable.
   python-checks:
@@ -121,10 +121,10 @@ jobs:
         run: uv run python -c "import marlim3; print(marlim3.__version__)"
 
       - name: Test schema Markdown batch discovery
-        run: uv run pytest tests/test_schema_to_markdown.py
+        run: uv run pytest tools/tests/test_schema_to_markdown.py
 
       - name: Test release version helpers
-        run: uv run pytest tests/test_release_version.py
+        run: uv run pytest tools/tests/test_release_version.py
 
       - name: Lint (syntax / undefined names)
         run: uv run flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -194,8 +194,8 @@ jobs:
               cd /workspace
               rm -rf build
               cmake --preset gcc-release -DMARLIM_BUILD_TESTS=ON
-              cmake --build --preset gcc-release --target Marlim3 test_inlet_boundary_initialization -j$(nproc)
-              ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
+              cmake --build --preset gcc-release -j$(nproc)
+              ctest --test-dir build --output-on-failure
             '
           sudo chown -R "$(id -u):$(id -g)" build src/include/versao.h
 
@@ -257,8 +257,8 @@ jobs:
           set -euo pipefail
           rm -rf build
           cmake --preset mingw-release -DMARLIM_BUILD_TESTS=ON
-          cmake --build --preset mingw-release --target Marlim3 test_inlet_boundary_initialization -j$(nproc)
-          ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
+          cmake --build --preset mingw-release -j$(nproc)
+          ctest --test-dir build --output-on-failure
 
       - name: Inspect executable
         shell: msys2 {0}
@@ -311,8 +311,8 @@ jobs:
           test "$(uname -m)" = "arm64"
           rm -rf build
           cmake --preset gcc-release -DMARLIM_BUILD_TESTS=ON
-          cmake --build --preset gcc-release --target Marlim3 test_inlet_boundary_initialization -j"$(sysctl -n hw.ncpu)"
-          ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
+          cmake --build --preset gcc-release -j"$(sysctl -n hw.ncpu)"
+          ctest --test-dir build --output-on-failure
 
       - name: Inspect executable
         run: |
@@ -375,7 +375,7 @@ jobs:
         run: uv sync --locked --group dev
 
       - name: Remove any pre-existing executable from the workspace
-        run: rm -f marlim3/Marlim3 marlim3/Marlim3.exe build/Marlim3 build/Marlim3.exe
+        run: rm -f tools/marlim3/Marlim3 tools/marlim3/Marlim3.exe build/Marlim3 build/Marlim3.exe
 
       - name: Download Marlim3-linux-x64 artifact (from this run)
         uses: actions/download-artifact@v7
@@ -395,17 +395,17 @@ jobs:
       - name: Install executable into package directory
         run: |
           set -euo pipefail
-          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
-          test -x marlim3/Marlim3
-          file marlim3/Marlim3
-          ldd marlim3/Marlim3 || true
+          install -m 0755 artifact-in/Marlim3 tools/marlim3/Marlim3
+          test -x tools/marlim3/Marlim3
+          file tools/marlim3/Marlim3
+          ldd tools/marlim3/Marlim3 || true
 
       - name: Verify the installed executable still matches the artifact hash
         run: |
           set -euo pipefail
-          test -x marlim3/Marlim3
+          test -x tools/marlim3/Marlim3
           EXPECTED=$(awk '{print $1}' artifact-in/Marlim3.sha256)
-          ACTUAL=$(sha256sum marlim3/Marlim3 | awk '{print $1}')
+          ACTUAL=$(sha256sum tools/marlim3/Marlim3 | awk '{print $1}')
           echo "expected=$EXPECTED"
           echo "actual=$ACTUAL"
           [ "$EXPECTED" = "$ACTUAL" ]
@@ -413,7 +413,7 @@ jobs:
       - name: Run tests
         env:
           MARLIM_TEST_ARTIFACTS: ${{ runner.temp }}/pytest
-        run: uv run pytest tests/ -v --tb=short --basetemp "$MARLIM_TEST_ARTIFACTS"
+        run: uv run pytest tools/tests/ -v --tb=short --basetemp "$MARLIM_TEST_ARTIFACTS"
 
       - name: Upload simulation failure diagnostics
         if: failure()
@@ -461,7 +461,7 @@ jobs:
       - name: Remove any pre-existing executable from the workspace
         shell: pwsh
         run: |
-          Remove-Item -Force -ErrorAction SilentlyContinue marlim3\Marlim3.exe, marlim3\Marlim3, build\Marlim3.exe, build\Marlim3
+          Remove-Item -Force -ErrorAction SilentlyContinue tools\marlim3\Marlim3.exe, tools\marlim3\Marlim3, build\Marlim3.exe, build\Marlim3
 
       - name: Download Marlim3-windows-x64 artifact (from this run)
         uses: actions/download-artifact@v7
@@ -485,16 +485,16 @@ jobs:
       - name: Install executable into package directory
         shell: pwsh
         run: |
-          Copy-Item artifact-in\Marlim3.exe marlim3\Marlim3.exe -Force
-          if (-not (Test-Path marlim3\Marlim3.exe)) { throw "Failed to install Marlim3.exe" }
-          Get-Item marlim3\Marlim3.exe | Format-List FullName, Length
+          Copy-Item artifact-in\Marlim3.exe tools\marlim3\Marlim3.exe -Force
+          if (-not (Test-Path tools\marlim3\Marlim3.exe)) { throw "Failed to install Marlim3.exe" }
+          Get-Item tools\marlim3\Marlim3.exe | Format-List FullName, Length
 
       - name: Verify the installed executable still matches the artifact hash
         shell: pwsh
         run: |
-          if (-not (Test-Path marlim3\Marlim3.exe)) { throw "marlim3\Marlim3.exe disappeared after uv sync" }
+          if (-not (Test-Path tools\marlim3\Marlim3.exe)) { throw "tools\marlim3\Marlim3.exe disappeared after uv sync" }
           $expected = (Get-Content artifact-in\Marlim3.exe.sha256 -Raw).Split()[0].ToLower()
-          $actual = (Get-FileHash marlim3\Marlim3.exe -Algorithm SHA256).Hash.ToLower()
+          $actual = (Get-FileHash tools\marlim3\Marlim3.exe -Algorithm SHA256).Hash.ToLower()
           Write-Host "expected=$expected"
           Write-Host "actual=$actual"
           if ($expected -ne $actual) { throw "Installed executable hash differs from artifact" }
@@ -503,7 +503,7 @@ jobs:
         shell: pwsh
         env:
           MARLIM_TEST_ARTIFACTS: ${{ runner.temp }}/pytest
-        run: uv run pytest tests/ -v --tb=short --basetemp "$env:MARLIM_TEST_ARTIFACTS"
+        run: uv run pytest tools/tests/ -v --tb=short --basetemp "$env:MARLIM_TEST_ARTIFACTS"
 
       - name: Upload simulation failure diagnostics
         if: failure()
@@ -548,7 +548,7 @@ jobs:
         run: uv sync --locked --group dev
 
       - name: Remove any pre-existing executable from the workspace
-        run: rm -f marlim3/Marlim3 marlim3/Marlim3.exe build/Marlim3 build/Marlim3.exe
+        run: rm -f tools/marlim3/Marlim3 tools/marlim3/Marlim3.exe build/Marlim3 build/Marlim3.exe
 
       - name: Download Marlim3-macos-arm64 artifact (from this run)
         uses: actions/download-artifact@v7
@@ -569,17 +569,17 @@ jobs:
         run: |
           set -euo pipefail
           test "$(uname -m)" = "arm64"
-          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
-          test -x marlim3/Marlim3
-          file marlim3/Marlim3
-          otool -L marlim3/Marlim3
+          install -m 0755 artifact-in/Marlim3 tools/marlim3/Marlim3
+          test -x tools/marlim3/Marlim3
+          file tools/marlim3/Marlim3
+          otool -L tools/marlim3/Marlim3
 
       - name: Verify the installed executable still matches the artifact hash
         run: |
           set -euo pipefail
-          test -x marlim3/Marlim3
+          test -x tools/marlim3/Marlim3
           EXPECTED=$(awk '{print $1}' artifact-in/Marlim3.sha256)
-          ACTUAL=$(shasum -a 256 marlim3/Marlim3 | awk '{print $1}')
+          ACTUAL=$(shasum -a 256 tools/marlim3/Marlim3 | awk '{print $1}')
           echo "expected=$EXPECTED"
           echo "actual=$ACTUAL"
           [ "$EXPECTED" = "$ACTUAL" ]
@@ -587,7 +587,7 @@ jobs:
       - name: Run tests
         env:
           MARLIM_TEST_ARTIFACTS: ${{ runner.temp }}/pytest
-        run: uv run pytest tests/ -v --tb=short --basetemp "$MARLIM_TEST_ARTIFACTS"
+        run: uv run pytest tools/tests/ -v --tb=short --basetemp "$MARLIM_TEST_ARTIFACTS"
 
       - name: Upload simulation failure diagnostics
         if: failure()
@@ -611,6 +611,8 @@ jobs:
     runs-on: ubuntu-24.04
     needs: test-linux
     if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      PYTHONPATH: tools
 
     steps:
       - name: Checkout
@@ -630,7 +632,7 @@ jobs:
         run: |
           set -euo pipefail
           ( cd artifact-in && sha256sum -c Marlim3.sha256 )
-          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
+          install -m 0755 artifact-in/Marlim3 tools/marlim3/Marlim3
 
       - name: Build desktop executable in manylinux_2_34
         run: |
@@ -653,6 +655,7 @@ jobs:
               export UV_PROJECT_ENVIRONMENT=/tmp/marlim3-desktop-venv
               export MARLIM3_SKIP_BUILD=1
               export MARLIM3_SKIP_EXECUTABLE_RESOLUTION=1
+              export PYTHONPATH=/workspace/tools
               export MARLIM3_GLIBC_BASELINE=2.34
               python -m pip install "uv==0.13.1"
               uv python install 3.12
@@ -691,6 +694,8 @@ jobs:
     runs-on: windows-2022
     needs: test-windows
     if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      PYTHONPATH: tools
 
     steps:
       - name: Checkout
@@ -727,7 +732,7 @@ jobs:
           $expected = (Get-Content artifact-in\Marlim3.exe.sha256 -Raw).Split()[0].ToLower()
           $actual = (Get-FileHash artifact-in\Marlim3.exe -Algorithm SHA256).Hash.ToLower()
           if ($expected -ne $actual) { throw "SHA-256 mismatch on downloaded Windows engine" }
-          Copy-Item artifact-in\Marlim3.exe marlim3\Marlim3.exe -Force
+          Copy-Item artifact-in\Marlim3.exe tools\marlim3\Marlim3.exe -Force
 
       - name: Build, validate and package desktop executable
         shell: pwsh
@@ -754,6 +759,8 @@ jobs:
     runs-on: macos-15
     needs: test-macos
     if: startsWith(github.ref, 'refs/tags/v')
+    env:
+      PYTHONPATH: tools
 
     steps:
       - name: Checkout
@@ -787,7 +794,7 @@ jobs:
         run: |
           set -euo pipefail
           ( cd artifact-in && shasum -a 256 -c Marlim3.sha256 )
-          install -m 0755 artifact-in/Marlim3 marlim3/Marlim3
+          install -m 0755 artifact-in/Marlim3 tools/marlim3/Marlim3
 
       - name: Build and validate desktop app bundle
         env:
@@ -963,35 +970,30 @@ jobs:
           ( cd artifacts/desktop-windows     && sha256sum -c Marlim3-desktop-windows-x64.exe.sha256 )
           ( cd artifacts/desktop-macos-arm64 && sha256sum -c Marlim3-desktop-macos-arm64.dmg.sha256 )
 
+      # The release page sorts assets by name: Marlim3-v* (engine) before Marlim3-xGUI-* (desktop app).
       - name: Prepare release assets
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          mv artifacts/linux/Marlim3              artifacts/linux/Marlim3-linux-x64
-          mv artifacts/windows/Marlim3.exe         artifacts/windows/Marlim3-windows-x64.exe
-          mv artifacts/macos-arm64/Marlim3        artifacts/macos-arm64/Marlim3-macos-arm64
-          # Rebuild .sha256 files referencing the final release filenames so users
-          # can run e.g. `sha256sum -c Marlim3-linux-x64.sha256` after downloading.
-          ( cd artifacts/linux       && sha256sum Marlim3-linux-x64       > Marlim3-linux-x64.sha256       && rm Marlim3.sha256 )
-          ( cd artifacts/windows     && sha256sum Marlim3-windows-x64.exe > Marlim3-windows-x64.exe.sha256 && rm Marlim3.exe.sha256 )
-          ( cd artifacts/macos-arm64 && sha256sum Marlim3-macos-arm64     > Marlim3-macos-arm64.sha256     && rm Marlim3.sha256 )
-          ls -la artifacts/linux artifacts/windows artifacts/macos-arm64 artifacts/desktop-linux artifacts/desktop-windows artifacts/desktop-macos-arm64
+          mkdir release
+          # Each .sha256 names the final asset, so `sha256sum -c` works after download.
+          publish() {
+            mv "artifacts/$1/$2" "release/$3"
+            ( cd release && sha256sum "$3" > "$3.sha256" )
+          }
+          publish linux               Marlim3                         "Marlim3-${TAG}-linux-x64"
+          publish windows             Marlim3.exe                     "Marlim3-${TAG}-windows-x64.exe"
+          publish macos-arm64         Marlim3                         "Marlim3-${TAG}-macos-arm64"
+          publish desktop-linux       Marlim3-desktop-linux-x64       "Marlim3-xGUI-${TAG}-linux-x64"
+          publish desktop-windows     Marlim3-desktop-windows-x64.exe "Marlim3-xGUI-${TAG}-windows-x64.exe"
+          publish desktop-macos-arm64 Marlim3-desktop-macos-arm64.dmg "Marlim3-xGUI-${TAG}-macos-arm64.dmg"
+          ls -la release
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          files: |
-            artifacts/linux/Marlim3-linux-x64
-            artifacts/linux/Marlim3-linux-x64.sha256
-            artifacts/windows/Marlim3-windows-x64.exe
-            artifacts/windows/Marlim3-windows-x64.exe.sha256
-            artifacts/macos-arm64/Marlim3-macos-arm64
-            artifacts/macos-arm64/Marlim3-macos-arm64.sha256
-            artifacts/desktop-linux/Marlim3-desktop-linux-x64
-            artifacts/desktop-linux/Marlim3-desktop-linux-x64.sha256
-            artifacts/desktop-windows/Marlim3-desktop-windows-x64.exe
-            artifacts/desktop-windows/Marlim3-desktop-windows-x64.exe.sha256
-            artifacts/desktop-macos-arm64/Marlim3-desktop-macos-arm64.dmg
-            artifacts/desktop-macos-arm64/Marlim3-desktop-macos-arm64.dmg.sha256
+          files: release/*
           draft: false
           prerelease: false
           generate_release_notes: true

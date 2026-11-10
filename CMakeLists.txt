@@ -79,8 +79,8 @@ configure_file(
 
 # Auto-generate translations_data.h from translations.json.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/marlim3/translations.json")
-file(READ "${CMAKE_SOURCE_DIR}/marlim3/translations.json" TRANSLATIONS_JSON_CONTENT)
+    "${CMAKE_SOURCE_DIR}/tools/marlim3/translations.json")
+file(READ "${CMAKE_SOURCE_DIR}/tools/marlim3/translations.json" TRANSLATIONS_JSON_CONTENT)
 configure_file(
     ${INCDIR}/translations_data.h.in
     ${INCDIR}/translations_data.h
@@ -247,6 +247,11 @@ if(MARLIM_FORTRAN_LIBS)
     target_link_libraries(Marlim3 PRIVATE ${MARLIM_FORTRAN_LIBS})
 endif()
 
+# The optional TUFFP model library is loaded at runtime (dlopen on Unix).
+if(CMAKE_DL_LIBS)
+    target_link_libraries(Marlim3 PRIVATE ${CMAKE_DL_LIBS})
+endif()
+
 set_source_files_properties(${FSRCDIR}/Newton.f90            PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
 set_source_files_properties(${FSRCDIR}/PvtSimCTMFileImport.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
 set_source_files_properties(${FSRCDIR}/PvtSimWAXFileImport.f90 PROPERTIES OBJECT_DEPENDS ${FSRCDIR}/Constants.f90)
@@ -269,8 +274,8 @@ endif()
 add_custom_command(TARGET Marlim3 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:Marlim3>
-        ${CMAKE_SOURCE_DIR}/marlim3/$<TARGET_FILE_NAME:Marlim3>
-    COMMENT "Copying Marlim3 executable to marlim3/ package directory"
+        ${CMAKE_SOURCE_DIR}/tools/marlim3/$<TARGET_FILE_NAME:Marlim3>
+    COMMENT "Copying Marlim3 executable to tools/marlim3/ package directory"
 )
 
 install(TARGETS Marlim3 DESTINATION bin)
@@ -290,18 +295,18 @@ if(MARLIM_BUILD_TESTS)
     enable_testing()
 
     add_executable(test_transient_temperature_update
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_transient_temperature_update.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_transient_temperature_update.cpp
     )
     target_include_directories(test_transient_temperature_update PRIVATE ${INCDIR})
     add_test(NAME transient_temperature_update COMMAND test_transient_temperature_update)
 
     add_executable(test_transient_kinetic_boundary
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_transient_kinetic_boundary.cpp)
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_transient_kinetic_boundary.cpp)
     target_include_directories(test_transient_kinetic_boundary PRIVATE ${INCDIR})
     add_test(NAME transient_kinetic_boundary COMMAND test_transient_kinetic_boundary)
 
     add_executable(test_inlet_boundary_initialization
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_inlet_boundary_initialization.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_inlet_boundary_initialization.cpp
     )
     target_include_directories(test_inlet_boundary_initialization PRIVATE
         ${INCDIR}
@@ -311,7 +316,7 @@ if(MARLIM_BUILD_TESTS)
         COMMAND test_inlet_boundary_initialization)
 
     add_executable(test_friction_factor
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_friction_factor.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_friction_factor.cpp
         ${SRCDIR}/GradientCorrelations.cpp
     )
 
@@ -339,15 +344,37 @@ if(MARLIM_BUILD_TESTS)
     endif()
 
 
+    if(CMAKE_DL_LIBS)
+        target_link_libraries(test_friction_factor PRIVATE ${CMAKE_DL_LIBS})
+    endif()
+
     set_target_properties(test_friction_factor PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     add_test(NAME friction_factor COMMAND test_friction_factor)
-
     add_executable(test_upstream_numerics
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_upstream_numerics.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_upstream_numerics.cpp
         ${SRCDIR}/Bcsm2.cpp
     )
     target_include_directories(test_upstream_numerics PRIVATE ${INCDIR} ${LIBDIR})
     add_test(NAME upstream_numerics COMMAND test_upstream_numerics)
+
+    # TUFFP adapter test: skipped (exit code 77) when the external TUFFP library
+    # is not available (see MARLIM3_TUFFP_LIB).
+    add_executable(test_tuffp_runtime_binding
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_tuffp_runtime_binding.cpp
+        ${SRCDIR}/tuffp_runtime_binding.cpp
+    )
+    target_include_directories(test_tuffp_runtime_binding PRIVATE ${INCDIR})
+    if(CMAKE_DL_LIBS)
+        target_link_libraries(test_tuffp_runtime_binding PRIVATE ${CMAKE_DL_LIBS})
+    endif()
+    find_package(Threads)
+    if(Threads_FOUND)
+        target_link_libraries(test_tuffp_runtime_binding PRIVATE Threads::Threads)
+    endif()
+    set_target_properties(test_tuffp_runtime_binding PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    add_test(NAME tuffp_runtime_binding COMMAND test_tuffp_runtime_binding)
+    set_tests_properties(tuffp_runtime_binding PROPERTIES SKIP_RETURN_CODE 77)
 endif()

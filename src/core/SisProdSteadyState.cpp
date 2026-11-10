@@ -2015,7 +2015,7 @@ void finalizeSteadyMassTwoPhase(const SteadyStateState &state, const SteadyDepen
                                state.cells[i - 1].correlacaoMR2,
                                holdup, frictionGrad, gravityGrad, totalGrad,
                                reynolds, flowType);
-           if(state.cells[i - 1].correlacaoMR2==16){
+           if(state.cells[i - 1].correlacaoMR2==16 || state.cells[i - 1].correlacaoMR2==51){
             if(flowType=='1' || flowType=='2')state.cells[i].arranjo=0;
             if(flowType=='3')state.cells[i].arranjo=1;
             if(flowType=='4')state.cells[i].arranjo=2;

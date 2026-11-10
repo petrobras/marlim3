@@ -402,3 +402,20 @@ When the Drift-Flux 1D model is disabled (`tipoModeloDrift = false` in `configur
 | 14 | Dukler & Minami I |
 | 15 | Dukler & Minami II |
 | 16 | Gomez |
+| 51 | TUFFP Unified gas-liquid model (external library) |
+
+### TUFFP Unified Model
+
+Select `initialConfig.driftModel = false` and `productionPipe[].ssFlowModel = 51`
+to use the TUFFP Unified gas-liquid model v2026.0 in steady-state calculations.
+The TUFFP library is obtained separately and is not distributed with Marlim3.
+Set `MARLIM3_TUFFP_LIB` to its shared-library path, or place it beside the engine
+executable as `tuffp_v2026.0.dll` (Windows), `libtuffp.so` (Linux), or
+`libtuffp.dylib` (macOS). If the library cannot be loaded, input processing fails
+before the solver starts.
+
+The adapter converts the engine's quantities to SI units and serializes calls
+to the external library. Reverse co-current flow is solved in the mirrored
+direction. For counter-current flow, the phase moving against the mixture is
+neglected and a warning is logged once. Zero flow is treated as a hydrostatic
+column using the existing liquid holdup.

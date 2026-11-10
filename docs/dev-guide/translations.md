@@ -1,12 +1,12 @@
 # JSON Key Translation System
 
-Marlim3 uses a bilingual JSON interface: users can write input files with **English or Portuguese keys**, and the engine internally operates with **Portuguese keys**. A single source of truth — `marlim3/translations.json` — drives both directions of translation.
+Marlim3 uses a bilingual JSON interface: users can write input files with **English or Portuguese keys**, and the engine internally operates with **Portuguese keys**. A single source of truth — `tools/marlim3/translations.json` — drives both directions of translation.
 
 ## Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                   marlim3/translations.json                      │
+│                tools/marlim3/translations.json                   │
 │                  (single source of truth)                        │
 │                   EN key → PT key mapping                        │
 └────────────────────────┬────────────────────────────────────────┘
@@ -82,12 +82,12 @@ tramo.to_json("model")
 
 | File | Role |
 |------|------|
-| `marlim3/translations.json` | Single source of truth for all EN↔PT key mappings |
+| `tools/marlim3/translations.json` | Single source of truth for all EN↔PT key mappings |
 | `src/include/translations_data.h` | Auto-generated C++ header (do not edit manually) |
 | `src/include/translations_data.h.in` | CMake template for the header |
 | `src/core/JSONKeyTranslator.cpp` | C++ translation logic (EN→PT at runtime) |
-| `marlim3/_tramo/_keys.py` | Python translation: `translate()` (PT→EN), `translate_en_to_pt()` (EN→PT), `BilingualDict`, `BilingualList`, `_make_bilingual()` |
-| `marlim3/_tramo/_branch.py` | `Branch` class with bilingual `__getattr__`/`__setattr__` and `to_json(language=...)` |
+| `tools/marlim3/_tramo/_keys.py` | Python translation: `translate()` (PT→EN), `translate_en_to_pt()` (EN→PT), `BilingualDict`, `BilingualList`, `_make_bilingual()` |
+| `tools/marlim3/_tramo/_branch.py` | `Branch` class with bilingual `__getattr__`/`__setattr__` and `to_json(language=...)` |
 
 ## How `translations.json` Is Structured
 
@@ -122,7 +122,7 @@ When you add a new field to the Marlim3 JSON input schema:
 
 2. **Determine the Portuguese key name** — this is what the C++ engine expects internally. Check existing `JSON_entrada_*.cpp` code for the expected key.
 
-3. **Add the entry to `marlim3/translations.json`**:
+3. **Add the entry to `tools/marlim3/translations.json`**:
    ```json
    "myNewField": "meuNovoCampo"
    ```
@@ -155,7 +155,7 @@ Add an entry under `"values"`:
 
 Renaming an English key requires coordinated changes across the project:
 
-1. **Update `marlim3/translations.json`** — change the EN key name (left side). The PT value (right side) must remain unchanged (the C++ engine depends on it):
+1. **Update `tools/marlim3/translations.json`** — change the EN key name (left side). The PT value (right side) must remain unchanged (the C++ engine depends on it):
    ```json
    // Before
    "oldEnglishName": "nomePortugues"
@@ -165,7 +165,7 @@ Renaming an English key requires coordinated changes across the project:
 
 2. **Re-run CMake configure** to regenerate `translations_data.h`.
 
-3. **Update Python `Branch` class** (`marlim3/_tramo/_branch.py`):
+3. **Update Python `Branch` class** (`tools/marlim3/_tramo/_branch.py`):
    - Rename the attribute in `__init__()` and `to_json()`. The `__getattr__`/`__setattr__` and `BilingualDict` will automatically pick up the new mapping from `translations.json` — no changes needed in those.
 
 4. **Update English demo files** (`demos/<case>/*.mr3` written with English keys):
@@ -177,7 +177,7 @@ Renaming an English key requires coordinated changes across the project:
 
 6. **Run tests** to verify nothing breaks:
    ```bash
-   pytest tests/
+   pytest tools/tests/
    ```
 
 ### Important constraints

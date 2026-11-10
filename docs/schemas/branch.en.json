@@ -1886,7 +1886,7 @@
           },
           "ssFlowModel": {
             "type": "integer",
-            "description": "Black-box correlation used in this pipe segment when drift model is disabled (initialConfig: driftModel = false). Valid for steady-state mode. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill with Palmer correction; 13 = Dukler, Eaton and Flanigan; 14 = Dukler and Minami I; 15 = Dukler and Minami II; 16 = Gomez."
+            "description": "Black-box correlation used in this pipe segment when drift model is disabled (initialConfig: driftModel = false). Valid for steady-state mode. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill with Palmer correction; 13 = Dukler, Eaton and Flanigan; 14 = Dukler and Minami I; 15 = Dukler and Minami II; 16 = Gomez; 51 = TUFFP Unified gas-liquid (external library, loaded through MARLIM3_TUFFP_LIB or beside the executable)."
           },
           "parallelNetworkThermalCoupling": {
             "type": "integer",

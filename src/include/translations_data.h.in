@@ -1,4 +1,4 @@
-// Auto-generated from marlim3/translations.json by CMake — do not edit.
+// Auto-generated from tools/marlim3/translations.json by CMake — do not edit.
 // Re-run cmake configure after changing translations.json.
 #ifndef TRANSLATIONS_DATA_H_
 #define TRANSLATIONS_DATA_H_

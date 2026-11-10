@@ -22,7 +22,7 @@ target/
 
 # Executaveis/artefatos compilados
 src/Marlim3
-marlim3/Marlim3*
+tools/marlim3/Marlim3*
 *.o
 *.obj
 *.so
@@ -44,7 +44,7 @@ pip-log.txt
 pip-delete-this-directory.txt
 *.manifest
 *.spec
-!marlim3_desktop/packaging/*.spec
+!tools/marlim3_desktop/packaging/*.spec
 
 # Conversor FLOWedit: planilhas e logs de conversão (podem conter dados confidenciais)
 *[Ff][Ll][Oo][Ww][Ee][Dd][Ii][Tt]*.[Xx][Ll][Ss][Mm]
@@ -172,3 +172,6 @@ versao.h.bak
 
 # Self-hosted runners
 actions-runner
+
+# Sessoes dos agentes de simulacao (.github/agents): ADRs, modelos, testes e relatorios gerados
+agent_sessions/

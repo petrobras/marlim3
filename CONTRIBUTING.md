@@ -61,7 +61,7 @@ refactoring settles.
 | Improve documentation | [`docs/`](docs) — built with MkDocs |
 | Add or fix a model | [`demos/`](demos) and the [model reference](docs/single-branch-model-reference/index.md) |
 | Change the simulation engine | [`src/`](src) — C++ and Fortran |
-| Change the Python package | [`marlim3/`](marlim3/README.md) |
+| Change the Python package | [`tools/marlim3/`](tools/marlim3/README.md) |
 
 A good bug report includes the input file, the command or script used, the
 `simulacao.log` produced, and what you expected instead. Input files are usually
@@ -94,11 +94,11 @@ use a locally configured JFrog mirror through the maintenance helper. Use
 | `src/core/` | C++ simulation engine |
 | `src/fortran/` | Fortran thermodynamics and flash routines |
 | `src/include/` | headers, including generated ones |
-| `marlim3/` | Python package — [guide](marlim3/README.md) |
-| `marlim3_desktop/` | desktop application — [guide](marlim3_desktop/README.md) |
-| `gui/` | Streamlit interface |
-| `regression_tool/` | regression and coverage tooling — [guide](regression_tool/README.md) |
-| `tests/` | test suite — [guide](tests/README.md) |
+| `tools/marlim3/` | Python package — [guide](tools/marlim3/README.md) |
+| `tools/marlim3_desktop/` | desktop application — [guide](tools/marlim3_desktop/README.md) |
+| `tools/gui/` | Streamlit interface |
+| `tools/regression_tool/` | regression and coverage tooling — [guide](tools/regression_tool/README.md) |
+| `tools/tests/` | test suite — [guide](tools/tests/README.md) |
 | `demos/` | example models, one folder per case with the PT model, the EN model and auxiliary files |
 | `docs/` | MkDocs documentation source |
 
@@ -129,7 +129,7 @@ If you add or rename an input key, all of these have to agree:
 2. `src/core/Leitura.cpp` — where the value is read into the data structures;
 3. `src/core/validaTipoJson.cpp` — type and business-rule validation;
 4. `docs/schemas/branch.pt.json` and `branch.en.json` — the published schema;
-5. `marlim3/translations.json` — the PT ↔ EN map, shared with the C++ translator;
+5. `tools/marlim3/translations.json` — the PT ↔ EN map, shared with the C++ translator;
 6. any demo that uses the key.
 
 Renaming a key is a breaking change. Add the old spelling to the discontinued
@@ -142,17 +142,17 @@ replacement, and document it in
 Run the suite before opening a pull request:
 
 ```bash
-uv run pytest tests/ -v
+uv run pytest tools/tests/ -v
 ```
 
 Tests that need the compiled engine are marked `simulacao`:
 
 ```bash
-uv run pytest tests/ -m "not simulacao"   # unit tests only
-uv run pytest tests/test_demos_steady_state.py   # demos listed in demos/manifest.json
+uv run pytest tools/tests/ -m "not simulacao"   # unit tests only
+uv run pytest tools/tests/test_demos_steady_state.py   # demos listed in demos/manifest.json
 ```
 
-See [tests/README.md](tests/README.md) for details, including how demos are
+See [tools/tests/README.md](tools/tests/README.md) for details, including how demos are
 added to `demos/manifest.json` and how their reference files are updated.
 
 Optional C++ unit tests, for changes to the numerical core:
@@ -170,7 +170,7 @@ ctest --test-dir build --output-on-failure
 | Bug fix in the engine | a test that fails before the fix |
 | New or changed input key | schema, translations, migration note (see above) |
 | New correlation or numerical method | a unit test against the published reference, and the citation in the code |
-| New demo | an entry in `tests/test_demos_steady_state.py` |
+| New demo | an entry in `tools/tests/test_demos_steady_state.py` |
 | Behaviour change in results | note in the pull request whether regression references need regenerating |
 
 The regression suite compares results against previously stored references. It
@@ -178,6 +178,23 @@ detects *change*, not *correctness* — a reference generated from wrong output
 will happily keep passing. For anything touching physics or numerics, a check
 against an external reference (a published correlation, an analytical solution,
 experimental data) is worth much more than a regression reference.
+
+### Coding agents
+
+`.github/` holds the material for AI coding agents:
+
+- [`skills/development/`](.github/skills/development/README.md): working on the
+  code base (code map, procedures, pitfalls and two scripts), plus short rules per
+  folder in `instructions/`;
+- [`skills/model-handling/`](.github/skills/model-handling/SKILL.md): building, running and checking
+  simulation models, with one reference per topic and the `check_case.py` validator;
+- [`agents/`](.github/README-agents.md): agents that plan, build and review a
+  complete simulation with the model-handling skill;
+- `copilot-instructions.md`: points each task to one of the two skills.
+
+If a change moves or renames something they cite, update them in the same pull
+request; `tools/tests/test_dev_skill.py` and `tools/tests/test_model_handling_skill.py`
+check that the cited files, links and functions exist.
 
 ## Pull requests
 
@@ -247,7 +264,7 @@ flowchart TB
     subgraph Feature[Feature Branch]
         B[Create feature branch<br/>git switch -c feature/feature-name]
         C[Develop and commit<br/>keeping atomicity]
-        D[Test locally<br/>uv run pytest tests/ -v]
+        D[Test locally<br/>uv run pytest tools/tests/ -v]
     end
 
     subgraph PR[Pull Request]
@@ -295,7 +312,7 @@ flowchart TB
 2. **Create a feature branch**: `git switch -c feature/feature-name`
 3. **Develop and commit** on your branch (keeping atomicity)
 4. **Update documentation** if the change affects behaviour or the input format (see [Updating documentation](#updating-documentation) below)
-5. **Test locally**: `uv run pytest tests/ -v`
+5. **Test locally**: `uv run pytest tools/tests/ -v`
 6. **When ready, push**: `git push origin feature/...`
 7. **Open a Pull Request** from `feature/...` to `main`
 8. **Wait for review and approval** from peers
@@ -309,12 +326,12 @@ Documentation is part of the feature, not an afterthought. A pull request that a
 
 | Change | Documentation to update |
 |---|---|
-| New input key | Schema files, `marlim3/translations.json`, model reference page |
+| New input key | Schema files, `tools/marlim3/translations.json`, model reference page |
 | Renamed or removed input key | Schema files, translations, migration guide |
 | New correlation or model element | Model reference page, citation in code |
 | Changed default value or unit | Model reference page, relevant demo comments |
 | New command-line option or Python API | `docs/` page covering that interface |
-| New demo file | A case folder in `demos/`, an entry in `demos/manifest.json` and its references (see [tests/README.md](tests/README.md)) |
+| New demo file | A case folder in `demos/`, an entry in `demos/manifest.json` and its references (see [tools/tests/README.md](tools/tests/README.md)) |
 
 #### Updating schemas when adding or renaming input keys
 
@@ -324,7 +341,7 @@ When you add, rename, or remove an input key, update **all** of the following in
 2. **`src/core/Leitura.cpp`** — where the value is read into the data structures.
 3. **`src/core/validaTipoJson.cpp`** — type and business-rule validation; if renaming, add the old spelling to the discontinued list so users get an explicit error message pointing to the replacement.
 4. **`docs/schemas/branch.pt.json`** and **`docs/schemas/branch.en.json`** — the published JSON Schema files used by tooling and documentation.
-5. **`marlim3/translations.json`** — the PT ↔ EN map shared with the C++ translator.
+5. **`tools/marlim3/translations.json`** — the PT ↔ EN map shared with the C++ translator.
 6. **`docs/single-branch-model-reference/`** — the relevant reference page describing the key, its type, default, unit, and allowed values.
 7. **`docs/single-branch-model-reference/migration.md`** — if the key is renamed or removed, document the old name, the new name (or removal), and the version in which it changed.
 8. Any **demo file** (`demos/`) that uses the key.
@@ -442,7 +459,7 @@ test(motor): add test case for satellite well with gas lift
 All code incorporated into Marlim3 must arrive via a Pull Request to the `main` branch. The PR is the moment for collaborative review.
 
 **Before opening a PR**:
-- Make sure tests pass locally (`uv run pytest tests/ -v`)
+- Make sure tests pass locally (`uv run pytest tools/tests/ -v`)
 - Resolve conflicts with the target branch
 - Write a clear description of what the PR does and why
 
@@ -532,22 +549,22 @@ flowchart TD
 
 **2. Native executable build** — compiles the C/Fortran engine in parallel for Linux (inside a `manylinux2014` container for maximum compatibility), Windows (MSYS2/MinGW64), and macOS ARM64 (Homebrew). Each platform produces an artifact with the executable and its SHA-256.
 
-**3. Tests** — each test job downloads the artifact compiled by the previous stage (from the same pipeline run), validates the SHA-256, installs the executable in the Python package, and runs `pytest tests/ -v`. This ensures tests always use the freshly compiled binary.
+**3. Tests** — each test job downloads the artifact compiled by the previous stage (from the same pipeline run), validates the SHA-256, installs the executable in the Python package, and runs `pytest tools/tests/ -v`. This ensures tests always use the freshly compiled binary.
 
 **4. Desktop apps** *(only on `v*` tags)* — builds the desktop applications with PyInstaller/PySide6 for each platform. On macOS, the app is signed with an Apple Developer ID certificate and notarised by Apple before being packaged into a `.dmg`.
 
-**5. Release** *(only on `v*` tags)* — after all tests and desktop builds pass, automatically creates a **GitHub Release** with the following executables attached:
+**5. Release** *(only on `v*` tags)* — after all tests and desktop builds pass, automatically creates a **GitHub Release** with the following executables attached, where `vX.Y.Z` is the release tag:
 
 | File | Platform |
 |---|---|
-| `Marlim3-linux-x64` | Engine — Linux x64 |
-| `Marlim3-windows-x64.exe` | Engine — Windows x64 |
-| `Marlim3-macos-arm64` | Engine — macOS ARM64 |
-| `Marlim3-desktop-linux-x64` | Desktop app — Linux x64 |
-| `Marlim3-desktop-windows-x64.exe` | Desktop app — Windows x64 |
-| `Marlim3-desktop-macos-arm64.dmg` | Desktop app — macOS ARM64 (DMG) |
+| `Marlim3-vX.Y.Z-linux-x64` | Engine — Linux x64 |
+| `Marlim3-vX.Y.Z-windows-x64.exe` | Engine — Windows x64 |
+| `Marlim3-vX.Y.Z-macos-arm64` | Engine — macOS ARM64 |
+| `Marlim3-xGUI-vX.Y.Z-linux-x64` | Desktop app — Linux x64 |
+| `Marlim3-xGUI-vX.Y.Z-windows-x64.exe` | Desktop app — Windows x64 |
+| `Marlim3-xGUI-vX.Y.Z-macos-arm64.dmg` | Desktop app — macOS ARM64 (DMG) |
 
-Each executable comes with a `.sha256` file for integrity verification. The Python package is then published to **PyPI** and a smoke test verifies the installation on clean runners.
+Each executable comes with a `.sha256` file for integrity verification. `xGUI` (external GUI) marks the desktop application; since the release page sorts assets by name, the engine executables (`Marlim3-vX.Y.Z-*`) are listed before it. The Python package downloads the engine executable of its own version, so the asset names in `tools/marlim3/_download.py` and in the release job must match (checked by `tools/tests/test_download.py`). The Python package is then published to **PyPI** and a smoke test verifies the installation on clean runners.
 
 ### Releasing a new version
 
