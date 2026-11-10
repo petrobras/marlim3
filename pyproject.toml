@@ -41,6 +41,7 @@ Homepage = "https://github.com/petrobras/marlim3"
 # Setuptools package discovery
 # ──────────────────────────────────────────────────────────────────────────────
 [tool.setuptools.packages.find]
+where = ["tools"]
 include = ["marlim3", "marlim3.*"]
 
 [tool.setuptools.package-data]
@@ -92,7 +93,8 @@ tutorials = [
 required-version = "==0.13.1"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tools/tests"]
+pythonpath = [".", "tools"]
 addopts = "-v --tb=short --durations=0 -s"
 markers = [
     "simulacao: tests that run the Marlim3 simulator (require compiled executable)",
@@ -101,8 +103,8 @@ markers = [
 [tool.coverage.run]
 source = ["marlim3"]
 omit = [
-    "marlim3/__pycache__/*",
-    "marlim3/_plots/*",
+    "tools/marlim3/__pycache__/*",
+    "tools/marlim3/_plots/*",
 ]
 
 [tool.coverage.report]
