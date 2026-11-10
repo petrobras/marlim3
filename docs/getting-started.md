@@ -47,7 +47,7 @@ the release tag and `xGUI` stands for external GUI, and run it. No Python
 installation or compiler is required. The Linux desktop application requires
 only glibc 2.34 or newer from the operating system.
 
-See [marlim3_desktop/README.md](../marlim3_desktop/README.md) for platform
+See [tools/marlim3_desktop/README.md](../tools/marlim3_desktop/README.md) for platform
 details, checksum verification, and diagnostic logs.
 
 ### Command-line executable
@@ -86,7 +86,7 @@ uv run --locked python -c "import marlim3; print(marlim3.__version__)"
 simulations):
 
 See [Building from source](#building-from-source) below. The CMake build
-automatically copies the executable into `marlim3/` after each successful build
+automatically copies the executable into `tools/marlim3/` after each successful build
 (via a `POST_BUILD` step), so no manual copy is needed. Then run:
 
 ```bash
@@ -136,7 +136,7 @@ Developers can build the standalone application for the current operating system
 with:
 
 ```bash
-uv run python -m marlim3_desktop.build
+uv run --directory tools python -m marlim3_desktop.build
 ```
 
 The script detects the platform, builds the native engine, installs the desktop
@@ -146,7 +146,7 @@ publishes as `Marlim3-xGUI-vX.Y.Z-<platform>`.
 ### Python package
 
 Use Marlim3 as a Python library in your scripts or notebooks. See
-[marlim3/README.md](../marlim3/README.md) for the API guide, including the
+[tools/marlim3/README.md](../tools/marlim3/README.md) for the API guide, including the
 bilingual interface and a worked example.
 
 **Graphical interface.** Marlim3 includes a Streamlit-based GUI for
@@ -155,10 +155,10 @@ the browser. From a local clone:
 
 ```bash
 uv sync --group gui
-uv run streamlit run gui/app.py
+uv run streamlit run tools/gui/app.py
 ```
 
-The GUI auto-detects an executable from `build/` or `marlim3/` under the
+The GUI auto-detects an executable from `build/` or `tools/marlim3/` under the
 repository root. If neither is available, provide the executable path manually
 in the app.
 
@@ -168,10 +168,10 @@ inspecting the execution flow graph and LLVM coverage:
 
 ```bash
 uv sync --group regression_tool
-uv run regression_tool/run.py
+uv run tools/regression_tool/run.py
 ```
 
-See [regression_tool/README.md](../regression_tool/README.md) for the toolchain
+See [tools/regression_tool/README.md](../tools/regression_tool/README.md) for the toolchain
 requirements, local data locations, and the full workflow.
 
 ### Command-line executable
@@ -282,7 +282,7 @@ require external DLLs.
 The compiled executable is placed at `build/Marlim3` on Linux and macOS, or
 `build/Marlim3.exe` on Windows.
 
-A CMake `POST_BUILD` step automatically copies the executable to `marlim3/`
+A CMake `POST_BUILD` step automatically copies the executable to `tools/marlim3/`
 after each successful build, so the Python package always picks up the latest
 binary. No manual copy is needed.
 
@@ -306,8 +306,8 @@ ctest --test-dir build --output-on-failure
 ### Run the Python test suite
 
 ```bash
-uv run pytest tests/ -v
+uv run pytest tools/tests/ -v
 ```
 
-See [tests/README.md](../tests/README.md) for markers, regression references,
+See [tools/tests/README.md](../tools/tests/README.md) for markers, regression references,
 and how to update them.
