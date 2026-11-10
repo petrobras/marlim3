@@ -3,7 +3,7 @@
 ## A crash
 
 1. Reproduce it with `scripts/repro_case.py` and keep the run folder.
-2. Build a debug engine in its own folder: `cmake --preset gcc-debug -B build-debug` and `cmake --build build-debug -j`. The build also copies this engine into `marlim3/`; rebuild the release preset afterwards.
+2. Build a debug engine in its own folder: `cmake --preset gcc-debug -B build-debug` and `cmake --build build-debug -j`. The build also copies this engine into `tools/marlim3/`; rebuild the release preset afterwards.
 3. Run it under gdb from the run folder: `gdb --args <engine> -d . -i <model>`, then `run` and `bt`. gdb stops at the signal before `signalHandler` logs it.
 4. For memory errors, add `-DCMAKE_CXX_FLAGS="-fsanitize=address -fno-omit-frame-pointer" -DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address` to the configure step. An optimized build with `-g` keeps the timing close to the release one, which matters for races.
 5. Without a debugger, the `causa` field of `simulacao.log` names the signal.

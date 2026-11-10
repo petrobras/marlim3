@@ -4,9 +4,11 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SKILL = ROOT / ".github" / "skills" / "marlim3-dev"
+SKILL = ROOT / ".github" / "skills" / "development"
 DOCUMENTS = sorted(SKILL.rglob("*.md")) + sorted((ROOT / ".github" / "instructions").glob("*.instructions.md"))
 TOP_LEVEL = {entry.name for entry in ROOT.iterdir()}
+# Folders moved under tools/: a citation without the prefix is stale, so it is checked too.
+TOOLS = {entry.name for entry in (ROOT / "tools").iterdir()}
 # Rows of the three-column tables "| File | Symbols | Role |" in references/code-map.md.
 TABLE_ROW = re.compile(r"^\|\s*`([^`]+)`\s*\|([^|]*)\|[^|]*\|\s*$", re.M)
 
@@ -41,7 +43,8 @@ def test_cited_paths_exist():
         for token in inline_code(document):
             if any(character in token for character in " <>*{}\\"):
                 continue
-            if token.split("/")[0] not in TOP_LEVEL | {"references", "scripts"}:
+            first = token.split("/")[0]
+            if first not in TOP_LEVEL | {"references", "scripts"} and not ("/" in token and first in TOOLS):
                 continue
             candidates = [ROOT / token]
             if token.startswith(("references/", "scripts/")):

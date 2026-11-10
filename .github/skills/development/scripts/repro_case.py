@@ -11,7 +11,7 @@ Examples:
     python repro_case.py demos/simplifiedProduction/simplifiedProduction.mr3 --tag v3.10.2 \\
         --set initialConfig.transient=true --set initialConfig.initialCondition=1
     python repro_case.py model.mr3 --tag v3.10.2 --exe build/Marlim3 --args -v RULES
-    python repro_case.py model.mr3 --exe marlim3/Marlim3 --delete productionPipe
+    python repro_case.py model.mr3 --exe tools/marlim3/Marlim3 --delete productionPipe
     python repro_case.py parametros.json --tag v3.10.2 --no-input --args -s CONVECNAT
 """
 
@@ -209,10 +209,10 @@ def main() -> int:
     engines = [(tag, official_engine(tag, args.cache)) for tag in args.tag]
     engines += [(str(exe), exe.resolve()) for exe in args.exe]
     if not engines:
-        local = ROOT / "marlim3" / ("Marlim3.exe" if os.name == "nt" else "Marlim3")
+        local = ROOT / "tools" / "marlim3" / ("Marlim3.exe" if os.name == "nt" else "Marlim3")
         if not local.is_file():
-            raise SystemExit("give --tag or --exe (no engine in marlim3/)")
-        engines = [("marlim3/" + local.name, local)]
+            raise SystemExit("give --tag or --exe (no engine in tools/marlim3/)")
+        engines = [("tools/marlim3/" + local.name, local)]
     if args.threads:
         os.environ["OMP_NUM_THREADS"] = str(args.threads)
 

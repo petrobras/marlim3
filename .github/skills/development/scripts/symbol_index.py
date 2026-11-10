@@ -6,9 +6,9 @@ signature. The engine sources are large (src/core/SisProd.cpp alone is above
 1 MB), so look a symbol up here and read only the lines around it.
 
 Examples:
-    python .github/skills/marlim3-dev/scripts/symbol_index.py --grep Perm --path SisProd
-    python .github/skills/marlim3-dev/scripts/symbol_index.py --count
-    python .github/skills/marlim3-dev/scripts/symbol_index.py --roots marlim3 --grep simulate
+    python .github/skills/development/scripts/symbol_index.py --grep Perm --path SisProd
+    python .github/skills/development/scripts/symbol_index.py --count
+    python .github/skills/development/scripts/symbol_index.py --roots tools/marlim3 --grep simulate
 """
 
 from __future__ import annotations

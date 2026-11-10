@@ -1,24 +1,24 @@
 # Code map
 
-Where to start for each part of Marlim3. Look the symbols up with `scripts/symbol_index.py` (or `git grep`) and read only their lines. `tests/test_dev_skill.py` checks that every file and symbol in the tables below still exists.
+Where to start for each part of Marlim3. Look the symbols up with `scripts/symbol_index.py` (or `git grep`) and read only their lines. `tools/tests/test_dev_skill.py` checks that every file and symbol in the tables below still exists.
 
 ## Repository
 
 | Path | Contents |
 |---|---|
 | `src/core/` | engine sources (C++) |
-| `src/include/` | headers; `src/include/translations_data.h` is generated from `marlim3/translations.json` |
+| `src/include/` | headers; `src/include/translations_data.h` is generated from `tools/marlim3/translations.json` |
 | `src/fortran/` | compositional thermodynamics and flash (Fortran) |
 | `src/thirdparty/` | vendored libraries (RapidJSON); do not edit |
-| `marlim3/` | Python package |
-| `gui/` | Streamlit interface (`gui/app.py`) |
-| `marlim3_desktop/` | standalone desktop build of the interface |
-| `regression_tool/` | local regression and coverage tool (`uv run regression_tool/run.py`) |
-| `tests/` | pytest suite; C++ unit tests in `tests/cpp/` |
+| `tools/marlim3/` | Python package |
+| `tools/gui/` | Streamlit interface (`tools/gui/app.py`) |
+| `tools/marlim3_desktop/` | standalone desktop build of the interface |
+| `tools/regression_tool/` | local regression and coverage tool (`uv run tools/regression_tool/run.py`) |
+| `tools/tests/` | pytest suite; C++ unit tests in `tools/tests/cpp/` |
 | `demos/` | demo models, one folder per case, listed in `demos/manifest.json` |
 | `docs/` | MkDocs site: developer guides in `docs/dev-guide/`, input schemas in `docs/schemas/` |
 | `schema_to_markdown.py` | generates the schema reference pages |
-| `scripts/dependencies.py` | dependency lock policy and mirror helper |
+| `tools/scripts/dependencies.py` | dependency lock policy and mirror helper |
 
 ## Engine: entry point and modes
 
@@ -83,27 +83,27 @@ Guides: `docs/dev-guide/core-domain-classes.md`, `docs/dev-guide/fluid-thermodyn
 
 ## Python package
 
-Guides: `marlim3/README.md`, `docs/dev-guide/translations.md`.
+Guides: `tools/marlim3/README.md`, `docs/dev-guide/translations.md`.
 
 | File | Symbols | Role |
 |---|---|---|
-| `marlim3/__init__.py` | | public API: `Branch` (alias `Tramo`), `Network`, `Scenarios`, `convert_to_ppl_tpl`; resolves the engine on import |
-| `marlim3/_tramo/_branch.py` | `Branch.simulate` | writes the model, runs `Marlim3 -d <folder> -i <file>` (`-s INJETOR` for injectors) and reads the results |
-| `marlim3/_rede/_rede.py` | `Network.simulate` | network runs |
-| `marlim3/_download.py` | `ensure_executable`, `get_executable_path`, `download_executable` | finds, builds or downloads the engine |
-| `marlim3/testing.py` | | manifest runner: `python -m marlim3.testing demos/manifest.json` regenerates references |
-| `marlim3/translations.json` | | PT and EN keys and values, also compiled into the engine |
-| `marlim3/_conversores/` | | converters: MR2, FLOWedit and TPL/PPL output |
+| `tools/marlim3/__init__.py` | | public API: `Branch` (alias `Tramo`), `Network`, `Scenarios`, `convert_to_ppl_tpl`; resolves the engine on import |
+| `tools/marlim3/_tramo/_branch.py` | `Branch.simulate` | writes the model, runs `Marlim3 -d <folder> -i <file>` (`-s INJETOR` for injectors) and reads the results |
+| `tools/marlim3/_rede/_rede.py` | `Network.simulate` | network runs |
+| `tools/marlim3/_download.py` | `ensure_executable`, `get_executable_path`, `download_executable` | finds, builds or downloads the engine |
+| `tools/marlim3/testing.py` | | manifest runner: `python -m marlim3.testing demos/manifest.json` regenerates references |
+| `tools/marlim3/translations.json` | | PT and EN keys and values, also compiled into the engine |
+| `tools/marlim3/_conversores/` | | converters: MR2, FLOWedit and TPL/PPL output |
 
 ## Tests, demos and CI
 
 | File | Symbols | Role |
 |---|---|---|
-| `tests/README.md` | | how the suite works, markers, reference updates |
-| `tests/test_demos_steady_state.py` | | demos: key round trip, PT x EN x native runs, references |
-| `tests/test_translations.py` | | `marlim3/translations.json` integrity and the committed `translations_data.h` |
-| `tests/test_schema_consistency.py` | | engine fields vs schemas vs translations (warnings) |
-| `tests/cpp/` | | C++ unit tests (`-DMARLIM_BUILD_TESTS=ON`) |
+| `tools/tests/README.md` | | how the suite works, markers, reference updates |
+| `tools/tests/test_demos_steady_state.py` | | demos: key round trip, PT x EN x native runs, references |
+| `tools/tests/test_translations.py` | | `tools/marlim3/translations.json` integrity and the committed `translations_data.h` |
+| `tools/tests/test_schema_consistency.py` | | engine fields vs schemas vs translations (warnings) |
+| `tools/tests/cpp/` | | C++ unit tests (`-DMARLIM_BUILD_TESTS=ON`) |
 | `demos/manifest.json` | | the only list of demo cases |
 | `.github/workflows/build-test-release.yml` | | builds and tests on Linux, Windows and macOS; desktop apps and release on `v*` tags |
 | `.github/workflows/release-version.yml` | | `_version.py` against the `Release-*` label of a pull request |

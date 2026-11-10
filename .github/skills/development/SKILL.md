@@ -1,17 +1,17 @@
 ---
-name: marlim3-dev
-description: 'Developer guide to the Marlim3 code base: C++/Fortran engine (src/), Python package (marlim3/), GUI, tests, demos and CI. Use when: locating where a feature, input key, log message, output file or solver step is implemented; changing or reviewing engine or API code; building, testing or debugging Marlim3; reproducing a bug report or GitHub issue on an official release engine; regenerating demo references; adding or renaming input keys.'
+name: development
+description: 'Developer guide to the Marlim3 code base: C++/Fortran engine (src/), Python package (tools/marlim3/), GUI, tests, demos and CI. Use when: locating where a feature, input key, log message, output file or solver step is implemented; changing or reviewing engine or API code; building, testing or debugging Marlim3; reproducing a bug report or GitHub issue on an official release engine; regenerating demo references; adding or renaming input keys.'
 ---
 
 # Marlim3 development
 
-Marlim3 is a 1D multiphase flow simulator. The engine (`src/`, C++ and Fortran, executable `Marlim3`) reads a JSON model and writes `simulacao.log` plus profile and trend files. The Python package (`marlim3/`) builds the model, runs the engine and reads the results.
+Marlim3 is a 1D multiphase flow simulator. The engine (`src/`, C++ and Fortran, executable `Marlim3`) reads a JSON model and writes `simulacao.log` plus profile and trend files. The Python package (`tools/marlim3/`) builds the model, runs the engine and reads the results.
 
 ## Read this first
 
 - **Do not read the large engine files whole.** `src/core/SisProd.cpp` has about 1.3 MB; `src/core/Leitura.cpp` and `src/core/Num4Main.cpp` about 0.8 MB each; `LerAP.cpp`, `SisProdVap.cpp`, `validaTipoJson.cpp`, `JSON_entrada.cpp` and `GradientCorrelations.cpp` 0.25–0.4 MB. Find the definition first, then read only its lines:
-  - `python .github/skills/marlim3-dev/scripts/symbol_index.py --path SisProd --grep Perm` prints name, `file:line` and signature of each match;
-  - `git grep -n "<log text or JSON key>" -- src marlim3` finds messages and keys.
+  - `python .github/skills/development/scripts/symbol_index.py --path SisProd --grep Perm` prints name, `file:line` and signature of each match;
+  - `git grep -n "<log text or JSON key>" -- src tools/marlim3` finds messages and keys.
 - **Read the guides before the code.** `docs/dev-guide/` covers the entry point, input parsing, solvers, networks, parametric analysis, translations and dependencies. `CONTRIBUTING.md` has setup, repository layout, style, the input-key checklist and the test commands. The [code map](./references/code-map.md) links each topic to its files and functions.
 - **Check facts against the code or a run.** Guides and comments can lag behind the code.
 - Engine identifiers, comments and many messages are in Portuguese. Keep the surrounding naming when editing; new user-facing text is in English ("Style" in `CONTRIBUTING.md`).
@@ -21,22 +21,22 @@ Marlim3 is a 1D multiphase flow simulator. The engine (`src/`, C++ and Fortran, 
 ### Build and run the engine
 
 1. Once: `uv sync --locked --group dev`. Then `cmake --preset gcc-release` and `cmake --build --preset gcc-release -j` (Windows with MSYS2: `mingw-release`).
-2. Every build copies the executable into `marlim3/`, where the package and the tests look for it.
+2. Every build copies the executable into `tools/marlim3/`, where the package and the tests look for it.
 3. Run a model the way `Branch.simulate` does: `Marlim3 -d <run folder> -i <model file in that folder>`. Add `-s INJETOR` for an injection well, `-s REDE` for a network and `-t <threads>` for OpenMP. Results and `simulacao.log` are written to the run folder.
 
 Commands, options and environment variables: [build and test](./references/build-and-test.md).
 
 ### Run the tests
 
-- `uv run pytest tests/ -m "not simulacao"` needs no engine; `uv run pytest tests/ -v` runs everything with the engine in `marlim3/`.
-- One demo: `uv run pytest tests/test_demos_steady_state.py -k <case>`.
+- `uv run pytest tools/tests/ -m "not simulacao"` needs no engine; `uv run pytest tools/tests/ -v` runs everything with the engine in `tools/marlim3/`.
+- One demo: `uv run pytest tools/tests/test_demos_steady_state.py -k <case>`.
 - C++ unit tests: `-DMARLIM_BUILD_TESTS=ON` and `ctest` ("Tests" in `CONTRIBUTING.md`).
 
 ### Reproduce a bug report or an issue
 
 1. Note the version and the exact input of the report. Start from the closest demo in `demos/`.
 2. Run it on the reported release and on the current build, changing only what the report changes:
-   `python .github/skills/marlim3-dev/scripts/repro_case.py demos/simplifiedProduction/simplifiedProduction.mr3 --tag v3.10.2 --exe marlim3/Marlim3 --set initialConfig.transient=true --args -v RULES`
+   `python .github/skills/development/scripts/repro_case.py demos/simplifiedProduction/simplifiedProduction.mr3 --tag v3.10.2 --exe tools/marlim3/Marlim3 --set initialConfig.transient=true --args -v RULES`
 3. Compare exit code, `simulacao.log` status and the last events. The run folders are kept for inspection.
 4. Report the exact command and results. If it no longer reproduces, find the change that fixed it (`git log -S`, release notes) before closing.
 
@@ -52,9 +52,9 @@ Commands, options and environment variables: [build and test](./references/build
 Follow "Input keys" in `CONTRIBUTING.md` (six places that must agree) and `docs/dev-guide/translations.md`. Then:
 
 - regenerate the schema pages: `uv run python schema_to_markdown.py --batch`;
-- run `uv run pytest tests/test_translations.py tests/test_schema_consistency.py`.
+- run `uv run pytest tools/tests/test_translations.py tools/tests/test_schema_consistency.py`.
 
-CMake regenerates `src/include/translations_data.h` from `marlim3/translations.json` when it configures; commit both files.
+CMake regenerates `src/include/translations_data.h` from `tools/marlim3/translations.json` when it configures; commit both files.
 
 ### Debug a crash or a hang
 

@@ -181,11 +181,11 @@ experimental data) is worth much more than a regression reference.
 
 ### Coding agents
 
-[`.github/skills/marlim3-dev/`](.github/skills/marlim3-dev/README.md) is a skill
+[`.github/skills/development/`](.github/skills/development/README.md) is a skill
 for AI coding agents (code map, procedures, pitfalls and two scripts), and
 `.github/instructions/` holds short rules per folder. Its README explains how to
 use them. If a change moves or renames something they cite, update them in the
-same pull request; `tests/test_dev_skill.py` checks that the cited files and
+same pull request; `tools/tests/test_dev_skill.py` checks that the cited files and
 functions exist.
 
 ## Pull requests
