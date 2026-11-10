@@ -181,12 +181,20 @@ experimental data) is worth much more than a regression reference.
 
 ### Coding agents
 
-[`.github/skills/development/`](.github/skills/development/README.md) is a skill
-for AI coding agents (code map, procedures, pitfalls and two scripts), and
-`.github/instructions/` holds short rules per folder. Its README explains how to
-use them. If a change moves or renames something they cite, update them in the
-same pull request; `tools/tests/test_dev_skill.py` checks that the cited files and
-functions exist.
+`.github/` holds the material for AI coding agents:
+
+- [`skills/development/`](.github/skills/development/README.md): working on the
+  code base (code map, procedures, pitfalls and two scripts), plus short rules per
+  folder in `instructions/`;
+- [`skills/model-handling/`](.github/skills/model-handling/SKILL.md): building, running and checking
+  simulation models, with one reference per topic and the `check_case.py` validator;
+- [`agents/`](.github/README-agents.md): agents that plan, build and review a
+  complete simulation with the model-handling skill;
+- `copilot-instructions.md`: points each task to one of the two skills.
+
+If a change moves or renames something they cite, update them in the same pull
+request; `tools/tests/test_dev_skill.py` and `tools/tests/test_model_handling_skill.py`
+check that the cited files, links and functions exist.
 
 ## Pull requests
 
