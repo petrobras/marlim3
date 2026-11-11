@@ -101,6 +101,8 @@ module PhaseProperties
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Calcular a fração mássica vaporizada:
         call CalculateMolecularWeightsAndVaporMassFraction(iThermodynamicCondition, iNComp, oMW, oZ, oLiqPhaseComposition, &
                 oVapPhaseComposition, dMolarBeta, dLiquidPhaseMW, dVaporPhaseMW, dMixtureMW, dVaporMassFraction)
@@ -161,6 +163,8 @@ module PhaseProperties
             dDerivLiquidZWithP = -1000.0d0
             dDerivLiquidRhoWithP = -1000.0d0
             dLiquidZWithPeneloux = -1000.0d0
+            dDerivLiquidZPenelouxWithT = -1000.0d0
+            dDerivLiquidZPenelouxWithP = -1000.0d0
         end if hasLiq
 
         ! Calcular as propriedades da fase vapor, caso esta fase esteja presente:
@@ -218,6 +222,8 @@ module PhaseProperties
             dDerivVaporZWithP = -1000.0d0
             dDerivVaporRhoWithP = -1000.0d0
             dVaporZWithPeneloux = -1000.0d0
+            dDerivVaporZPenelouxWithT = -1000.0d0
+            dDerivVaporZPenelouxWithP = -1000.0d0
         end if hasVap
 
         ! Calcular propriedades que exijam a presença de ambas as fases:
@@ -376,6 +382,7 @@ module PhaseProperties
         ! ------------------ CÁLCULOS:
 
         ! Inicializando:
+        iIER = ERROR_EverythingOK
         dPhaseDensity = -100.0d0
 
         ! O método selecionado é uma Equação de Estado Cúbica?
@@ -450,6 +457,8 @@ module PhaseProperties
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Seguir a abordagem padrão --> calcular entalpia e "Cp" residuais:
         call CalculatePhaseResidualCpAndEnthalpy(iNComp, iPhaseID, oPhaseComposition, dP, dT, iThermodynamicModel, oTc, oPc, oW, &
                     oKij, oLij, oPeneloux, dResidualEnthalpy, dResidualCp, bZAndDerivZWithTCalculated, dPhasicZ, dDerivPhasicZWithT, iIER)
@@ -495,6 +504,8 @@ module PhaseProperties
         real(c_double), dimension(:,:), pointer :: temp_oCpIGCoefs      ! Opção "default" de mapeamento do argumento "oCpIGCoefs".
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Proceder de acordo com a fonte de onde foram obtidos os coeficientes:
         whichSource: if(iCoefsSource.EQ.FLUIDEXTERNALSOURCE_PVTSIM_CTM) then
@@ -575,6 +586,7 @@ module PhaseProperties
         ! ------------------ CÁLCULOS:
 
         ! Inicializando:
+        iIER = ERROR_EverythingOK
         bZAndDerivZWithTCalculated = .false.
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
@@ -647,6 +659,8 @@ module PhaseProperties
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Obter "u" e "w" da equação de estado que se está utilizando:
         call GetCubicEOSGeneralFormParameters(iCubicEOSModel, dU, dW, iIER)
 
@@ -714,6 +728,8 @@ module PhaseProperties
         logical :: bThermodynamicModelIsCubicEOS
 
         ! ------------------ PROCEDIMENTOS E CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! O modelo termodinâmico selecionado é uma equação de estado cúbica?
         bThermodynamicModelIsCubicEOS = (iThermodynamicModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iThermodynamicModel.EQ.SRK_PENELOUX).or.(iThermodynamicModel.EQ.PENG_ROBINSON_PENELOUX)
@@ -797,6 +813,8 @@ module PhaseProperties
         real(c_double), parameter :: dR = 8.314d0                       ! R no SI (J/mol/K)
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Obter "u" e "w" da equação de estado que se está utilizando:
         call GetCubicEOSGeneralFormParameters(iCubicEOSModel, dU, dW, iIER)
@@ -935,6 +953,8 @@ module PhaseProperties
         real(c_double), parameter :: dR = 8.314d0                   ! R no SI (J/mol/K)
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Valor de constantes dependentes da equação de estado:
         bEOSIsPengRobinsonOrSRK = .false.
@@ -1145,6 +1165,8 @@ module PhaseProperties
         logical :: bComplexRootsWereFound                               ! "True" se foram encontrados fatores de compressibilidade complexos.
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Determinar as constantes dos componentes puros:
         call CalculateCubicEOSParametersForEachComponent(iNComp, dT, iCubicEOSModel, oTc, oPc, oW, &

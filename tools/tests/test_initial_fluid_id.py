@@ -30,12 +30,14 @@ def engine():
     pytest.skip("Compiled engine not found; set MARLIM3_TEST_EXECUTABLE")
 
 
-def run_steady_state(engine, directory, id_offset):
+def run_steady_state(engine, directory, id_offset, initial_fluid=None):
     directory.mkdir(parents=True)
     shutil.copy2(DEMO / "PVTSIM-MARLIM.tab", directory)
     model = json.loads((DEMO / MODEL).read_text(encoding="utf-8"))
     model["configuracaoInicial"].update({"AP": False, "transiente": False})
     model["configuracaoInicial"]["iniFluidoP"] += id_offset
+    if initial_fluid is not None:
+        model["configuracaoInicial"]["iniFluidoP"] = initial_fluid
     for fluid in model["fluidosProducao"]:
         fluid["id"] += id_offset
     for ipr in model["ipr"]:
@@ -54,3 +56,13 @@ def test_initial_fluid_id_does_not_need_to_match_its_position(engine, tmp_path):
     reference = run_steady_state(engine, tmp_path / "ids_from_zero", 0)
     shifted = run_steady_state(engine, tmp_path / "ids_from_five", 5)
     assert shifted == reference
+
+
+def test_steady_state_keeps_legacy_initial_fluid_position_with_a_warning(engine, tmp_path):
+    reference = run_steady_state(engine, tmp_path / "fluid_id", 5)
+    directory = tmp_path / "legacy_position"
+    legacy = run_steady_state(engine, directory, 5, initial_fluid=0)
+    assert legacy == reference
+    result = json.loads((directory / "simulacao.log").read_text(encoding="utf-8"))["resultadoSimulacao"]
+    assert result["status"] == "sucesso"
+    assert any(event["codigo"] == "1004" and "iniFluidoP" in event["descricao"] for event in result["logs"])

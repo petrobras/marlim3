@@ -17,7 +17,7 @@
 #include "rapidjson/filereadstream.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -89,9 +89,9 @@ class Rede {
     double limConverge;
     int tramoPrimario;
     int tramoSecundario;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
     Rede();
-    Rede(const string IMPFILE, const string ARQUIVO_LOG, const tipoValidacaoJson_t VALIDACAO, const tipoSimulacao_t SIMULACAO, varGlob1D *Vvg1dSP);
+    Rede(const string IMPFILE, const string ARQUIVO_LOG, const tipoValidacaoJson_t VALIDACAO, const tipoSimulacao_t SIMULACAO, SimulationContext *context);
     Rede(const Rede &); // Copy constructor
     Rede &operator=(const Rede &);
     ~Rede() { // Destructor
@@ -118,8 +118,8 @@ class Rede {
   private:
     tipoValidacaoJson_t validacaoJson;
     tipoSimulacao_t tipoSimulacao;
-    void writeSchemaRede();
-    Document parseSchema();
+    string schemaRede() const;
+    Document parseSchema(const string &schemaText);
     Document parseEntrada();
     void validateVsSchema(Document *schemaMrtDoc, Document *mrtDoc);
     void parse_configuracao_inicial(Value &configuracao_inicial_json);

@@ -13,7 +13,7 @@ Rede::Rede() {
     entradaLog = "lixo";
     validacaoJson = tipoValidacaoJson_t::json;
     tipoSimulacao = tipoSimulacao_t::rede;
-    vg1dSP = 0;
+    simulationContext = 0;
     impfiles = 0;
     malha = 0;
     conexFR = 0;
@@ -39,12 +39,12 @@ Rede::Rede() {
     tramoSecundario = -1;
 }
 
-Rede::Rede(const string IMPFILE, const string ARQUIVO_LOG, const tipoValidacaoJson_t VALIDACAO, const tipoSimulacao_t SIMULACAO, varGlob1D *Vvg1dSP) {
+Rede::Rede(const string IMPFILE, const string ARQUIVO_LOG, const tipoValidacaoJson_t VALIDACAO, const tipoSimulacao_t SIMULACAO, SimulationContext *context) {
     entrada = IMPFILE;
     entradaLog = ARQUIVO_LOG;
     validacaoJson = VALIDACAO;
     tipoSimulacao = SIMULACAO;
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     logger.changeResultadoSimulacao(entrada, entradaLog);
     lerArq();
 }
@@ -52,7 +52,7 @@ Rede::Rede(const string IMPFILE, const string ARQUIVO_LOG, const tipoValidacaoJs
 Rede::Rede(const Rede &vrede) {
     entrada = vrede.entrada;
     entradaLog = vrede.entradaLog;
-    vg1dSP = vrede.vg1dSP;
+    simulationContext = vrede.simulationContext;
     lerArq();
 }
 
@@ -62,19 +62,18 @@ Rede &Rede::operator=(const Rede &vrede) {
         entradaLog = vrede.entradaLog;
         validacaoJson = vrede.validacaoJson;
         tipoSimulacao = vrede.tipoSimulacao;
-        vg1dSP = vrede.vg1dSP;
+        simulationContext = vrede.simulationContext;
         lerArq();
     }
     return *this;
 }
 
 /*
- * Criar arquivo do schema Rede.
+ * The network schema, as text. It is parsed from memory: a file in the working directory is shared by
+ * every run started there.
  */
-void Rede::writeSchemaRede() {
-    remove(ARQUIVO_SCHEMA_REDE_JSON);
-    // criar arquivo de schema Rede
-    ofstream schemaRedeStream(ARQUIVO_SCHEMA_REDE_JSON, ios_base::out);
+string Rede::schemaRede() const {
+    ostringstream schemaRedeStream;
     schemaRedeStream << "{" << endl;
     schemaRedeStream << "\"$schema\": \"http://json-schema.org/draft-04/schema#\"," << endl;
     schemaRedeStream << "\"id\": \"http://transiente.cenpes.petrobras.com/schemas/" << ARQUIVO_SCHEMA_REDE_JSON << "\"," << endl;
@@ -107,8 +106,7 @@ void Rede::writeSchemaRede() {
     schemaRedeStream << "\"Conexao\": {\"$ref\": \"#/definitions/t_conexao\"} }," << endl;
     schemaRedeStream << "\"required\": [\"configuracaoInicial\", \"Arquivos\", \"Conexao\"]" << endl;
     schemaRedeStream << "}" << endl;
-    // fechar o stream
-    schemaRedeStream.close();
+    return schemaRedeStream.str();
 }
 
 Document Rede::parseEntrada() {
@@ -158,29 +156,17 @@ Document Rede::parseEntrada() {
     return jsonDoc;
 }
 
-Document Rede::parseSchema() {
+Document Rede::parseSchema(const string &schemaText) {
     // criar string para mensagem de falha
     char mensagemFalha[5000];
     // declarar o documento para o schema de validacao do formato do Rede
     Document schemaDoc;
-    // criar arquivo de schema de validacao do formato do Rede
-    FILE *schemaRedeInFile = NULL;
-    // definir buffer de entrada para leitura do arquivo json
-    char schemaRedeInBuf[65536];
-    // realizar a leitura do arquivo de schema do Rede
+    // realizar a leitura do schema do Rede
     try {
         // atualizar logger com arquivo de schema do rede
         logger.setNomeArqEntrada(ARQUIVO_SCHEMA_REDE_JSON);
-        // criar arquivo de schema de validacao do formato do Rede
-        schemaRedeInFile = fopen(ARQUIVO_SCHEMA_REDE_JSON, "r");
-        // criar stream do schema de validacao do formato do Rede
-        FileReadStream schemaRedeInStream(schemaRedeInFile, schemaRedeInBuf, sizeof(schemaRedeInBuf));
         // realizar o parse do schema de validacao do formato do Rede
-        schemaDoc.ParseStream(schemaRedeInStream);
-        // fechar o arquivo
-        fclose(schemaRedeInFile);
-        // remover o arquivo de schema
-        remove(ARQUIVO_SCHEMA_REDE_JSON);
+        schemaDoc.Parse(schemaText.c_str());
         // caso haja erros de parse
         if (schemaDoc.HasParseError()) {
             // transpor os dados da falha para a mensagem
@@ -268,6 +254,7 @@ void Rede::parse_configuracao_inicial(Value &configuracao_inicial_json) {
     relax = 0.5;
     fluidoRede = 1;
     tabelaDinamica = 0;
+    TmaxR = 0;
     apenasPreProc = 0;
     chute = 0;
     nthrRede = 1;
@@ -544,7 +531,7 @@ void Rede::lerArq() {
         // parse do documento raiz do arquivo de entrada
         Document jsonDoc = parseEntrada();
         // caso configurada opcao de termino apos validacao do formato do arquivo JSON
-        if (validacaoJson == tipoValidacaoJson_t::json && (*vg1dSP).ntrdGlob == 1) {
+        if (validacaoJson == tipoValidacaoJson_t::json && (*simulationContext).networkThreadCount == 1) {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
@@ -552,27 +539,25 @@ void Rede::lerArq() {
         }
         // caso a validacao esteja ligada
         if (validacaoJson != tipoValidacaoJson_t::off) {
-            // schema para simulacao transiente
-            writeSchemaRede();
             // parse do schema do Rede
-            Document schemaDoc = parseSchema();
+            Document schemaDoc = parseSchema(schemaRede());
             // realizar a validacao do arquivo Rede segundo o schema
             validateVsSchema(&schemaDoc, &jsonDoc);
         }
 
         // caso configurada opcao de termino apos validacao do formato do arquivo JSON
-        if (validacaoJson == tipoValidacaoJson_t::schema && (*vg1dSP).ntrdGlob == 1) {
+        if (validacaoJson == tipoValidacaoJson_t::schema && (*simulationContext).networkThreadCount == 1) {
             // gravar arquivo de log
             logger.writeOutputLog();
             // abandonar a simulacao
             exit(EXIT_SUCCESS);
         }
 
-        (*vg1dSP).chaverede = 1;
+        (*simulationContext).networkMode = 1;
 
         // parse da chave configuracaoInicial
         parse_configuracao_inicial(jsonDoc["configuracaoInicial"]);
-        (*vg1dSP).tipoModeloDrift = tipoModeloDrift;
+        (*simulationContext).driftFluxModel = tipoModeloDrift;
         // parse da chave Arquivos
         parse_arquivos(jsonDoc["Arquivos"]);
         // caso a quantidade de arquivos indique simulacao em rede

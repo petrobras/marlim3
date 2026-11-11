@@ -102,6 +102,8 @@ module Obsoletes
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Ajustar estimativas iniciais:
         hasGivenInitialEstimates: if(bHasInitialFlashEstimates) then
 
@@ -530,6 +532,8 @@ module Obsoletes
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! PRIMEIRO PASSO: Verificar / ajustar o passo na pressão:
         dCurrentStepValue = dStepOnP
         if(dStepOnP.LT.(0.0d0)) dCurrentStepValue = 0.05d0 * dFlashPressure
@@ -870,6 +874,8 @@ module Obsoletes
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Bolha? Orvalho?
         bIsBubbleCalculation = (iCalculationFlag.EQ.CALCTYPE_BubblePoint)
         bIsDewCalculation = (iCalculationFlag.EQ.CALCTYPE_DewPoint)
@@ -1036,6 +1042,8 @@ module Obsoletes
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! ANTES DE MAIS NADA: Desconsiderar a adaptação numérica recomendada pelo artigo-referência, se for o caso:
         if(.NOT.bPerformReferenceAdaptation) return
 
@@ -1181,6 +1189,8 @@ module Obsoletes
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! ETAPA PRELIMINAR: Preparar argumentos:
         oTc(1) = dTc
         oPc(1) = dPc
@@ -1238,6 +1248,8 @@ subroutine Marlim_CalculateSingleComponentZAndRho(dTc, dPc, dW, dC, dMW, iPhaseI
     integer(c_int), intent(out) :: iIER                                         ! Código de erros, conforme convencionado.
 
     ! ------------ PROCEDIMENTOS, CHAMADAS E CÁLCULOS:
+
+    iIER = ERROR_EverythingOK
 
     ! CHAMADA PRINCIPAL:
     call CalculateSingleComponentZAndRhoFromCubicEOS(dTc, dPc, dW, dC, dMW, iPhaseID, dFlashPressure, dFlashTemperature, iCubicEOSModel, dZ, dDensity, iIER)

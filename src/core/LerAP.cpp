@@ -5,16 +5,17 @@
  *      Author: Eduardo
  */
 #include "LerAP.h"
+#include "UnitConversions.h"
 #include <limits>
 
 using namespace rapidjson;
 
 int chrisao = 0;
 
-APara::APara(varGlob1D *Vvg1dSP, const string IMPFILE, int vncel, detcelp *vcelp, ProFlu *vflup, detBCS *vbcs, detMultiBCS *vmbcs,
+APara::APara(SimulationContext *context, const string IMPFILE, int vncel, detcelp *vcelp, ProFlu *vflup, detBCS *vbcs, detMultiBCS *vmbcs,
 		detFONGAS *vfonteg) {
     entrada = IMPFILE;
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     ncel = vncel;
     celp = vcelp;
     flup = vflup;
@@ -46,7 +47,7 @@ APara::APara(varGlob1D *Vvg1dSP, const string IMPFILE, int vncel, detcelp *vcelp
 
 APara::APara(const APara &vAP) {
     entrada = vAP.entrada;
-    vg1dSP = vAP.vg1dSP;
+    simulationContext = vAP.simulationContext;
     ncel = vAP.ncel;
     celp = vAP.celp;
     flup = vAP.flup;
@@ -138,10 +139,10 @@ APara &APara::operator=(const APara &vAP) {
             delete[] APCondEquiv;
         }
 
-        liberaSequencias();
+        releaseSweepVectors();
 
         entrada = vAP.entrada;
-        vg1dSP = vAP.vg1dSP;
+        simulationContext = vAP.simulationContext;
         ncel = vAP.ncel;
         celp = vAP.celp;
         flup = vAP.flup;
@@ -173,7 +174,7 @@ APara &APara::operator=(const APara &vAP) {
     return *this;
 }
 
-void APara::liberaSequencias() {
+void APara::releaseSweepVectors() {
     delete[] sequenciaAP;
     delete[] genericoAP;
     delete[] vecParSerie;
@@ -1815,6 +1816,7 @@ void APara::lerArq() {
     }
 }
 
+
 void APara::constroiVecParSerie() {
     int locdim = 0;
     if (listaV.vpsep == 1) {
@@ -3425,7 +3427,7 @@ void APara::atualizaCompRGO(double rgo, ProFlu &flui) {
                                                flui.fatAcent, flui.TIndepPeneloux, flui.kij,
                                                flui.lij, flui.liqModel, flui.liqModel,
                                                flui.liqModel,
-                                               flui.liqModel, 1.03322745279996,
+                                               flui.liqModel, units::kAtmosphereInKgfPerCm2,
                                                20., rgo, -1.0,
                                                GivenInitialLiqComposition, GivenInitialVapComposition,
                                                oGORAdjustedGlobalComp, &dAdjustedGlobalCompGOR,

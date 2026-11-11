@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(Marlim3TuffpContractFixture LANGUAGES CXX)
+
+add_library(marlim3_tuffp_contract_fixture SHARED tuffp_contract_fixture.cpp)
+target_compile_features(marlim3_tuffp_contract_fixture PRIVATE cxx_std_20)
+target_include_directories(marlim3_tuffp_contract_fixture PRIVATE "${MARLIM3_INCLUDE_DIR}")

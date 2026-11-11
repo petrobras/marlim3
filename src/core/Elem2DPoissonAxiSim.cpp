@@ -7,12 +7,12 @@
 #include "Elem2DPoissonAxiSim.h"
 
 
-elem2dPoissonAxiSim::elem2dPoissonAxiSim(varGlob1D* Vvg1dSP,double** xcoor,
+elem2dPoissonAxiSim::elem2dPoissonAxiSim(SimulationContext* context,double** xcoor,
 		int** noEle,int* tipo,double* atributo,int nVert, int nele, int nno, int vperm,
 		int vtrans,int i,int vacopD,double vtemp,double vfluxCal,double vcond,double vcp,
 		double vrho,double vdt) :
 				TL(1), local(1,nVert+1) {
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 	vizinho=0;
 	kvizinho=0;
 	nvizinho=0;
@@ -260,7 +260,7 @@ elem2dPoissonAxiSim::elem2dPoissonAxiSim(varGlob1D* Vvg1dSP,double** xcoor,
 }
 elem2dPoissonAxiSim::elem2dPoissonAxiSim(const elem2dPoissonAxiSim& velem) :
 						TL(1), local(1,velem.cel2D.nvert+1) {
-	vg1dSP=velem.vg1dSP;
+	simulationContext=velem.simulationContext;
 	cel2D.nvert=velem.cel2D.nvert;
 	cel2D.dim=velem.cel2D.dim;
 	cel2D.indEle=velem.cel2D.indEle;
@@ -484,7 +484,7 @@ elem2dPoissonAxiSim& elem2dPoissonAxiSim::operator =(const elem2dPoissonAxiSim& 
 			delete[] coefTHRV;
 			delete[] fonteTHR;
 		}
-		vg1dSP=velem.vg1dSP;
+		simulationContext=velem.simulationContext;
 		TL=velem.TL;
 		local=velem.local;
 		cel2D.nvert=velem.cel2D.nvert;
@@ -816,7 +816,7 @@ void elem2dPoissonAxiSim::atualizaCC(int i){
     double raz;
 	if(diri==1){
 
-		indraz(ind, raz, (*vg1dSP).lixo5, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).simulationTime, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
 		double inf = CC.ccDir[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccDir[kcc].nserie - 1){
@@ -828,7 +828,7 @@ void elem2dPoissonAxiSim::atualizaCC(int i){
 	}
 	else if(vn==1){
 
-		indraz(ind, raz, (*vg1dSP).lixo5, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).simulationTime, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
 		double inf = CC.ccVN[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccVN[kcc].nserie - 1){
@@ -840,7 +840,7 @@ void elem2dPoissonAxiSim::atualizaCC(int i){
 	}
 	else if(rich==1){
 
-		indraz(ind, raz, (*vg1dSP).lixo5, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).simulationTime, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
 		double inf = CC.ccRic[kcc].valAmb[ind];
 		double sup;
 		if (ind < CC.ccRic[kcc].nserie - 1){
@@ -999,7 +999,7 @@ void elem2dPoissonAxiSim::GeraLocal(){
 			int rich=0;
 			int vn=0;
 			int kcc=0;
-			int acoplado;
+			int acoplado=0;
 			tipoCC(i, diri, vn, rich,acoplado,kcc);
 			if(diri==1 || (acoplado==1 && acopD==1)){
 
@@ -1017,7 +1017,7 @@ void elem2dPoissonAxiSim::GeraLocal(){
 				double termMat=(condHarm*cordaArea/cel2D.modE[i]);
 				TL[0]+=termMat*ccTD[i];
 				local.mx[0][diag]+=termMat;
-				fluxTface[i][0]=TL[0]-termMat*cel2D.tempC;
+				fluxTface[i][0]=condHarm*(escalGradArea-termoCorda*cordaArea)+termMat*(ccTD[i]-cel2D.tempC);
 			}
 			else if(rich==1 || (acoplado==1 && acopD==0)){
 

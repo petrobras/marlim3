@@ -260,7 +260,7 @@ typedef enum { multifasico, injetor, oleoduto } sistemaSimulacao_t;
 ```cpp
 Ler::Ler(const string IMPFILE, const string ARQUIVO_LOG,
          const tipoValidacaoJson_t VALIDACAO, const tipoSimulacao_t SIMULACAO,
-         int vreverso, varGlob1D *Vvg1dSP, int vredeperm)
+         int vreverso, SimulationContext *context, int vredeperm)
 {
     iniciarVariaveis();    // zero-init ~100+ member variables
     impfile = IMPFILE;
@@ -268,7 +268,7 @@ Ler::Ler(const string IMPFILE, const string ARQUIVO_LOG,
     validacaoJson = VALIDACAO;
     tipoSimulacao = SIMULACAO;
     reverso = vreverso;
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     redeperm = vredeperm;
     lerArq();              // ← all parsing happens here
 }
@@ -611,12 +611,12 @@ The `SProd` constructor ties everything together:
 ```cpp
 SProd::SProd(string nomeArquivoEntrada, string nomeArquivoLog,
              tipoValidacaoJson_t validacaoJson, tipoSimulacao_t tipoSimulacao,
-             varGlob1D *Vvg1dSP = 0, int TD = -1, int vbloq = 0,
+             SimulationContext *context = 0, int TD = -1, int vbloq = 0,
              int temporario = 0, int reverso = 0,
              double *compfonte = 0, int *posicfonte = 0,
              int nfontes = 0, int redeperm = 1)
     : arq(nomeArquivoEntrada, nomeArquivoLog, validacaoJson, tipoSimulacao,
-          reverso, Vvg1dSP, redeperm),           // ← Ler constructed (full JSON parse)
+          reverso, context, redeperm),           // ← Ler constructed (full JSON parse)
       flut(arq.ncelp, arq.nvarprofp + 2 + 1 + 1 + 1 + 1),   // profile output table
       flutG(arq.ncelg, arq.nvarprofg + 2 + 1 + 1 + 1 + 1 + 1), // gas-line profile table
       matglobP(2 * arq.ncelp, 3, 2),              // production banded matrix
@@ -639,7 +639,7 @@ The initializer list is critical:
 3. **`matglobP` / `matglobG`** (banded matrices) are sized: 2 DOFs/cell for production (P, ṁ), 3 DOFs/cell for gas line (P, ṁ, T)
 4. **`termolivreP` / `termolivreG`** (RHS vectors) match the matrix sizes
 
-The additional constructor parameters after `Vvg1dSP`:
+The additional constructor parameters after `context`:
 | Parameter | Default | Meaning |
 |-----------|---------|---------|
 | `TD` | `-1` | Dynamic-table override index; applied to `arq.tabelaDinamica` when ≥ 0 |
@@ -769,7 +769,7 @@ The `APara` class ([`LerAP.h`](https://github.com/petrobras/marlim3/blob/main/sr
 
 - Defines per-variable struct arrays (`detIPRAS`, `detBCSAS`, `detFONGASAS`, etc.) with `vector<>` storage for multiple values
 - A `casoVEC` struct holds indices for building the parametric case matrix (all combinations)
-- Constructor signature: `ASens(varGlob1D*, string IMPFILE, int vncel, detcelp*, ProFlu*, detBCS*, detFONGAS*)`
+- Constructor signature: `ASens(SimulationContext*, string IMPFILE, int vncel, detcelp*, ProFlu*, detBCS*, detFONGAS*)`
 - Used by `Num4Main.cpp` to loop over parameter combinations and call the solver for each case
 
 ---

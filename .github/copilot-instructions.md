@@ -7,4 +7,4 @@ Pick the skill by the task:
 - **Building, running or checking a simulation model** (`.mr3`, Python API, demos used as templates): the [model-handling skill](skills/model-handling/SKILL.md). For a complete "build me a simulation" request, use the `marlim3` agent ([README-agents.md](README-agents.md)); it keeps everything it generates in the git-ignored `agent_sessions/`.
 - **Changing or reviewing the engine, the package, the interfaces, the tests or CI**: the [development skill](skills/development/SKILL.md). Per-folder rules in `.github/instructions/` apply automatically to the files being edited.
 
-Do not read the large sources whole (`src/core/SisProd.cpp`, `Leitura.cpp`, `Num4Main.cpp`, `docs/schemas/*.json`): search for the definition or field and read only those lines.
+Do not read the large sources whole (`src/core/Leitura.cpp`, `src/core/Num4Main.cpp`, the `SisProd*` solver modules, `docs/schemas/*.json`): search for the definition or field and read only those lines. `src/core/SisProd.cpp` is the facade; keep solver responsibilities in their modules.

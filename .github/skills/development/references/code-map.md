@@ -52,11 +52,17 @@ Guides: `docs/dev-guide/steady-state-branch.md`, `docs/dev-guide/transient-solve
 
 | File | Symbols | Role |
 |---|---|---|
-| `src/core/SisProd.cpp` | `SProd::SProd` | builds the production system (`SProd`) from `Ler` |
-| `src/core/SisProd.cpp` | `SProd::buscaProdPfundoPerm`, `SProd::buscaProdPfundoPerm2`, `SProd::marchaProdPerm1`, `SProd::marchaProdPerm2`, `SProd::renovaFonte` | steady state: root search around the cell-by-cell march |
-| `src/core/SisProd.cpp` | `SProd::RenovaPresPermMon`, `SProd::RenovaPresPermJus`, `SProd::RenovaMassPerm`, `SProd::RenovaMassPermComp` | steady-state cell updates; the black-box correlations are called from these |
-| `src/core/SisProd.cpp` | `SProd::SolveTrans` | transient time step |
-| `src/core/SisProd.cpp` | `SProd::ImprimeTrendP`, `SProd::ImprimeTrendTransP` | trends and cross-section trends (`TENDTRANSP-*`) of the production line; `G` variants for the service line |
+| `src/core/SisProd.cpp` | `SProd::SProd`, `SProd::SolveTrans`, `SProd::buscaProdPfundoPerm` | small production-system facade; delegates through explicit module state and dependencies |
+| `src/core/SisProdSetup.cpp` | `SProd::montasistema`, `SProd::buildProductionCells` | builds the production system from `Ler`, allocates buffers and configures initial state |
+| `src/core/SisProdSteadyStateSearch.cpp` | `searchProductionBottomHolePressure`, `searchProductionBottomHolePressureSecondary`, `solveSteadyRoot` | steady-state root searches around the cell-by-cell march |
+| `src/core/SisProdSteadyState.cpp` | `marchProductionSteady`, `marchProductionSteadySecondary`, `advanceSteadyMass`, `advanceCompositionalSteadyMass`, `advanceUpstreamSteadyPressure`, `advanceDownstreamSteadyPressure`, `finalizeSteadyMassTwoPhase` | steady-state march and cell updates; includes black-box flow-pattern handling |
+| `src/core/SisProdSources.cpp` | `renewSourceTerms`, `prepareRecirculationSourceRates` | accessory source rates and recirculation connection fluids |
+| `src/core/SisProdFluidTracking.cpp` | `transportBlackOilProperties`, `transportPhaseMolarFractions` | black-oil and compositional fluid transport, including recirculation |
+| `src/core/SisProdThermal.cpp` | `updateFlowPartitionTerms`, `updateTemperatureFromEnthalpy` | thermal and mass-transfer calculations |
+| `src/core/SisProdGasLift.cpp` | `solveGasLine`, `updateTransientGasValves` | gas-lift line and valve coupling |
+| `src/core/SisProdTransient.cpp` | `solveTransientStep`, `solvePressureVolumeCoupling` | transient time step and pressure-volume coupling |
+| `src/core/SisProdTrendOutput.cpp` | `writeProductionTrendHeader`, `writeProductionTrendRows`, `writeProductionCrossSectionTrendRows` | production trends and cross-section trends (`TENDTRANSP-*`); gas-line counterparts in the same module |
+| `src/include/SimulationContext.h` | | simulation-owned numerical state, reused workspaces and diagnostics; no process-wide solver globals |
 | `src/core/SisProdVap.cpp` | | steam systems |
 
 ## Engine: cells, closures and properties
@@ -66,7 +72,9 @@ Guides: `docs/dev-guide/core-domain-classes.md`, `docs/dev-guide/fluid-thermodyn
 | File | Symbols | Role |
 |---|---|---|
 | `src/core/celula3.cpp` | `Cel::fric` | cell (`Cel`) and its friction factor |
-| `src/core/GradientCorrelations.cpp` | `executarCorrelacao`, `frictionFactor` | black-box (MR2) gradient correlations and their Darcy friction factor |
+| `src/core/GradientCorrelations.cpp` | `executarCorrelacao` | black-box (MR2) gradient correlations |
+| `src/include/FrictionFactor.h` | `frictionFactor` | standalone inline Moody-Darcy friction factor shared by the engine and its unit test |
+| `src/core/DriftFluxClosure.cpp` | | drift-flux closure and exact gas-root reuse |
 | `src/core/GomezModel.cpp` | | Gomez mechanistic model |
 | `src/core/SlugFlow_TaitelBarnea.cpp` | | unit-cell report (Taitel-Barnea) |
 | `src/core/TrocaCalor.cpp` | `TransCal::fric` | heat transfer (`TransCal`) |

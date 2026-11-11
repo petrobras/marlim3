@@ -11,6 +11,7 @@
 
 - `steadyStateSlip` / `transientSlip` — slip modeling (default true/true; keep on).
 - `driftModel` — true = drift-flux closure (default; forced in transient); false = black-box steady-state correlations selected per pipe via `productionPipe[].ssFlowModel` (PT `correlacaoMR2`).
+- `ssFlowModel: 51` selects the optional TUFFP Unified gas-liquid library in steady state; it must be provided separately through `MARLIM3_TUFFP_LIB` or beside the executable. See [pipes](../../../../docs/single-branch-model-reference/pipes.md#tuffp-unified-model) for loading and flow-direction limitations.
 - `flowPatternMap` (PT `mapaArranjo`): 0 Barnea simplified (default), 1 Barnea complete.
 - `correlationsByPattern` (PT `correlacoesPorArranjo`): per-pattern slip correlation — `stratified` (0 Choi, **1 Bhagwat&Ghajar default**, 2 França&Lahey, 4 modified B&G), `slugBubble` (0/1/4), `annularChurn` (0/1/3 Hibiki&Ishii/4).
 - `massTransfer` (PT `transferenciaMassa`): **0 full implicit (default)**, 1 full explicit, 2 simplified isothermal, 3 none.
@@ -32,7 +33,7 @@
 - Latent heat: `massTransferLimit` (10.0 kg/(s·m)); global `latentHeatCond` (true).
 - Full-model switching: `compModelCorrectionTime`/`compModelCorrectionFlag` arrays, `despressRate` (0.01), `columnStabilization` (false).
 - Sonic: `sonicTime`/`sonicFlag` (mitigation only — first-order model).
-- Compositional transient mini-tables: `dynTableMinDelay`/`dynTableMinDp`/`dynTableMinDt` (0).
+- Compositional transient mini-tables: `dynTableMinDelay`/`dynTableMinDp`/`dynTableMinDt`. P/T increments are clamped to at least 5; without an `advanced` block the refresh delay is 1 and both increments are 5 (`src/include/DynamicTablePolicy.h`). An explicit delay of 0 is normalized to 1 by the parser.
 - Misc: `areaChange` (0 → 1 adds localized losses at area changes), `liquidJTSimple` (0), `disableMassTransferTempDeriv` (false).
 
 ## Special features

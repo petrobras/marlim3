@@ -6,10 +6,10 @@
  */
 #include "Elem3DPoisson.h"
 
-elem3dPoisson::elem3dPoisson(varGlob1D *DGP3DV,
+elem3dPoisson::elem3dPoisson(SimulationContext *DGP3DV,
                              eleOBJ velementoUNV, double **xcoor, int **noEle, int *tipo, double *atributo, int nVert, int nele, int nno,
                              int i, double vtemp, double vfluxCal, double vcond, double vcp, double vrho, double vdt) : TL(1), local(1, nVert + 1) {
-    DGP3D = DGP3DV;
+    simulationContext = DGP3DV;
     vizinho = 0;
     kvizinho = 0;
     nvizinho = 0;
@@ -234,7 +234,7 @@ elem3dPoisson::elem3dPoisson(varGlob1D *DGP3DV,
     }
 }
 elem3dPoisson::elem3dPoisson(const elem3dPoisson &velem) : TL(1), local(1, velem.cel3D.nvert + 1) {
-    DGP3D = velem.DGP3D;
+    simulationContext = velem.simulationContext;
     cel3D.nvert = velem.cel3D.nvert;
     cel3D.dim = velem.cel3D.dim;
     cel3D.indEle = velem.cel3D.indEle;
@@ -509,7 +509,7 @@ elem3dPoisson &elem3dPoisson::operator=(const elem3dPoisson &velem) {
             delete[] v2;
             delete[] v3;
         }
-        DGP3D = velem.DGP3D;
+        simulationContext = velem.simulationContext;
         TL = velem.TL;
         local = velem.local;
         cel3D.nvert = velem.cel3D.nvert;
@@ -858,7 +858,7 @@ void elem3dPoisson::atualizaCC(int i) {
     double raz;
     if (diri == 1) {
 
-        indraz(ind, raz, (*DGP3D).tempo, (*CC).ccDir[kcc].nserie, (*CC).ccDir[kcc].tempo);
+        indraz(ind, raz, (*simulationContext).solverTime, (*CC).ccDir[kcc].nserie, (*CC).ccDir[kcc].tempo);
         double inf = (*CC).ccDir[kcc].val[ind];
         double sup;
         if (ind < (*CC).ccDir[kcc].nserie - 1) {
@@ -868,7 +868,7 @@ void elem3dPoisson::atualizaCC(int i) {
             ccTD[i] = (*CC).ccDir[kcc].val[ind];
     } else if (vn == 1) {
 
-        indraz(ind, raz, (*DGP3D).tempo, (*CC).ccVN[kcc].nserie, (*CC).ccVN[kcc].tempo);
+        indraz(ind, raz, (*simulationContext).solverTime, (*CC).ccVN[kcc].nserie, (*CC).ccVN[kcc].tempo);
         double inf = (*CC).ccVN[kcc].val[ind];
         double sup;
         if (ind < (*CC).ccVN[kcc].nserie - 1) {
@@ -878,7 +878,7 @@ void elem3dPoisson::atualizaCC(int i) {
             ccTVN[i] = (*CC).ccVN[kcc].val[ind];
     } else if (rich == 1) {
 
-        indraz(ind, raz, (*DGP3D).tempo, (*CC).ccRic[kcc].nserie, (*CC).ccRic[kcc].tempo);
+        indraz(ind, raz, (*simulationContext).solverTime, (*CC).ccRic[kcc].nserie, (*CC).ccRic[kcc].tempo);
         double inf = (*CC).ccRic[kcc].valAmb[ind];
         double sup;
         if (ind < (*CC).ccRic[kcc].nserie - 1) {

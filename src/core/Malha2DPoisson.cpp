@@ -7,12 +7,12 @@
 #include "Malha2DPoisson.h"
 
 
-malha2d::malha2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int neleV, int nno, int vperm, int vtrans):
+malha2d::malha2d(SimulationContext* context,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int neleV, int nno, int vperm, int vtrans):
 	vecSolv(neleV){
 	nele=neleV;
 	if(nele>0){
 	    for(int i=0; i<neleV;i++){
-	    	elem2dPoisson temp(Vvg1dSP,xcoor, noEle, tipo, atributo, nVert, nele, nno,vperm, vtrans, i);
+            elem2dPoisson temp(context,xcoor, noEle, tipo, atributo, nVert, nele, nno,vperm, vtrans, i);
 	    	mlh2d.push_back(temp);
 	    }
 	    for(int i=0; i<nele;i++){

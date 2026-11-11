@@ -6,6 +6,7 @@
  */
 #define _USE_MATH_DEFINES // para M_PI
 #include "PropFluCol.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <math.h>
@@ -130,13 +131,19 @@ double ProFluCol::MasEspFlu(double pres, double temper) const {
         double rhomist = (1 - x) / rholw + x / rhosal;
         return 1. / rhomist;
     } else if ((injPoc <= 1 || injPoc > 3) && descarga == 0)
-        return rholStd * (1. - compresT * (temper - 20.)) * exp((pres - 1.033211) * 98066.52 * compresP);
+        return rholStd * (1. - compresT * (temper - 20.)) * exp((pres - units::kAtmosphereInKgfPerCm2) * units::kPascalPerKgfPerCm2 * compresP);
     else {
         if (pres < 1.02 && temper < 20.1)
             return rholStd;
         else
             return interpolaVarInj(pres, temper, RhoInj);
     }
+}
+
+double ProFluCol::standardDensity() const {
+    if (injPoc == 2 || descarga == 1 || tipoF == 1)
+        return MasEspFlu(1., 20.);
+    return rholStd;
 }
 
 double ProFluCol::VisFlu(double pres, double temper) const {
@@ -148,9 +155,9 @@ double ProFluCol::VisFlu(double pres, double temper) const {
         return vis * 1000.;
     } else if ((injPoc <= 1 || injPoc > 3) && descarga == 0) {
         double rhol = rholStd / 1000.;
-        double bASTM = (log10(log10((LVisL / 1) / rhol + 0.7)) - log10(log10((LVisH / 1) / rhol + 0.7))) / log10((TempL + 273) / (TempH + 273));
+        double bASTM = (log10(log10((LVisL / 1) / rhol + 0.7)) - log10(log10((LVisH / 1) / rhol + 0.7))) / log10((TempL + units::kZeroCelsiusInKelvin) / (TempH + units::kZeroCelsiusInKelvin));
 
-        double visASTM = rhol * (pow(10, pow(10, (bASTM * log10((temper + 273) / (TempL + 273)) + log10(log10((LVisL / 1) / rhol + 0.7))))) - 0.7);
+        double visASTM = rhol * (pow(10, pow(10, (bASTM * log10((temper + units::kZeroCelsiusInKelvin) / (TempL + units::kZeroCelsiusInKelvin)) + log10(log10((LVisL / 1) / rhol + 0.7))))) - 0.7);
 
         return visASTM;
     } else

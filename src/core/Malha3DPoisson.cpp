@@ -7,16 +7,16 @@
 #include "Malha3DPoisson.h"
 
 
-malha3d::malha3d(varGlob1D* DGP3DV,eleOBJ* velementoUNV, double** xcoor, int** noEle,int* tipo,
+malha3d::malha3d(SimulationContext* DGP3DV,eleOBJ* velementoUNV, double** xcoor, int** noEle,int* tipo,
 		double* atributo,int nVert, int neleV, int nno):
 	vecSolv(neleV){
-	DGP3D=DGP3DV;
+	simulationContext=DGP3DV;
 	nele=neleV;
 	double voltot=0.;
 	double areatot=0.;
 	if(nele>0){
 	    for(int i=0; i<neleV;i++){
-	    	elem3dPoisson temp(DGP3D,velementoUNV[i],xcoor, noEle, tipo, atributo, nVert, nele, nno, i);
+            elem3dPoisson temp(simulationContext,velementoUNV[i],xcoor, noEle, tipo, atributo, nVert, nele, nno, i);
 	    	mlh3d.push_back(temp);
 	    	voltot+=mlh3d[i].cel3D.vElem;
 	    	for(int j=0; j<mlh3d[i].cel3D.nvert;j++){
@@ -67,7 +67,7 @@ malha3d::malha3d(varGlob1D* DGP3DV,eleOBJ* velementoUNV, double** xcoor, int** n
 
 malha3d::malha3d(const malha3d& vmalha):vecSolv(vmalha.nele){
 	nele=vmalha.nele;
-	DGP3D=vmalha.DGP3D;
+	simulationContext=vmalha.simulationContext;
 	if(nele>0){
 		vecSolv=vmalha.vecSolv;
 	    for(int i=0; i<nele;i++){
@@ -119,7 +119,7 @@ malha3d::malha3d(const malha3d& vmalha):vecSolv(vmalha.nele){
 malha3d& malha3d::operator =(const malha3d& vmalha) {
 	if (this != &vmalha) {
 		if(mlh3d.size()>0)mlh3d.clear();
-		DGP3D=vmalha.DGP3D;
+		simulationContext=vmalha.simulationContext;
 		nele=vmalha.nele;
 		if(nele>0){
 			vecSolv=vmalha.vecSolv;

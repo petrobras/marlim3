@@ -1,3 +1,4 @@
+#include "UnitConversions.h"
 /*
  * PropFluCol.h
  *
@@ -45,6 +46,10 @@ class ProFluCol {
     double operator[](int i) const;
     double MasEspFlu(double pres /*pressure in kgf/cm2*/,
                      double temp /*temperature in degrees Celsius*/) const; // Returns the fluid density, kg/m3
+    // Returns the density at the standard conditions of the fluid's own model, kg/m3: rholStd, the density the user
+    // gives at 1 atm and 20 C (and the tabulated injection fluid's below 1.02 kgf/cm2 and 20.1 C); for water and
+    // completion fluid, the correlation at 1 kgf/cm2 and 20 C, where fresh water has 1000 kg/m3
+    double standardDensity() const;
     double VisFlu(double pres /*pressure in kgf/cm2*/,
                   double temp /*temperature in degrees Celsius*/) const; // Returns the fluid viscosity, cP
     double TensSuper(double pres /*pressure in kgf/cm2*/,
@@ -59,7 +64,7 @@ class ProFluCol {
                            double temp /*temperature in degrees Celsius*/,
                            double **VarInj /*property table for the CO2-rich gas*/) const; // Interpolates injection-fluid properties
     // loaded from a PVTSim file when the injection fluid is a CO2-rich gas
-    double psia(const double p) const { return (p * 0.9678411) * 14.69595; } // Converts pressure from kgf/cm2 to psia
+    double psia(const double p) const { return p * units::kPsiPerKgfPerCm2; } // Converts pressure from kgf/cm2 to psia
     double Faren(const double t) const { return 1.8 * t + 32; }              // Converts temperature from degrees Celsius to degrees Fahrenheit
     double calcDR(double ReyL);
 };

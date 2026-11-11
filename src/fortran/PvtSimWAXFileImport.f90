@@ -40,6 +40,8 @@ module PvtSimWAXFileImport
 
         ! ------------ PROCEDIMENTOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Abrir o arquivo:
         OPEN(UNIT=iPvtSimWaxFileUnit, FILE=sPVTSIMWaxFileName, STATUS='OLD', ACTION='READ', IOSTAT=iFileOperationsError)
 
@@ -181,6 +183,8 @@ module PvtSimWAXFileImport
         integer, parameter :: iPvtSimWaxFileUnit = 2
 
         ! ------------ PROCEDIMENTOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Abrir o arquivo:
         OPEN(UNIT=iPvtSimWaxFileUnit, FILE=sPVTSIMWaxFileName, STATUS='OLD', ACTION='READ', IOSTAT=iFileOperationsError)
@@ -501,6 +505,8 @@ module PvtSimWAXFileImport
 
         ! ------------ PROCEDIMENTOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Obter, por interpolação, a TIAC à pressão especificada:
         call InterpolateInVectors(iPressureCount, oPressurePoints, oCloudPointTemperatures, dPressure, iIER, dCloudPointT)
 
@@ -752,6 +758,8 @@ module PvtSimWAXFileImport
 
         ! ------------ PROCEDIMENTOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Localizar as abcissas imediatamente inferior e superior:
         bFoundInX = .false.
 
@@ -833,6 +841,8 @@ module PvtSimWAXFileImport
         real(c_double), dimension(iWaxComponentCount) :: oInterpolatedMassWaxConcsTDeriv
 
         ! ------------ PROCEDIMENTOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Fazer as interpolações que forem necessárias:
         call InterpolatePVTSIMWaxCalcParameters(iWaxComponentCount, iPressureCount, iTemperatureCount, oMolecularWeightsOfWaxComponents, oPressurePoints, oCloudPointTemperatures, oStructurePressures, &

@@ -187,7 +187,7 @@ The `APara` class ([`LerAP.h`](https://github.com/petrobras/marlim3/blob/main/sr
 ### Construction
 
 ```cpp
-APara analisePara(vg1dSP, arquivoAP, ncel, celp, flup, bcs, multiBcs, fonteg);
+APara analisePara(simulationContext, arquivoAP, ncel, celp, flup, bcs, multiBcs, fonteg);
 ```
 
 The constructor calls `lerArq()`, which:
@@ -340,7 +340,7 @@ In serial mode, the previous converged solution is reused as the initial guess w
 2. Write headers through `cabecalhoAP()` or `cabecalhoAPImex()`
 3. Create `sucessoAP.dat`
 4. Emit trend headers
-5. Allocate per-case copies of `Ler` and `varGlob1D`
+5. Allocate per-case copies of `Ler` and `SimulationContext`
 6. Solve the base case once and, if successful, derive a common initial guess `chute`
 
 ### Parallel phase

@@ -7,7 +7,7 @@
 #include "Elem2D.h"
 
 
-elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int nele, int nno, int i
+elem2d::elem2d(SimulationContext* context,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int nele, int nno, int i
 		,double vdt, int vperm, int vtrans,ProFluColVF vflucVF,int vacopd,
 		double vpres,double vu,double vv,double vt,double vfluxCal,double vcond,
 		double vcp,double vrho,double vvisc,double vbeta) :
@@ -71,9 +71,9 @@ elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* 
 	dtCFL=0;
 	CFL=0;
 	double CFLCTemp=0.;
-	if(Vvg1dSP!=0)CFLCTemp=(*Vvg1dSP).cflG;
+	if(context!=0)CFLCTemp=(*context).targetCflNumber;
 	CFLC=CFLCTemp;
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 	flucVF=vflucVF;
 	acopD=vacopd;
 
@@ -86,7 +86,7 @@ elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* 
     	cel2D.nele=nele;
     	dtCFL=new double [cel2D.nvert];
     	CFL=new double [cel2D.nvert];
-    	for(int j=0; j<cel2D.nvert;j++)CFL[j]=(*vg1dSP).cflG;
+        for(int j=0; j<cel2D.nvert;j++)CFL[j]=(*simulationContext).targetCflNumber;
     	confinado=new int [cel2D.nvert];
     	presF=new double [cel2D.nvert];
     	presFcor=new double [cel2D.nvert];
@@ -224,8 +224,8 @@ elem2d::elem2d(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* 
         cel2D.fIfC=new double* [cel2D.nvert];
         for(int j=0; j<cel2D.nvert;j++) cel2D.fIfC[j]=new double [cel2D.dim];
         cel2D.B2Med=new double [cel2D.dim];
-        cel2D.B2Med[1]=sin((*vg1dSP).angY)*(*vg1dSP).gravVF*cel2D.rho;
-        cel2D.B2Med[0]=sin((*vg1dSP).angX)*(*vg1dSP).gravVF*cel2D.rho;
+        cel2D.B2Med[1]=sin((*simulationContext).gravityAngleY)*(*simulationContext).gravitationalAcceleration*cel2D.rho;
+        cel2D.B2Med[0]=sin((*simulationContext).gravityAngleX)*(*simulationContext).gravitationalAcceleration*cel2D.rho;
         cel2D.BMedF=new double* [cel2D.nvert];
         for(int j=0; j<cel2D.nvert;j++){
         	cel2D.BMedF[j]=new double [cel2D.dim];
@@ -517,7 +517,7 @@ elem2d::elem2d(const elem2d& velem) :
 	residuoT=velem.residuoT;
 	denoResT=velem.denoResT;
 	CFLC=velem.CFLC;
-	vg1dSP=velem.vg1dSP;
+	simulationContext=velem.simulationContext;
 	flucVF=velem.flucVF;
 
 	DCCN=velem.DCCN;
@@ -1105,8 +1105,8 @@ elem2d& elem2d::operator =(const elem2d& velem) {
 		residuoT=velem.residuoT;
 		denoResT=velem.denoResT;
 
-		vg1dSP=velem.vg1dSP;
-		CFLC=(*vg1dSP).cflG;
+		simulationContext=velem.simulationContext;
+		CFLC=(*simulationContext).targetCflNumber;
 		flucVF=velem.flucVF;
 
 		DCCN=velem.DCCN;
@@ -1635,17 +1635,17 @@ void elem2d::vazMass(double rlx,int noRelax){
 			for(int j=0; j<cel2D.dim;j++)
 				bmed3[j]=(cel2D.fatG[face]*cel2D.B2Med[j]+(1-cel2D.fatG[face])*(*vizinho[face]).B2Med[j]);
 			///// Moukaled
-			if((*vg1dSP).correcForcCorp==0){
+			if((*simulationContext).bodyForceCorrectionMode==0){
 				vRC[face]+=1.*(cel2D.BMedF[face][1]-bmed3[1])*difV;
 			}
 			else{
 			/////eu-primeira ordem
-				double deltaRho=cel2D.rho*(1*(*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef))-
-						(*vizinho[face]).rho*(1*(*vg1dSP).mulFC-(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef));
-				double rhoMed=cel2D.fatG[face]*cel2D.rho*(1*(*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef))+
-						(1-cel2D.fatG[face])*(*vizinho[face]).rho*(1*(*vg1dSP).mulFC-(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef));
-				vRC[face]+=(cel2D.rho*(1*(*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef))-
-						0.5*deltaRho-rhoMed)*(*vg1dSP).gravVF*cel2D.vecE[face][1]*cel2D.vecE[face][1]*difV;
+				double deltaRho=cel2D.rho*(1*(*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef))-
+						(*vizinho[face]).rho*(1*(*simulationContext).bodyForceDensityFactor-(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef));
+				double rhoMed=cel2D.fatG[face]*cel2D.rho*(1*(*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef))+
+						(1-cel2D.fatG[face])*(*vizinho[face]).rho*(1*(*simulationContext).bodyForceDensityFactor-(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef));
+				vRC[face]+=(cel2D.rho*(1*(*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef))-
+						0.5*deltaRho-rhoMed)*(*simulationContext).gravitationalAcceleration*cel2D.vecE[face][1]*cel2D.vecE[face][1]*difV;
 			}
 
 			if(perm==0 && trans==1){
@@ -1718,7 +1718,7 @@ void elem2d::vazMass(double rlx,int noRelax){
 		if(kvizinho[face]>=0){
 			double rhoHarm;
 			//Moukaled
-			if((*vg1dSP).correcForcCorp==0){
+			if((*simulationContext).bodyForceCorrectionMode==0){
 				rhoHarm=cel2D.fatG[face]/(cel2D.rho*(1.-0.*cel2D.beta*(cel2D.tempC-cel2D.tempRef)))+
 						(1-cel2D.fatG[face])/((*vizinho[face]).rho*(1.-0.*(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef)));
 				rhoHarm=1./rhoHarm;
@@ -1756,7 +1756,7 @@ void elem2d::atualizaCor(){
 	double masTemp;
 	cel2D.uC-=cel2D.difuPres[0]*cel2D.gradGreenPresCor[0];
 	cel2D.vC-=cel2D.difuPres[1]*cel2D.gradGreenPresCor[1];
-	cel2D.presC+=((*vg1dSP).relaxVFPcor)*cel2D.presCcor;
+	cel2D.presC+=((*simulationContext).pressureCorrectionRelaxationFactor)*cel2D.presCcor;
 	for(int face=0;face<cel2D.nvert;face++){
 		if(kvizinho[face]>=0){
 			for(int j=0; j<cel2D.dim;j++){
@@ -1769,7 +1769,7 @@ void elem2d::atualizaCor(){
 			}
 			double rhoHarm;
 			//Moukaled
-			if((*vg1dSP).correcForcCorp==0){
+			if((*simulationContext).bodyForceCorrectionMode==0){
 				rhoHarm=cel2D.fatG[face]/cel2D.rho+(1-cel2D.fatG[face])/(*vizinho[face]).rho;
 				rhoHarm=1./rhoHarm;
 			}
@@ -1830,7 +1830,7 @@ void elem2d::impliHR(int face){
 				phi=(vMed[face]-vUpw[face])/(vDow[face]-vUpw[face]);
 			else phi=1.1;
 		}
-		switch((*vg1dSP).nvfHR){
+		switch((*simulationContext).highResolutionScheme){
 			case 0://upwind
 				{
 					lLoc=1.;
@@ -1928,7 +1928,7 @@ void elem2d::expliHR(int face){
 			if(fabs(vDow[face]-vUpw[face])>1e-15)phi=(vMed[face]-vUpw[face])/(vDow[face]-vUpw[face]);
 			else phi=1.1;
 		}
-		switch((*vg1dSP).nvfHR){
+		switch((*simulationContext).highResolutionScheme){
 			case 0://upwind
 				{
 					lLoc=0.;
@@ -2019,7 +2019,7 @@ void elem2d::impliHRT(int face){
 
 	if(fabs(tDow[face]-tUpw[face])>1e-15)phi=(tMed[face]-tUpw[face])/(tDow[face]-tUpw[face]);
 	else phi=1.1;
-	switch((*vg1dSP).nvfHR){
+	switch((*simulationContext).highResolutionScheme){
 		case 0://upwind
 			{
 				lLoc=1.;
@@ -2103,7 +2103,7 @@ void elem2d::expliHRT(int face){
 
 	if(fabs(tDow[face]-tUpw[face])>1e-15)phi=(tMed[face]-tUpw[face])/(tDow[face]-tUpw[face]);
 	else phi=1.1;
-	switch((*vg1dSP).nvfHR){
+	switch((*simulationContext).highResolutionScheme){
 		case 0://upwind
 			{
 				lLoc=0.;
@@ -2187,11 +2187,11 @@ void elem2d::expliHRHol(int face){
 
 	if(fabs(holDow[face]-holUpw[face])>1e-15 && fabs(CFLC)>1e-15){
 		phi=(holMed[face]-holUpw[face])/(holDow[face]-holUpw[face]);
-		if((*vg1dSP).nvfHRHol==0){//upwind
+		if((*simulationContext).holdupAdvectionScheme==0){//upwind
 				lLoc=0.;
 				mLoc=1.;
 		}
-		else if((*vg1dSP).nvfHRHol==1){//cicsam
+		else if((*simulationContext).holdupAdvectionScheme==1){//cicsam
 			double lCBC;
 			double mCBC;
 			double phiCBC;
@@ -2326,7 +2326,7 @@ void elem2d::calcVarFaceUV(int face){
 		vDow[face]=cel2D.vC;
 		vUpw[face]=vDow[face]+2*escalar((*vizinho[face]).gradGreenVI,cel2D.vecE[face],cel2D.dim)*cel2D.modE[face];
 	}
-	if((*vg1dSP).atrasaHR==0)impliHR(face);
+	if((*simulationContext).deferredHighResolutionCorrection==0)impliHR(face);
 	else expliHR(face);
 	double gradMedU [cel2D.dim];
 	double gradMedV [cel2D.dim];
@@ -2349,11 +2349,11 @@ void elem2d::calcVarFaceUV(int face){
 		gradMedV[j]=gradMedV[j]+(deri-termoCorda)*cel2D.vecE[face][j];
 	}
 
-	if((*vg1dSP).atrasaHR==0)impliCoefHR(face);
+	if((*simulationContext).deferredHighResolutionCorrection==0)impliCoefHR(face);
 	else expliCoefHR(face);
 	for(int j=0; j<cel2D.dim;j++){
-		fonteUHR[face]+=(*vg1dSP).corrigeDistor*gradMedU[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
-		fonteVHR[face]+=(*vg1dSP).corrigeDistor*gradMedV[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+		fonteUHR[face]+=(*simulationContext).meshDistortionCorrectionFactor*gradMedU[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+		fonteVHR[face]+=(*simulationContext).meshDistortionCorrectionFactor*gradMedV[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
 	}
 	coefUHRC[face]*=massF[face];
 	coefUHRV[face]*=massF[face];
@@ -2366,11 +2366,11 @@ void elem2d::calcVarFaceUV(int face){
 	vF[face]=0.;
 
 	for(int j=0; j<cel2D.dim;j++){
-		uF[face]+=(*vg1dSP).corrigeDistor*gradMedU[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
-		vF[face]+=(*vg1dSP).corrigeDistor*gradMedV[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+		uF[face]+=(*simulationContext).meshDistortionCorrectionFactor*gradMedU[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+		vF[face]+=(*simulationContext).meshDistortionCorrectionFactor*gradMedV[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
 	}
 
-	if((*vg1dSP).atrasaHR==0){
+	if((*simulationContext).deferredHighResolutionCorrection==0){
 		uF[face]+=uL[face]*uMed[face]+uK[face]*uDow[face]+(1-uL[face]-uK[face])*uUpw[face];
 		vF[face]+=vL[face]*vMed[face]+vK[face]*vDow[face]+(1-vL[face]-vK[face])*vUpw[face];
 	}
@@ -2395,7 +2395,7 @@ void elem2d::calcVarFaceTemp(int face){
 	tempF[face]=0.;
 
 
-	if((*vg1dSP).atrasaHR==0)impliHRT(face);
+	if((*simulationContext).deferredHighResolutionCorrection==0)impliHRT(face);
 	else expliHRT(face);
 	double gradInterT [cel2D.dim];
 	double gradMedT [cel2D.dim];
@@ -2413,20 +2413,20 @@ void elem2d::calcVarFaceTemp(int face){
 	double corDistorc2=1.;
 	if(fabs(cel2D.angES[face])<0.9)corDistorc2=0.;
 
-	if((*vg1dSP).atrasaHR==0)impliCoefHRT(face);
+	if((*simulationContext).deferredHighResolutionCorrection==0)impliCoefHRT(face);
 	else expliCoefHRT(face);
 	for(int j=0; j<cel2D.dim;j++){
-		fonteTHR[face]+=corDistorc2*(*vg1dSP).corrigeDistor*gradMedT[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+		fonteTHR[face]+=corDistorc2*(*simulationContext).meshDistortionCorrectionFactor*gradMedT[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
 	}
 	coefTHRC[face]*=massF[face];
 	coefTHRV[face]*=massF[face];
 	fonteTHR[face]*=massF[face];
 
 	for(int j=0; j<cel2D.dim;j++){
-		tempF[face]+=corDistorc2*(*vg1dSP).corrigeDistor*gradMedT[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+		tempF[face]+=corDistorc2*(*simulationContext).meshDistortionCorrectionFactor*gradMedT[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
 	}
 
-	if((*vg1dSP).atrasaHR==0){
+	if((*simulationContext).deferredHighResolutionCorrection==0){
 		tempF[face]+=tL[face]*tMed[face]+tK[face]*tDow[face]+(1-tL[face]-tK[face])*tUpw[face];
 	}
 	else{
@@ -2453,16 +2453,16 @@ void elem2d::calcVarFacePres(int face){
 		gradMed[j]=gradMed[j]+(deri-termoCorda)*cel2D.vecE[face][j];
 	}
 	for(int j=0; j<cel2D.dim;j++)
-	presF[face]+=corDistorc2*(*vg1dSP).corrigeDistor*gradMed[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+	presF[face]+=corDistorc2*(*simulationContext).meshDistortionCorrectionFactor*gradMed[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
 
 
 	presF[face]+=cel2D.fatG[face]*cel2D.presC+(1.-cel2D.fatG[face])*(*vizinho[face]).presC;
-	double forcCorp=-(cel2D.fatG[face]*cel2D.rho*((*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef))+
-				(1.-cel2D.fatG[face])*(*vizinho[face]).rho*((*vg1dSP).mulFC-
-						(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef)))*(*vg1dSP).gravVF*sin((*vg1dSP).angY);
+	double forcCorp=-(cel2D.fatG[face]*cel2D.rho*((*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef))+
+				(1.-cel2D.fatG[face])*(*vizinho[face]).rho*((*simulationContext).bodyForceDensityFactor-
+						(*vizinho[face]).beta*((*vizinho[face]).tempC-(*vizinho[face]).tempRef)))*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY);
 
 	for(int j=0; j<cel2D.dim;j++){
-		presF[face]+=(1.-corDistorc2*(*vg1dSP).corrigeDistor)*(0.*cel2D.BMedF[face][1]+1.*forcCorp)*(cel2D.centroideFace[face][1]-cel2D.fInter[face][1]);
+		presF[face]+=(1.-corDistorc2*(*simulationContext).meshDistortionCorrectionFactor)*(0.*cel2D.BMedF[face][1]+1.*forcCorp)*(cel2D.centroideFace[face][1]-cel2D.fInter[face][1]);
 	}
 }
 
@@ -2482,7 +2482,7 @@ void elem2d::calcVarFacePresCor(int face){
 	double corDistorc2=1.;
 	if(fabs(cel2D.angES[face])<0.9)corDistorc2=0.;
 	for(int j=0; j<cel2D.dim;j++)
-	presFcor[face]+=corDistorc2*(*vg1dSP).corrigeDistor*gradMed[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
+	presFcor[face]+=corDistorc2*(*simulationContext).meshDistortionCorrectionFactor*gradMed[j]*(cel2D.centroideFace[face][j]-cel2D.fInter[face][j]);
 	presFcor[face]+=cel2D.fatG[face]*cel2D.presCcor+(1.-cel2D.fatG[face])*(*vizinho[face]).presCcor;
 }
 
@@ -2572,7 +2572,7 @@ void elem2d::atualizaCCTemp(int i){
     double raz;
 	if(diri==1){
 
-		indraz(ind, raz, (*vg1dSP).tempo, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).solverTime, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
 		double inf = CC.ccDir[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccDir[kcc].nserie - 1){
@@ -2584,7 +2584,7 @@ void elem2d::atualizaCCTemp(int i){
 	}
 	else if(vn==1){
 
-		indraz(ind, raz, (*vg1dSP).tempo, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).solverTime, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
 		double inf = CC.ccVN[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccVN[kcc].nserie - 1){
@@ -2596,7 +2596,7 @@ void elem2d::atualizaCCTemp(int i){
 	}
 	else if(rich==1){
 
-		indraz(ind, raz, (*vg1dSP).tempo, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).solverTime, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
 		double inf = CC.ccRic[kcc].valAmb[ind];
 		double sup;
 		if (ind < CC.ccRic[kcc].nserie - 1){
@@ -2629,7 +2629,7 @@ void elem2d::atualizaCC(int i){
     double raz;
 	if(inl==1){
 
-		indraz(ind, raz, (*vg1dSP).tempo, CC.ccInl[kcc].nserie, CC.ccInl[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).solverTime, CC.ccInl[kcc].nserie, CC.ccInl[kcc].tempo);
 		double infU = CC.ccInl[kcc].valU[ind];
 		double infV = CC.ccInl[kcc].valV[ind];
 		double supU;
@@ -2647,7 +2647,7 @@ void elem2d::atualizaCC(int i){
 	}
 	else if(out==1){
 
-		indraz(ind, raz, (*vg1dSP).tempo, CC.ccPres[kcc].nserie, CC.ccPres[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).solverTime, CC.ccPres[kcc].nserie, CC.ccPres[kcc].tempo);
 		double inf = CC.ccPres[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccPres[kcc].nserie - 1){
@@ -2659,7 +2659,7 @@ void elem2d::atualizaCC(int i){
 	}
 	else if(wall==1){
 
-		indraz(ind, raz, (*vg1dSP).tempo, CC.ccWall[kcc].nserie, CC.ccWall[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).solverTime, CC.ccWall[kcc].nserie, CC.ccWall[kcc].tempo);
 		double inf = CC.ccWall[kcc].velW[ind];
 		double sup;
 		if (ind < CC.ccWall[kcc].nserie - 1){
@@ -2677,18 +2677,18 @@ void elem2d::calcForcCorp(){
 	cel2D.B2Med[1]=0.;
 	for(int i=0;i<cel2D.nvert;i++){
 		if(kvizinho[i]>=0){
-			cel2D.BMedF[i][1]=-(cel2D.fatG[i]*cel2D.rho*(1*(*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef))+
-					(1-cel2D.fatG[i])*(*vizinho[i]).rho*(1*(*vg1dSP).mulFC-
-							(*vizinho[i]).beta*((*vizinho[i]).tempC-(*vizinho[i]).tempRef)))*(*vg1dSP).gravVF*sin((*vg1dSP).angY);
+			cel2D.BMedF[i][1]=-(cel2D.fatG[i]*cel2D.rho*(1*(*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef))+
+					(1-cel2D.fatG[i])*(*vizinho[i]).rho*(1*(*simulationContext).bodyForceDensityFactor-
+							(*vizinho[i]).beta*((*vizinho[i]).tempC-(*vizinho[i]).tempRef)))*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY);
 		}
 		else{
-			cel2D.BMedF[i][1]=-(cel2D.rho*(1*(*vg1dSP).mulFC-cel2D.beta*(tempF[i]-cel2D.tempRef)))*(*vg1dSP).gravVF*sin((*vg1dSP).angY);
+			cel2D.BMedF[i][1]=-(cel2D.rho*(1*(*simulationContext).bodyForceDensityFactor-cel2D.beta*(tempF[i]-cel2D.tempRef)))*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY);
 		}
 		if(kvizinho[i]>=0){
 			cel2D.B2Med[1]+=cel2D.fatG[i]*cel2D.BMedF[i][1]*cel2D.vecE[i][1]*cel2D.modE[i]*cel2D.sFace[i][1]/cel2D.vElem;
 		}
 		else{
-			cel2D.B2Med[1]-=(cel2D.rho*(1*(*vg1dSP).mulFC-cel2D.beta*(tempF[i]-cel2D.tempRef)))*(*vg1dSP).gravVF*sin((*vg1dSP).angY)*
+			cel2D.B2Med[1]-=(cel2D.rho*(1*(*simulationContext).bodyForceDensityFactor-cel2D.beta*(tempF[i]-cel2D.tempRef)))*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY)*
 						cel2D.vecE[i][1]*cel2D.modE[i]*cel2D.sFace[i][1]/cel2D.vElem;
 		}
 	}
@@ -2785,34 +2785,34 @@ void elem2d::calcGradGreenPres(){
 			int kcc=0;
 			tipoCC(i, inl, out, wall, sim, kcc);
 			presF[i]=0.;
-			double forcCorp=-1*(cel2D.rho*((*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef)))*(*vg1dSP).gravVF*sin((*vg1dSP).angY);
+			double forcCorp=-1*(cel2D.rho*((*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef)))*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY);
 			if(inl==1){
-				if((*vg1dSP).partidaVF>=0){
+				if((*simulationContext).finiteVolumeStartupMode>=0){
 					double gradMed [cel2D.dim];
 					for(int j=0; j<cel2D.dim;j++){
 						gradMed[j]=cel2D.gradGreenPres[j];
 					}
 					double termoCorda=escalar(gradMed,cel2D.vecE[i],cel2D.dim);
-					presF[i]=cel2D.presC+(*vg1dSP).corrigeDistor*termoCorda*cel2D.modE[i];
+					presF[i]=cel2D.presC+(*simulationContext).meshDistortionCorrectionFactor*termoCorda*cel2D.modE[i];
 				}
 				else{
 					presF[i]=cel2D.presC;
 				}
 			}
 			else if(wall==1){
-				if((*vg1dSP).partidaVF>=0){
+				if((*simulationContext).finiteVolumeStartupMode>=0){
 
 					double gradMed [cel2D.dim];
 					for(int j=0; j<cel2D.dim;j++){
 						gradMed[j]=cel2D.gradGreenPres[j];
 					}
 					double termoCorda=escalar(gradMed,cel2D.vecE[i],cel2D.dim);
-						presF[i]=cel2D.presC+(*vg1dSP).corrigeDistor*termoCorda*cel2D.modE[i]+
-								(1.-(*vg1dSP).corrigeDistor)*(0.*cel2D.B2Med[1]+1.*forcCorp)*(cel2D.centroideFace[i][1]-cel2D.centroideElem[1]);
+						presF[i]=cel2D.presC+(*simulationContext).meshDistortionCorrectionFactor*termoCorda*cel2D.modE[i]+
+								(1.-(*simulationContext).meshDistortionCorrectionFactor)*(0.*cel2D.B2Med[1]+1.*forcCorp)*(cel2D.centroideFace[i][1]-cel2D.centroideElem[1]);
 				}
 				else{
 						presF[i]=cel2D.presC+
-								(1.-(*vg1dSP).corrigeDistor)*(0.*cel2D.B2Med[1]+1.*forcCorp)*(cel2D.centroideFace[i][1]-cel2D.centroideElem[1]);
+								(1.-(*simulationContext).meshDistortionCorrectionFactor)*(0.*cel2D.B2Med[1]+1.*forcCorp)*(cel2D.centroideFace[i][1]-cel2D.centroideElem[1]);
 				}
 			}
 			else if(sim==1 || out==1){
@@ -2954,7 +2954,7 @@ void elem2d::calcGradGreenHol(int inicia){
 				holF[i]=1.; // TODO: Modify this to use the input value.
 			}
 			else if(wall==1){
-				if((*vg1dSP).partidaVF>=0){
+				if((*simulationContext).finiteVolumeStartupMode>=0){
 					for(int j=0; j<cel2D.dim;j++){
 					}
 					holF[i]=cel2D.holC;
@@ -3168,11 +3168,11 @@ void elem2d::explicitUV(){
 		localV.mx[0][diag]+=cel2D.a0V;
 	}
 	double acTemp=localU.mx[0][diag];
-	localU.mx[0][diag]=acTemp/(*vg1dSP).relaxVF;
-	TLU[0]+=((1-(*vg1dSP).relaxVF)/(*vg1dSP).relaxVF)*acTemp*cel2D.uCI;
+	localU.mx[0][diag]=acTemp/(*simulationContext).finiteVolumeRelaxationFactor;
+	TLU[0]+=((1-(*simulationContext).finiteVolumeRelaxationFactor)/(*simulationContext).finiteVolumeRelaxationFactor)*acTemp*cel2D.uCI;
 	acTemp=localV.mx[0][diag];
-	localV.mx[0][diag]=acTemp/(*vg1dSP).relaxVF;
-	TLV[0]+=((1-(*vg1dSP).relaxVF)/(*vg1dSP).relaxVF)*acTemp*cel2D.vCI;
+	localV.mx[0][diag]=acTemp/(*simulationContext).finiteVolumeRelaxationFactor;
+	TLV[0]+=((1-(*simulationContext).finiteVolumeRelaxationFactor)/(*simulationContext).finiteVolumeRelaxationFactor)*acTemp*cel2D.vCI;
 	cel2D.difuPresRC[0]=cel2D.difuPres[0]=cel2D.vElem/localU.mx[0][diag];
 	cel2D.difuPresRC[1]=cel2D.difuPres[1]=cel2D.vElem/localV.mx[0][diag];
 	cel2D.a0U=cel2D.a0U/localU.mx[0][diag];
@@ -3225,7 +3225,7 @@ void elem2d::GeraLocalUV(double rlx){
 					(gradUface[i][1]+gradVface[i][0])*(gradUface[i][1]+gradVface[i][0]));
 
 			double viscHarm;
-			if((*vg1dSP).acop!=1){
+			if((*simulationContext).thermalCouplingEnabled!=1){
 				viscHarm=cel2D.fatG[i]/cel2D.visc+(1-cel2D.fatG[i])/(*vizinho[i]).visc;
 				viscHarm=viscFace[i]=1./viscHarm;
 			}
@@ -3286,7 +3286,7 @@ void elem2d::GeraLocalUV(double rlx){
 					}
 					taxadeformFace[i]=sqrt(2.*gradUface[i][0]*gradUface[i][0]+2.*gradVface[i][1]*gradVface[i][1]+
 										(gradUface[i][1]+gradVface[i][0])*(gradUface[i][1]+gradVface[i][0]));
-					if((*vg1dSP).acop==1){
+					if((*simulationContext).thermalCouplingEnabled==1){
 						double pres=presF[i];
 						double temp=tempF[i];
 						double taxaDef=taxadeformFace[i];
@@ -3324,7 +3324,7 @@ void elem2d::GeraLocalUV(double rlx){
 					}
 					taxadeformFace[i]=sqrt(2.*gradUface[i][0]*gradUface[i][0]+2.*gradVface[i][1]*gradVface[i][1]+
 										(gradUface[i][1]+gradVface[i][0])*(gradUface[i][1]+gradVface[i][0]));
-					if((*vg1dSP).acop==1){
+					if((*simulationContext).thermalCouplingEnabled==1){
 						double pres=presF[i];
 						double temp=tempF[i];
 						double taxaDef=taxadeformFace[i];
@@ -3396,7 +3396,7 @@ void elem2d::GeraLocalUV(double rlx){
 									(gradUface[i][1]+gradVface[i][0])*(gradUface[i][1]+gradVface[i][0]));
 
 
-				if((*vg1dSP).acop==1){
+				if((*simulationContext).thermalCouplingEnabled==1){
 					double pres=presF[i];
 					double temp=tempF[i];
 					double taxaDef=taxadeformFace[i];
@@ -3425,7 +3425,7 @@ void elem2d::GeraLocalUV(double rlx){
 	TLV[0]-=cel2D.gradGreenPres[1]*cel2D.vElem;
 	TLU[0]+=cel2D.B2Med[0]*cel2D.vElem;
 	TLV[0]+=(0.*cel2D.B2Med[1]*cel2D.vElem-
-			1.*(cel2D.rho*((*vg1dSP).mulFC-cel2D.beta*(cel2D.tempC-cel2D.tempRef)))*(*vg1dSP).gravVF*sin((*vg1dSP).angY)*cel2D.vElem);
+			1.*(cel2D.rho*((*simulationContext).bodyForceDensityFactor-cel2D.beta*(cel2D.tempC-cel2D.tempRef)))*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY)*cel2D.vElem);
 	double rhoC=cel2D.rho*(1.-0*cel2D.beta*(cel2D.tempC-cel2D.tempRef));
 	if(perm==0 && trans==1){
 		cel2D.a0U=cel2D.vElem*(rhoC/dt);
@@ -3467,7 +3467,7 @@ void elem2d::GeraLocalUV(double rlx){
 	cel2D.difuPresRC[1]=cel2D.difuPres[1]=cel2D.vElem/localV.mx[0][diag];
 	cel2D.a0U=cel2D.a0U/localU.mx[0][diag];
 	cel2D.a0V=cel2D.a0V/localV.mx[0][diag];
-	if((*vg1dSP).metodoAcopPV==1 || (*vg1dSP).metodoAcopPV==4){
+	if((*simulationContext).pressureVelocityCouplingMethod==1 || (*simulationContext).pressureVelocityCouplingMethod==4){
 		double modHcU=0.;
 		double modHcV=0.;
 		for(int i=0;i<cel2D.nvert;i++){
@@ -3576,8 +3576,8 @@ void elem2d::GeraLocalU(){
 	}
 	cel2D.difuPres[0]=cel2D.vElem/localU.mx[0][diag];
 	double acTemp=localU.mx[0][diag];
-	localU.mx[0][diag]=acTemp/(*vg1dSP).relaxVF;
-	TLU[0]+=((1-(*vg1dSP).relaxVF)/(*vg1dSP).relaxVF)*acTemp*cel2D.uCI;
+	localU.mx[0][diag]=acTemp/(*simulationContext).finiteVolumeRelaxationFactor;
+	TLU[0]+=((1-(*simulationContext).finiteVolumeRelaxationFactor)/(*simulationContext).finiteVolumeRelaxationFactor)*acTemp*cel2D.uCI;
 }
 
 void elem2d::GeraLocalV(){
@@ -3674,8 +3674,8 @@ void elem2d::GeraLocalV(){
 	}
 	cel2D.difuPres[1]=cel2D.vElem/localV.mx[0][diag];
 	double acTemp=localV.mx[0][diag];
-	localV.mx[0][diag]=acTemp/(*vg1dSP).relaxVF;
-	TLV[0]+=((1-(*vg1dSP).relaxVF)/(*vg1dSP).relaxVF)*acTemp*cel2D.vCI;
+	localV.mx[0][diag]=acTemp/(*simulationContext).finiteVolumeRelaxationFactor;
+	TLV[0]+=((1-(*simulationContext).finiteVolumeRelaxationFactor)/(*simulationContext).finiteVolumeRelaxationFactor)*acTemp*cel2D.vCI;
 }
 
 void elem2d::GeraLocalPcor(){
@@ -3687,7 +3687,7 @@ void elem2d::GeraLocalPcor(){
 			int col=achaInd(cel2D.indFace[i]);
 			double rhoHarm;
 			////Moukaled
-			if((*vg1dSP).correcForcCorp==0){
+			if((*simulationContext).bodyForceCorrectionMode==0){
 				rhoHarm=cel2D.fatG[i]/cel2D.rho+(1-cel2D.fatG[i])/(*vizinho[i]).rho;
 				rhoHarm=1./rhoHarm;
 			}
@@ -3866,7 +3866,7 @@ void elem2d::explicitHol(){
 				double dtTemp;
 				dtTemp=-(1.-cel2D.holC0)*cel2D.vElem/fluxTot;
 				if(dtTemp>1e-15){
-					(*vg1dSP).reiniciaVF=1;
+					(*simulationContext).finiteVolumeRestartRequested=1;
 					dt=dtTemp;
 				}
 				else cel2D.holC=1.;
@@ -3878,7 +3878,7 @@ void elem2d::explicitHol(){
 				double dtTemp;
 				dtTemp=cel2D.holC0*cel2D.vElem/fluxTot;
 				if(dtTemp>1e-15){
-					(*vg1dSP).reiniciaVF=1;
+					(*simulationContext).finiteVolumeRestartRequested=1;
 					dt=dtTemp;
 				}
 				else cel2D.holC=0.;

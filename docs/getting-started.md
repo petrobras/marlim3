@@ -47,7 +47,7 @@ the release tag and `xGUI` stands for external GUI, and run it. No Python
 installation or compiler is required. The Linux desktop application requires
 only glibc 2.34 or newer from the operating system.
 
-See [tools/marlim3_desktop/README.md](../tools/marlim3_desktop/README.md) for platform
+See [tools/marlim3_desktop/README.md](https://github.com/petrobras/marlim3/blob/main/tools/marlim3_desktop/README.md) for platform
 details, checksum verification, and diagnostic logs.
 
 ### Command-line executable
@@ -146,7 +146,7 @@ publishes as `Marlim3-xGUI-vX.Y.Z-<platform>`.
 ### Python package
 
 Use Marlim3 as a Python library in your scripts or notebooks. See
-[tools/marlim3/README.md](../tools/marlim3/README.md) for the API guide, including the
+[tools/marlim3/README.md](https://github.com/petrobras/marlim3/blob/main/tools/marlim3/README.md) for the API guide, including the
 bilingual interface and a worked example.
 
 **Graphical interface.** Marlim3 includes a Streamlit-based GUI for
@@ -171,7 +171,7 @@ uv sync --group regression_tool
 uv run tools/regression_tool/run.py
 ```
 
-See [tools/regression_tool/README.md](../tools/regression_tool/README.md) for the toolchain
+See [tools/regression_tool/README.md](https://github.com/petrobras/marlim3/blob/main/tools/regression_tool/README.md) for the toolchain
 requirements, local data locations, and the full workflow.
 
 ### Command-line executable
@@ -235,7 +235,7 @@ Compilation is only necessary if you need to rebuild the executable from source.
 
 ### Presets
 
-The project uses [CMake presets](../CMakePresets.json):
+The project uses [CMake presets](https://github.com/petrobras/marlim3/blob/main/CMakePresets.json):
 
 | Preset | Platform | Description |
 |--------|----------|-------------|
@@ -309,5 +309,5 @@ ctest --test-dir build --output-on-failure
 uv run pytest tools/tests/ -v
 ```
 
-See [tools/tests/README.md](../tools/tests/README.md) for markers, regression references,
+See [tools/tests/README.md](https://github.com/petrobras/marlim3/blob/main/tools/tests/README.md) for markers, regression references,
 and how to update them.

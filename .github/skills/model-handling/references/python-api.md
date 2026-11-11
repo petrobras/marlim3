@@ -66,11 +66,11 @@ Executable availability: `from marlim3._download import executable_exists, get_e
 ```bash
 uv sync --locked --group dev            # dev env (Python ≥3.12, pytest, flake8…)
 uv run python my_script.py              # run anything inside the env
-# Direct CLI (executable from build/ or marlim3/):
+# Direct CLI (executable from build/ or tools/marlim3/):
 ./Marlim3 -d ./output -i case.mr3                # production
 ./Marlim3 -d ./output -i case.mr3 -s INJETOR     # injection
 ./Marlim3 -d ./output -i case.mr3 -s REDE        # network
 ./Marlim3 -d ./output -i case.mr3 -s CONVECNAT   # natural convection
 ```
 
-Build from source if needed (see [docs/getting-started.md](../../../../docs/getting-started.md#building-from-source)): `cmake --preset gcc-release && cmake --build --preset gcc-release -j$(nproc)` — the executable is auto-copied into `marlim3/`; then `MARLIM3_SKIP_BUILD=1 uv sync --locked`.
+Build from source if needed (see [docs/getting-started.md](../../../../docs/getting-started.md#building-from-source)): `cmake --preset gcc-release && cmake --build --preset gcc-release -j$(nproc)` — the executable is auto-copied into `tools/marlim3/`; then `MARLIM3_SKIP_BUILD=1 uv sync --locked`.

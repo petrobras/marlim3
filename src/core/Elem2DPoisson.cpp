@@ -7,10 +7,10 @@
 #include "Elem2DPoisson.h"
 
 
-elem2dPoisson::elem2dPoisson(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int nele, int nno, int vperm,
+elem2dPoisson::elem2dPoisson(SimulationContext* context,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int nele, int nno, int vperm,
 		int vtrans,int i,double vtemp,double vfluxCal,double vcond,double vcp,double vrho,double vdt) :
 				TL(1), local(1,nVert+1) {
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 	vizinho=0;
 	kvizinho=0;
 	nvizinho=0;
@@ -236,7 +236,7 @@ elem2dPoisson::elem2dPoisson(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int*
 }
 elem2dPoisson::elem2dPoisson(const elem2dPoisson& velem) :
 						TL(1), local(1,velem.cel2D.nvert+1) {
-	vg1dSP=velem.vg1dSP;
+	simulationContext=velem.simulationContext;
 	cel2D.nvert=velem.cel2D.nvert;
 	cel2D.dim=velem.cel2D.dim;
 	cel2D.indEle=velem.cel2D.indEle;
@@ -455,7 +455,7 @@ elem2dPoisson& elem2dPoisson::operator =(const elem2dPoisson& velem) {
 			delete[] coefTHRV;
 			delete[] fonteTHR;
 		}
-		vg1dSP=velem.vg1dSP;
+		simulationContext=velem.simulationContext;
 		TL=velem.TL;
 		local=velem.local;
 		cel2D.nvert=velem.cel2D.nvert;
@@ -769,7 +769,7 @@ void elem2dPoisson::atualizaCC(int i){
     double raz;
 	if(diri==1){
 
-		indraz(ind, raz, (*vg1dSP).lixo5, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).simulationTime, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
 		double inf = CC.ccDir[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccDir[kcc].nserie - 1){
@@ -781,7 +781,7 @@ void elem2dPoisson::atualizaCC(int i){
 	}
 	else if(vn==1){
 
-		indraz(ind, raz, (*vg1dSP).lixo5, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).simulationTime, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
 		double inf = CC.ccVN[kcc].val[ind];
 		double sup;
 		if (ind < CC.ccVN[kcc].nserie - 1){
@@ -793,7 +793,7 @@ void elem2dPoisson::atualizaCC(int i){
 	}
 	else if(rich==1){
 
-		indraz(ind, raz, (*vg1dSP).lixo5, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
+		indraz(ind, raz, (*simulationContext).simulationTime, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
 		double inf = CC.ccRic[kcc].valAmb[ind];
 		double sup;
 		if (ind < CC.ccRic[kcc].nserie - 1){

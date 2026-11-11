@@ -6,6 +6,7 @@
  */
 
 #include "Log.h"
+#include "RuntimeDiagnostics.h"
 #include <stdlib.h>
 #include <string>
 
@@ -137,7 +138,7 @@ void Logger::log(const log_t tipo, const string codigo, const string complemento
 }
 
 Document Logger::parseTemplateLogOutput() {
-    string strTemplateLog("{\"resultadoSimulacao\":{\"arquivo\":\"teste1.mrt\",\"data\":\"19/06/2017\",\"status\":\"falha\",\"logs\":[{\"log\":\"AVISO\",\"codigo\":\"1011\",\"descricao\":\"Campo X do arquivo MRT e obrigatorio.\",\"propriedade\":\"#\",\"causa\":\"#\",\"linha\":0}]},\"excecoesConfiguradas\":{\"1000\":\"Encontrada falha inesperada:\",\"1001\":\"O arquivo lido apresentou falha na sintaxe JSON:\",\"1002\":\"Encontrada falha durante a validacao das propriedades do MRT:\",\"1003\":\"Encontrada falha durante a validacao das regras de negocio do MRT:\",\"1004\":\"Aviso sobre as regras de negocio do simulador:\",\"1100\":\"Fim de etapa do processo de parse do arquivo MRT:\",\"1101\":\"Informacao:\",\"1200\":\"Fim da execucao do simulador:\",\"1300\":\"Cancelamento da execucao do simulador:\"}}");
+    string strTemplateLog("{\"resultadoSimulacao\":{\"arquivo\":\"teste1.mrt\",\"data\":\"19/06/2017\",\"status\":\"falha\",\"logs\":[{\"log\":\"AVISO\",\"codigo\":\"1011\",\"descricao\":\"Campo X do arquivo MRT e obrigatorio.\",\"propriedade\":\"#\",\"causa\":\"#\",\"linha\":0}]},\"excecoesConfiguradas\":{\"1000\":\"Encontrada falha inesperada:\",\"1001\":\"O arquivo lido apresentou falha na sintaxe JSON:\",\"1002\":\"Encontrada falha durante a validacao das propriedades do MRT:\",\"1003\":\"Encontrada falha durante a validacao das regras de negocio do MRT:\",\"1004\":\"Aviso sobre as regras de negocio do simulador:\",\"1005\":\"Runtime diagnostic:\",\"1100\":\"Fim de etapa do processo de parse do arquivo MRT:\",\"1101\":\"Informacao:\",\"1200\":\"Fim da execucao do simulador:\",\"1300\":\"Cancelamento da execucao do simulador:\"}}");
     // criar string para mensagem de falha
     char mensagemFalha[5000];
     // criar objeto do elemento raiz do json de saída da simulação
@@ -171,6 +172,11 @@ void Logger::writeJsonFile(Document *outputDoc) {
         remove(getStResultadoSimulacao().nomeArqLog.c_str());
         // criar arquivo de saída da simulação
         FILE *logOutFile = fopen(getStResultadoSimulacao().nomeArqLog.c_str(), "wb"); // non-Windows use "w"
+        // a path in a directory that does not exist, or cannot be written, opens no file
+        if (!logOutFile) {
+            cout << "NAO FOI POSSIVEL GRAVAR O ARQUIVO DE LOG: " << getStResultadoSimulacao().nomeArqLog << endl;
+            exit(EXIT_FAILURE);
+        }
         // definir buffer de saída da simulação
         char writeBuffer[65536];
         // criar stream do arquivo de saída da simulação
@@ -188,6 +194,8 @@ void Logger::writeJsonFile(Document *outputDoc) {
 }
 
 void Logger::writeOutputLog(int tipoSaida) {
+    // the warnings gathered during the run, those an early exit leaves included
+    diagnostics::flushTo(*this);
     // criar objeto do elemento raiz do json de saída da simulação
     Document logOutDoc = parseTemplateLogOutput();
     // definir alocator para para atribuir valores de chaves e valores de propriedades do json de saída

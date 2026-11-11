@@ -16,7 +16,7 @@
 #include "Vetor.h"
 #include "dados1Poisson.h"
 #include "estruturasPoisson.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -41,9 +41,9 @@ class solverP {
     malha2d malha;
     int kontaTempo;
     int indCel;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
     int precn;
-    solverP(varGlob1D *Vvg1dSP, string nomeArquivoEntrada, double vCondGlob = 0., double vCondLoc = 0., double vhE = 0., double vhInt = 0.,
+    solverP(SimulationContext *context, string nomeArquivoEntrada, double vCondGlob = 0., double vCondLoc = 0., double vhE = 0., double vhInt = 0.,
             double vTint = 0., double vTamb = 0., double vdiamI = 0., double vdiamE = 0., int indcel = 0);
     solverP();
     solverP(const solverP &);
@@ -54,6 +54,8 @@ class solverP {
     void inicializaTransientePoisson();
     double defineDeltPoisson();
     void transientePoissonDummy(double delt);
+    /// Advances the wall mesh, distributing elements only outside an active team.
+    /// Cell-wise callers retain ownership of the outer parallel distribution.
     void transientePoisson(double delt);
     void imprimePermanente(int indTramo = -1);
     void finalizaPassoTransiente(double vdelt, int indTramo = -1);
