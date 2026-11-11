@@ -14,7 +14,7 @@ The schemas are large (EN ~157 KB, PT ~203 KB): search them for the field you ne
 | [tools/marlim3/translations.json](../../../../tools/marlim3/translations.json) | EN ↔ PT key/value mapping (single source of truth) |
 | [docs/dev-guide/translations.md](../../../../docs/dev-guide/translations.md) | How the bilingual system works |
 | [demos/simplifiedProduction/simplifiedProduction.mr3](../../../../demos/simplifiedProduction/simplifiedProduction.mr3) | Working English-keyed example (well + gas-lift line) |
-| `demos/<case>/` | One folder per case: the Portuguese model, its hand-written English twin, and auxiliary files (listed in [demos/manifest.json](../../../../demos/manifest.json)) |
+| `demos/<case>/` | One folder per case: the Portuguese model, its English version, and auxiliary files (listed in [demos/manifest.json](../../../../demos/manifest.json)) |
 | [docs/single-branch-model-reference/migration.md](../../../../docs/single-branch-model-reference/migration.md) | Discontinued keys the engine now rejects — never write them |
 
 ## Language rules

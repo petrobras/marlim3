@@ -950,15 +950,6 @@
   "CondicaoContPocInjec": {
     "tipoFluido": 1
   },
-  "fluidoGasLista": [
-    {
-      "id": 0,
-      "ativo": true,
-      "fracCO2": 0,
-      "correlacaoCritica": 1,
-      "fracMolarUsuario": false
-    }
-  ],
   "tendP": [
     {
       "ativo": true,
@@ -970,10 +961,5 @@
       "ativo": true,
       "dt": 10
     }
-  ],
-  "configuracaoInicialMarlim2": {
-    "termico": true,
-    "uglobal": false,
-    "dmrcp": 0
-  }
+  ]
 }

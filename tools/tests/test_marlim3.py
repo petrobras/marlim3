@@ -7,6 +7,7 @@ a classe de cenários (Cenarios).
 """
 
 import copy
+import glob
 import json
 import os
 import tempfile
@@ -583,11 +584,13 @@ class TestDemoFiles:
 
     DEMO_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "demos")
     CASES = load_manifest(os.path.join(DEMO_DIR, "manifest.json"))
+    # Modelos em português e em inglês de todas as pastas de demos.
+    MODELS = sorted(glob.glob(os.path.join("*", "*.mr3"), root_dir=DEMO_DIR))
 
     def test_demo_files_exist(self):
         assert self.CASES, "Nenhuma demo listada em demos/manifest.json"
 
-    @pytest.mark.parametrize("demo_file", [f for c in CASES for f in (c.model, c.native) if f])
+    @pytest.mark.parametrize("demo_file", MODELS)
     def test_load_demo_json(self, demo_file):
         """Arquivos demo devem ser carregáveis como Tramo."""
         t = marlim3.Branch()
