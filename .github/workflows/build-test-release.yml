@@ -1051,7 +1051,7 @@ jobs:
         os:
           - ubuntu-latest
           - windows-2022
-          - macos-14
+          - macos-15
     runs-on: ${{ matrix.os }}
     env:
       MARLIM3_SKIP_EXECUTABLE_RESOLUTION: "0"
