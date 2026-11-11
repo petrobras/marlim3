@@ -13,7 +13,7 @@ Marlim3 is a 1D multiphase flow simulator. A model is a JSON file (`.mr3`) with 
 - **Load [json-schema](references/json-schema.md) first** for any model: structure, units, EN/PT keys and ID cross-references. Then load only the references the model needs (table below).
 - **Validate every model**: `uv run python .github/skills/model-handling/scripts/check_case.py <model.mr3>` checks the official schema, ID cross-references and array sizes.
 - **Keep context small.** The references link the authoritative documents (`docs/single-branch-model-reference/`, `docs/schemas/`, `demos/`); open them only for what a reference does not settle, and search the schemas and the large demos for the field you need instead of reading them whole.
-- **Start from a demo.** `demos/manifest.json` lists the cases; each folder has the Portuguese model and, for most, an English twin.
+- **Start from a demo.** `demos/manifest.json` lists the cases; each folder has the Portuguese model and, for most, its English version.
 
 ## References
 

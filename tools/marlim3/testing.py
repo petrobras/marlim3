@@ -10,9 +10,9 @@ A manifest is a JSON list of entries::
 ``model`` is relative to the manifest folder; ``aux`` files are looked up in the
 model folder first and then in the manifest folder. Models are written in the
 requested language before running, so a Portuguese model also exercises the
-PT -> EN translation when ``"en"`` is listed. ``native`` points to the same
-model written by hand in English; it must lose no key when read by the API and
-must give the same profiles as the Portuguese run.
+PT -> EN translation when ``"en"`` is listed. A model folder may also hold an
+English version of the model (root key ``"language": "en"``); see
+:func:`translation_problems`, which checks it without running the engine.
 
 The manifest is the only list of cases: besides the checks above, the profiles
 of the first listed language are compared with the references stored in
@@ -27,7 +27,8 @@ import os
 import shutil
 import sys
 import tempfile
-from dataclasses import dataclass, field, replace
+import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -52,7 +53,6 @@ class Case:
     aux: tuple = ()
     languages: tuple = LANGUAGES
     steady_state: bool = True
-    native: str = None
 
     @property
     def label(self):
@@ -75,6 +75,9 @@ def load_manifest(path):
     entries = json.loads(Path(path).read_text(encoding="utf-8"))
     cases = []
     for i, entry in enumerate(entries):
+        if "native" in entry:
+            warnings.warn(f"{path} [{i}]: 'native' is obsolete and ignored; the English version is the file "
+                          "with \"language\": \"en\" in the model folder", DeprecationWarning, stacklevel=2)
         unknown = set(entry) - {"model", "mode", "aux", "languages", "steady_state", "native"}
         if unknown or "model" not in entry:
             raise ValueError(f"{path} [{i}]: invalid keys {sorted(unknown) or ['model (missing)']}")
@@ -84,7 +87,6 @@ def load_manifest(path):
             aux=tuple(entry.get("aux", ())),
             languages=tuple(entry.get("languages", LANGUAGES)),
             steady_state=entry.get("steady_state", True),
-            native=entry.get("native"),
         )
         if case.mode not in MODES:
             raise ValueError(f"{path} [{i}]: mode '{case.mode}' not in {MODES}")
@@ -106,8 +108,6 @@ def missing_files(cases, base_dir):
         model = base_dir / case.model
         if not model.is_file():
             missing.append(case.model)
-        if case.native and not (base_dir / case.native).is_file():
-            missing.append(case.native)
         missing += [f"{case.model}: {name}" for name in case.aux
                     if not (model.parent / name).is_file() and not (base_dir / name).is_file()]
     return missing
@@ -155,8 +155,7 @@ def _written_by_api(path, mode):
 def roundtrip_problems(case, base_dir):
     """Return input keys lost or changed when the API reads and rewrites the case.
 
-    The model must come back identical (except discontinued version keys); the
-    ``native`` translation must produce the same Portuguese keys as the model.
+    The model must come back identical (except discontinued version keys).
     """
     base_dir = Path(base_dir)
     original = _read_json(base_dir / case.model)
@@ -169,10 +168,50 @@ def roundtrip_problems(case, base_dir):
     problems += [f"added {p}" for p in got if p not in expected]
     problems += [f"changed {p}: {expected[p]!r} -> {got[p]!r}" for p in expected
                  if p in got and expected[p] != got[p]]
-    if case.native:
-        native = _key_paths(_written_by_api(base_dir / case.native, case.mode))
-        problems += [f"native lacks {p}" for p in got if p not in native]
-        problems += [f"native has extra {p}" for p in native if p not in got]
+    return problems
+
+
+def english_versions(model_path):
+    """Return the files next to ``model_path`` that hold an English version of the model.
+
+    An English version is a ``.mr3`` or ``.json`` file whose root has ``"language": "en"``.
+    """
+    model_path = Path(model_path)
+    found = []
+    for path in sorted(model_path.parent.iterdir()):
+        if path == model_path or path.suffix.lower() not in (".mr3", ".json"):
+            continue
+        try:
+            data = _read_json(path)
+        except ValueError:
+            continue
+        if isinstance(data, dict) and str(data.get("language", "")).lower() == "en":
+            found.append(path)
+    return found
+
+
+def translation_problems(model_path, mode=PRODUCAO):
+    """Return the differences between a Portuguese model and its English version.
+
+    Both are read and rewritten by the API, so the comparison covers exactly what
+    the engine receives: every key and value must match, except the free-text
+    labels (``rotulo``). An English key missing from ``translations.json`` shows up
+    as a key the Portuguese model does not have. No engine is needed.
+    """
+    model_path = Path(model_path)
+    english = english_versions(model_path)
+    if len(english) > 1:
+        return [f"more than one English version: {[p.name for p in english]}"]
+    if not english:
+        return []
+    labels = lambda paths: {p: v for p, v in paths.items() if not p.endswith("/rotulo")}  # noqa: E731
+    expected = labels(_key_paths(_written_by_api(model_path, mode)))
+    got = labels(_key_paths(_written_by_api(english[0], mode)))
+    name = english[0].name
+    problems = [f"{name} lacks {p}" for p in expected if p not in got]
+    problems += [f"{name} has extra {p}" for p in got if p not in expected]
+    problems += [f"{name} differs at {p}: {expected[p]!r} -> {got[p]!r}" for p in expected
+                 if p in got and expected[p] != got[p]]
     return problems
 
 
@@ -180,7 +219,8 @@ def check_case(case, base_dir, output_dir):
     """Run ``case`` in every listed language and return a list of problems.
 
     Each run must end with status ``sucesso`` and, outside network mode, produce
-    production profiles; PT and EN runs must give the same profiles.
+    production profiles; PT and EN runs must give the same profiles. The English
+    version in the folder, if any, is checked by :func:`translation_problems`.
     """
     results = {lang: run_case(case, base_dir, output_dir, lang) for lang in case.languages}
     problems = []
@@ -193,12 +233,6 @@ def check_case(case, base_dir, output_dir):
         problems += [f"PT x EN: {d}" for d in compare_profiles(results["pt"].profiles, results["en"].profiles)]
     if not problems and case.mode != REDE:
         problems += [f"reference: {d}" for d in reference_problems(results[case.languages[0]], base_dir)]
-    if case.native and "pt" in results and not problems:
-        native = run_case(replace(case, model=case.native), base_dir, output_dir, "en")
-        if native.status != "sucesso":
-            problems.append(f"[native] status '{native.status}'")
-        else:
-            problems += [f"PT x native: {d}" for d in compare_profiles(results["pt"].profiles, native.profiles)]
     return problems
 
 
