@@ -37,7 +37,7 @@ Each ERROR it prints is an ERROR finding; review each WARNING. The lists below d
 
 | Quantity | Sane range |
 |----------|-----------|
-| API | 5–60 | 
+| API | 5–60 |
 | GOR | 0–2000 sm³/sm³ |
 | BSW | 0–1 |
 | Gas relative density | 0.55–1.5 |

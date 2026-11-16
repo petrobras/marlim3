@@ -4,6 +4,7 @@
 
 #include "PropFlu.h"
 #include "PropFluCol.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -76,7 +77,7 @@ class IPR : public AbsFonte {
      */
     void MudaFlu(ProFlu &vfluido) {
         this->FluidoPro = vfluido;
-        Psat = vfluido.PB(Pres, Tres) / (0.9678411 * 14.69595);
+        Psat = vfluido.PB(Pres, Tres) / units::kPsiPerKgfPerCm2;
     }
 
     /*!

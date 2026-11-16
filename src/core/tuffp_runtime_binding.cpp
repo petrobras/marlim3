@@ -199,6 +199,8 @@ void appendReport(std::string& report, const char* label, const tuffp::Inf& inf)
 }
 
 void appendLayer(std::string& report, const char* layer, const tuffp::LayN& lay) {
+    // This runs for every correlation call; build diagnostic labels only on errors.
+    if (!lay.f.er && !lay.h.er && !lay.w.er) return;
     std::string prefix(layer);
     appendReport(report, (prefix + " friction").c_str(), lay.f);
     appendReport(report, (prefix + " holdup").c_str(), lay.h);

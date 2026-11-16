@@ -25,7 +25,7 @@
 #include "chokegas.h"
 #include "estrat.h"
 #include "mapa.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -143,9 +143,9 @@ class SProdVap {
     double fontemassCRBuf;
     double fontemassGRBuf;
     CelVap *celula;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
-    SProdVap(string nomeArquivoEntrada, string nomeArquivoLog, varGlob1D *Vvg1dSP);
+    SProdVap(string nomeArquivoEntrada, string nomeArquivoLog, SimulationContext *context);
     SProdVap();
     ~SProdVap() { // Destructor
 

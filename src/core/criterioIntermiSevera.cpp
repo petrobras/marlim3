@@ -5,6 +5,7 @@
  *      Author: Eduardo
  */
 #include "criterioIntermiSevera.h"
+#include "UnitConversions.h"
 
 critInterSev::critInterSev() {
     criterio = -1;
@@ -19,7 +20,7 @@ critInterSev::critInterSev() {
     alfMedAcumula = 0.;
     area0 = 0;
     tempMedAcumula = 0.;
-    RGas = ((28.9625) * 98066.5) / (8.0465 * 1000);
+    RGas = ((28.9625) * units::kPascalPerKgfPerCm2) / (8.0465 * 1000);
     rhog0 = 0;
     rhol0 = 0;
     rholR = 0;
@@ -52,7 +53,7 @@ critInterSev::critInterSev(Cel *celula, int vini, int vfim, int fimcota, int vti
     alfMedAcumula = 0.;
     area0 = celula[vini].duto.area;
     tempMedAcumula = 0.;
-    RGas = ((celula[vini].flui.rDgL * celula[vini].flui.Deng * 28.9625) * 98066.5) / (8.0465 * 1000);
+    RGas = ((celula[vini].flui.rDgL * celula[vini].flui.Deng * 28.9625) * units::kPascalPerKgfPerCm2) / (8.0465 * 1000);
     rhog0 = celula[vini].flui.MasEspGas(celula[vini].pres, celula[vini].temp);
     rhol0 = celula[vini].flui.MasEspLiq(celula[vini].pres, celula[vini].temp);
     rholR = celula[vfim].flui.MasEspLiq(celula[vfim].pres, celula[vfim].temp);
@@ -165,7 +166,7 @@ void critInterSev::atualiza(Cel *celula) {
     zMed = 0.;
     alfMedAcumula = 0.;
     tempMedAcumula = 0.;
-    RGas = ((celula[vini].flui.rDgL * celula[vini].flui.Deng * 28.9625) * 98066.5) / (8.0465 * 1000);
+    RGas = ((celula[vini].flui.rDgL * celula[vini].flui.Deng * 28.9625) * units::kPascalPerKgfPerCm2) / (8.0465 * 1000);
     rhog0 = celula[vini].flui.MasEspGas(celula[vini].pres, celula[vini].temp);
     rhol0 = celula[vini].flui.MasEspLiq(celula[vini].pres, celula[vini].temp);
     rholR = celula[vfim].flui.MasEspLiq(celula[vfim].pres, celula[vfim].temp);
@@ -205,7 +206,7 @@ double critInterSev::uls0Boe(Cel *celula) {
 }
 
 double critInterSev::difPresTeB(Cel *celula) {
-    return celula[indFim].pres * 98066.52 - (alfMedAcumula * volumeAcumula / (alfPenetra * celula[indAcumulaFim].duto.area) - cotaColuna) * rholR * 9.82;
+    return celula[indFim].pres * units::kPascalPerKgfPerCm2 - (alfMedAcumula * volumeAcumula / (alfPenetra * celula[indAcumulaFim].duto.area) - cotaColuna) * rholR * 9.82;
 }
 
 double critInterSev::testaCriterio(int tipo, Cel *celula) {

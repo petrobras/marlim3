@@ -9,7 +9,7 @@
 #define MAPA_H_
 
 #include <iostream>
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 extern double localtiny;
 
 class arranjo{
@@ -34,13 +34,13 @@ public:
    double hidro;
    int arr;
    int map;
-   varGlob1D* vg1dSP;
+   SimulationContext* simulationContext;
 
 
    arranjo(double vdia=1*2.54/100., double vuls=0., double vugs=0.,
                  double vrl=10000., double vrg=1.,
                  double vmil=1./1000.,double vmig=1./10000,
-                 double vhol=0.5,double vang=0., double vdina=0., int vmap=0,varGlob1D* Vvg1dSP=0); //construtor
+                 double vhol=0.5,double vang=0., double vdina=0., int vmap=0,SimulationContext* context=0); //construtor
    arranjo(const arranjo&); //construtor por c�pia
    ~arranjo(){} //destrutor
 

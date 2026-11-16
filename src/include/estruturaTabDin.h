@@ -8,6 +8,8 @@
 #ifndef ESTRUTURATABDIN_H_
 #define ESTRUTURATABDIN_H_
 
+#include <utility>
+
 struct tabelaDinamica{
     int id;
     int TwoOrThree;//indicador se a tabela e bifpasica ou trifasica
@@ -75,6 +77,60 @@ struct tabelaDinamica{
         celIni=0;
         celFim=0;
     }
+    // A table owns its arrays and frees them in the destructor, so it moves and never
+    // copies: two tables never share arrays. The table moved from keeps none, and an
+    // assignment hands the target's old arrays to it, to be freed with it.
+    tabelaDinamica(const tabelaDinamica &) = delete;
+    tabelaDinamica &operator=(const tabelaDinamica &) = delete;
+    tabelaDinamica &operator=(tabelaDinamica &&other) noexcept {
+        std::swap(id, other.id);
+        std::swap(TwoOrThree, other.TwoOrThree);
+        std::swap(rholF, other.rholF);
+        std::swap(rhogF, other.rhogF);
+        std::swap(DrholDpF, other.DrholDpF);
+        std::swap(DrhogDpF, other.DrhogDpF);
+        std::swap(DrholDtF, other.DrholDtF);
+        std::swap(DrhogDtF, other.DrhogDtF);
+        std::swap(tit, other.tit);
+        std::swap(rs, other.rs);
+        std::swap(cplF, other.cplF);
+        std::swap(cpgF, other.cpgF);
+        std::swap(HlF, other.HlF);
+        std::swap(HgF, other.HgF);
+        std::swap(valBO, other.valBO);
+        std::swap(valZ, other.valZ);
+        std::swap(valdZdT, other.valdZdT);
+        std::swap(valdZdP, other.valdZdP);
+        std::swap(viscO, other.viscO);
+        std::swap(viscG, other.viscG);
+        std::swap(PBF, other.PBF);
+        std::swap(TBF, other.TBF);
+        std::swap(pmax, other.pmax);
+        std::swap(pmin, other.pmin);
+        std::swap(tmax, other.tmax);
+        std::swap(tmin, other.tmin);
+        std::swap(delP, other.delP);
+        std::swap(delT, other.delT);
+        std::swap(npontosT, other.npontosT);
+        std::swap(npontosP, other.npontosP);
+        std::swap(celIni, other.celIni);
+        std::swap(celFim, other.celFim);
+        return *this;
+    }
+    tabelaDinamica(tabelaDinamica &&other) noexcept
+        : id(other.id), TwoOrThree(other.TwoOrThree), rholF(std::exchange(other.rholF, nullptr)),
+          rhogF(std::exchange(other.rhogF, nullptr)), DrholDpF(std::exchange(other.DrholDpF, nullptr)),
+          DrhogDpF(std::exchange(other.DrhogDpF, nullptr)), DrholDtF(std::exchange(other.DrholDtF, nullptr)),
+          DrhogDtF(std::exchange(other.DrhogDtF, nullptr)), tit(std::exchange(other.tit, nullptr)),
+          rs(std::exchange(other.rs, nullptr)), cplF(std::exchange(other.cplF, nullptr)),
+          cpgF(std::exchange(other.cpgF, nullptr)), HlF(std::exchange(other.HlF, nullptr)),
+          HgF(std::exchange(other.HgF, nullptr)), valBO(std::exchange(other.valBO, nullptr)),
+          valZ(std::exchange(other.valZ, nullptr)), valdZdT(std::exchange(other.valdZdT, nullptr)),
+          valdZdP(std::exchange(other.valdZdP, nullptr)), viscO(std::exchange(other.viscO, nullptr)),
+          viscG(std::exchange(other.viscG, nullptr)), PBF(std::exchange(other.PBF, nullptr)),
+          TBF(std::exchange(other.TBF, nullptr)), pmax(other.pmax), pmin(other.pmin), tmax(other.tmax),
+          tmin(other.tmin), delP(other.delP), delT(other.delT), npontosT(other.npontosT),
+          npontosP(std::exchange(other.npontosP, 0)), celIni(other.celIni), celFim(other.celFim) {}
     ~tabelaDinamica(){
 		for(int j=0; j<npontosP+1;j++){
 			if(rhogF!=0 && npontosP!=0)delete[] rhogF[j];

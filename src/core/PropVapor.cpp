@@ -6,6 +6,7 @@
  */
 
 #include "PropVapor.h"
+#include "UnitConversions.h"
 
 using namespace rapidjson;
 
@@ -146,7 +147,7 @@ void ProVap::LerArqVap() {
     nSat = elementoRaiz["Propriedades"].Size();
 
     for (int i = 0; i < nSat; i++) {
-        double temp = elementoRaiz["Propriedades"][i][0].GetDouble() * 1.0197;
+        double temp = elementoRaiz["Propriedades"][i][0].GetDouble() * units::kKgfPerCm2PerBar;
         preSat.push_back(temp);
         temp = elementoRaiz["Propriedades"][i][1].GetDouble();
         tempSat.push_back(temp);
@@ -191,7 +192,7 @@ void ProVap::LerArqVap() {
     npropSup = new int[nPSupAq];
     for (int i = 0; i < nPSupAq; i++) {
         npropSup[i] = elementoRaiz2["Propriedades"][i].Size();
-        PresSupAq.push_back(elementoRaiz2["Propriedades"][i][0][0].GetDouble() * 1.0197);
+        PresSupAq.push_back(elementoRaiz2["Propriedades"][i][0][0].GetDouble() * units::kKgfPerCm2PerBar);
         for (int j = 0; j < npropSup[i]; j++) {
             TempSup[i].push_back(elementoRaiz2["Propriedades"][i][j][1].GetDouble());
             vvSup[i].push_back(elementoRaiz2["Propriedades"][i][j][2].GetDouble());
@@ -226,7 +227,7 @@ void ProVap::LerArqVap() {
     npropComp = new int[nPCompL];
     for (int i = 0; i < nPCompL; i++) {
         npropComp[i] = elementoRaiz3["Propriedades"][i].Size();
-        PresLiqC.push_back(elementoRaiz3["Propriedades"][i][0][0].GetDouble() * 1.0197);
+        PresLiqC.push_back(elementoRaiz3["Propriedades"][i][0][0].GetDouble() * units::kKgfPerCm2PerBar);
         for (int j = 0; j < npropComp[i]; j++) {
             TempLiqC[i].push_back(elementoRaiz3["Propriedades"][i][j][1].GetDouble());
             vlComp[i].push_back(elementoRaiz3["Propriedades"][i][j][2].GetDouble() / 1000.);
@@ -258,7 +259,7 @@ void ProVap::LerArqVap() {
     nTCondL = new int[nPCondL];
     for (int i = 0; i < nPCondL; i++) {
         nTCondL[i] = elementoRaiz4["Propriedades"][i].Size();
-        PresCondL.push_back(elementoRaiz4["Propriedades"][i][0][0].GetDouble() * 1.0197);
+        PresCondL.push_back(elementoRaiz4["Propriedades"][i][0][0].GetDouble() * units::kKgfPerCm2PerBar);
         for (int j = 0; j < nTCondL[i]; j++) {
             TempCondL[i].push_back(elementoRaiz4["Propriedades"][i][j][1].GetDouble());
             CondL[i].push_back(elementoRaiz4["Propriedades"][i][j][2].GetDouble() / 1000.);
@@ -280,7 +281,7 @@ void ProVap::LerArqVap() {
     nTCondG = new int[nPCondG];
     for (int i = 0; i < nPCondG; i++) {
         nTCondG[i] = elementoRaiz5["Propriedades"][i].Size();
-        PresCondG.push_back(elementoRaiz5["Propriedades"][i][0][0].GetDouble() * 1.0197);
+        PresCondG.push_back(elementoRaiz5["Propriedades"][i][0][0].GetDouble() * units::kKgfPerCm2PerBar);
         for (int j = 0; j < nTCondL[i]; j++) {
             TempCondG[i].push_back(elementoRaiz5["Propriedades"][i][j][1].GetDouble());
             CondG[i].push_back(elementoRaiz5["Propriedades"][i][j][2].GetDouble() / 1000.);
@@ -302,7 +303,7 @@ void ProVap::LerArqVap() {
     nTViscL = new int[nPViscL];
     for (int i = 0; i < nPViscL; i++) {
         nTViscL[i] = elementoRaiz6["Propriedades"][i].Size();
-        PresViscL.push_back(elementoRaiz6["Propriedades"][i][0][0].GetDouble() * 1.0197);
+        PresViscL.push_back(elementoRaiz6["Propriedades"][i][0][0].GetDouble() * units::kKgfPerCm2PerBar);
         for (int j = 0; j < nTViscL[i]; j++) {
             TempViscL[i].push_back(elementoRaiz6["Propriedades"][i][j][1].GetDouble());
             ViscL[i].push_back(elementoRaiz6["Propriedades"][i][j][2].GetDouble() / 1000.);
@@ -324,7 +325,7 @@ void ProVap::LerArqVap() {
     nTViscG = new int[nPViscG];
     for (int i = 0; i < nPCondG; i++) {
         nTViscG[i] = elementoRaiz7["Propriedades"][i].Size();
-        PresViscG.push_back(elementoRaiz7["Propriedades"][i][0][0].GetDouble() * 1.0197);
+        PresViscG.push_back(elementoRaiz7["Propriedades"][i][0][0].GetDouble() * units::kKgfPerCm2PerBar);
         for (int j = 0; j < nTViscL[i]; j++) {
             TempViscG[i].push_back(elementoRaiz7["Propriedades"][i][j][1].GetDouble());
             ViscG[i].push_back(elementoRaiz7["Propriedades"][i][j][2].GetDouble() / 1000.);
@@ -335,10 +336,10 @@ void ProVap::LerArqVap() {
 void ProVap::verificaFase(double pres, double var, termprop tipo) {
 
     if (tipo == 0) {
-        if (pres > (220.9 * 1.0197) && var < 374.1) {
+        if (pres > (220.9 * units::kKgfPerCm2PerBar) && var < 374.1) {
             BuscaBinPres(pres, PresLiqC);
             fase = 0;
-        } else if (pres > (220.9 * 1.0197) && var >= 374.1) {
+        } else if (pres > (220.9 * units::kKgfPerCm2PerBar) && var >= 374.1) {
             BuscaBinPres(pres, PresSupAq);
             fase = 1;
         } else {
@@ -355,7 +356,7 @@ void ProVap::verificaFase(double pres, double var, termprop tipo) {
         }
     }
     if (tipo == 1) {
-        if (pres > (220.9 * 1.0197)) {
+        if (pres > (220.9 * units::kKgfPerCm2PerBar)) {
             BuscaBinPres(pres, PresSupAq);
             double uv = uvSup[imPres][0] + iPres * (uvSup[imPres + 1][0] - uvSup[imPres][0]);
             if (var < uv) {
@@ -378,7 +379,7 @@ void ProVap::verificaFase(double pres, double var, termprop tipo) {
         }
     }
     if (tipo == 2) {
-        if (pres > (220.9 * 1.0197)) {
+        if (pres > (220.9 * units::kKgfPerCm2PerBar)) {
             BuscaBinPres(pres, PresSupAq);
             double hv = hvSup[imPres][0] + iPres * (hvSup[imPres + 1][0] - hvSup[imPres][0]);
             if (var < hv) {
@@ -1132,7 +1133,7 @@ double ProVap::Titulo(double pres, double var, termprop tipo) {
 double ProVap::ZFunc(double pres, double temp) {
 
     double volesp;
-    double Runi = (8.20574587e-5) * 1.033211;
+    double Runi = (8.20574587e-5) * units::kAtmosphereInKgfPerCm2;
     double MMol = 18.015 / 1000.;
     verificaFase(pres, temp, TEMP);
     if (fase == 0)
@@ -1149,18 +1150,18 @@ double ProVap::ZFunc(double pres, double temp) {
         double val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
         double val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
         volesp = val1 + iPres * (val1 - val2);
-        return pres * volesp * MMol / (Runi * (temp + 273.15));
+        return pres * volesp * MMol / (Runi * (temp + units::kZeroCelsiusInKelvin));
 
     } else {
         volesp = vvSat[imPres] + iPres * (vvSat[imPres + 1] - vvSat[imPres]);
-        return pres * volesp * MMol / (Runi * (temp + 273.15));
+        return pres * volesp * MMol / (Runi * (temp + units::kZeroCelsiusInKelvin));
     }
 }
 
 double ProVap::DZDTFunc(double pres, double temp) {
 
     double volesp;
-    double Runi = (8.20574587e-5) * 1.033211;
+    double Runi = (8.20574587e-5) * units::kAtmosphereInKgfPerCm2;
     double MMol = 18.015 / 1000.;
     double z1;
     double z2;
@@ -1179,7 +1180,7 @@ double ProVap::DZDTFunc(double pres, double temp) {
         double val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
         double val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
         volesp = val1 + iPres * (val1 - val2);
-        z1 = pres * volesp * MMol / (Runi * (temp + 273.15));
+        z1 = pres * volesp * MMol / (Runi * (temp + units::kZeroCelsiusInKelvin));
 
         if (temp < MaxTSupAq[imPres] / 1.01 && temp < MaxTSupAq[imPres + 1] / 1.01) {
 
@@ -1189,7 +1190,7 @@ double ProVap::DZDTFunc(double pres, double temp) {
             val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
             val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
             volesp = val1 + iPres * (val1 - val2);
-            z2 = pres * volesp * MMol / (Runi * (temp * 1.01 + 273.15));
+            z2 = pres * volesp * MMol / (Runi * (temp * 1.01 + units::kZeroCelsiusInKelvin));
 
             return (z2 - z1) / (temp * 0.01);
         } else {
@@ -1200,7 +1201,7 @@ double ProVap::DZDTFunc(double pres, double temp) {
             val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
             val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
             volesp = val1 + iPres * (val1 - val2);
-            z2 = pres * volesp * MMol / (Runi * (temp * 0.99 + 273.15));
+            z2 = pres * volesp * MMol / (Runi * (temp * 0.99 + units::kZeroCelsiusInKelvin));
 
             return (z1 - z2) / (temp * 0.01);
         }
@@ -1210,7 +1211,7 @@ double ProVap::DZDTFunc(double pres, double temp) {
 double ProVap::DZDPFunc(double pres, double temp) {
 
     double volesp;
-    double Runi = (8.20574587e-5) * 1.033211;
+    double Runi = (8.20574587e-5) * units::kAtmosphereInKgfPerCm2;
     double MMol = 18.015 / 1000.;
     double z1;
     double z2;
@@ -1229,7 +1230,7 @@ double ProVap::DZDPFunc(double pres, double temp) {
         double val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
         double val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
         volesp = val1 + iPres * (val1 - val2);
-        z1 = pres * volesp * MMol / (Runi * (temp + 273.15));
+        z1 = pres * volesp * MMol / (Runi * (temp + units::kZeroCelsiusInKelvin));
 
         if (pres < PresSupAq[nPSupAq] / 1.01) {
             verificaFase(pres * 1.01, temp, TEMP);
@@ -1240,7 +1241,7 @@ double ProVap::DZDPFunc(double pres, double temp) {
             val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
             val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
             volesp = val1 + iPres * (val1 - val2);
-            z2 = pres * 1.01 * volesp * MMol / (Runi * (temp + 273.15));
+            z2 = pres * 1.01 * volesp * MMol / (Runi * (temp + units::kZeroCelsiusInKelvin));
 
             return (z2 - z1) / (pres * 0.01);
         } else {
@@ -1252,7 +1253,7 @@ double ProVap::DZDPFunc(double pres, double temp) {
             val1 = vvSup[imPres][im1] + raz1 * (vvSup[imPres][im1 + 1] - vvSup[imPres][im1]);
             val2 = vvSup[imPres + 1][im2] + raz2 * (vvSup[imPres + 1][im2 + 1] - vvSup[imPres + 1][im2]);
             volesp = val1 + iPres * (val1 - val2);
-            z2 = pres * 0.99 * volesp * MMol / (Runi * (temp + 273.15));
+            z2 = pres * 0.99 * volesp * MMol / (Runi * (temp + units::kZeroCelsiusInKelvin));
 
             return (z1 - z2) / (pres * 0.01);
         }
@@ -1512,8 +1513,8 @@ double ProVap::CVgFuncMod(double pres, double temp) {
     double zg = ZFunc(pres, temp);
 
     double RG = cp - cv;
-    double rel1 = zg + (temp + 273) * dzdt;
-    double rel2 = zg - dzdp * (pres * 98066.5);
+    double rel1 = zg + (temp + units::kZeroCelsiusInKelvin) * dzdt;
+    double rel2 = zg - dzdp * (pres * units::kPascalPerKgfPerCm2);
     return cv - RG * rel1 * (0 * 1 - rel1 / rel2);
 }
 
@@ -1615,11 +1616,11 @@ double ProVap::CPgFuncMod(double pres, double temp) {
     double dzdt = DZDTFunc(pres, temp);
     double dzdp = DZDPFunc(pres, temp);
     double zg = ZFunc(pres, temp);
-    double drhodp = rhog * (1 / (pres * 98066.5) - dzdp / zg);
+    double drhodp = rhog * (1 / (pres * units::kPascalPerKgfPerCm2) - dzdp / zg);
 
-    double rel1 = zg + (temp + 273) * dzdt;
-    double rel2 = zg - dzdp * (pres * 98066.5);
-    return (1 / (rhog * zg)) * rel2 * (1 - rel1 / rel2) - (pres * 98066.5 / (rhog * rhog)) * drhodp;
+    double rel1 = zg + (temp + units::kZeroCelsiusInKelvin) * dzdt;
+    double rel2 = zg - dzdp * (pres * units::kPascalPerKgfPerCm2);
+    return (1 / (rhog * zg)) * rel2 * (1 - rel1 / rel2) - (pres * units::kPascalPerKgfPerCm2 / (rhog * rhog)) * drhodp;
 }
 
 double ProVap::CPlFunc(double pres, double temp) {
@@ -1837,7 +1838,7 @@ double ProVap::JTgFunc(double pres, double temp) {
             volesp = val1 + iPres * (val1 - val2);
             z2 = 1. / volesp;
 
-            return -(1. / z1) * (1. + ((temp + 273.15) / z1) * (z2 - z1) / (temp * 0.01));
+            return -(1. / z1) * (1. + ((temp + units::kZeroCelsiusInKelvin) / z1) * (z2 - z1) / (temp * 0.01));
         } else {
 
             BuscaBinVar(temp * 0.99, TempSup[imPres], im1, raz1);
@@ -1848,7 +1849,7 @@ double ProVap::JTgFunc(double pres, double temp) {
             volesp = val1 + iPres * (val1 - val2);
             z2 = 1. / volesp;
 
-            return -(1. / z1) * (1. + ((temp + 273.15) / z1) * (z1 - z2) / (temp * 0.01));
+            return -(1. / z1) * (1. + ((temp + units::kZeroCelsiusInKelvin) / z1) * (z1 - z2) / (temp * 0.01));
         }
     }
 }
@@ -1885,7 +1886,7 @@ double ProVap::JTlFunc(double pres, double temp) {
             volesp = val1 + iPres * (val1 - val2);
             z2 = 1. / volesp;
 
-            return -(1. / z1) * (1. + ((temp + 273.15) / z1) * (z2 - z1) / (temp * 0.01));
+            return -(1. / z1) * (1. + ((temp + units::kZeroCelsiusInKelvin) / z1) * (z2 - z1) / (temp * 0.01));
         } else {
 
             BuscaBinVar(temp * 0.99, TempLiqC[imPres], im1, raz1);
@@ -1896,7 +1897,7 @@ double ProVap::JTlFunc(double pres, double temp) {
             volesp = val1 + iPres * (val1 - val2);
             z2 = 1. / volesp;
 
-            return -(1. / z1) * (1. + ((temp + 273.15) / z1) * (z1 - z2) / (temp * 0.01));
+            return -(1. / z1) * (1. + ((temp + units::kZeroCelsiusInKelvin) / z1) * (z1 - z2) / (temp * 0.01));
         }
     }
 }

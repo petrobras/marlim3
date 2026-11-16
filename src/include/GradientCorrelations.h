@@ -7,6 +7,7 @@
 #define _USE_MATH_DEFINES
 
 #include "FerramentasNumericas.h"
+#include "FrictionFactor.h"
 #include "Log.h"
 #include "celula3.h"
 #include "GomezModel.h"
@@ -20,15 +21,6 @@ const double g_in = 32.174; // Gravitational acceleration in ft/s2.
 // ------------------------------------------------------------------------------
 // General Auxiliary Functions
 // ------------------------------------------------------------------------------
-/*!
- * Calculate the Darcy friction factor using a Moody-diagram formulation.
- *
- * \param reynolds Reynolds number.
- * \param roughness Relative roughness.
- * \param frictionFactorValue Calculated friction-factor value.
- */
-void frictionFactor(double reynolds, double roughness, double &frictionFactorValue);
-
 /*!
  * Accelerate convergence of an iterative calculation.
  *

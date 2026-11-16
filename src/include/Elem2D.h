@@ -13,7 +13,7 @@
 #include "PropFluColVF.h"
 #include "Vetor.h"
 #include "estruturas.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -278,12 +278,12 @@ class elem2d {
     Vcr<double> TLT;        // Right-hand-side vector of the temperature system.
     FullMtx<double> localT; // Local matrix of the temperature system.
 
-    varGlob1D *vg1dSP; // Pointer to shared one-dimensional global variables.
+    SimulationContext *simulationContext; // Pointer to shared one-dimensional global variables.
 
     /*!
      * Construct and initialize a two-dimensional finite-volume element.
      */
-    elem2d(varGlob1D *Vvg1dSP = 0, double **xcoor = 0, int **noEle = 0, int *tipo = 0, double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0, int i = 0,
+    elem2d(SimulationContext *context = 0, double **xcoor = 0, int **noEle = 0, int *tipo = 0, double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0, int i = 0,
            double vdt = 0., int vperm = 1, int vtrans = 0, ProFluColVF vflucVF = ProFluColVF(),int vacopd=0,
            double vpres = 0., double vu = 0., double vv = 0., double vt = 0., double vfluxCal = 0., double vcond = 0., double vcp = 0.,
            double vrho = 0., double vvisc = 0., double vbeta = 0.);

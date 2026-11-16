@@ -94,6 +94,8 @@ module VLECalculations
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! AJUSTAR ESTIMATIVAS INICIAIS:
         hasGivenInitialEstimates: if(bHasInitialFlashEstimates) then
 
@@ -356,6 +358,8 @@ module VLECalculations
 
         ! ----------------- PROCEDIMENTOS E CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Bolha? Orvalho?
         bIsBubbleCalculation = (iCalculationFlag.EQ.CALCTYPE_BubblePoint)
         bIsDewCalculation = (iCalculationFlag.EQ.CALCTYPE_DewPoint)
@@ -570,6 +574,8 @@ module VLECalculations
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
             ! Bolha? Orvalho?
         bIsBubbleCalculation = (iCalculationFlag.EQ.CALCTYPE_BubblePoint)
         bIsDewCalculation = (iCalculationFlag.EQ.CALCTYPE_DewPoint)
@@ -740,6 +746,8 @@ module VLECalculations
         real(c_double), parameter :: dMinimumTrialP = 101324.99d0
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! PRIMEIRO PASSO: Verificar / ajustar o passo na pressão:
         dCurrentStepValue = dStepOnP
@@ -1053,6 +1061,8 @@ module VLECalculations
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Verificar quanto ao uso de Equações de Estado Cúbicas:
         bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.(iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
         bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.(iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
@@ -1256,6 +1266,8 @@ module VLECalculations
         real(c_double), parameter :: dTrivialLim = 0.001d0      ! Limite referente a cálculos de solução trivial
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Criar estimativas iniciais para as composições das duas fases:
         call InitializeLiquidAndVaporCompositions(dFlashPressure, dFlashTemperature, iNComp, oZ, oTc, oPc, oW, &
@@ -1560,6 +1572,8 @@ module VLECalculations
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Proceder de acordo com os modelos selecionados para cada fase:
         bLiquidPhaseModelIsCubicEOS = (iLiqPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iLiqPhaseModel.EQ.SRK_PENELOUX).or.(iLiqPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
         bVaporPhaseModelIsCubicEOS = (iVapPhaseModel.EQ.PENG_ROBINSON_78_PENELOUX).or.(iVapPhaseModel.EQ.SRK_PENELOUX).or.(iVapPhaseModel.EQ.PENG_ROBINSON_PENELOUX)
@@ -1640,6 +1654,8 @@ module VLECalculations
         ! ------------------ CÁLCULOS:
 
         ! FASE LÍQUIDA:
+
+        iIER = ERROR_EverythingOK
 
         ! Determinar as constantes dos componentes puros nas condições do "flash":
         call CalculateCubicEOSParametersForEachComponent(iNComp, dFlashTemperature, iLiqCubicEOSModel, oTc, oPc, oW, &
@@ -1729,6 +1745,8 @@ module VLECalculations
         real(c_double), parameter :: dR = 8.314d0                                   ! Constante dos gases.
 
          ! ------------------ CÁLCULOS:
+
+         iIER = ERROR_EverythingOK
 
          ! Proceder de acordo com a Equação de Estado Cúbica indicada:
          whichEOS: if(iCubicEOSModel.EQ.PENG_ROBINSON_78_PENELOUX) then
@@ -1846,6 +1864,8 @@ module VLECalculations
         real(c_double) :: dDelta, dU, dW, dRootOfU2Minus4W, dMixCapitalA, dMixCapitalB
 
         ! ------------------ CÁLCULOS:
+
+        iIER = ERROR_EverythingOK
 
         ! PONTO IMPORTANTE: o ideal seria sempre basear esta subrotina em uma equação para o coeficiente de fugacidade que levasse sempre em
         !   conta o "lij". Tal equação foi obtida junto à UFRJ, porém, apesar dos esforços junto a eles, não foi possível localizar uma
@@ -2094,6 +2114,8 @@ module VLECalculations
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Calcular "A" e "B" maiúsculos:
         dCapitalA = dCubicEOSaShort * dFlashPressure / ((8.314d0 * dFlashTemperature) ** 2.0d0)
         dCapitalB = dCubicEOSbShort * dFlashPressure / 8.314d0 / dFlashTemperature
@@ -2225,6 +2247,7 @@ module VLECalculations
         ! ------------------ CÁLCULOS:
 
         ! Inicializando:
+        iIER = ERROR_EverythingOK
         dU = -10.0d0
         dW = -10.0d0
 

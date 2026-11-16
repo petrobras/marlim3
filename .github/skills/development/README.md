@@ -41,7 +41,7 @@ Both scripts use only the Python standard library (Python 3.8 or newer). Run the
 ### symbol_index.py
 
 ```bash
-# steady-state functions of SisProd.cpp
+# steady-state facade and extracted solver functions
 python .github/skills/development/scripts/symbol_index.py --path SisProd --grep Perm
 
 # where a Python method is defined
@@ -70,7 +70,7 @@ python .github/skills/development/scripts/repro_case.py model.mr3 --exe build/Ma
     --set 'crossProductionTrend[0].dt=30' --timeout 60 --json
 ```
 
-- `--tag` downloads the official engine of that release for the current system to `~/.cache/marlim3/engines/<tag>/` and checks it against the published `.sha256`. `--exe` runs a local engine (`marlim3\Marlim3.exe` on Windows). Both can be repeated to compare engines.
+- `--tag` downloads the official engine of that release for the current system to `~/.cache/marlim3/engines/<tag>/` and checks it against the published `.sha256`. `--exe` runs a local engine (`tools\marlim3\Marlim3.exe` on Windows). Both can be repeated to compare engines.
 - `--set PATH=VALUE` takes a JSON value (`true`, `600`, `[0, 10]`, `{"a": 1}`); anything that is not valid JSON is used as a string. `--delete PATH` removes a key.
 - Each run gets its own folder (a temporary one, or `--workdir`) with the model, the other files of the model's folder, `stdout.txt` and the engine's outputs. The summary shows exit code, time, status and the last events of `simulacao.log`.
 - `--args` must come last: everything after it goes to the engine.

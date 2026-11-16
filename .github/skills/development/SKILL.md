@@ -9,7 +9,7 @@ Marlim3 is a 1D multiphase flow simulator. The engine (`src/`, C++ and Fortran, 
 
 ## Read this first
 
-- **Do not read the large engine files whole.** `src/core/SisProd.cpp` has about 1.3 MB; `src/core/Leitura.cpp` and `src/core/Num4Main.cpp` about 0.8 MB each; `LerAP.cpp`, `SisProdVap.cpp`, `validaTipoJson.cpp`, `JSON_entrada.cpp` and `GradientCorrelations.cpp` 0.25–0.4 MB. Find the definition first, then read only its lines:
+- **Do not read the large engine files whole.** `src/core/SisProd.cpp` is a small facade; its solvers live in the `SisProdSteadyState`, `SisProdSteadyStateSearch`, `SisProdTransient`, `SisProdThermal`, `SisProdFluidTracking`, `SisProdSources` and other modules. `src/core/Leitura.cpp`, `src/core/Num4Main.cpp` and several solver modules remain large. Find the definition first, then read only its lines:
   - `python .github/skills/development/scripts/symbol_index.py --path SisProd --grep Perm` prints name, `file:line` and signature of each match;
   - `git grep -n "<log text or JSON key>" -- src tools/marlim3` finds messages and keys.
 - **Read the guides before the code.** `docs/dev-guide/` covers the entry point, input parsing, solvers, networks, parametric analysis, translations and dependencies. `CONTRIBUTING.md` has setup, repository layout, style, the input-key checklist and the test commands. The [code map](./references/code-map.md) links each topic to its files and functions.

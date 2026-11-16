@@ -28,8 +28,7 @@ env:
   ARTIFACT_RETENTION_DAYS: "7"
 
 jobs:
-  # Skips the workflow when a develop merge has identical content to an
-  # already-passed PR run. Tag pushes always run (never skipped).
+  # Skips runs with content that already passed. Tag pushes always run.
   pre_check:
     name: Pre-check (skip duplicates)
     runs-on: ubuntu-latest
@@ -195,8 +194,8 @@ jobs:
               cd /workspace
               rm -rf build
               cmake --preset gcc-release -DMARLIM_BUILD_TESTS=ON
-              cmake --build --preset gcc-release --target Marlim3 test_inlet_boundary_initialization -j$(nproc)
-              ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
+              cmake --build --preset gcc-release -j$(nproc)
+              ctest --test-dir build --output-on-failure
             '
           sudo chown -R "$(id -u):$(id -g)" build src/include/versao.h
 
@@ -258,8 +257,8 @@ jobs:
           set -euo pipefail
           rm -rf build
           cmake --preset mingw-release -DMARLIM_BUILD_TESTS=ON
-          cmake --build --preset mingw-release --target Marlim3 test_inlet_boundary_initialization -j$(nproc)
-          ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
+          cmake --build --preset mingw-release -j$(nproc)
+          ctest --test-dir build --output-on-failure
 
       - name: Inspect executable
         shell: msys2 {0}
@@ -312,8 +311,8 @@ jobs:
           test "$(uname -m)" = "arm64"
           rm -rf build
           cmake --preset gcc-release -DMARLIM_BUILD_TESTS=ON
-          cmake --build --preset gcc-release --target Marlim3 test_inlet_boundary_initialization -j"$(sysctl -n hw.ncpu)"
-          ctest --test-dir build --output-on-failure -R "^inlet_boundary_initialization$"
+          cmake --build --preset gcc-release -j"$(sysctl -n hw.ncpu)"
+          ctest --test-dir build --output-on-failure
 
       - name: Inspect executable
         run: |

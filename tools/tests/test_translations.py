@@ -142,6 +142,52 @@ def test_python_value_translations():
     assert _VALUE_TRANSLATIONS["tipoMedicaoCamada"]["ESPESSURA"] == "THICKNESS"
 
 
+@pytest.mark.parametrize("pt_key,en_key", [
+    ("cdPig", "pigCD"),
+    ("compP", "compressibility"),
+    ("compT", "thermalExpansivity"),
+    ("correlacoesPorArranjo", "correlationsByPattern"),
+    ("difusTerm3DFE", "diffusion3dFE"),
+    ("fracTermMotorEfic", "motorHeatFraction"),
+    ("mapaArranjo", "flowPatternMap"),
+    ("tabG", "gasTable"),
+    ("tabP", "pressureTable"),
+    ("taxaDespre", "despressRate"),
+    ("xCoor", "xCoor"),
+    ("yCoor", "yCoor"),
+])
+def test_abbreviated_key_roundtrip(pt_key, en_key):
+    from marlim3._tramo._keys import translate, translate_en_to_pt
+
+    payload = {pt_key: {"unmappedSection": [1.25, None, True]}}
+    english = {en_key: {"unmappedSection": [1.25, None, True]}}
+    assert translate(payload) == english
+    assert translate_en_to_pt(english) == payload
+
+
+def test_tuple_translation_normalizes_nested_sequences():
+    from marlim3._tramo._keys import translate, translate_en_to_pt
+
+    portuguese = ({"tempo": (0, 10), "pressao": (10, 20)},)
+    english = [{"time": [0, 10], "pressure": [10, 20]}]
+    assert translate(portuguese) == english
+    assert translate_en_to_pt(tuple(english)) == [
+        {"tempo": [0, 10], "pressao": [10, 20]},
+    ]
+
+
+def test_tuple_assignment_preserves_bilingual_containers():
+    from marlim3 import Branch, Network
+
+    branch = Branch()
+    branch.fonteGas = ({"tempo": [0], "temperatura": [30]},)
+    assert branch.gasSource == [{"time": [0], "temperature": [30]}]
+
+    network = Network()
+    network.Arquivos = ("a.mr3", "b.mr3")
+    assert network.files == ["a.mr3", "b.mr3"]
+
+
 def _embedded_translations():
     """Extract the JSON embedded in the committed translations_data.h."""
     header = TRANSLATIONS_HEADER.read_text(encoding="utf-8")

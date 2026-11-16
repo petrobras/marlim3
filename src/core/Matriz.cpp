@@ -724,14 +724,59 @@ void BandMtx<T>::GaussElimPP(Vcr<T> &bb) const { // LU para matriz banda com piv
         error("tamanho de matriz e vetor n�o confere, erro ocorrido na rotina LU com pivoteamento parcial para matriz banda");
 
     const int nrows = this->nrows;
-    BandMtx<T> tx(nrows, bwlef, min(nrows - 1, bwlef + bwrit));
+    struct Workspace {
+        int nrows = 0;
+        int bwlef = 0;
+        int bwrit = 0;
+        std::size_t rowStride = 0;
+        std::vector<T> coefficients;
+        std::vector<int> pivots;
+        T *operator[](int row) {
+            return coefficients.data() + static_cast<std::size_t>(row) * rowStride + bwlef;
+        }
+    };
+    constexpr std::size_t maximumRetainedBytes = 8 * 1024 * 1024;
+    const int expandedRight = min(nrows - 1, bwlef + bwrit);
+    // Retain padding for every source diagonal, including bands wider than the system.
+    const std::size_t rowStride = static_cast<std::size_t>(bwlef) + max(bwrit, expandedRight) + 1;
+    const std::size_t valueCount = static_cast<std::size_t>(nrows) * rowStride;
+    const bool fitsCache = valueCount <= maximumRetainedBytes / sizeof(T) &&
+        static_cast<std::size_t>(nrows) <= (maximumRetainedBytes - valueCount * sizeof(T)) / sizeof(int);
+    thread_local Workspace cached;
+    thread_local bool cacheInUse = false;
+    Workspace temporary;
+    const bool useCache = fitsCache && !cacheInUse;
+    struct Lease {
+        bool &inUse;
+        bool acquired;
+        ~Lease() { if (acquired) inUse = false; }
+    } lease{cacheInUse, useCache};
+    if (useCache)
+        cacheInUse = true;
+    Workspace &tx = useCache ? cached : temporary;
+    tx.nrows = nrows;
+    tx.bwlef = bwlef;
+    tx.bwrit = expandedRight;
+    tx.rowStride = rowStride;
+    const std::size_t retainedValues = max(tx.coefficients.capacity(), valueCount);
+    const std::size_t retainedPivots = max(tx.pivots.capacity(), static_cast<std::size_t>(nrows));
+    if (useCache && retainedValues * sizeof(T) + retainedPivots * sizeof(int) > maximumRetainedBytes) {
+        std::vector<T>().swap(tx.coefficients);
+        std::vector<int>().swap(tx.pivots);
+    }
+    if (tx.coefficients.capacity() < valueCount)
+        tx.coefficients.reserve(valueCount);
+    tx.coefficients.assign(valueCount, T{});
+    if (tx.pivots.capacity() < static_cast<std::size_t>(nrows))
+        tx.pivots.reserve(nrows);
+    tx.pivots.resize(nrows);
     for (int i = 0; i < nrows; i++) {
         T *const txi = tx[i];
         T *const src = bdmx[i];
         for (int j = -bwlef; j <= bwrit; j++)
             txi[j] = src[j];
     }
-    int *pvt = new int[nrows];
+    int *pvt = tx.pivots.data();
 
     const int nrowsmone = tx.nrows - 1;
     for (int k = 0; k < nrowsmone; k++) {
@@ -792,7 +837,6 @@ void BandMtx<T>::GaussElimPP(Vcr<T> &bb) const { // LU para matriz banda com piv
             bb[k] -= txk[j] * bb[k + j];
         bb[k] /= txk[0];
     }
-    delete[] pvt;
 }
 
 // Fun��es para Matriz Esparsa:

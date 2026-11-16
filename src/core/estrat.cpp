@@ -1,4 +1,5 @@
 #include "estrat.h"
+#include "UnitConversions.h"
 
 estratificado::estratificado(double vdia, double Ql, double Qg,
                              double vrl, double vrg, double vmil,
@@ -730,7 +731,7 @@ double estratificado::CalcUdTrans(double alfc, double alf0,
             ug1 = ug1 / (alf1);
 
         double du1 = -1 * dt * (ul1 * (ul1 - ul0)) / dx;
-        double du2 = -dt * (1 / rl) * (pR - pL) * 98600 / dx;
+        double du2 = -dt * (1 / rl) * (pR - pL) * units::kPascalPerKgfPerCm2 / dx;
         double du3 = 1 * dt * 9.82 * cos(ang) * (area / (siNd * dia)) * (alf1 - alf0) / dx;
         double fonte1 = dt * (((1 * twg * siNd * dia) / rl - twl * swlNd * dia / rl) / (dia * dia * alNd) -
                               9.82 * sin(ang));

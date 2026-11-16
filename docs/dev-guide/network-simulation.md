@@ -538,7 +538,7 @@ After the steady-state solution converges, the transient solver advances the net
 ```
 SolveRedeTrans(malha[], arqRede, ...)
   │
-  │  while lixo5R < TmaxR:
+  │  while networkSimulationTime < networkFinalTime:
   │    │
   │    ├─ Hydrate checks (FA_Hidrato) on each branch
   │    │
@@ -546,9 +546,9 @@ SolveRedeTrans(malha[], arqRede, ...)
   │    │    dt = min_i( malha[i].determinaDT() )
   │    │    Apply dt uniformly to all branches and all cells
   │    │
-  │    ├─ Valve state snapshot: aberturaVal0() on each branch
+  │    ├─ Valve state snapshot: captureValveAreaRatios(BeforeBoundaryUpdate) on each branch
   │    ├─ Update time-dependent BCs: arq.atualiza(), atualizaCC1()
-  │    ├─ Valve state check: aberturaVal1()
+  │    ├─ Valve state check: captureValveAreaRatios(AfterBoundaryUpdate)
   │    │    If valve changed → force modeloCompleto = 0
   │    │
   │    ├─ Save initial-state backup:
@@ -579,12 +579,12 @@ SolveRedeTrans(malha[], arqRede, ...)
   │    ├─ AtualizaPig() per branch      ← advance PIG if active
   │    ├─ WriteSnapShot() at scheduled times (tempsnp[])
   │    │
-  │    └─ lixo5R += dt
+  │    └─ networkSimulationTime += dt
 ```
 
 **Time step**: the global dt is the **minimum** CFL-limited time step across all active branches, applied uniformly to ensure synchronised advancement. `atenuaDtMax()` and `restringeDTporValv()` further constrain the time step.
 
-**Valve transient safety**: `aberturaVal0()` records valve openings before BC updates; `aberturaVal1()` records them after. If any valve opening changed, `modeloCompleto` is forced to 0 (simplified model without $\partial p / \partial t$ correction), preventing numerical instability during valve transients.
+**Valve transient safety**: `captureValveAreaRatios(BeforeBoundaryUpdate)` records valve openings before BC updates; `captureValveAreaRatios(AfterBoundaryUpdate)` records them after. If any valve opening changed, `modeloCompleto` is forced to 0 (simplified model without $\partial p / \partial t$ correction), preventing numerical instability during valve transients.
 
 **Coupling iteration**: the `kontaAcop` loop runs 1 or 2 times depending on `modeloCompletoGlob` (computed as the AND of all active branches' `modeloCompleto` flags). When running twice, `FeiticoDoTempo2()` / `FeiticoDoTempo3()` swap time-level arrays (e.g., $n \leftrightarrow n+1$) and restore the initial-state backup so the second pass uses improved pressure estimates.
 
@@ -769,7 +769,7 @@ where $Q_{gas,i}$ sums over all injection points and drenos. Convergence: $|\tex
 ```
 TransAnel(narq, nfontes, indfonte, indtramo, posicfonte, indAnel, dreno, malha, arqRede)
   │
-  │  while lixo5R < TmaxR:
+  │  while networkSimulationTime < networkFinalTime:
   │    ├─ Hydrate evaluations
   │    ├─ Global CFL-limited dt (min across all branches)
   │    ├─ Update valve/BC for each branch
@@ -838,7 +838,7 @@ $$\frac{|p_P^{n+1} - p_P^n|}{|p_P^n|} + \frac{|p_S^{n+1} - p_S^n|}{|p_S^n|} < 10
 ```
 SolveRedeParalelaTrans(malha[], arqRede, nrede)
   │
-  │  while lixo5R < TmaxR:
+  │  while networkSimulationTime < networkFinalTime:
   │    ├─ Thermal coupling: conectaPrincipal() + fluxcalAcopRedeP
   │    ├─ Hydrate evaluation, CFL dt, valve updates for both branches
   │    │
@@ -880,7 +880,7 @@ RedeInj(malha[], arqRede, ...)
   ├─ chutePresRedeInj() → initial bottom-hole pressure guess
   │
   ├─ while restartRede == 1:
-  │    while norma > 0.001 × (*vg1dSP).relax:
+  │    while norma > 0.001 × (*simulationContext).networkRelaxationFactor:
   │      norma = cicloRedeInj(malha, arqRede, inativo, indativo)
   │
   └─ Print profiles

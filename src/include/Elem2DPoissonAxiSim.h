@@ -12,7 +12,7 @@
 #include "Matriz.h"
 #include "Vetor.h"
 #include "estruturasPoisson.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -84,12 +84,12 @@ class elem2dPoissonAxiSim {
     int nvizinho;              // Number of neighboring elements.
     elementoPoissonAxiSim **vizinho; // Pointers to neighboring elements.
     int *kvizinho;             // Local face or neighbor-index mapping.
-    varGlob1D *vg1dSP;         // Pointer to shared one-dimensional global variables.
+    SimulationContext *simulationContext;         // Pointer to shared one-dimensional global variables.
 
     /*!
      * Construct and initialize a two-dimensional Poisson element.
      */
-    elem2dPoissonAxiSim(varGlob1D *Vvg1dSP = 0, double **xcoor = 0, int **noEle = 0,
+    elem2dPoissonAxiSim(SimulationContext *context = 0, double **xcoor = 0, int **noEle = 0,
     		int *tipo = 0, double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0,
             int vperm = 1, int vtrans = 0, int i = 0,int vacopD=0, double vtemp = 0.,
 			double vfluxCal = 0., double vcond = 0., double vcp = 0.,

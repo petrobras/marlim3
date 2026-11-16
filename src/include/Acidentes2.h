@@ -5,6 +5,7 @@
 #include "PropFlu.h"
 #include "PropFluCol.h"
 #include "PropVapor.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -84,7 +85,7 @@ class choke {
     double dpVap(const double pres, const double temp, const double alf, const double Qg, const double Ql) const;
     double dT(const double pres, const double temp, const double alf, const double bet, const double Qg, const double Ql,
               const ProFlu fluido, const ProFluCol fluidoC) const {
-        double delp = DPBocConH(pres, temp, alf, bet, Qg, Ql, AreaTub, AreaGarg, fluido, fluidoC) / 98066.5;
+        double delp = DPBocConH(pres, temp, alf, bet, Qg, Ql, AreaTub, AreaGarg, fluido, fluidoC) / units::kPascalPerKgfPerCm2;
         return DTBocConH(pres, temp, alf, bet, delp, fluido, fluidoC);
     }
     double vazmass(double presEstag, double presGarg, const double temp, double alf, double bet, double x,

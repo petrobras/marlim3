@@ -3,6 +3,7 @@
 #define _USE_MATH_DEFINES // Enable mathematical constants such as M_PI.
 
 #include "PropFlu.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -115,7 +116,7 @@ class ChokeGas {
     double razpresVenturi();                                                 // Calculate the Venturi pressure ratio.
     double massicaVenturi();                                                 // Calculate the Venturi mass flow rate.
     double MasEspFlu(double pres, double temp, double salin) const;          // Calculate fluid density.
-    double psia(const double p) const { return (p * 0.9678411) * 14.69595; } // Convert pressure from kgf/cm2 to psia.
+    double psia(const double p) const { return p * units::kPsiPerKgfPerCm2; } // Convert pressure from kgf/cm2 to psia.
     double Faren(const double t) const { return 1.8 * t + 32; }              // Convert temperature from degrees Celsius to degrees Fahrenheit.
 };
 

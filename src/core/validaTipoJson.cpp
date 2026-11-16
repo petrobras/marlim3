@@ -4524,10 +4524,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/tempoAberturaMon: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["tempoAberturaMon"].Size(); i++) {
-                    if (!valvula_json[i]["tempoAberturaMon"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["tempoAberturaMon"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["tempoAberturaMon"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/tempoAberturaMon[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/tempoAberturaMon[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4539,10 +4539,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/aberturaMon: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["aberturaMon"].Size(); i++) {
-                    if (!valvula_json[i]["aberturaMon"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["aberturaMon"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["aberturaMon"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/aberturaMon[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/aberturaMon[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4554,10 +4554,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/tempoAberturaJus: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["tempoAberturaJus"].Size(); i++) {
-                    if (!valvula_json[i]["tempoAberturaJus"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["tempoAberturaJus"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["tempoAberturaJus"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/tempoAberturaJus[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/tempoAberturaJus[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4569,10 +4569,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/aberturaJus: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["aberturaJus"].Size(); i++) {
-                    if (!valvula_json[i]["aberturaJus"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["aberturaJus"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["aberturaJus"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/aberturaJus[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/aberturaJus[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4592,10 +4592,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/tempoFonte: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["tempoFonte"].Size(); i++) {
-                    if (!valvula_json[i]["tempoFonte"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["tempoFonte"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["tempoFonte"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/tempoFonte[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/tempoFonte[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4607,10 +4607,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/massLiqP: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["massLiqP"].Size(); i++) {
-                    if (!valvula_json[i]["massLiqP"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["massLiqP"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["massLiqP"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/massLiqP[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/massLiqP[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4622,10 +4622,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/massLiqC: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["massLiqC"].Size(); i++) {
-                    if (!valvula_json[i]["massLiqC"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["massLiqC"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["massLiqC"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/massLiqC[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/massLiqC[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }
@@ -4637,10 +4637,10 @@ void validadorTipo::valida_valv(Value &valvula_json, std::vector<std::string> &e
                 sucesso = false;
                 erros.push_back("valvula/massGas: deve ser do tipo array");
             } else {
-                for (SizeType i = 0; i < valvula_json[i]["massGas"].Size(); i++) {
-                    if (!valvula_json[i]["massGas"][i].IsNumber()) {
+                for (SizeType sampleIndex = 0; sampleIndex < valvula_json[i]["massGas"].Size(); sampleIndex++) {
+                    if (!valvula_json[i]["massGas"][sampleIndex].IsNumber()) {
                         sucesso = false;
-                        erros.push_back("valvula/massGas[" + std::to_string(i) + "]: deve ser do tipo number");
+                        erros.push_back("valvula/massGas[" + std::to_string(sampleIndex) + "]: deve ser do tipo number");
                     }
                 }
             }

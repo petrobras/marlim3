@@ -18,7 +18,7 @@ Setup and the short command list are in "Setting up" and "Tests" of `CONTRIBUTIN
 | C++ unit tests | `cmake -S . -B build -DMARLIM_BUILD_TESTS=ON`, `cmake --build build`, `ctest --test-dir build --output-on-failure` |
 
 - All presets use `build/` unless `-B` is given. Every build copies its executable into `tools/marlim3/`, so a debug build replaces the release engine used by the tests until the next release build.
-- The C++ tests are `inlet_boundary_initialization`, `friction_factor` and `tuffp_runtime_binding`; the last one is skipped (exit code 77) unless `MARLIM3_TUFFP_LIB` points to the TUFFP library.
+- The C++ tests cover inlet initialization, friction, transient temperature and kinetic boundaries, upstream numerical contracts and the TUFFP runtime binding. The vendor-library test is skipped (exit code 77) unless `MARLIM3_TUFFP_LIB` points to the TUFFP library.
 
 ## Engine command line
 
