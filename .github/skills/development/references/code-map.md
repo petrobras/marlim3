@@ -100,7 +100,7 @@ Guides: `tools/marlim3/README.md`, `docs/dev-guide/translations.md`.
 | File | Symbols | Role |
 |---|---|---|
 | `tools/tests/README.md` | | how the suite works, markers, reference updates |
-| `tools/tests/test_demos_steady_state.py` | | demos: key round trip, PT x EN x native runs, references |
+| `tools/tests/test_demos_steady_state.py` | | demos: key round trip, English version × Portuguese model (static), PT x EN runs, references |
 | `tools/tests/test_translations.py` | | `tools/marlim3/translations.json` integrity and the committed `translations_data.h` |
 | `tools/tests/test_schema_consistency.py` | | engine fields vs schemas vs translations (warnings) |
 | `tools/tests/cpp/` | | C++ unit tests (`-DMARLIM_BUILD_TESTS=ON`) |
