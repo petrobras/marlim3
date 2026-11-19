@@ -10,7 +10,7 @@ This directory contains the test suite for `Marlim3`.
 
 ## Running tests
 
-Tests marked `simulacao` require the compiled `Marlim3` executable in the `tools/marlim3/` package directory. See the root [README.md](../../README.md#compilation) for build instructions.
+Tests marked `simulacao` require the compiled `Marlim3` executable in the `tools/marlim3/` package directory. See the root [README.md](https://github.com/petrobras/marlim3/blob/main/README.md#compilation) for build instructions.
 
 ```bash
 uv run pytest tools/tests/ -v                    # full suite

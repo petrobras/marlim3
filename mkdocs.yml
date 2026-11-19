@@ -1,6 +1,8 @@
 site_name: Marlim3 Documentation
 site_description: User documentation for the Marlim3 multiphase flow simulator
 site_author: Petrobras
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, "https://marlim3.readthedocs.io/en/latest/"]
+repo_url: https://github.com/petrobras/marlim3
 
 theme:
   name: material
@@ -40,6 +42,10 @@ nav:
   - Home: index.md
   - Getting Started:
     - Installation: getting-started.md
+    - Python Package: tools/python-package.md
+    - Desktop App: tools/desktop-app.md
+    - Regression Tool: tools/regression-tool.md
+    - Tests: tools/tests.md
     - Dependency Maintenance: dev-guide/dependencies.md
   - Tutorials:
     - Overview: tutorials/index.md
@@ -116,6 +122,7 @@ hooks:
 
 plugins:
   - search
+  - include-markdown
   - markmap:
       base_path: docs
       encoding: utf-8
@@ -128,3 +135,7 @@ plugins:
       include_source: true
       kernel_name: python3
 
+validation:
+  links:
+    not_found: warn
+    unrecognized_links: warn
