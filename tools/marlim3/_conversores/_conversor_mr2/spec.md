@@ -286,10 +286,12 @@ Mapeamentos:
         - `"WOELFLIN_MEDIA"` → `tipoEmul = 2`  
         - `"WOELFLIN_FORTE"` → `tipoEmul = 3`  
         - `"EXPONENCIAL"` → `tipoEmul = 4`  
-        - `"OLEO_VIVO"` ou `"CAMPOS"` ou `"RONNINGSEN"` → `tipoEmul = 2` 
+        - `"CAMPOS"` → `tipoEmul = 8` (Bacia de Campos)  
+        - `"RONNINGSEN"` → `tipoEmul = 9` (Ronningsen)  
+        - `"OLEO_VIVO"` → `tipoEmul = 2` (sem modelo equivalente no Marlim3)  
         2. Caso contrário → `tipoEmul = 0` 
 - `bswCorte`:
-    - Se  `tipoEmul` for 1,2,3 ou 4: `<entrada><fluido><emulsao><fwre>`. Se o campo `fwre` estiver ausente, **não incluir** `bswCorte` no JSON.
+    - Se  `tipoEmul` for maior que 0: `<entrada><fluido><emulsao><fwre>`. Se o campo `fwre` estiver ausente, **não incluir** `bswCorte` no JSON.
     - Se `tipoEmul` for 0: **não incluir** `bswCorte` no JSON.
 - `coefAModeloExp`, `coefBModeloExp`:
     - `coefAModeloExp`  ← `<entrada><fluido><emulsao><coef_a>`
