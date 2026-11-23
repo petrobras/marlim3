@@ -665,3 +665,12 @@ def test_real_uv_rejects_stale_public_lock_offline(project, mirror):
     )
     with pytest.raises(deps.DependencyError):
         deps.check_public(project)
+
+
+def test_workspace_creates_package_discovery_roots(project):
+    path = project / "pyproject.toml"
+    path.write_text(
+        path.read_text() + '[tool.setuptools.packages.find]\nwhere = ["tools"]\n'
+    )
+    with deps.workspace(project) as temporary:
+        assert (temporary / "tools").is_dir()

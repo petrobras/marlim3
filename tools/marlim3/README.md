@@ -69,11 +69,11 @@ Encontrada falha durante a validacao das regras de negocio do MRT:
 
 Rather than reproducing a full model here, see:
 
-- [`demos/`](../../demos) — working models covering production wells, injection,
+- [`demos/`](https://github.com/petrobras/marlim3/tree/main/demos) — working models covering production wells, injection,
   gas lift, ESP, networks and shutdown transients;
 - [Model reference](../../docs/single-branch-model-reference/index.md) — every
   section, key and unit, with which are required;
-- [Tutorials](../../docs/tutorials) — step-by-step notebooks that build models
+- [Tutorials](../../docs/tutorials/index.md) — step-by-step notebooks that build models
   progressively.
 
 The sections common to most single-branch models are:
@@ -117,7 +117,7 @@ tramo.to_json("modelo", language="pt")
 ```
 
 `Branch` and `Tramo` are the same class under two names. Key translation is
-driven by [`translations.json`](translations.json), which is also the source of
+driven by [`translations.json`](https://github.com/petrobras/marlim3/blob/main/tools/marlim3/translations.json), which is also the source of
 truth for the C++ engine's translator — the two cannot drift apart.
 
 See [Bilingual Support](../../docs/dev-guide/translations.md) for details.
@@ -134,8 +134,8 @@ unrecognised names.
 - [Input migration guide](../../docs/single-branch-model-reference/migration.md) —
   key names that changed and are no longer accepted
 
-Worked examples live in [`demos/`](../../demos), and step-by-step tutorials in
-[`docs/tutorials/`](../../docs/tutorials).
+Worked examples live in [`demos/`](https://github.com/petrobras/marlim3/tree/main/demos), and step-by-step tutorials in
+[`docs/tutorials/`](../../docs/tutorials/index.md).
 
 ## Executable resolution
 
@@ -160,6 +160,6 @@ Two environment variables control this behaviour:
 |---|---|
 | `_tramo/` | the `Branch`/`Tramo` model class, serialization, and simulation driver |
 | `_plots/` | profile, trend, geometry, and network plotting |
-| `_conversores/` | converters from other formats — see [FlowEdit converter](_conversores/_conversor_flowedit/README.md) |
+| `_conversores/` | converters from other formats — see [FlowEdit converter](https://github.com/petrobras/marlim3/blob/main/tools/marlim3/_conversores/_conversor_flowedit/README.md) |
 | `_download.py` | release asset resolution and download |
 | `translations.json` | PT ↔ EN key map, shared with the C++ engine |
