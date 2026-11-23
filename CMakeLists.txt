@@ -79,8 +79,8 @@ configure_file(
 
 # Auto-generate translations_data.h from translations.json.
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
-    "${CMAKE_SOURCE_DIR}/marlim3/translations.json")
-file(READ "${CMAKE_SOURCE_DIR}/marlim3/translations.json" TRANSLATIONS_JSON_CONTENT)
+    "${CMAKE_SOURCE_DIR}/tools/marlim3/translations.json")
+file(READ "${CMAKE_SOURCE_DIR}/tools/marlim3/translations.json" TRANSLATIONS_JSON_CONTENT)
 configure_file(
     ${INCDIR}/translations_data.h.in
     ${INCDIR}/translations_data.h
@@ -274,8 +274,8 @@ endif()
 add_custom_command(TARGET Marlim3 POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:Marlim3>
-        ${CMAKE_SOURCE_DIR}/marlim3/$<TARGET_FILE_NAME:Marlim3>
-    COMMENT "Copying Marlim3 executable to marlim3/ package directory"
+        ${CMAKE_SOURCE_DIR}/tools/marlim3/$<TARGET_FILE_NAME:Marlim3>
+    COMMENT "Copying Marlim3 executable to tools/marlim3/ package directory"
 )
 
 install(TARGETS Marlim3 DESTINATION bin)
@@ -295,7 +295,7 @@ if(MARLIM_BUILD_TESTS)
     enable_testing()
 
     add_executable(test_inlet_boundary_initialization
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_inlet_boundary_initialization.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_inlet_boundary_initialization.cpp
     )
     target_include_directories(test_inlet_boundary_initialization PRIVATE
         ${INCDIR}
@@ -310,7 +310,7 @@ if(MARLIM_BUILD_TESTS)
     list(REMOVE_ITEM MARLIM_TEST_CXX_SOURCES ${SRCDIR}/Num4Main.cpp)
 
     add_executable(test_friction_factor
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_friction_factor.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_friction_factor.cpp
         ${MARLIM_TEST_CXX_SOURCES}
         ${F90_SOURCES}
     )
@@ -345,7 +345,7 @@ if(MARLIM_BUILD_TESTS)
     # TUFFP adapter test: skipped (exit code 77) when the external TUFFP library
     # is not available (see MARLIM3_TUFFP_LIB).
     add_executable(test_tuffp_runtime_binding
-        ${CMAKE_SOURCE_DIR}/tests/cpp/test_tuffp_runtime_binding.cpp
+        ${CMAKE_SOURCE_DIR}/tools/tests/cpp/test_tuffp_runtime_binding.cpp
         ${SRCDIR}/tuffp_runtime_binding.cpp
     )
     target_include_directories(test_tuffp_runtime_binding PRIVATE ${INCDIR})

@@ -3,12 +3,12 @@
  *
  * Implements the English→Portuguese key translation for Marlim3 JSON input
  * files. The translation map is loaded at compile-time from
- * marlim3/translations.json (embedded via translations_data.h).
+ * tools/marlim3/translations.json (embedded via translations_data.h).
  *
  * Key design decisions
  * --------------------
- * - Single source of truth: marlim3/translations.json drives both this C++
- *   translator and the Python translator in marlim3/_tramo/_keys.py.
+ * - Single source of truth: tools/marlim3/translations.json drives both this C++
+ *   translator and the Python translator in tools/marlim3/_tramo/_keys.py.
  * - Flat map: the same English name translates to the same Portuguese name
  *   regardless of nesting level.
  * - Lazy initialization: the JSON is parsed once on first call.

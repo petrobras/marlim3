@@ -39,7 +39,7 @@ def build_executable():
 
     root_dir = Path(__file__).parent
     build_dir = root_dir / "build"
-    package_dir = root_dir / "marlim3"
+    package_dir = root_dir / "tools" / "marlim3"
 
     package_dir.mkdir(parents=True, exist_ok=True)
 

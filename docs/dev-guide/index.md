@@ -21,4 +21,4 @@ Internal architecture of `Marlim3` core engine.
 | [Parametric Analysis](parametric-analysis.md) | Automated execution of multiple steady-state simulations over a user-defined parameter space, producing VFP tables and summary reports for each combination |
 | [Injection Well Simulation](injection-well.md) | Steady-state injection well mode (`-s INJETOR`): flow from surface down to one or more injection zones |
 | [2D Natural Convection Solver](natural-convection.md) | Natural convection simulation mode (`-s CONVECNAT`): laminar incompressible flow with heat transfer in 2D domains using FVM on unstructured triangular meshes |
-| [Translations](translations.md) | Bilingual JSON key translation system: mapping between English and Portuguese input keys driven by `marlim3/translations.json` |
+| [Translations](translations.md) | Bilingual JSON key translation system: mapping between English and Portuguese input keys driven by `tools/marlim3/translations.json` |

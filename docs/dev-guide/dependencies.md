@@ -59,10 +59,10 @@ above, or the native uv credential store. Outside corporate mode, its default is
 Run the same maintenance commands in either mode:
 
 ```bash
-python scripts/dependencies.py add package-name --group docs
-python scripts/dependencies.py remove package-name --group docs
-python scripts/dependencies.py upgrade package-name
-python scripts/dependencies.py upgrade package-name==desired-version
+python tools/scripts/dependencies.py add package-name --group docs
+python tools/scripts/dependencies.py remove package-name --group docs
+python tools/scripts/dependencies.py upgrade package-name
+python tools/scripts/dependencies.py upgrade package-name==desired-version
 ```
 
 Add/remove operations edit a temporary manifest and resolve it using your mode's
@@ -82,8 +82,8 @@ A changed manifest or pending upgrade is not yet consistent with the official
 lock. To work locally while waiting for Actions:
 
 ```bash
-python scripts/dependencies.py preview --group dev --group docs
-python scripts/dependencies.py run --preview -- python -m pytest
+python tools/scripts/dependencies.py preview --group dev --group docs
+python tools/scripts/dependencies.py run --preview -- python -m pytest
 ```
 
 This uses a separate, ignored `.venv-preview` and temporary lock. Inside Petrobras,
@@ -101,7 +101,7 @@ without installing Marlim3, use `preview --only-group docs --no-install-project`
 3. Apply that run's result on the same feature branch:
 
    ```bash
-   python scripts/dependencies.py apply-lock --run ACTIONS_RUN_ID
+   python tools/scripts/dependencies.py apply-lock --run ACTIONS_RUN_ID
    ```
 
 4. Review the diff, install/test the official result, commit `uv.lock` and the
@@ -129,9 +129,9 @@ that does not yet contain it on its default branch; use the upstream PR run.
 Outside Petrobras, native `uv sync --locked` remains available. Inside Petrobras:
 
 ```bash
-python scripts/dependencies.py sync --group dev --group docs
-python scripts/dependencies.py run -- python -m pytest
-python scripts/dependencies.py run -- python schema_to_markdown.py --batch
+python tools/scripts/dependencies.py sync --group dev --group docs
+python tools/scripts/dependencies.py run -- python -m pytest
+python tools/scripts/dependencies.py run -- python schema_to_markdown.py --batch
 ```
 
 Corporate synchronization validates the public lock offline, exports selected

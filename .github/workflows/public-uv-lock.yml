@@ -42,7 +42,7 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: >-
-          python scripts/dependencies.py generate-lock
+          python tools/scripts/dependencies.py generate-lock
           --output "$RUNNER_TEMP/public-uv-lock"
           --repository "$TARGET_REPOSITORY"
           --head-repository "$HEAD_REPOSITORY"
@@ -62,4 +62,4 @@ jobs:
           retention-days: 7
 
       - name: Verify the versioned lock matches the generated result
-        run: python scripts/dependencies.py check-generated --artifact-dir "$RUNNER_TEMP/public-uv-lock"
+        run: python tools/scripts/dependencies.py check-generated --artifact-dir "$RUNNER_TEMP/public-uv-lock"

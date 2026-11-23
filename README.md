@@ -1,5 +1,5 @@
 <h1 align="center">
-<img src="assets/branding/logo.svg" alt="Marlim3 logo" width="300"/>
+<img src="tools/assets/branding/logo.svg" alt="Marlim3 logo" width="300"/>
 
 </h1><br>
 
@@ -50,13 +50,13 @@ Broader contributions will be accepted once the refactoring settles. See
 | | |
 |---|---|
 | [Getting Started](docs/getting-started.md) | Installation, usage, and compilation |
-| [Python package](marlim3/README.md) | Python API, bilingual interface, scripting |
+| [Python package](tools/marlim3/README.md) | Python API, bilingual interface, scripting |
 | [Model reference](docs/single-branch-model-reference/index.md) | Every input section, key and unit |
 | [Theory](docs/theoretical-reference/index.md) | Governing equations and discretization |
 | [Tutorials](docs/tutorials) | Step-by-step notebooks |
-| [Desktop application](marlim3_desktop/README.md) | Platform notes and diagnostics |
-| [Regression tool](regression_tool/README.md) | Model registration and native coverage |
-| [Tests](tests/README.md) | Test suite and regression references |
+| [Desktop application](tools/marlim3_desktop/README.md) | Platform notes and diagnostics |
+| [Regression tool](tools/regression_tool/README.md) | Model registration and native coverage |
+| [Tests](tools/tests/README.md) | Test suite and regression references |
 
 The full documentation is published at
 [marlim3.readthedocs.io](https://marlim3.readthedocs.io/).
