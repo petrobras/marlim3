@@ -181,9 +181,9 @@ def _parse_tipo_emulsao(fluido):
             return 0
         tipo = fluido.get('emulsao', {}).get('@tipo', '').strip().upper()
         mapa = {
-            'WOELFLIN_FRACA': 1, 'WOELFLIN_MEDIA': 2, 'CAMPOS': 2,
-            'RONNINGSEN': 2, 'OLEO_VIVO': 2, 'WOELFLIN_FORTE': 3,
-            'EXPONENCIAL': 4,
+            'WOELFLIN_FRACA': 1, 'WOELFLIN_MEDIA': 2, 'OLEO_VIVO': 2,
+            'WOELFLIN_FORTE': 3, 'EXPONENCIAL': 4, 'CAMPOS': 8,
+            'RONNINGSEN': 9,
         }
         return mapa.get(tipo, 0)
     except Exception:
