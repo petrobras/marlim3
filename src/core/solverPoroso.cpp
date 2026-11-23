@@ -1867,8 +1867,11 @@ void solverPoro::transientePoroso(double &delt) {
     itera = 0;
     double minP = 100000000000.;
     while ((norma > (1.e-5 * dados.temp.relax) || itera < 3) && (itera < 80)) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             for (int j = 0; j < malha.mlh2d[i].cel2D.dim; j++) {
                 malha.mlh2d[i].cel2D.gradGreenPI[j] = malha.mlh2d[i].cel2D.gradGreenP[j];
                 malha.mlh2d[i].cel2D.gradGreenSwI[j] = malha.mlh2d[i].cel2D.gradGreenSw[j];
@@ -1876,14 +1879,37 @@ void solverPoro::transientePoroso(double &delt) {
                 malha.mlh2d[i].cel2D.gradGreenAZdatumI[j] = malha.mlh2d[i].cel2D.gradGreenAZdatum[j];
                 malha.mlh2d[i].cel2D.gradGreenPcAOI[j] = malha.mlh2d[i].cel2D.gradGreenPcAO[j];
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh2d[i].calcGradGreen();
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh2d[i].GeraLocal(dados.temp.relax);
+            {
+    try {
+malha.mlh2d[i].GeraLocal(dados.temp.relax);
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         indsra = 0;
         for (int i = 0; i < malha.nele; i++) {
             int dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
@@ -1957,8 +1983,11 @@ void solverPoro::transientePoroso(double &delt) {
             }
         }
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             if (dados.tipoModelOleo == 1) {
                 malha.mlh2d[i].cel2D.rhoP = malha.mlh2d[i].flup.MasEspoleo(malha.mlh2d[i].cel2D.presC, malha.mlh2d[i].tRes);
             } else {
@@ -1974,20 +2003,33 @@ void solverPoro::transientePoroso(double &delt) {
             malha.mlh2d[i].cel2D.rhoaP = malha.mlh2d[i].flup.MasEspAgua(malha.mlh2d[i].cel2D.presC, malha.mlh2d[i].tRes);
             malha.mlh2d[i].cel2D.pcAO = malha.mlh2d[i].interpolaTabela(malha.mlh2d[i].pcOACel.npont, malha.mlh2d[i].cel2D.sWC, malha.mlh2d[i].pcOACel.satW,
                                                                        malha.mlh2d[i].pcOACel.presCapOW);
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         itera++;
     }
     if (dados.acop == 1)
         dados.transfer.atualizaIni();
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
     for (int i = 0; i < malha.nele; i++) {
+    try {
         malha.mlh2d[i].cel2D.presC0 = malha.mlh2d[i].cel2D.presC;
         malha.mlh2d[i].cel2D.sWI = malha.mlh2d[i].cel2D.sWC;
         malha.mlh2d[i].cel2D.rhoP0 = malha.mlh2d[i].cel2D.rhoP;
         malha.mlh2d[i].cel2D.rhogP0 = malha.mlh2d[i].cel2D.rhogP;
         malha.mlh2d[i].cel2D.rhoaP0 = malha.mlh2d[i].cel2D.rhoaP;
         malha.mlh2d[i].cel2D.alfC0 = malha.mlh2d[i].cel2D.alfC;
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
 
     cout << "Tempo= " << (*vg1dSP).tempo << " norma= " << norma << " iteracoes= " << itera;
     cout << endl;
@@ -2279,8 +2321,11 @@ void solverPoro::pseudoTransientePoroso() {
         itera = 0;
         minP = 100000000000.;
         while (itera < 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
+    try {
                 for (int j = 0; j < malha.mlh2d[i].cel2D.dim; j++) {
                     malha.mlh2d[i].cel2D.gradGreenPI[j] = malha.mlh2d[i].cel2D.gradGreenP[j];
                     malha.mlh2d[i].cel2D.gradGreenSwI[j] = malha.mlh2d[i].cel2D.gradGreenSw[j];
@@ -2288,14 +2333,37 @@ void solverPoro::pseudoTransientePoroso() {
                     malha.mlh2d[i].cel2D.gradGreenAZdatumI[j] = malha.mlh2d[i].cel2D.gradGreenAZdatum[j];
                     malha.mlh2d[i].cel2D.gradGreenPcAOI[j] = malha.mlh2d[i].cel2D.gradGreenPcAO[j];
                 }
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
+    try {
                 malha.mlh2d[i].calcGradGreen();
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
             for (int i = 0; i < malha.nele; i++)
-                malha.mlh2d[i].GeraLocal(dados.temp.relax);
+                {
+    try {
+malha.mlh2d[i].GeraLocal(dados.temp.relax);
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
             indsra = 0;
             for (int i = 0; i < malha.nele; i++) {
                 int dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
@@ -2367,8 +2435,11 @@ void solverPoro::pseudoTransientePoroso() {
                 }
             }
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
+    try {
                 if (dados.tipoModelOleo == 1) {
                     malha.mlh2d[i].cel2D.rhoP = malha.mlh2d[i].flup.MasEspoleo(malha.mlh2d[i].cel2D.presC, malha.mlh2d[i].tRes);
                 } else {
@@ -2384,7 +2455,12 @@ void solverPoro::pseudoTransientePoroso() {
                 }
                 malha.mlh2d[i].cel2D.pcAO = malha.mlh2d[i].interpolaTabela(malha.mlh2d[i].pcOACel.npont, malha.mlh2d[i].cel2D.sWC, malha.mlh2d[i].pcOACel.satW,
                                                                            malha.mlh2d[i].pcOACel.presCapOW);
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
             itera++;
         }
 
@@ -2407,8 +2483,11 @@ void solverPoro::pseudoTransientePoroso() {
 
         if (dados.acop == 1)
             dados.transfer.atualizaIni();
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh2d[i].cel2D.presC0 = malha.mlh2d[i].cel2D.presC;
             malha.mlh2d[i].cel2D.sWI = malha.mlh2d[i].cel2D.sWC;
 
@@ -2416,7 +2495,12 @@ void solverPoro::pseudoTransientePoroso() {
             malha.mlh2d[i].cel2D.rhogP0 = malha.mlh2d[i].cel2D.rhogP;
             malha.mlh2d[i].cel2D.rhoaP0 = malha.mlh2d[i].cel2D.rhoaP;
             malha.mlh2d[i].cel2D.alfC0 = malha.mlh2d[i].cel2D.alfC;
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
     }
 }
 
@@ -2628,8 +2712,11 @@ void solverPoro::avancoPressao() {
     itera = 0;
     double minP = 100000000000.;
     while ((norma > (1.e-5 * dados.temp.relax) || itera < 3) && (itera < 80)) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             for (int j = 0; j < malha.mlh2d[i].cel2D.dim; j++) {
                 malha.mlh2d[i].cel2D.gradGreenPI[j] = malha.mlh2d[i].cel2D.gradGreenP[j];
                 malha.mlh2d[i].cel2D.gradGreenSwI[j] = malha.mlh2d[i].cel2D.gradGreenSw[j];
@@ -2637,14 +2724,37 @@ void solverPoro::avancoPressao() {
                 malha.mlh2d[i].cel2D.gradGreenAZdatumI[j] = malha.mlh2d[i].cel2D.gradGreenAZdatum[j];
                 malha.mlh2d[i].cel2D.gradGreenPcAOI[j] = malha.mlh2d[i].cel2D.gradGreenPcAO[j];
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh2d[i].calcGradGreen();
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh2d[i].GeraLocal(dados.temp.relax);
+            {
+    try {
+malha.mlh2d[i].GeraLocal(dados.temp.relax);
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         indsra = 0;
         for (int i = 0; i < malha.nele; i++) {
             int dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
@@ -2653,9 +2763,19 @@ void solverPoro::avancoPressao() {
             indsra += dimNoZero;
             termolivre[i] = malha.mlh2d[i].TL[0];
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++)
-            malha.vecSolv[i] = malha.mlh2d[i].cel2D.presC;
+            {
+    try {
+malha.vecSolv[i] = malha.mlh2d[i].cel2D.presC;
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         norma = 0.;
         for (int i = 0; i < malha.nele; i++) {
             malha.mlh2d[i].cel2D.presCI = malha.mlh2d[i].cel2D.presC;
@@ -2718,8 +2838,11 @@ void solverPoro::avancoPressao() {
                 }
             }
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh2d[i].cel2D.rhoP = malha.mlh2d[i].flup.MasEspoleo(malha.mlh2d[i].cel2D.presC, malha.mlh2d[i].tRes);
             malha.mlh2d[i].cel2D.rhogP = malha.mlh2d[i].flup.MasEspGas(malha.mlh2d[i].cel2D.presC, malha.mlh2d[i].tRes);
             malha.mlh2d[i].cel2D.rhoaP = malha.mlh2d[i].flup.MasEspAgua(malha.mlh2d[i].cel2D.presC, malha.mlh2d[i].tRes);
@@ -2727,7 +2850,12 @@ void solverPoro::avancoPressao() {
             malha.mlh2d[i].cel2D.alfC = (tit / malha.mlh2d[i].cel2D.rhogP) / ((tit / malha.mlh2d[i].cel2D.rhogP) + ((1. - tit) / malha.mlh2d[i].cel2D.rhoP));
             malha.mlh2d[i].cel2D.pcAO = malha.mlh2d[i].interpolaTabela(malha.mlh2d[i].pcOACel.npont, malha.mlh2d[i].cel2D.sWC, malha.mlh2d[i].pcOACel.satW,
                                                                        malha.mlh2d[i].pcOACel.presCapOW);
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         itera++;
     }
 
@@ -2757,15 +2885,23 @@ void solverPoro::avancoPressao() {
 
     if (dados.acop == 1)
         dados.transfer.atualizaIni();
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads(dados.nthrdLocal)
     for (int i = 0; i < malha.nele; i++) {
+    try {
         malha.mlh2d[i].cel2D.presC0 = malha.mlh2d[i].cel2D.presC;
         malha.mlh2d[i].cel2D.sWI = malha.mlh2d[i].cel2D.sWC;
         malha.mlh2d[i].cel2D.rhoP0 = malha.mlh2d[i].cel2D.rhoP;
         malha.mlh2d[i].cel2D.rhogP0 = malha.mlh2d[i].cel2D.rhogP;
         malha.mlh2d[i].cel2D.rhoaP0 = malha.mlh2d[i].cel2D.rhoaP;
         malha.mlh2d[i].cel2D.alfC0 = malha.mlh2d[i].cel2D.alfC;
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
 
     // To be added to MR3
     (*vg1dSP).tempo = (*vg1dSP).lixo5;

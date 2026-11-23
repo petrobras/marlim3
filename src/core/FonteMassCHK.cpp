@@ -65,7 +65,7 @@ fontemaschk::fontemaschk() {
     indJus=-1;
 }
 
-fontemaschk::fontemaschk(const fontemaschk &vinj) { // construtor de c�pia
+fontemaschk::fontemaschk(const fontemaschk &vinj) { // construtor de cópia
     masP = vinj.masP;
     masC = vinj.masC;
     masG = vinj.masG;

@@ -217,7 +217,7 @@ double critInterSev::testaCriterio(int tipo, Cel *celula) {
         return difPresTeB(celula);
         break;
     default:
-        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                    "#################Criterio de Intermitencia Inexistente##############################",
                    "", "");
         return 0;

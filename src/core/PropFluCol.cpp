@@ -39,7 +39,7 @@ ProFluCol::ProFluCol(double vrholStd, double vcompresP, double vcompresT, double
     TR = 0.;
 }
 
-ProFluCol::ProFluCol(const ProFluCol &fluido) { // construtor por c�pia
+ProFluCol::ProFluCol(const ProFluCol &fluido) { // construtor por cópia
     rholStd = fluido.rholStd;
     compresP = fluido.compresP;
     compresT = fluido.compresT;
@@ -64,7 +64,7 @@ ProFluCol::ProFluCol(const ProFluCol &fluido) { // construtor por c�pia
 }
 
 ProFluCol &ProFluCol::operator=(const ProFluCol &fluido) { // iguala duas listas de primitivas
-    if (this != &fluido) {                                 // verifica se se est� igualando a mesma lista
+    if (this != &fluido) {                                 // verifica se se está igualando a mesma lista
         rholStd = fluido.rholStd;
         compresP = fluido.compresP;
         compresT = fluido.compresT;
@@ -140,8 +140,8 @@ double ProFluCol::MasEspFlu(double pres, double temper) const {
 }
 
 double ProFluCol::VisFlu(double pres, double temper) const {
-    // Viscosidade de �leo morto pelo m�todo ASTM
-    // Viscosidade de �leo morto em fun��o da temperatura em Celcius, viscosidade em cP
+    // Viscosidade de óleo morto pelo método ASTM
+    // Viscosidade de óleo morto em função da temperatura em Celcius, viscosidade em cP
 
     if (injPoc == 2 || descarga == 1 || tipoF == 1) {
         double vis = 2.414E-05 * pow(10.0, 247.8 / (temper + 133.15));

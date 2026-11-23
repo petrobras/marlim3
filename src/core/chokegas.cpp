@@ -25,7 +25,7 @@ ChokeGas::ChokeGas(const ProFlu vflui,const double vareagarg,const double vdexte
 
 }
 
-ChokeGas::ChokeGas(const ChokeGas& vchok) { //construtor por c�pia//alteracao2
+ChokeGas::ChokeGas(const ChokeGas& vchok) { //construtor por cópia//alteracao2
 	flui = vchok.flui;
 	areagarg=vchok.areagarg;
 	cd=vchok.cd;

@@ -1892,7 +1892,7 @@ void solv2D::resolve() {
         lendono >> val;
         lendono >> val;
 
-        // teremos os valores de x e y para cada n�, por exemplo, para o n� 53:
+        // teremos os valores de x e y para cada nó, por exemplo, para o nó 53:
         // x=xcoor[53][0] e y=xcoor[53][1]
         xcoor = new double *[nno];
         for (int i = 0; i < nno; i++)
@@ -2470,6 +2470,9 @@ void solv2D::resolve() {
     double deltCFL;
     double fluxCalMed = 0.;
     double tInicial=transfer.Tint;
+    logger.setEtapa(ETAPA_TRANSIENTE);
+    logger.setRelogio(&(*vg1dSP).tempo);
+    logger.setTempoFinal(tempVF.tmax);
     while ((*vg1dSP).tempo <= tempVF.tmax) {
         int multEps = 1.0;
         chrono::steady_clock::time_point begin, end;

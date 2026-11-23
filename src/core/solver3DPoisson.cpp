@@ -510,20 +510,44 @@ void solverP3D::transientePoisson(double vdelt) {
     }
     itera = 0;
     while (norma > 1.e-20 || itera < 5) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             for (int j = 0; j < malha.mlh3d[i].cel3D.dim; j++) {
                 malha.mlh3d[i].cel3D.gradGreenTI[j] = malha.mlh3d[i].cel3D.gradGreenT[j];
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh3d[i].calcGradGreen();
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh3d[i].GeraLocal(dados.temp.relax);
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         indsra = 0;
         for (int i = 0; i < malha.nele; i++) {
             int dimNoZero = malha.mlh3d[i].cel3D.indVizCres.size();
@@ -538,14 +562,22 @@ void solverP3D::transientePoisson(double vdelt) {
             malha.vecSolv[i] = malha.mlh3d[i].cel3D.tempC;
         }
         norma = 0.;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             malha.mlh3d[i].cel3D.tempCI = malha.mlh3d[i].cel3D.tempC;
             malha.mlh3d[i].cel3D.tempC = malha.vecSolv[i];
             norma += fabs(malha.mlh3d[i].cel3D.tempC - malha.mlh3d[i].cel3D.tempCI);
             if (fabs(malha.mlh3d[i].cel3D.tempC - malha.mlh3d[i].cel3D.tempCI) > 1) {
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         norma /= malha.nele;
 
         if (dados.acop == 1) {
@@ -624,18 +656,46 @@ void solverP3D::transientePoissonDummy(double vdelt, int konta) {
     }
     itera = 0;
     while (norma > 1.e-20 || itera < 5) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++) {
+    try {
             for (int j = 0; j < malha.mlh3d[i].cel3D.dim; j++) {
                 malha.mlh3d[i].cel3D.gradGreenTI[j] = malha.mlh3d[i].cel3D.gradGreenT[j];
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh3d[i].calcGradGreen();
+            {
+    try {
+malha.mlh3d[i].calcGradGreen();
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*DGP3D).ntrd3DP)
         for (int i = 0; i < malha.nele; i++)
-            malha.mlh3d[i].GeraLocal(1.);
+            {
+    try {
+malha.mlh3d[i].GeraLocal(1.);
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         indsra = 0;
         for (int i = 0; i < malha.nele; i++) {
             int dimNoZero = malha.mlh3d[i].cel3D.indVizCres.size();

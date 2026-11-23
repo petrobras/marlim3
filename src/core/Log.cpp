@@ -7,6 +7,8 @@
 
 #include "Log.h"
 #include <stdlib.h>
+#include <algorithm>
+#include <cmath>
 #include <string>
 
 using namespace rapidjson;
@@ -37,7 +39,160 @@ string formatDataExecucao(const struct tm &agora) {
            to_string(agora.tm_min);
 }
 
+// Contexto proprio de cada thread dentro de regioes paralelas (redes internas em paralelo).
+thread_local etapa_t etapaThread = ETAPA_HERDADA;
+thread_local const double *relogioThread = nullptr;
+constexpr int SEQUENCIA_HERDADA = -2;
+thread_local int sequenciaThread = SEQUENCIA_HERDADA;
+thread_local bool tramoThreadDefinido = false;
+thread_local string tramoThread;
+thread_local int redeInternaThread = -1;
+
+double arredonda4(double valor) {
+    return std::round(valor * 1.e4) / 1.e4;
+}
+
+const char *nomeEtapa(etapa_t etapa) {
+    switch (etapa) {
+    case ETAPA_PRE:
+        return "PRE";
+    case ETAPA_PERMANENTE:
+        return "PERMANENTE";
+    case ETAPA_TRANSIENTE:
+        return "TRANSIENTE";
+    case ETAPA_POS:
+        return "POS";
+    default:
+        return "PRE";
+    }
+}
+
 } // namespace
+
+void Logger::setEtapa(etapa_t novaEtapa) {
+    if (omp_in_parallel()) {
+        etapaThread = novaEtapa;
+    } else {
+        etapaThread = ETAPA_HERDADA;
+        if (novaEtapa != ETAPA_HERDADA)
+            etapa = novaEtapa;
+    }
+}
+
+void Logger::setRelogio(const double *tempoSimulado) {
+    if (omp_in_parallel()) {
+        relogioThread = tempoSimulado;
+    } else {
+        relogioThread = nullptr;
+        relogio = tempoSimulado;
+    }
+}
+
+void Logger::setSequenciaAP(int sequencia) {
+    if (omp_in_parallel()) {
+        sequenciaThread = sequencia;
+    } else {
+        sequenciaThread = SEQUENCIA_HERDADA;
+        sequenciaAP = sequencia;
+    }
+}
+
+void Logger::setTramo(const string &arquivoTramo, int rede) {
+    const size_t barra = arquivoTramo.find_last_of("/\\");
+    const string nome = barra == string::npos ? arquivoTramo : arquivoTramo.substr(barra + 1);
+    if (omp_in_parallel()) {
+        tramoThreadDefinido = !nome.empty() || rede >= 0;
+        tramoThread = nome;
+        redeInternaThread = rede;
+    } else {
+        tramoThreadDefinido = false;
+        tramo = nome;
+        redeInterna = rede;
+    }
+}
+
+string Logger::tramoAtual() const {
+    return tramoThreadDefinido ? tramoThread : tramo;
+}
+
+int Logger::redeInternaAtual() const {
+    return tramoThreadDefinido ? redeInternaThread : redeInterna;
+}
+
+int Logger::sequenciaAtual() const {
+    return sequenciaThread != SEQUENCIA_HERDADA ? sequenciaThread : sequenciaAP;
+}
+
+etapa_t Logger::etapaAtual() const {
+    return etapaThread != ETAPA_HERDADA ? etapaThread : etapa;
+}
+
+double Logger::tempoAtual() const {
+    const double *r = relogioThread != nullptr ? relogioThread : relogio;
+    if (r == nullptr || etapaAtual() != ETAPA_TRANSIENTE)
+        return -1.;
+    return *r;
+}
+
+void Logger::entrarVarredura() {
+    varredura = true;
+}
+
+void Logger::sairVarredura() {
+    varredura = false;
+}
+
+bool Logger::emVarredura() const {
+    return varredura;
+}
+
+bool Logger::registrarParcial(const string &tipo, const string &item) {
+    bool novo = false;
+#pragma omp critical(marlim_logger_parcial)
+    {
+        vector<string> &itens = parciais[tipo];
+        if (find(itens.begin(), itens.end(), item) == itens.end()) {
+            itens.push_back(item);
+            novo = true;
+        }
+        etapasDescarte[tipo] = etapaAtual();
+    }
+    return novo;
+}
+
+void Logger::definirTotalUnidades(const string &tipo, int total) {
+    totaisUnidades[tipo] = total;
+}
+
+void Logger::verificarDescarteTotal() {
+    if (descarteTotalVerificado)
+        return;
+    descarteTotalVerificado = true;
+    for (const auto &total : totaisUnidades) {
+        const auto descartadas = parciais.find(total.first);
+        if (total.second <= 0 || descartadas == parciais.end() ||
+            static_cast<int>(descartadas->second.size()) < total.second)
+            continue;
+        const etapa_t anterior = etapaAtual();
+        setEtapa(etapasDescarte[total.first]);
+        log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE,
+            total.first == "tramo" ? "todos os tramos da rede foram desligados"
+                                   : "todas as sequencias da analise parametrica foram descartadas",
+            total.first, to_string(total.second));
+        setEtapa(anterior);
+    }
+}
+
+int Logger::codigoSaida() const {
+    const stResultadoSimulacao_t &res = getStResultadoSimulacao();
+    if (res.sucesso)
+        return parciais.empty() ? 0 : CODIGO_SAIDA_EXECUCAO_PARCIAL;
+    for (size_t i = 0; i < res.evento.tipos.size(); i++) {
+        if (res.evento.tipos[i] == LOGGER_FALHA)
+            return static_cast<int>(res.evento.etapas[i]);
+    }
+    return parciais.empty() ? 0 : CODIGO_SAIDA_EXECUCAO_PARCIAL;
+}
 
 Logger::Logger() {
     initializeResultadoSimulacao(this->stResultadoSimulacao);
@@ -100,6 +255,12 @@ void Logger::changeResultadoSimulacao(const string nomeArquivoEntrada, const str
 
 void Logger::log(const log_t tipo, const string codigo, const string complemento,
                  const string propriedade, const string causa, const int linha) {
+    // contexto lido fora da secao critica: e proprio da thread que registra o evento
+    const etapa_t etapaEvento = etapaAtual();
+    const double tempoEvento = tempoAtual();
+    const int sequenciaEvento = sequenciaAtual();
+    const string tramoEvento = tramoAtual();
+    const int redeInternaEvento = redeInternaAtual();
     // Called from the parallel parametric analysis: counters and event vectors must change together.
 #pragma omp critical(marlim_logger)
     {
@@ -128,6 +289,11 @@ void Logger::log(const log_t tipo, const string codigo, const string complemento
     this->stResultadoSimulacao.evento.propriedades.push_back(propriedade);
     this->stResultadoSimulacao.evento.causas.push_back(causa);
     this->stResultadoSimulacao.evento.linhas.push_back(linha);
+    this->stResultadoSimulacao.evento.etapas.push_back(etapaEvento);
+    this->stResultadoSimulacao.evento.tempos.push_back(tempoEvento);
+    this->stResultadoSimulacao.evento.sequencias.push_back(sequenciaEvento);
+    this->stResultadoSimulacao.evento.tramos.push_back(tramoEvento);
+    this->stResultadoSimulacao.evento.redesInternas.push_back(redeInternaEvento);
     }
 }
 
@@ -137,7 +303,7 @@ void Logger::log(const log_t tipo, const string codigo, const string complemento
 }
 
 Document Logger::parseTemplateLogOutput() {
-    string strTemplateLog("{\"resultadoSimulacao\":{\"arquivo\":\"teste1.mrt\",\"data\":\"19/06/2017\",\"status\":\"falha\",\"logs\":[{\"log\":\"AVISO\",\"codigo\":\"1011\",\"descricao\":\"Campo X do arquivo MRT e obrigatorio.\",\"propriedade\":\"#\",\"causa\":\"#\",\"linha\":0}]},\"excecoesConfiguradas\":{\"1000\":\"Encontrada falha inesperada:\",\"1001\":\"O arquivo lido apresentou falha na sintaxe JSON:\",\"1002\":\"Encontrada falha durante a validacao das propriedades do MRT:\",\"1003\":\"Encontrada falha durante a validacao das regras de negocio do MRT:\",\"1004\":\"Aviso sobre as regras de negocio do simulador:\",\"1100\":\"Fim de etapa do processo de parse do arquivo MRT:\",\"1101\":\"Informacao:\",\"1200\":\"Fim da execucao do simulador:\",\"1300\":\"Cancelamento da execucao do simulador:\"}}");
+    string strTemplateLog("{\"resultadoSimulacao\":{\"arquivo\":\"teste1.mrt\",\"data\":\"19/06/2017\",\"status\":\"falha\",\"logs\":[{\"log\":\"AVISO\",\"codigo\":\"1011\",\"descricao\":\"Campo X do arquivo MRT e obrigatorio.\",\"propriedade\":\"#\",\"causa\":\"#\",\"linha\":0}]},\"excecoesConfiguradas\":{\"1000\":\"Encontrada falha inesperada:\",\"1001\":\"O arquivo lido apresentou falha na sintaxe JSON:\",\"1002\":\"Encontrada falha durante a validacao das propriedades do MRT:\",\"1003\":\"Encontrada falha durante a validacao das regras de negocio do MRT:\",\"1004\":\"Aviso sobre as regras de negocio do simulador:\",\"1005\":\"Falha numerica durante a solucao:\",\"1006\":\"Regime permanente nao convergiu:\",\"1007\":\"FALHA da sequencia descartada, seguindo para proxima combinacao:\",\"1008\":\"FALHA do tramo, desligado da rede, seguindo com os demais:\",\"1100\":\"Fim de etapa do processo de parse do arquivo MRT:\",\"1101\":\"Informacao:\",\"1200\":\"Fim da execucao do simulador:\",\"1300\":\"Cancelamento da execucao do simulador:\"}}");
     // criar string para mensagem de falha
     char mensagemFalha[5000];
     // criar objeto do elemento raiz do json de saída da simulação
@@ -154,13 +320,13 @@ Document Logger::parseTemplateLogOutput() {
             cout << "FALHA: " << LOG_ERR_PARSE_JSON_FORMAT_VALIDATION << " - Parse Template Log Transiente - "
                  << GetParseError_Pt_BR(logOutDoc.GetParseError()) << endl;
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(EXIT_FAILURE);
         }
     } catch (exception &e) {
         // incluir falha
         cout << "FALHA: " << LOG_ERR_UNEXPECTED_EXCEPTION << " - Parse Template Log Transiente - " << e.what() << endl;
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(EXIT_FAILURE);
     }
     // retorna o documento do template de saída
     return logOutDoc;
@@ -177,6 +343,7 @@ void Logger::writeJsonFile(Document *outputDoc) {
         FileWriteStream logOutStream(logOutFile, writeBuffer, sizeof(writeBuffer));
         // criar objeto para escrita da saída da simulação
         PrettyWriter<FileWriteStream> logOutWriter(logOutStream);
+        logOutWriter.SetMaxDecimalPlaces(4);
         // descarregar o documento Json alterado para o arquivo de saída
         outputDoc->Accept(logOutWriter);
         // fechar o arquivo
@@ -188,6 +355,7 @@ void Logger::writeJsonFile(Document *outputDoc) {
 }
 
 void Logger::writeOutputLog(int tipoSaida) {
+    verificarDescarteTotal();
     // criar objeto do elemento raiz do json de saída da simulação
     Document logOutDoc = parseTemplateLogOutput();
     // definir alocator para para atribuir valores de chaves e valores de propriedades do json de saída
@@ -204,9 +372,38 @@ void Logger::writeOutputLog(int tipoSaida) {
         resultadoSimulacao["data"].SetString(StringRef(getStResultadoSimulacao().dataExecucao.c_str()));
         // caso o resultado da simulação seja bem sucedido
         if (getStResultadoSimulacao().sucesso) {
-            resultadoSimulacao["status"].SetString("sucesso");
+            resultadoSimulacao["status"].SetString(parciais.empty() ? "sucesso" : "parcial");
         } else {
             resultadoSimulacao["status"].SetString("falha");
+        }
+        // etapa em que a simulacao terminou (ou falhou) e instante simulado, se no transiente
+        const int codigo = codigoSaida();
+        const etapa_t etapaFinal =
+            codigo >= ETAPA_PRE && codigo <= ETAPA_POS ? static_cast<etapa_t>(codigo) : etapaAtual();
+        resultadoSimulacao.AddMember("etapa", StringRef(nomeEtapa(etapaFinal)), allocator);
+        resultadoSimulacao.AddMember("codigoSaida", codigo, allocator);
+        if (tempoAtual() >= 0.)
+            resultadoSimulacao.AddMember("tempoSimulado", arredonda4(tempoAtual()), allocator);
+        if (tempoFinal >= 0.)
+            resultadoSimulacao.AddMember("tempoFinal", arredonda4(tempoFinal), allocator);
+        if (!parciais.empty()) {
+            Value execucaoParcial(kObjectType);
+            for (const auto &tipo : parciais) {
+                Value itens(kArrayType);
+                for (const string &item : tipo.second) {
+                    if (tipo.first == "sequenciaAP") {
+                        itens.PushBack(atoi(item.c_str()), allocator);
+                    } else {
+                        Value nome;
+                        nome.SetString(item.c_str(), static_cast<SizeType>(item.size()), allocator);
+                        itens.PushBack(nome, allocator);
+                    }
+                }
+                Value chave;
+                chave.SetString(tipo.first.c_str(), static_cast<SizeType>(tipo.first.size()), allocator);
+                execucaoParcial.AddMember(chave, itens, allocator);
+            }
+            resultadoSimulacao.AddMember("execucaoParcial", execucaoParcial, allocator);
         }
         // recuperar o objeto de excecoesConfiguradas do templateJson
         Value &excCfg = logOutDoc["excecoesConfiguradas"];
@@ -255,6 +452,20 @@ void Logger::writeOutputLog(int tipoSaida) {
             log.AddMember(chavePropriedade, valorPropriedade, allocator);
             log.AddMember(chaveCausa, valorCausa, allocator);
             log.AddMember(chaveLinha, valorLinha, allocator);
+            const etapa_t etapaEvento = getStResultadoSimulacao().evento.etapas[indLog];
+            log.AddMember("etapa", StringRef(nomeEtapa(etapaEvento)), allocator);
+            if (getStResultadoSimulacao().evento.tempos[indLog] >= 0.)
+                log.AddMember("tempo", arredonda4(getStResultadoSimulacao().evento.tempos[indLog]), allocator);
+            if (getStResultadoSimulacao().evento.sequencias[indLog] >= 0)
+                log.AddMember("sequenciaAP", getStResultadoSimulacao().evento.sequencias[indLog], allocator);
+            const string &tramoLog = getStResultadoSimulacao().evento.tramos[indLog];
+            if (!tramoLog.empty()) {
+                Value valorTramo;
+                valorTramo.SetString(tramoLog.c_str(), static_cast<SizeType>(tramoLog.size()), allocator);
+                log.AddMember("tramo", valorTramo, allocator);
+            }
+            if (getStResultadoSimulacao().evento.redesInternas[indLog] >= 0)
+                log.AddMember("redeInterna", getStResultadoSimulacao().evento.redesInternas[indLog], allocator);
             // incluir o objeto do log no array de eventos de log
             logs.PushBack(log, allocator);
         }
@@ -292,6 +503,6 @@ void Logger::log_write_logs_and_exit(const log_t tipo, const string codigo, cons
 void Logger::write_logs_and_exit() {
     // gerar o arquivo de saida da simulacao
     writeOutputLog();
-    // encerrar a aplicacao
-    exit(EXIT_SUCCESS);
+    // encerrar a aplicacao: 0 sem falha, senao a etapa da primeira falha
+    exit(codigoSaida());
 }

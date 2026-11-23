@@ -572,7 +572,7 @@ Variant of parallel parametric analysis with reservoir-model coupling.
 
 All simulator output is **plain-text** (no binary files). Every output path is prefixed by the global `pathPrefixoArqSaida` (resolved from the `-d` / `-o` arguments, defaulting to `output/`). A manifest file (`resultado.log`) records the name of each generated data file so that downstream tools can discover them.
 
-### Logger — Structured JSON Log
+### Logger — Structured JSON Log (pt-br)
 
 The `Logger` class ([`Log.h`](https://github.com/petrobras/marlim3/blob/main/src/include/Log.h) / [`Log.cpp`](https://github.com/petrobras/marlim3/blob/main/src/core/Log.cpp)) accumulates events during a run and serialises them to a JSON file via RapidJSON `PrettyWriter`.
 
@@ -583,44 +583,89 @@ The `Logger` class ([`Log.h`](https://github.com/petrobras/marlim3/blob/main/src
 | Warning | `LOGGER_AVISO` | `"AVISO"` |
 | Failure | `LOGGER_FALHA` | `"FALHA"` |
 
-Event codes are defined as string macros:
+Event codes are defined as string macros in `Log.h`. Each code has a description prefix in the `excecoesConfiguradas` template inside `Logger::parseTemplateLogOutput()`; the event `descricao` is that prefix followed by the text passed at the call site.
 
-| Code | Meaning |
-|------|---------|
-| `1000` | Unexpected exception |
-| `1001` | JSON format validation error |
-| `1002` | Schema validation error |
-| `1003` | Business rule validation failure |
-| `1004` | Business rule validation warning |
-| `1100` | Parse process finished (info) |
-| `1101` | Generic parse info |
-| `1200` | Simulation finished |
-| `1300` | Simulation cancelled |
+| Code | Severity | Meaning |
+|------|----------|---------|
+| `1000` | FALHA | Unexpected exception, including crash signals (SIGSEGV, SIGFPE, SIGILL, SIGABRT; description = signal number) |
+| `1001` | FALHA | JSON format error (model, network or `leituraAP.json`) |
+| `1002` | FALHA | Schema validation error |
+| `1003` | FALHA | Business-rule validation (including parametric-analysis series) |
+| `1004` | AVISO | Business-rule or solver warning; the run goes on (unknown parametric-analysis keys, iteration limits, numerical failure of a parametric-analysis sequence) |
+| `1005` | FALHA | Numerical failure (`NumError`, matrix/vector `error()`, steady state without a valid result and no transient) |
+| `1006` | AVISO | Steady state did not converge; the transient starts from the last computed state |
+| `1007` | AVISO | Parametric-analysis sequence discarded, the run goes on with the next combination |
+| `1008` | AVISO | Network branch switched off for convergence difficulty, the run goes on with the other branches |
+| `1100` | INFO | Parse process finished |
+| `1101` | INFO | Generic information |
+| `1200` | INFO | Simulation finished |
+| `1300` | AVISO | Run cancelled by the user (SIGINT/SIGTERM; description = signal number); results up to that point are kept |
 
-The default output filename is **`simulacao.log`** (macro `ARQUIVO_LOG_PADRAO`). The global `logger` object is created in `Num4Main.cpp` and configured with `changeResultadoSimulacao()` after argument parsing. `writeOutputLog()` produces:
+The severity follows the code: `LOG_ERR_*` codes (1000–1003, 1005) are logged only as FALHA, `LOG_WARN_*` codes (1004, 1006, 1007, 1008, 1300) only as AVISO and `LOG_INFO_*` codes (1100, 1101, 1200) only as INFO, so a run that goes on never shows an error code.
+
+To change a message, edit the prefix in the template string or the text at the call site (`logger.log(...)`, `NumError(...)`). A new code needs both a `#define` in `Log.h` and an entry in the template; otherwise writing the log fails.
+
+#### Stages and exit code
+
+The logger keeps the current simulation stage (`etapa_t`), set by `Num4Main.cpp` and the network drivers with `logger.setEtapa(...)`:
+
+| Stage | Value | Covers |
+|-------|-------|--------|
+| `PRE` | 1 | Arguments, reading and validation, branch/network construction, parametric-analysis input |
+| `PERMANENTE` | 2 | Steady-state solution or pre-processing (single branch, network, parametric-analysis sequences) |
+| `TRANSIENTE` | 3 | Transient preparation and time loop |
+| `POS` | 4 | Final snapshot and end of run |
+
+The process exit code is:
+
+| Exit code | Meaning |
+|-----------|---------|
+| `0` | Success: no FALHA and no discarded unit (a user cancellation by SIGINT/SIGTERM is an AVISO and also exits with 0) |
+| `1`–`4` | FALHA: stage of the first FALHA |
+| `5` | Partial execution: no FALHA, but at least one unit was discarded (events `1007`/`1008`) |
+
+If every unit is discarded (all parametric-analysis sequences, or all network branches), the log adds a FALHA `1005` at the stage of the discards, so the run ends as a failure instead of a partial execution.
+
+Calls inside an active OpenMP region (internal networks, parallel parametric analysis) set thread-local context.
+
+#### Output format
+
+`writeOutputLog()` produces:
 
 ```json
 {
-  "versao": "Marlim - 3.5.0",
+  "versao": "Marlim - 3.10.2",
   "resultadoSimulacao": {
     "arquivo": "<input_file>",
-    "data": "dd/mm/yyyy",
-    "status": "sucesso" | "falha",
+    "data": "dd/mm/yyyy hora: hh:mm",
+    "status": "sucesso" | "parcial" | "falha",
     "logs": [
       {
         "log": "INFO" | "AVISO" | "FALHA",
         "codigo": "1xxx",
-        "descricao": "<message + complement>",
+        "descricao": "<prefix + complement>",
         "propriedade": "...",
         "causa": "...",
-        "linha": 0
+        "linha": 0,
+        "etapa": "PRE" | "PERMANENTE" | "TRANSIENTE" | "POS",
+        "tempo": 745.0784,
+        "sequenciaAP": 2,
+        "tramo": "<branch file>.json",
+        "redeInterna": 0
       }
-    ]
+    ],
+    "etapa": "TRANSIENTE",
+    "codigoSaida": 3,
+    "tempoSimulado": 745.0784,
+    "tempoFinal": 2001.0,
+    "execucaoParcial": {"sequenciaAP": [2, 4], "tramo": ["<branch file>.json"]}
   }
 }
 ```
 
-Convenience methods `write_logs_and_exit()` and `log_write_logs_and_exit()` combine logging with immediate program termination.
+Optional fields are written only when they apply: `tempo` (simulated time in seconds, transient only), `sequenciaAP` (parametric analysis), `tramo`/`redeInterna` (networks); in the header, `tempoSimulado` when the run ends in the transient, `tempoFinal` when a transient is configured, and `execucaoParcial` (discarded parametric-analysis sequences and network branches) when the exit code is 5. Times are rounded to 4 decimal places. `status` is `falha` when there is a FALHA, `parcial` when the exit code is 5 and `sucesso` otherwise.
+
+Convenience methods `write_logs_and_exit()` and `log_write_logs_and_exit()` combine logging with immediate program termination using `codigoSaida()`.
 
 ### Snapshot Files (`.snp`) — Restart Checkpoints
 
@@ -630,7 +675,7 @@ Convenience methods `write_logs_and_exit()` and `log_write_logs_and_exit()` comb
 
 | Context | Pattern |
 |---------|---------|
-| Single branchh | `Saida{N}-{inputName}.snp` |
+| Single branch | `Saida{N}-{inputName}.snp` |
 | Network branch | `Tramo{T}-Saida{N}-{inputName}.snp` |
 
 where `N = round(porc)` is the snapshot index (percentage or sequence number).

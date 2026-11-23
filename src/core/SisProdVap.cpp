@@ -252,7 +252,7 @@ void SProdVap::montasistema() {
         if (celula[0].acsr.tipo != 0 && arq.ConContEntrada == 1) {
             // RN-302: Condicao de contorno de pressao no início da tubulacao e foi colocada uma fonte de massa neste inicio
             // incluir aviso
-            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                        "Foi escolhida uma condicao de contorno de pressao no início da tubulacao e foi colocada uma fonte de massa neste inicio, isto pode causar inconsistencias",
                        "", "");
         }
@@ -299,7 +299,7 @@ void SProdVap::montasistema() {
             if (arq.perm == 0 && arq.ConContEntrada == 0) {
                 // RN-300: Nao existe nenhuma fonte na primeira celula do sistema de producao
                 // incluir aviso
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Nao existe nenhuma fonte na primeira celula do sistema de producao, esta nao e a condicao mais adequada para a simulacao transiente, problemas podem ocorrer nesta situacao, embora nao seja impeditivo para o modo",
                            "", "");
             } else {
@@ -447,7 +447,7 @@ void SProdVap::montasistema() {
         // gravar arquivo de log
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
 }
 
@@ -4839,7 +4839,7 @@ double SProdVap::marchaProdPerm1(double pchute) {
         masfim = celula[ncel - 1].MC;
         iterperm++;
         if (iterperm > 200)
-            NumError("Convergência em marchaProdPerm1 atingiu m�ximo de itera��es");
+            NumError("Convergência em marchaProdPerm1 atingiu máximo de iterações");
     }
 
     return pGSup - celula[ncel].pres;
@@ -4958,7 +4958,7 @@ double SProdVap::marchaProdPerm2(double pchute) {
         masfim = celula[ncel - 1].MC;
         iterperm++;
         if (iterperm > 200)
-            NumError("Convergência em marchaProdPerm2 atingiu m�ximo de itera��es");
+            NumError("Convergência em marchaProdPerm2 atingiu máximo de iterações");
     }
 
     double tESup = celula[ncel].temp;
@@ -5113,7 +5113,7 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
             kontaiter++;
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
-                    NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
+                    NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5128,7 +5128,7 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
                 kontaiter++;
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
-                        NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
+                        NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5148,7 +5148,7 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
             kontaiter++;
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
-                    NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
+                    NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5163,7 +5163,7 @@ double SProdVap::buscaProdPfundoPerm(double chute) {
                 kontaiter++;
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
-                        NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu m�ximo de itera��es");
+                        NumError("Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5308,7 +5308,7 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5326,7 +5326,7 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
                         NumError(
-                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
+                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5352,7 +5352,7 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
             if (kontaiter > 800) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5371,7 +5371,7 @@ double SProdVap::buscaProdPfundoPerm2(double chute) {
                 if (kontaiter > 800) {
                     if ((*vg1dSP).chaverede == 0)
                         NumError(
-                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu m�ximo de itera��es");
+                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPfundoPerm2 atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5515,7 +5515,7 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
             if (mchute < 1e-5) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5545,7 +5545,7 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5561,7 +5561,7 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
                         NumError(
-                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5583,7 +5583,7 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm  atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm  atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5601,7 +5601,7 @@ double SProdVap::buscaProdPresPresPerm(double chute) {
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
                         NumError(
-                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5742,7 +5742,7 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
             if (mchute < 1e-5) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5772,7 +5772,7 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5788,7 +5788,7 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
                         NumError(
-                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;
@@ -5809,7 +5809,7 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0)
                     NumError(
-                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm  atingiu m�ximo de itera��es");
+                        "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm  atingiu máximo de iterações");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e6;
@@ -5826,7 +5826,7 @@ double SProdVap::buscaProdPresPresPerm2(double chute) {
                 if (kontaiter > 200) {
                     if ((*vg1dSP).chaverede == 0)
                         NumError(
-                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu m�ximo de itera��es");
+                            "Busca de valores iniciais para cálculo de zero de função em buscaProdPresPresPerm atingiu máximo de iterações");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e6;

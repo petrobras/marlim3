@@ -1,13 +1,15 @@
 #include "FerramentasNumericas.h"
 
 void NumError(const string &t) {
+    if (logger.emVarredura())
+        throw ErroNumerico(t);
     // incluir falha
-    logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+    logger.log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE,
                t, "", "");
     // gravar arquivo de log
     logger.writeOutputLog();
     // abandonar a aplicacao
-    exit(EXIT_SUCCESS);
+    exit(logger.codigoSaida());
 }
 
 template <class T>
@@ -67,7 +69,7 @@ T InterLinear(const Vcr<T> &vx, const Vcr<T> &vy, T x) {
 
 template <class T>
 T InterLinear(const FullMtx<T> &super, const Vcr<T> &vx, const Vcr<T> &vy, T x, T y) {
-    // super-> matriz com os valores com os quais se ir� interpolar
+    // super-> matriz com os valores com os quais se irá interpolar
     // vx e vy->lista de pares de variaveis onde se localiza cada valor de super, vx[j] e vy[i] -> super[i][j]
     // x e y-> localizacao onde se quer fazer a interpolacao
     int j = 0;
@@ -190,7 +192,7 @@ void gaulag(Vcr<T> &x, Vcr<T> &w, const T alf) { // subrotina auxiliar para quad
 
 template <class T>
 void gauher(Vcr<T> &x, Vcr<T> &w) { // subrotina auxiliar para quadratura gaussiana
-    // Polin�mio de Hermite
+    // Polinômio de Hermite
     const double EPS = 1.0e-14, PIM4 = 0.7511255444649425;
     const int MAXIT = 10;
     int i, its, j, m;

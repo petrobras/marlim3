@@ -15,7 +15,7 @@ IPRVap::IPRVap(double vpres, double vtres, double vij) {
     deriG = 0.;
 }
 
-IPRVap::IPRVap(const IPRVap &vipr) { // construtor de c�pia
+IPRVap::IPRVap(const IPRVap &vipr) { // construtor de cópia
     Pres = vipr.Pres;
     Tres = vipr.Tres;
     ij = vipr.ij;
@@ -126,7 +126,7 @@ InjMultVap::InjMultVap(double vmp, double vtemp) {
     temp = vtemp;
 }
 
-InjMultVap::InjMultVap(const InjMultVap &vinj) { // construtor de c�pia
+InjMultVap::InjMultVap(const InjMultVap &vinj) { // construtor de cópia
     Mass = vinj.Mass;
     temp = vinj.temp;
 }

@@ -33,7 +33,7 @@ acessorio::acessorio(const int vtipo):
    tipo=vtipo;
 }
 
-acessorio::acessorio(const acessorio& antigo){//construtor c�pia
+acessorio::acessorio(const acessorio& antigo){//construtor cópia
 
    tipo=antigo.tipo;
    bcs=antigo.bcs;
@@ -99,4 +99,4 @@ acessorio& acessorio::operator =(const acessorio& antigo){
    indMonRecic=antigo.indMonRecic;
    return *this;
 }
-//0-> sem acess�rio,1->Fonte de g�s, 2->IPR, 3-> BCS, 4-> choke, 5-> mudan�a de d�metro
+//0-> sem acessório,1->Fonte de gás, 2->IPR, 3-> BCS, 4-> choke, 5-> mudança de diâmetro

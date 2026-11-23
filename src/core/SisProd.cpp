@@ -1389,7 +1389,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
             arq.gerafPoro2DFonte(celula);
         if (celula[0].acsr.tipo != 0 && arq.ConContEntrada == 1) {
             // RN-302: The inlet has both a pressure boundary condition and a mass source. Report a warning.
-            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                        "Foi escolhida uma condicao de contorno de pressao no inicio da tubulacao e foi colocada uma fonte de massa neste inicio, isto pode causar inconsistencias",
                        "", "");
         }
@@ -1443,7 +1443,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
             InjGas injgasMRT(0, 0, celula[0].flui, celula[0].fluicol);
             celula[1].acsr.injg = injgasMRT;
         } else if (bloq == 1) {
-            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                        "Foi escolhida uma condicao de bloqueio que afeta este tramo, para que a selecao de fontes seja"
                        "feita corretamente, e necessario que a segunda celula do tramo nao tenha fontes catalogadas",
                        "", "");
@@ -1571,7 +1571,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
         if (celula[0].acsr.tipo != 1 && celula[0].acsr.tipo != 2 && celula[0].acsr.tipo != 3 && celula[0].acsr.tipo != 10 && celula[0].acsr.tipo != 15 && celula[0].acsr.tipo != 16) {
             if (arq.perm == 0 && arq.ConContEntrada == 0) {
                 // RN-300: No source is defined in the first production system cell. Report a warning.
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Nao existe nenhuma fonte na primeira celula do sistema de producao, esta nao e a condicao mais adequada para a simulacao transiente, problemas podem ocorrer nesta situacao, embora nao seja impeditivo para o modo",
                            "", "");
             } else {
@@ -2468,7 +2468,7 @@ void SProd::montasistema(double *compfonte, int *posicfonte, int nfontes) {
         // gravar arquivo de log
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
 }
 
@@ -3273,8 +3273,11 @@ void SProd::subtempoGas() {
                 celulaG[0].massfonteCH = chokeInj.massica();
             }
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncelGas; i++) {
+    try {
 
             celulaG[i].GeraLocal(ncelGas, presiniG, tempiniG, abertoChk);
             for (int j = 0; j < 9; j++) {
@@ -3285,7 +3288,12 @@ void SProd::subtempoGas() {
             termolivreG[3 * i] = celulaG[i].TL[0];
             termolivreG[3 * i + 1] = celulaG[i].TL[1];
             termolivreG[3 * i + 2] = celulaG[i].TL[2];
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         matglobG.GaussElimPP(termolivreG);
         renovaGas();
 
@@ -3294,19 +3302,37 @@ void SProd::subtempoGas() {
         celulaG[0].dTdt = (celulaG[0].temp - celulaG[0].tempini) / dt;
         if (celulaG[ncelGas].VGasR < 0.)
             celulaG[ncelGas].temp = 20.;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 1; i < celLimi; i++) {
+    try {
             calctempGas(i, celulaG[i - 1].tempini);
             celulaG[i].dTdt = (celulaG[i].temp - celulaG[i].tempini) / dt;
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         if (ciclo < ciclomax)
             for (int k = 0; k <= ncelGas; k++)
                 celulaG[k].FeiticoDoTempo();
     }
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i < celLimi; i++)
-        celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
+        {
+    try {
+celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
+    } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
 
     for (int i = 0; i < celLimi; i++) {
         if (i > 0)
@@ -3345,8 +3371,11 @@ void SProd::subtempoGasBuf() {
             celulaG[0].massfonteCH = chokeInj.massica();
         }
     }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncelGas; i++) {
+    try {
 
         celulaG[i].GeraLocal(ncelGas, presiniG, tempiniG, abertoChk);
         for (int j = 0; j < 9; j++) {
@@ -3357,7 +3386,12 @@ void SProd::subtempoGasBuf() {
         termolivreG[3 * i] = celulaG[i].TL[0];
         termolivreG[3 * i + 1] = celulaG[i].TL[1];
         termolivreG[3 * i + 2] = celulaG[i].TL[2];
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     matglobG.GaussElimPP(termolivreG);
     renovaGasBuf();
 }
@@ -4132,7 +4166,7 @@ void SProd::calcTempEntalp(int i) {
     int ipmarcador;
     int ndiv = celula[i].flui.npontos - 1;
     if (pres < Var[1][0] || pres >= Var[ndiv + 1][0]) {
-        cout << "pressÃƒÂ£o fora dos limites de tabela";
+        cout << "pressão fora dos limites de tabela";
         getchar();
     }
 
@@ -4991,8 +5025,11 @@ void SProd::renovaMasEsp() {
     celula[0].migC = celula[0].flui.ViscGas(celula[0].pres, celula[0].temp /*,1*/);
     celula[0].micC = celula[0].fluicol.VisFlu(celula[0].pres, celula[0].temp);
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 1; i <= ncel; i++) {
+    try {
         double p;
         double t;
         p = celula[i].pres;
@@ -5016,7 +5053,12 @@ void SProd::renovaMasEsp() {
         celula[i].rpCi = flu.MasEspLiq(celula[i].presaux, tmed);
         celula[i].rgCi = flu.MasEspGas(celula[i].presaux, tmed);
         celula[i].rcCi = celula[i].fluicol.MasEspFlu(celula[i].presaux, tmed);
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     for (int i = 1; i <= ncel; i++) {
 
         celula[i - 1].rpR = celula[i].rpC;
@@ -5104,7 +5146,7 @@ void SProd::BhagwatGhajar(double rhol, double rhog, double tensup, double alf, d
         C01 = 0;
     if (tet >= -50 * M_PI / 180. && tet <= 0 && Froude <= 0.1)
         C01 = 0.0;
-    c0 = termo1 + termo2 + C01; // Calculo do ParÃƒÂ¢metro de Distribuicao.
+    c0 = termo1 + termo2 + C01; // Calculo do Parâmetro de Distribuicao.
 
     double viscl1 = dia * (fabs(ug1 / A1) + fabs(ul1 / A1)) * rhomix / reymix;
     termoud1 = (0.35 * sin(tet) + 0.45 * cos(tet) * sinal);
@@ -5188,7 +5230,7 @@ void SProd::BhagwatGhajarMod(double rhol, double rhog, double tensup, double alf
         C01 = 0;
     if (tet >= -50 * M_PI / 180. && tet <= 0 && Froude <= 0.1)
         C01 = 0.0;
-    c0 = termo1 + termo2 + C01; // Calculo do ParÃƒÂ¢metro de Distribuicao.
+    c0 = termo1 + termo2 + C01; // Calculo do Parâmetro de Distribuicao.
 
     double viscl1 = dia * (fabs(ug1 / A1) + fabs(ul1 / A1)) * rhomix / reymixL;
     termoud1 = (0.35 * sin(tet) + 0.45 * cos(tet) * sinal);
@@ -6696,8 +6738,11 @@ void SProd::auxMiniTab(ProFlu &flui) {
 
 void SProd::geraMiniTabFlu() {
     (*vg1dSP).modoTransiente = 0;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         double delp;
         double delt;
         delp = 0.5 * celula[i].pres;
@@ -6786,7 +6831,12 @@ void SProd::geraMiniTabFlu() {
                 celula[i].acsr.injm.FluidoPro.atualizaPropComp(celula[i].pres, celula[i].temp, -1, NULL, NULL, arq.pocinjec);
             if(arq.miniTabAtraso > 0)auxMiniTab(celula[i].acsr.injm.FluidoPro);
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     (*vg1dSP).modoTransiente = 1;
 }
 
@@ -7796,8 +7846,11 @@ void SProd::renovaRGOdgYco2(ProFlu fluiRev) {
         celula[0].flui.BSW = celula[0].acsr.radialPoro.BSW;
     else if (celula[0].acsr.tipo == 16 && (celula[0].fontemassCR + celula[0].fontemassGR + celula[0].fontemassLR) > 0.)
         celula[0].flui.BSW = celula[0].acsr.poroso2D.dados.transfer.BSW;
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = imin; i < ncel; i++) {
+    try {
         double MultOe;
         double MultOd;
         double at = celula[i].duto.area;
@@ -8600,7 +8653,12 @@ void SProd::renovaRGOdgYco2(ProFlu fluiRev) {
         celula[i].VolLeveST = volleveFim;
         celula[i].VolPesaST = volpesFim;
         celula[i].VolAguaST = volaguaFim;
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     for (int i = imin; i <= ncel - 1; i++) {
         if (trackRGO > 0 && celula[i].flui.corrSat != 4)
             celula[i].flui.RGO = rgo[i];
@@ -12634,8 +12692,11 @@ void SProd::solveLinGas() {
 
 void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
 
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
 
         if (i < ncel) {
             celula[i].avancalf(reinicia, ncel);
@@ -12656,9 +12717,17 @@ void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
                     celula[i].avancalf(reinicia, ncel);
             }
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         if (i < ncel) {
             celula[i].avancbet(reinicia, ncel);
         }
@@ -12675,9 +12744,17 @@ void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
                     celula[i].bet = celula[i - 1].bet;
             }
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         if (i < ncel && celula[i].estadoPig == 1) {
             celula[i].avancPig(reinicia);
             celula[i].avancalfPig();
@@ -12688,7 +12765,12 @@ void SProd::EvoluiFrac(double alfrev, double betrev, int ciclo) {
             celula[i].alfPigD = celula[i].alf;
             celula[i].betPigD = celula[i].bet;
         }
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
     for (int i = 0; i <= ncel; i++) {
         if (celula[i].correrGlobHol == 1) {
             if (celula[i].reiniciaAlf < 0 || celula[i].reiniciaBet < 0 || celula[i].reiniciaPig < 0)
@@ -12808,8 +12890,13 @@ void SProd::AtualizaPig() {
 }
 
 void SProd::SolveAcopPV(int vexpli, int ciclo) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
     for (int i = 0; i <= ncel; i++) {
+    try {
         //if(vexpli<1.-1e-15){
         	celula[i].GeraLocal(presfim, masChkSup, ncel, arq.master1.razareaativ, presE, tempE, titE, betaE, ciclo,
                             modeloCompleto, noextremo, arq.corrigeContSep, chokeSup.AreaGarg, vexpli);
@@ -12823,7 +12910,12 @@ void SProd::SolveAcopPV(int vexpli, int ciclo) {
         //else
         	//celula[i].GeraLocalExplicito(presfim, masChkSup, ncel, arq.master1.razareaativ, presE, tempE, titE, betaE, ciclo,
         	             //  modeloCompleto, noextremo, arq.corrigeContSep, chokeSup.AreaGarg, vexpli);
+        } catch (...) {
+        capturaOmp.guarda();
     }
+}
+capturaOmp.relanca();
+}
 
     //if(vexpli<1.-1e-15)
     	matglobP.GaussElimPP(termolivreP);
@@ -12944,8 +13036,11 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
     }
     if (arq.modoDifus3D == 0) {
         if (nCelulaPoisson2D > 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
             for (int iP2D = 0; iP2D < nCelulaPoisson2D; iP2D++) {
+    try {
                 int i = indCelPoisson2D[iP2D];
                 if (i <= ncel) {
                     calctemp(i, celula[i].tempini);
@@ -12957,10 +13052,18 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 }
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncel; i++) {
+    try {
             if (i == 217) {
                 int para;
                 para = 0;
@@ -12977,10 +13080,18 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
     } else if (arq.modoDifus3D == 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncel; i++) {
+    try {
             int acoplado = -1;
             int icelAcop;
             for (int iacop = 0; iacop < arq.nacop; iacop++) {
@@ -12997,15 +13108,23 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 double hiCel = celula[icelAcop].calor.hInt();
                 poisson3D.dados.hI[iacop1] = hiCel;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         if (ciclo < ciclomax || ciclomax == 0 || dtCicMin != dt) {
             if (ciclo == ciclomax && ciclomax > 0)
                 poisson3D.FeiticoDoTempo();
             poisson3D.transientePoisson(dt);
         }
         if (nCelulaPoisson2D > 1) {
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
             for (int iP2D = 0; iP2D < nCelulaPoisson2D; iP2D++) {
+    try {
                 int i = indCelPoisson2D[iP2D];
                 if (i <= ncel) {
                     calctemp(i, celula[i].tempini);
@@ -13017,10 +13136,18 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 }
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
-            }
+                } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
         }
+{
+CapturaExcecao capturaOmp;
 #pragma omp parallel for num_threads((*vg1dSP).ntrd)
         for (int i = 0; i <= ncel; i++) {
+    try {
             if (celula[i].calor.difus2D == 0) {
                 if (i <= ncel) {
                     calctemp(i, celula[i].tempini);
@@ -13033,7 +13160,12 @@ void SProd::marchaEnergTrans(int ciclo, int ciclomax) {
                 celula[i].dTdt = (celula[i].temp - celula[i].tempini) / dt;
                 celula[i].dTdtIni = celula[i].dTdt;
             }
-        }
+            } catch (...) {
+        capturaOmp.guarda();
+    }
+}
+capturaOmp.relanca();
+}
     }
     for (int i = 1; i <= ncel; i++) {
         celula[i].dTdtL = celula[i - 1].dTdt;
@@ -13129,6 +13261,8 @@ void SProd::atualizaCC1() {
 }
 
 void SProd::SolveTrans(double titRev, double alfRev, double betRev, int nrede, ProFlu fluiRev) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     chrono::steady_clock::time_point begin, end;
     begin = chrono::steady_clock::now();
     double velmaxdesc = 0;
@@ -14276,7 +14410,7 @@ void SProd::ImprimeTrendGCab(int i, int nrede) {
             if (arq.trendg[i].velgarg == 1)
                 escreveTrend << t(" Velocidade na VGL (m/s) ;", " Velocity in VGL (m/s) ;");
             if (arq.trendg[i].qVGL == 1)
-                escreveTrend << t(" Vazao volumetrica na VGL (mÂ³/s) ;", " Volumetric flow rate in VGL (m3/s) ;");
+                escreveTrend << t(" Vazao volumetrica na VGL (m³/s) ;", " Volumetric flow rate in VGL (m3/s) ;");
             if (arq.trendg[i].reyi == 1)
                 escreveTrend << t(" Reynolds interno (-) ;", " Internal Reynolds (-) ;");
             if (arq.trendg[i].reye == 1)
@@ -14549,7 +14683,7 @@ double SProd::marchaProdPerm1(double pchute) {
                 betini = 0.;
         }
     } else if (celula[0].acsr.tipo == 2) { // fonte de liquido, faz-se uma estimativa a partir
-        // da vazÃƒÂ£o volumÃƒÂ©trica das fases, fracao de vazio = fracao de vazio sem escorregamento
+        // da vazão volumétrica das fases, fracao de vazio = fracao de vazio sem escorregamento
         celula[0].temp = celula[0].acsr.injl.temp;
         if (arq.flashCompleto == 2) {
             if (arq.tabelaDinamica == 0)
@@ -14655,7 +14789,7 @@ double SProd::marchaProdPerm1(double pchute) {
 
     // esta marcha e feita para quando se tem alguma fonte no inicio da tubulacao,
     // portanto, admite-se que o duto esta fechado e coloca-se uma fonte no centro da
-    // primeira celula. As vazoes na fronteira esquerda da celula sÃ£o portanto = 0
+    // primeira celula. As vazoes na fronteira esquerda da celula são portanto = 0
     celula[0].tempL = celula[0].temp;
     celula[1].tempL = celula[0].temp;
     celula[0].tempini = celula[0].temp;
@@ -14688,8 +14822,8 @@ double SProd::marchaProdPerm1(double pchute) {
         // entre a linha de gas e de producao e mais difoicil, para se conseguir um sistema
         // melhor acoplado, deve-se fazer uma marcha iterativa a mais
     }
-    // arq.CriterioConvergPerm Ã© um criterio de convergencia da marcha, so faz sentido
-    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia nÃ£o
+    // arq.CriterioConvergPerm é um criterio de convergencia da marcha, so faz sentido
+    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia não
     // e de fato a conevregencia do problema, e apenas um repeticao de marcha para um determinado
     // chute de pressao ou de vazao no inicio da tubulacao. O que a convergencia busca de fato e
     // determinar qual a pressao ou vazao de fundo que satisfaz as condicoes de contorno no fim
@@ -14784,7 +14918,7 @@ double SProd::marchaProdPerm1(double pchute) {
                 }
                 if (arq.flashCompleto != 2)
                     RenovaMassPerm(i); // verifica se existe alguma fonte na celula anterior, com isto, atualiza
-                // as vazoes massica na fronteira a esquerda, alÃ©m das propriedades dos fluidos,
+                // as vazoes massica na fronteira a esquerda, além das propriedades dos fluidos,
                 // densidade do gas, RGO, API, BSW, beta
                 else
                     RenovaMassPermComp(i);
@@ -14811,7 +14945,7 @@ double SProd::marchaProdPerm1(double pchute) {
                 // das celulas a esquerda e a direita
                 for (int j = 0; j < arq.nvalvgas; j++) { // reavaliacao da vazao da valvula de gas lift, quando
                     // a celula tem uma.
-                    // P.S. parece uma acao desnecessÃ¡ria e talvez atÃ© um complicador
+                    // P.S. parece uma acao desnecessária e talvez até um complicador
                     // densecessario, em vavliacao
                     if (posicVGLP[j] == i) {
                         int k = posicVGLG[j];
@@ -14822,7 +14956,7 @@ double SProd::marchaProdPerm1(double pchute) {
                     RenovaTransMassPerm(i - 1);
                 else
                     RenovaTransMassPermGas(i - 1); // caso seja uma tabela PVTSim, calcula-se a
-                // taxa de transferÃªncia de massa entre as fases para o uso no calculo de
+                // taxa de transferência de massa entre as fases para o uso no calculo de
                 // calor latente da equacao de energia
                 if (arq.ordperm > 1) { // correcao de segunda ordem
                     double D0presaux = celula[i].presaux - celula[i - 1].pres;
@@ -14835,7 +14969,7 @@ double SProd::marchaProdPerm1(double pchute) {
                     if (isnan(celula[i].temp)) {
                         if (arq.transiente == 0 && arq.AP == 0)
                             // neste caso, se finaliza a simulacao, nao tem um transiente
-                            // a ser feito a seguir e nem se estÃ¡ em uma rede
+                            // a ser feito a seguir e nem se está em uma rede
                             NumError(
                                 "Temperatrura na linha de producao com valor NaN em marchaProdPerm1");
                         else {
@@ -14863,9 +14997,9 @@ double SProd::marchaProdPerm1(double pchute) {
                         RenovaTransMassPermGas(i - 1);
                 }
 
-                // apÃ³s se atingir a pressao no centro da celula i, primeira iteracao de marcha
+                // após se atingir a pressao no centro da celula i, primeira iteracao de marcha
                 // verifica-se se existe uma VGL em i e faz-se uma estimativa inicial da Vazao de
-                // GL (caso exista linha de gas). Observar que isto sÃ³ Ã© feito para a iteracao zero.
+                // GL (caso exista linha de gas). Observar que isto só é feito para a iteracao zero.
                 if (arq.lingas > 0 && arq.nvalvgas > 0 && iterperm == 0 && monitConvPerm > 0.1)
                     IniciaVazValvGasPerm(i);
                 i++;
@@ -14887,7 +15021,7 @@ double SProd::marchaProdPerm1(double pchute) {
             if (i == ncel + 1)
                 corrigechute = 0; // fim da marcha
         }
-        // apÃ³s o fim da marcha da linha de produÃ§Ã£o, Ã© feita a marcha da linha de gas
+        // após o fim da marcha da linha de produção, é feita a marcha da linha de gas
         // caso exista
         if (pchute > 0 && arq.lingas > 0 && arq.nvalvgas > 0) {
             if (celulaG[0].tipoCC == 0) {            // marcha para o caso, pressao de injecao
@@ -14933,7 +15067,7 @@ double SProd::marchaProdPerm1(double pchute) {
         // opcao de acelerador de convergencia esta desligado
         iterperm++; // atualiza a ieteracao da marcha
         if (iterperm > 200 && arq.AP == 0)
-            NumError("ConvergÃƒÂªncia em marchaProdPerm1 atingiu maximo de iteracoes");
+            NumError("Convergência em marchaProdPerm1 atingiu maximo de iteracoes");
         else if (iterperm > 200)
             return 1.1e10;
     }
@@ -14943,7 +15077,7 @@ double SProd::marchaProdPerm1(double pchute) {
         corrigePresF = RenovaPresPermNcel();
 
     monitConvPermBase = pGSup;
-    return pGSup - (celula[ncel].pres + corrigePresF); // caso a marcha tenha conseguido ir atÃ© a Ãºltima celula,
+    return pGSup - (celula[ncel].pres + corrigePresF); // caso a marcha tenha conseguido ir até a última celula,
     // retorna a diferenca entre a pressao a montante do choke e a pressao da ultima celula
     // calculada pela marcha
 }
@@ -14998,7 +15132,7 @@ double SProd::marchaProdPerm1Rev(double pchute) {
                 betini = 0.;
         }
     } else if (celula[0].acsr.tipo == 2) { // fonte de liquido, faz-se uma estimativa a partir
-        // da vazÃƒÂ£o volumÃƒÂ©trica das fases, fracao de vazio = fracao de vazio sem escorregamento
+        // da vazão volumétrica das fases, fracao de vazio = fracao de vazio sem escorregamento
         celula[0].temp = celula[0].acsr.injl.temp;
         if (arq.flashCompleto == 2) {
             if (arq.tabelaDinamica == 0)
@@ -15100,7 +15234,7 @@ double SProd::marchaProdPerm1Rev(double pchute) {
     }
     // esta marcha e feita para quando se tem alguma fonte no inicio da tubulacao,
     // portanto, admite-se que o duto esta fechado e coloca-se uma fonte no centro da
-    // primeira celula. As vazoes na fronteira esquerda da celula sÃ£o portanto = 0
+    // primeira celula. As vazoes na fronteira esquerda da celula são portanto = 0
     celula[0].tempL = celula[0].temp;
     celula[1].tempL = celula[0].temp;
     celula[0].tempini = celula[0].temp;
@@ -15136,8 +15270,8 @@ double SProd::marchaProdPerm1Rev(double pchute) {
         // entre a linha de gas e de producao e mais difoicil, para se conseguir um sistema
         // melhor acoplado, deve-se fazer uma marcha iterativa a mais
     }
-    // arq.CriterioConvergPerm Ã© um criterio de convergencia da marcha, so faz sentido
-    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia nÃ£o
+    // arq.CriterioConvergPerm é um criterio de convergencia da marcha, so faz sentido
+    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia não
     // e de fato a conevregencia do problema, e apenas um repeticao de marcha para um determinado
     // chute de pressao ou de vazao no inicio da tubulacao. O que a convergencia busca de fato e
     // determinar qual a pressao ou vazao de fundo que satisfaz as condicoes de contorno no fim
@@ -15217,7 +15351,7 @@ double SProd::marchaProdPerm1Rev(double pchute) {
                 // caso exista alguma BCS ou incremento de pressao
                 if (arq.flashCompleto != 2)
                     RenovaMassPerm(i); // verifica se existe alguma fonte na celula anterior, com isto, atualiza
-                // as vazoes massica na fronteira a esquerda, alÃ©m das propriedades dos fluidos,
+                // as vazoes massica na fronteira a esquerda, além das propriedades dos fluidos,
                 // densidade do gas, RGO, API, BSW, beta
                 else
                     RenovaMassPermComp(i);
@@ -15246,7 +15380,7 @@ double SProd::marchaProdPerm1Rev(double pchute) {
                     RenovaTransMassPerm(i - 1);
                 else
                     RenovaTransMassPermGas(i - 1); // caso seja uma tabela PVTSim, calcula-se a
-                // taxa de transferÃªncia de massa entre as fases para o uso no calculo de
+                // taxa de transferência de massa entre as fases para o uso no calculo de
                 // calor latente da equacao de energia
                 if (arq.ordperm > 1) { // correcao de segunda ordem
                     double D0presaux = celula[i].presaux - celula[i - 1].pres;
@@ -15286,7 +15420,7 @@ double SProd::marchaProdPerm1Rev(double pchute) {
         // opcao de acelerador de convergencia esta desligado
         iterperm++; // atualiza a ieteracao da marcha
         if (iterperm > 200 && arq.AP == 0)
-            NumError("ConvergÃƒÂªncia em marchaProdPerm1 atingiu maximo de iteracoes");
+            NumError("Convergência em marchaProdPerm1 atingiu maximo de iteracoes");
         else if (iterperm > 200)
             return 1.1e10;
         if (arq.tipoFluido != 10000) {
@@ -15349,7 +15483,7 @@ double SProd::marchaProdPerm1Rev(double pchute) {
         corrigePresF = RenovaPresPermNcel();
 
     monitConvPermBase = pGSup;
-    return pGSup - (celula[ncel].pres + corrigePresF); // caso a marcha tenha conseguido ir atÃ© a Ãºltima celula,
+    return pGSup - (celula[ncel].pres + corrigePresF); // caso a marcha tenha conseguido ir até a última celula,
     // retorna a diferenca entre a pressao a montante do choke e a pressao da ultima celula
     // calculada pela marcha
 }
@@ -15404,7 +15538,7 @@ double SProd::marchaProdPerm2(double pchute) {
                 betini = 0.;
         }
     } else if (celula[0].acsr.tipo == 2) { // fonte de liquido, faz-se uma estimativa a partir
-        // da Vazao volumÃ©trica das fases, fracao de vazio = fracao de vazio sem escorregamento
+        // da Vazao volumétrica das fases, fracao de vazio = fracao de vazio sem escorregamento
         celula[0].temp = celula[0].acsr.injl.temp;
         if (arq.flashCompleto == 2) {
             if (arq.tabelaDinamica == 0)
@@ -15507,7 +15641,7 @@ double SProd::marchaProdPerm2(double pchute) {
 
     // esta marcha e feita para quando se tem alguma fonte no inicio da tubulacao,
     // portanto, admite-se que o duto esta fechado e coloca-se uma fonte no centro da
-    // primeira celula. As vazoes na fronteira esquerda da celula sÃ£o portanto = 0
+    // primeira celula. As vazoes na fronteira esquerda da celula são portanto = 0
     celula[0].tempL = celula[0].temp;
     celula[1].tempL = celula[0].temp;
     celula[0].tempini = celula[0].temp;
@@ -15540,8 +15674,8 @@ double SProd::marchaProdPerm2(double pchute) {
         // entre a linha de gas e de producao e mais difoicil, para se conseguir um sistema
         // melhor acoplado, deve-se fazer uma marcha iterativa a mais
     }
-    // arq.CriterioConvergPerm Ã© um criterio de convergencia da marcha, so faz sentido
-    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia nÃ£o
+    // arq.CriterioConvergPerm é um criterio de convergencia da marcha, so faz sentido
+    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia não
     // e de fato a conevregencia do problema, e apenas um repeticao de marcha para um determinado
     // chute de pressao ou de vazao no inicio da tubulacao. O que a convergencia busca de fato e
     // determinar qual a pressao ou vazao de fundo que satisfaz as condicoes de contorno no fim
@@ -15636,7 +15770,7 @@ double SProd::marchaProdPerm2(double pchute) {
                 // caso exista alguma BCS ou incremento de pressao
                 if (arq.flashCompleto != 2)
                     RenovaMassPerm(i); // verifica se existe alguma fonte na celula anterior, com isto, atualiza
-                // as vazoes massica na fronteira a esquerda, alÃ©m das propriedades dos fluidos,
+                // as vazoes massica na fronteira a esquerda, além das propriedades dos fluidos,
                 // densidade do gas, RGO, API, BSW, beta
                 else
                     RenovaMassPermComp(i);
@@ -15648,7 +15782,7 @@ double SProd::marchaProdPerm2(double pchute) {
                 if (isnan(celula[i].temp)) {
                     if (arq.transiente == 0 && arq.AP == 0)
                         // neste caso, se finaliza a simulacao, nao tem um transiente
-                        // a ser feito a seguir e nem se estÃ¡ em uma rede
+                        // a ser feito a seguir e nem se está em uma rede
                         NumError(
                             "Temperatrura na linha de producao com valor NaN em marchaProdPerm2");
                     else {
@@ -15675,7 +15809,7 @@ double SProd::marchaProdPerm2(double pchute) {
                 // das celulas a esquerda e a direita
                 for (int j = 0; j < arq.nvalvgas; j++) { // reavaliacao da vazao da valvula de gas lift, quando
                     // a celula tem uma.
-                    // P.S. parece uma acao desnecessÃ¡ria e talvez atÃ© um complicador
+                    // P.S. parece uma acao desnecessária e talvez até um complicador
                     // densecessario, em vavliacao
                     if (posicVGLP[j] == i) {
                         int k = posicVGLG[j];
@@ -15686,7 +15820,7 @@ double SProd::marchaProdPerm2(double pchute) {
                     RenovaTransMassPerm(i - 1);
                 else
                     RenovaTransMassPermGas(i - 1); // caso seja uma tabela PVTSim, calcula-se a
-                // taxa de transferÃªncia de massa entre as fases para o uso no calculo de
+                // taxa de transferência de massa entre as fases para o uso no calculo de
                 // calor latente da equacao de energia
                 if (arq.ordperm > 1) { // correcao de segunda ordem
                     double D0presaux = celula[i].presaux - celula[i - 1].pres;
@@ -15709,9 +15843,9 @@ double SProd::marchaProdPerm2(double pchute) {
                     else
                         RenovaTransMassPermGas(i - 1);
                 }
-                // apÃ³s se atingir a pressao no centro da celula i, primeira iteracao de marcha
+                // após se atingir a pressao no centro da celula i, primeira iteracao de marcha
                 // verifica-se se existe uma VGL em i e faz-se uma estimativa inicial da Vazao de
-                // GL (caso exista linha de gas). Observar que isto sÃ³ Ã© feito para a iteracao zero.
+                // GL (caso exista linha de gas). Observar que isto só é feito para a iteracao zero.
                 if (arq.lingas > 0 && arq.nvalvgas > 0 && iterperm == 0 && monitConvPerm > 0.1)
                     IniciaVazValvGasPerm(i);
                 i++;
@@ -15734,7 +15868,7 @@ double SProd::marchaProdPerm2(double pchute) {
             if (i == ncel + 1)
                 corrigechute = 0; // fim da marcha
         }
-        // apÃ³s o fim da marcha da linha de produÃ§Ã£o, Ã© feita a marcha da linha de gas
+        // após o fim da marcha da linha de produção, é feita a marcha da linha de gas
         // caso exista
         if (pchute > 0 && arq.lingas > 0 && arq.nvalvgas > 0) {
             if (celulaG[0].tipoCC == 0) {            // marcha para o caso, pressao de injecao
@@ -15784,7 +15918,7 @@ double SProd::marchaProdPerm2(double pchute) {
             return 1e10;
     }
 
-    // nesta marcha, a condicao no fim da tubulacao nÃ£o e a pressao a montante do choke,
+    // nesta marcha, a condicao no fim da tubulacao não e a pressao a montante do choke,
     // mas a pressao a jusante do choke. Neste caso, a condicao que se deseja convergir
     // e a vazao que passa pelo choke, definida a aprtir da diferenca entre a pressao
     // na ultima celula e a pressao a jusante do choke. Primeiro, portanto, deve-se
@@ -15813,7 +15947,7 @@ double SProd::marchaProdPerm2(double pchute) {
         maxSup = chokeSup.vazmaxSachd(presfim, tESup, alfSup, betSup, tit, celula[ncel - 1].flui, celula[ncel - 1].fluicol);
         if (fabs(ypres) > fabs(chokeSup.razpres))
             maxSup = masChk;
-        // maxSup Ã© a vazao total passando pelo choke
+        // maxSup é a vazao total passando pelo choke
 
         if (chokeSup.AreaGarg > (1e-3) * celula[ncel - 1].duto.area && ypres < 1.) {
             arq.valTempChokeJus = temperaturaSaida();
@@ -15837,6 +15971,8 @@ double SProd::marchaProdPerm2(double pchute) {
 }
 
 double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     revPerm = 0;
     monitConvPerm = 1000.;
     // busca de dois chutes iniciais com valores com sinais opostos
@@ -15882,7 +16018,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             // massas especificas, condicao standard
             double Rhogs = celula[0].acsr.injl.FluidoPro.Deng * 1.225; // cel[ind].acsr.injl.FluidoPro.MasEspGas(1, 15);
             double Rhols = (1000 * 141.5 / (131.5 + celula[0].acsr.injl.FluidoPro.API)) * (1 - celula[0].acsr.injl.FluidoPro.BSW) + 1000. * celula[0].acsr.injl.FluidoPro.Denag * celula[0].acsr.injl.FluidoPro.BSW;
-            // multiplicador da vazao standard para se obter a Vazao massicagÃ¡s+liquido produzido
+            // multiplicador da vazao standard para se obter a Vazao massicagás+liquido produzido
             double multiplicador = (Rhols + celula[0].acsr.injl.FluidoPro.RGO * Rhogs * (1 - celula[0].acsr.injl.FluidoPro.BSW));
             // massic *= multiplicador;//alteracao8
             massic = 1 * multiplicador * celula[0].acsr.injl.QLiq * (1. - celula[0].acsr.injl.bet) / 86400;
@@ -15913,10 +16049,10 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         // estimativa da perda por friccao no sistema, se o acessorio no inicio da tubulacao
         // nao for uma fonte de liquido, esta estimativa sera zero
         perdafric = (f1 * rmis * j * fabs(j) / 2.) * tmpperi / tmparea;
-        // se o acessorio for uma IPR, a estimativa serÃ¡ uma pressao prÃ³xima a uma vazao baixa
+        // se o acessorio for uma IPR, a estimativa será uma pressao próxima a uma vazao baixa
         // no fundo do poco
         // se nao for IPR, a estimativa continua, considerando a perda de carga e a hidrostatica,
-        // que serÃ¡ avaliada neste laco
+        // que será avaliada neste laco
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
             if (taux < arq.tmin)
@@ -15945,7 +16081,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             if (celula[i - 1].acsr.tipo == 7)
                 pchute -= celula[i - 1].acsr.delp;
             // caso exista alguma IPR no meio do duto, verifica se a pressao estimada esta maior que
-            // a pressao estatica, nÃ£o se trabalha com vazoes negativas neste solver
+            // a pressao estatica, não se trabalha com vazoes negativas neste solver
             // para evitar isto, se corrige a pressao para um valor proximo da
             // pressao estatica da IPR da celula
             if (celula[i - 1].acsr.tipo == 3 &&
@@ -15957,7 +16093,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 if (pchute < 0.9 * celula[i - 1].acsr.ipr.Pres)
                     pchute = 0.9 * celula[i - 1].acsr.ipr.Pres;
             }
-            // tambÃ©m se evita um chute com valores maiores que o limite maximo de uma tabela
+            // também se evita um chute com valores maiores que o limite maximo de uma tabela
             // no caso de se estar usando PVTSim
             if (arq.usaTabela == 1 && (arq.tabent.pmax - pchute) < (*vg1dSP).localtiny)
                 pchute = 0.9 * arq.tabent.pmax;
@@ -15973,18 +16109,18 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
     double pchuteAux = 0.; // auxiliar na busca de dos chutes de pressao
     // necessarios para se dar partida no metodo de calculo de raiz
     double val; // val recebe sempre o valor retornado pelo procedimento de marcha
-    // neste caso, Ã© a pressao a montante do choke-a pressao da ultima celula, calculada pela
+    // neste caso, é a pressao a montante do choke-a pressao da ultima celula, calculada pela
     // marcha
     val = marchaProdPerm1(pchute);
     buscaIni = 1;
-    // a marcha pode dar problemas, ou a pressao em algum ponto deu acima da pressao estÃ¡tica de
+    // a marcha pode dar problemas, ou a pressao em algum ponto deu acima da pressao estática de
     // de alguma IPR no meio do caminho, retorna 1e10,
     // ou antes de atingir a ultima celula, a pressao ficou proximo de zero, ou a pressao
     // retorna -1e10, ou a pressao, para o caso PVTSim, ficou acima da pressao maxima da tabela
     // retorna 1e10
     if (val < -0.9e10) { // pressao muito baixa na marcha, deve ser aumentado o valor de chute
-        // faz-se uma nova estimativa, sÃ³ que agora admitindo uma hidrostÃ¡tica de Ã¡gua,
-        // o que darÃ¡ uma pressao de fundpo mais alta
+        // faz-se uma nova estimativa, só que agora admitindo uma hidrostática de água,
+        // o que dará uma pressao de fundpo mais alta
         pchuteAux = pGSup;
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
@@ -16024,7 +16160,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             taux = arq.celp[i].textern;
             double rhol = celula[i].flui.MasEspLiq(pchuteAux, taux);
             double rhog = celula[i].flui.MasEspGas(pchuteAux, taux);
-            // neste caso, utiliza-se uma fracao de vazio alta para a hidrostÃ¡tica
+            // neste caso, utiliza-se uma fracao de vazio alta para a hidrostática
             double alfa = 0.8;
             if (betaChute < 0.5) {
                 double tit = celula[i].flui.FracMassHidra(pchute, taux);
@@ -16065,9 +16201,9 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         double valtemp;
         valtemp = marchaProdPerm1(pchuteAux); // marcha com pchuteAux
         if (fabs(valtemp) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if (kontaTenta < 0)
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             if ((*vg1dSP).iterRede > 0)
@@ -16079,9 +16215,9 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             pchuteAux *= 0.99;                     // reduzindo a estimativa
             valtemp = marchaProdPerm1(pchuteAux);
             if (fabs(valtemp) > 1.01e10) {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if (kontaTenta < 0)
-                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                "", "");
                 if ((*vg1dSP).iterRede > 0)
@@ -16106,7 +16242,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 if (pchuteAux < 0.99 * celula[0].acsr.ipr.Pres)
                     pchuteAux = 0.99 * celula[0].acsr.ipr.Pres;
 
-                limpres = 1; // indicadpor de que este avanÃ§o de pressao esta muito alto
+                limpres = 1; // indicadpor de que este avanço de pressao esta muito alto
                 // outros avancos devem ser feitos em um passo menor
             }
             // verificando se este aumento de estimativa foca acima do valor maximo de pressao
@@ -16115,9 +16251,9 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 pchuteAux = 0.9 * arq.tabent.pmax;
             valtemp = marchaProdPerm1(pchuteAux); // nova tentativa
             if (fabs(valtemp) > 1.01e10) {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if (kontaTenta < 0)
-                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                "", "");
                 if ((*vg1dSP).iterRede > 0)
@@ -16133,9 +16269,9 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     pchuteAux *= 1.001;
                     valtemp = marchaProdPerm1(pchuteAux);
                     if (fabs(valtemp) > 1.01e10) {
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         if ((*vg1dSP).iterRede > 0)
@@ -16150,17 +16286,17 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     // de passo pequeno, retorna um aviso que deu problema ou finaliza a simulacao
                     if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                         // neste caso, se finaliza a simulacao, nao tem um transiente
-                        // a ser feito a seguir e nem se estÃ¡ em uma rede
+                        // a ser feito a seguir e nem se está em uma rede
                         NumError(
                             "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                    "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                    "", "");
                     } else {
                         // apresenta apenas um aviso
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         // se for em uma iteracao de rede, apos a primeira iteracao
@@ -16177,7 +16313,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             }
             kontaiter++;
         }
-        if (valtemp > -0.9e10 && valtemp < 0.9e10) { // conseguiu fazer a marcha atÃƒÂ© o final
+        if (valtemp > -0.9e10 && valtemp < 0.9e10) { // conseguiu fazer a marcha até o final
             val = valtemp;
             pchute = pchuteAux;
         }
@@ -16185,17 +16321,17 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
     if (kontaiter > 50) { // chegou ao limite da iteracao
         if ((*vg1dSP).chaverede == 0) {
             // neste caso, se finaliza a simulacao, nao tem um transiente
-            // a ser feito a seguir e nem se estÃ¡ em uma rede
+            // a ser feito a seguir e nem se está em uma rede
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             } else {
                 // apresenta apenas um aviso
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if (kontaTenta < 0)
-                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                "", "");
                 // se for em uma iteracao de rede, apos a primeira iteracao
@@ -16209,13 +16345,13 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             // se for em uma iteracao de rede, apos a primeira iteracao
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
-            // se logo apÃ³s tem uma simulacao transiente ou se esta na primeira iteracao de rede
+            // se logo após tem uma simulacao transiente ou se esta na primeira iteracao de rede
             else
                 return 1.1e10;
         }
     }
 
-    // caso o laÃ§o anterior tenha levado a estimativa de um valor 1e10 para um valor -1e10
+    // caso o laço anterior tenha levado a estimativa de um valor 1e10 para um valor -1e10
     // ou tenha levado para um valor de -1e10 para 1e10
     // ou seja, de um chute de pressao alto demais para finalizar a marcha
     // para um chute de pressao baixo demais para terminar a marcha ou vice versa
@@ -16236,10 +16372,10 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         val = marchaProdPerm1(pchute);
         if (fabs(val) > 1.01e10) {
             if (kontaTenta < 0)
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
@@ -16251,11 +16387,11 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
         if ((*vg1dSP).chaverede == 0) {
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                            "", "");
             } else {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -16288,7 +16424,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             // de calculo de zero de funcao
             chuteNeg = pchute; // armazenando o valor de chute de pressao que da o valor negativo
             // a cada nova busca em que val se aproxima de zero, mas ainda negativo
-            // chuteNeg Ã© atualizado com a Ãºltima pressao de chute
+            // chuteNeg é atualizado com a última pressao de chute
             int kontaReverso = 0;
             while (val < 0) {
                 if (fabs(pchute2 - pchute) / pchute < (1. - reduz) / 10. && kontaiter > 50 * 0.1 / arq.buscaFC) {
@@ -16304,10 +16440,10 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 val = marchaProdPerm1(pchute2);
                 if (fabs(val) > 1.01e10) {
                     if (kontaTenta < 0)
-                        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                    "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                    "", "");
-                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
                     else
@@ -16335,12 +16471,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     if ((*vg1dSP).chaverede == 0) {
                         if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                             NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         } else {
                             if (kontaTenta < 0)
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16356,7 +16492,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                             return 1.1e10;
                     }
                 }
-                while (val < -0.9e10) { // a reduÃ§Ã£o de pressao foi demais e a marcha nÃ£o foi capaz
+                while (val < -0.9e10) { // a redução de pressao foi demais e a marcha não foi capaz
                     // de ir ate o final sem que a pressao ficasse inferior a 0.5kgf/cm2
                     // deve-se aumentar a estimativa de pressao baixa
                     chutelim = pchute2;
@@ -16365,7 +16501,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     val = marchaProdPerm1(pchute2);
                     if (fabs(val) > 1.01e10) {
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16382,7 +16518,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         if ((*vg1dSP).chaverede == 0) {
                             if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                                 if (kontaTenta < 0)
-                                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                                "", "");
                                 else {
@@ -16409,7 +16545,7 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
             // de calculo de zero de funcao
             chutePos = pchute; // armazenando o valor de chute de pressao que da o valor positivo
             // a cada nova busca em que val se aproxima de zero, mas ainda positivo
-            // chutePos e atualizado com a Ãºltima pressao de chute
+            // chutePos e atualizado com a última pressao de chute
             int kontaReverso = 0;
             while (val > 0) {
                 pchuteAux = pchute2;
@@ -16435,10 +16571,10 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                 val = marchaProdPerm1(pchute2);
                 if (fabs(val) > 1.01e10) {
                     if (kontaTenta < 0)
-                        logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                        logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                    "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                    "", "");
-                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
                     else
@@ -16450,12 +16586,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                             NumError(
                                 "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         } else {
                             if (kontaTenta < 0)
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16488,12 +16624,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     if ((*vg1dSP).chaverede == 0) {
                         if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                             NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
                         } else {
                             if (kontaTenta < 0)
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16520,10 +16656,10 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                     val = marchaProdPerm1(pchute2);
                     if (fabs(val) > 1.01e10) {
                         if (kontaTenta < 0)
-                            logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                        "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                        "", "");
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
                         else
@@ -16536,12 +16672,12 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
                         if ((*vg1dSP).chaverede == 0) {
                             if (arq.transiente == 0 && chute < 0 && arq.AP == 0) {
                                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
-                                logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                            "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                            "", "");
                             } else {
                                 if (kontaTenta < 0)
-                                    logger.log(LOGGER_AVISO, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                    logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
                                                "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes",
                                                "", "");
                                 cout << "#################PERMANENTE FALHOU EM SUA CONVERGENCIA##############################" << endl;
@@ -16573,6 +16709,8 @@ double SProd::buscaProdPfundoPerm(double chute, int kontaTenta) {
 }
 
 double SProd::buscaProdPfundoPermRev(double chute) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     revPerm = 1;
     monitConvPerm = 1000.;
     // busca de dois chutes iniciais com valores com sinais opostos
@@ -16619,7 +16757,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             // massas especificas, condicao standard
             double Rhogs = celula[0].acsr.injl.FluidoPro.Deng * 1.225; // cel[ind].acsr.injl.FluidoPro.MasEspGas(1, 15);
             double Rhols = (1000 * 141.5 / (131.5 + celula[0].acsr.injl.FluidoPro.API)) * (1 - celula[0].acsr.injl.FluidoPro.BSW) + 1000. * celula[0].acsr.injl.FluidoPro.Denag * celula[0].acsr.injl.FluidoPro.BSW;
-            // multiplicador da vazao standard para se obter a Vazao massicagÃ¡s+liquido produzido
+            // multiplicador da vazao standard para se obter a Vazao massicagás+liquido produzido
             double multiplicador = (Rhols + celula[0].acsr.injl.FluidoPro.RGO * Rhogs * (1 - celula[0].acsr.injl.FluidoPro.BSW));
             // massic *= multiplicador;//alteracao8
             massic = 1 * multiplicador * celula[0].acsr.injl.QLiq * (1. - celula[0].acsr.injl.bet) / 86400;
@@ -16650,10 +16788,10 @@ double SProd::buscaProdPfundoPermRev(double chute) {
         // estimativa da perda por friccao no sistema, se o acessorio no inicio da tubulacao
         // nao for uma fonte de liquido, esta estimativa sera zero
         perdafric = (f1 * rmis * j * fabs(j) / 2.) * tmpperi / tmparea;
-        // se o acessorio for uma IPR, a estimativa serÃ¡ uma pressao prÃ³xima a uma vazao baixa
+        // se o acessorio for uma IPR, a estimativa será uma pressao próxima a uma vazao baixa
         // no fundo do poco
         // se nao for IPR, a estimativa continua, considerando a perda de carga e a hidrostatica,
-        // que serÃ¡ avaliada neste laco
+        // que será avaliada neste laco
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
             if (taux < arq.tmin)
@@ -16680,7 +16818,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             if (celula[i - 1].acsr.tipo == 7)
                 pchute += celula[i - 1].acsr.delp;
             // caso exista alguma IPR no meio do duto, verifica se a pressao estimada esta maior que
-            // a pressao estatica, nÃ£o se trabalha com vazoes negativas neste solver
+            // a pressao estatica, não se trabalha com vazoes negativas neste solver
             // para evitar isto, se corrige a pressao para um valor proximo da
             // pressao estatica da IPR da celula
             if (celula[i - 1].acsr.tipo == 3 &&
@@ -16691,7 +16829,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
                 if (pchute < 1.01 * celula[i - 1].acsr.ipr.Pres)
                     pchute = 1.01 * celula[i - 1].acsr.ipr.Pres;
             }
-            // tambÃ©m se evita um chute com valores maiores que o limite maximo de uma tabela
+            // também se evita um chute com valores maiores que o limite maximo de uma tabela
             // no caso de se estar usando PVTSim
             if (arq.usaTabela == 1 && (arq.tabent.pmax - pchute) < (*vg1dSP).localtiny)
                 pchute = 0.9 * arq.tabent.pmax;
@@ -16706,18 +16844,18 @@ double SProd::buscaProdPfundoPermRev(double chute) {
     double pchuteAux = 0.; // auxiliar na busca de dos chutes de pressao
     // necessarios para se dar partida no metodo de calculo de raiz
     double val; // val recebe sempre o valor retornado pelo procedimento de marcha
-    // neste caso, Ã© a pressao a montante do choke-a pressao da ultima celula, calculada pela
+    // neste caso, é a pressao a montante do choke-a pressao da ultima celula, calculada pela
     // marcha
     val = marchaProdPerm1Rev(pchute);
     buscaIni = 1;
-    // a marcha pode dar problemas, ou a pressao em algum ponto deu acima da pressao estÃ¡tica de
+    // a marcha pode dar problemas, ou a pressao em algum ponto deu acima da pressao estática de
     // de alguma IPR no meio do caminho, retorna 1e10,
     // ou antes de atingir a ultima celula, a pressao ficou proximo de zero, ou a pressao
     // retorna -1e10, ou a pressao, para o caso PVTSim, ficou acima da pressao maxima da tabela
     // retorna 1e10
     if (val < -0.9e10) { // pressao muito baixa na marcha, deve ser aumentado o valor de chute
-        // faz-se uma nova estimativa, sÃ³ que agora admitindo uma hidrostÃ¡tica de Ã¡gua,
-        // o que darÃ¡ uma pressao de fundpo mais alta
+        // faz-se uma nova estimativa, só que agora admitindo uma hidrostática de água,
+        // o que dará uma pressao de fundpo mais alta
         pchuteAux = pGSup;
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
@@ -16744,14 +16882,14 @@ double SProd::buscaProdPfundoPermRev(double chute) {
         }
         if (pchuteAux > 1100)
             pchuteAux = 1100;  // limite de pchuteAux
-    } else if (val > 0.9e10) { // pressÃƒÂ£o em algum ponto ficou acima de alguma pressao estatica
+    } else if (val > 0.9e10) { // pressão em algum ponto ficou acima de alguma pressao estatica
         // deve-se diminuir o valor do chute
         pchuteAux = pGSup;
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
             double rhol = celula[i].flui.MasEspLiq(pchuteAux, taux);
             double rhog = celula[i].flui.MasEspGas(pchuteAux, taux);
-            // neste caso, utiliza-se uma fraÃ§Ã£o de vazio alta para a hidrostÃ¡tica
+            // neste caso, utiliza-se uma fração de vazio alta para a hidrostática
             double alfa = 0.8;
             if (derivaAnel == 0)
                 alfa = 1.;
@@ -16781,7 +16919,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
 
     // para o caso de ter dado eerado a primeira marcha, com pchuteAux faz-se uma nova tentativa
     int kontaiter = 0; // contador para o laco em que se tentara uma nova estimativa
-    // em que ao menos os valores 1e10 ou 1e-10 nÃ£o seja retornados
+    // em que ao menos os valores 1e10 ou 1e-10 não seja retornados
     double pchuteAux0 = pchuteAux;
     if ((val < -0.9e10 || val > 0.9e10) && kontaiter <= 100) {
         double valtemp;
@@ -16806,7 +16944,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
                 if (pchuteAux > 1.01 * celula[0].acsr.ipr.Pres)
                     pchuteAux = 1.01 * celula[0].acsr.ipr.Pres;
 
-                limpres = 1; // indicadpor de que este avanÃ§o de pressao esta muito alto
+                limpres = 1; // indicadpor de que este avanço de pressao esta muito alto
                 // outros avancos devem ser feitos em um passo menor
             }
             // verificando se este aumento de estimativa foca acima do valor maximo de pressao
@@ -16828,16 +16966,16 @@ double SProd::buscaProdPfundoPermRev(double chute) {
                     // de passo pequeno, retorna um aviso que deu problema ou finaliza a simulacao
                     if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                         // neste caso, se finaliza a simulacao, nao tem um transiente
-                        // a ser feito a seguir e nem se estÃ¡ em uma rede
+                        // a ser feito a seguir e nem se está em uma rede
                         NumError(
                             "Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
                     else {
                         // apresenta apenas um aviso
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         // se for em uma iteracao de rede, apos a primeira iteracao
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
-                        // se logo apÃƒÂ³s tem uma simulacao transiente ou se esta na primeira iteracao de rede
+                        // se logo após tem uma simulacao transiente ou se esta na primeira iteracao de rede
                         else
                             return 1.1e10;
                     }
@@ -16848,7 +16986,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             }
             kontaiter++;
         }
-        if (valtemp > -0.9e10 && valtemp < 0.9e10) { // conseguiu fazer a marcha atÃƒÂ© o final
+        if (valtemp > -0.9e10 && valtemp < 0.9e10) { // conseguiu fazer a marcha até o final
             val = valtemp;
             pchute = pchuteAux;
         }
@@ -16856,12 +16994,12 @@ double SProd::buscaProdPfundoPermRev(double chute) {
     if (kontaiter > 100) { // chegou ao limite da iteracao
         if ((*vg1dSP).chaverede == 0) {
             // neste caso, se finaliza a simulacao, nao tem um transiente
-            // a ser feito a seguir e nem se estÃ¡ em uma rede
+            // a ser feito a seguir e nem se está em uma rede
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
             else {
                 // apresenta apenas um aviso
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 // se for em uma iteracao de rede, apos a primeira iteracao
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
@@ -16873,13 +17011,13 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             // se for em uma iteracao de rede, apos a primeira iteracao
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
-            // se logo apÃ³s tem uma simulacao transiente ou se esta na primeira iteracao de rede
+            // se logo após tem uma simulacao transiente ou se esta na primeira iteracao de rede
             else
                 return 1.1e10;
         }
     }
 
-    // caso o laÃ§o anterior tenha levado a estimativa de um valor 1e10 para um valor -1e10
+    // caso o laço anterior tenha levado a estimativa de um valor 1e10 para um valor -1e10
     // ou tenha levado para um valor de -1e10 para 1e10
     // ou seja, de um chute de pressao alto demais para finalizar a marcha
     // para um chute de pressao baixo demais para terminar a marcha ou vice versa
@@ -16905,7 +17043,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
             else {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -16937,7 +17075,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             // de calculo de zero de funcao
             chuteNeg = pchute; // armazenando o valor de chute de pressao que da o valor negativo
             // a cada nova busca em que val se aproxima de zero, mas ainda negativo
-            // chuteNeg Ã© atualizado com a Ãºltima pressao de chute
+            // chuteNeg é atualizado com a última pressao de chute
             while (val < 0) {
                 if (fabs(pchute2 - pchute) / pchute < (1. - reduz) / 10. && kontaiter > 100) {
                     pchute2 *= 0.5;
@@ -16972,7 +17110,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
                             return 1.1e10;
                     }
                 }
-                while (val < -0.9e10) { // a reduÃ§Ã£o de pressao foi demais e a marcha nÃ£o foi capaz
+                while (val < -0.9e10) { // a redução de pressao foi demais e a marcha não foi capaz
                     // de ir ate o final sem que a pressao ficasse inferior a 0.5kgf/cm2
                     // deve-se aumentar a estimativa de pressao baixa
                     chutelim = pchute2;
@@ -17010,7 +17148,7 @@ double SProd::buscaProdPfundoPermRev(double chute) {
             // de calculo de zero de funcao
             chutePos = pchute; // armazenando o valor de chute de pressao que da o valor positivo
             // a cada nova busca em que val se aproxima de zero, mas ainda positivo
-            // chutePos e atualizado com a Ãºltima pressao de chute
+            // chutePos e atualizado com a última pressao de chute
             while (val > 0) {
                 pchuteAux = pchute2;
                 pchute2 *= aumenta; // Aumentando a pressao na busca de val>0
@@ -17081,6 +17219,8 @@ double SProd::buscaProdPfundoPermRev(double chute) {
 }
 
 double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     // busca de dois chutes iniciais com valores com sinais opostos
     // para marchaProdPerm1 e assim iniciar o prpocesso de calculo de erro de funcao.
     revPerm = 0;
@@ -17127,7 +17267,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
             // massas especificas, condicao standard
             double Rhogs = celula[0].acsr.injl.FluidoPro.Deng * 1.225; // cel[ind].acsr.injl.FluidoPro.MasEspGas(1, 15);
             double Rhols = (1000 * 141.5 / (131.5 + celula[0].acsr.injl.FluidoPro.API)) * (1 - celula[0].acsr.injl.FluidoPro.BSW) + 1000. * celula[0].acsr.injl.FluidoPro.Denag * celula[0].acsr.injl.FluidoPro.BSW;
-            // multiplicador da vazao standard para se obter a Vazao massicagÃ¡s+liquido produzido
+            // multiplicador da vazao standard para se obter a Vazao massicagás+liquido produzido
             double multiplicador = (Rhols + celula[0].acsr.injl.FluidoPro.RGO * Rhogs * (1 - celula[0].acsr.injl.FluidoPro.BSW));
             // massic *= multiplicador;//alteracao8
             if ((*vg1dSP).chaverede == 1)
@@ -17159,10 +17299,10 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
         // estimativa da perda por friccao no sistema, se o acessorio no inicio da tubulacao
         // nao for uma fonte de liquido, esta estimativa sera zero
         perdafric = (f1 * rmis * j * fabs(j) / 2.) * celula[0].duto.peri / celula[0].duto.area;
-        // se o acessorio for uma IPR, a estimativa serÃ¡ uma pressao prÃ³xima a uma vazao baixa
+        // se o acessorio for uma IPR, a estimativa será uma pressao próxima a uma vazao baixa
         // no fundo do poco
         // se nao for IPR, a estimativa continua, considerando a perda de carga e a hidrostatica,
-        // que serÃ¡ avaliada neste laco
+        // que será avaliada neste laco
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
             if (taux < arq.tmin)
@@ -17188,7 +17328,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
             // avanco da pressao por meio da hidrostatica e da perda por friccao estimada
             pchute += (rhomix * 9.81 * sin(celula[i].duto.teta) * dxmed + perdafric * dxmed) / 98066.5;
             // caso exista alguma IPR no meio do duto, verifica se a pressao estimada esta maior que
-            // a pressao estatica, nÃ£o se trabalha com vazoes negativas neste solver
+            // a pressao estatica, não se trabalha com vazoes negativas neste solver
             // para evitar isto, se corrige a pressao para um valor proximo da
             // pressao estatica da IPR da celula
             if (celula[i - 1].acsr.tipo == 3 &&
@@ -17200,7 +17340,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                 if (pchute < 0.9 * celula[i - 1].acsr.ipr.Pres)
                     pchute = 0.9 * celula[i - 1].acsr.ipr.Pres;
             }
-            // tambÃ©m se evita um chute com valores maiores que o limite maximo de uma tabela
+            // também se evita um chute com valores maiores que o limite maximo de uma tabela
             // no caso de se estar usando PVTSim
             if (arq.usaTabela == 1 && (arq.tabent.pmax - pchute) < (*vg1dSP).localtiny)
                 pchute = 0.9 * arq.tabent.pmax;
@@ -17215,7 +17355,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
     double pchuteAux = 0.; // auxiliar na busca de dos chutes de pressao
     // necessarios para se dar partida no metodo de calculo de raiz
     double val; // val recebe sempre o valor retornado pelo procedimento de marcha
-    // neste caso, Ã© a pressao a montante do choke-a pressao da ultima celula, calculada pela
+    // neste caso, é a pressao a montante do choke-a pressao da ultima celula, calculada pela
     // marcha
     val = marchaProdPerm2(pchute);
     buscaIni = 1;
@@ -17225,8 +17365,8 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
     // retorna -1e10, ou a pressao, para o caso PVTSim, ficou acima da pressao maxima da tabela
     // retorna 1e10
     if (val < -0.9e10) { // pressao muito baixa na marcha, deve ser aumentado o valor de chute
-        // faz-se uma nova estimativa, sÃ³ que agora admitindo uma hidrostÃ¡tica de Ã¡gua,
-        // o que darÃ¡ uma pressao de fundpo mais alta
+        // faz-se uma nova estimativa, só que agora admitindo uma hidrostática de água,
+        // o que dará uma pressao de fundpo mais alta
         pchuteAux = pGSup;
         for (int i = ncel; i > 0; i--) {
             taux = arq.celp[i].textern;
@@ -17258,7 +17398,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
             taux = arq.celp[i].textern;
             double rhol = celula[i].flui.MasEspLiq(pchuteAux, taux);
             double rhog = celula[i].flui.MasEspGas(pchuteAux, taux);
-            // neste caso, utiliza-se uma fraÃ§Ã£o de vazio alta para a hidrostÃ¡tica
+            // neste caso, utiliza-se uma fração de vazio alta para a hidrostática
             double alfa = 0.8;
             if (derivaAnel == 0)
                 alfa = 1.;
@@ -17285,13 +17425,13 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
 
     // para o caso de ter dado eerado a primeira marcha, com pchuteAux faz-se uma nova tentativa
     int kontaiter = 0; // contador para o laco em que se tentara uma nova estimativa
-    // em que ao menos os valores 1e10 ou 1e-10 nÃ£o seja retornados
+    // em que ao menos os valores 1e10 ou 1e-10 não seja retornados
     double pchuteAux0 = pchuteAux;
     if (val < -0.9e10 || val > 0.9e10) {
         double valtemp;
         valtemp = marchaProdPerm2(pchuteAux); // marcha com pchuteAux
         if (fabs(valtemp) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
@@ -17301,7 +17441,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
             pchuteAux *= 0.99;                                       // reduzindo a estimativa
             valtemp = marchaProdPerm2(pchuteAux);
             if (fabs(valtemp) > 1.01e10) {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -17328,7 +17468,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                 pchuteAux = 0.9 * arq.tabent.pmax;
             valtemp = marchaProdPerm2(pchuteAux); // nova tentativa
             if (fabs(valtemp) > 1.01e10) {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -17341,13 +17481,13 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
         }
         valtemp = marchaProdPerm2(pchuteAux);
         if (fabs(valtemp) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
                 return 1.1e10;
         }
-        if (valtemp > -0.9e10 && valtemp < 0.9e10) { // conseguiu fazer a marcha atÃƒÂ© o final
+        if (valtemp > -0.9e10 && valtemp < 0.9e10) { // conseguiu fazer a marcha até o final
             val = valtemp;
             pchute = pchuteAux;
         }
@@ -17355,11 +17495,11 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
     if (kontaiter > 50) { // chegou ao limite da iteracao
         if ((*vg1dSP).chaverede == 0) {
             // neste caso, se finaliza a simulacao, nao tem um transiente
-            // a ser feito a seguir e nem se estÃ¡ em uma rede
+            // a ser feito a seguir e nem se está em uma rede
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
             else {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -17369,12 +17509,12 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
             // se for em uma iteracao de rede, apos a primeira iteracao
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
-            // se logo apÃ³s tem uma simulacao transiente ou se esta na primeira iteracao de rede
+            // se logo após tem uma simulacao transiente ou se esta na primeira iteracao de rede
             else
                 return 1.1e10;
         }
     }
-    // caso o laÃ§o anterior tenha levado a estimativa de um valor 1e10 para um valor -1e10
+    // caso o laço anterior tenha levado a estimativa de um valor 1e10 para um valor -1e10
     // ou tenha levado para um valor de -1e10 para 1e10
     // ou seja, de um chute de pressao alto demais para finalizar a marcha
     // para um chute de pressao baixo demais para terminar a marcha ou vice versa
@@ -17396,7 +17536,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
 
         val = marchaProdPerm2(pchute);
         if (fabs(val) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
@@ -17409,7 +17549,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
             if (arq.transiente == 0 && chute < 0 && arq.AP == 0)
                 NumError("Busca de valores iniciais para calculo de zero de funcao em buscaProdPfundoPerm atingiu maximo de iteracoes");
             else {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -17436,13 +17576,13 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
         return pchute;
     else {
         if (val < 0.) { // caso em que o chute de pressao foi alto
-            // Vazao no choke>Vazao da mistura na tubulaÃ§Ã£o
+            // Vazao no choke>Vazao da mistura na tubulação
             // calculada pela marcha, isto implica em pressao de chute alta , deve-se agora buscar
             // uma pressao de chute baixa para que val seja positivo e assim iniciar o processo
             // de calculo de zero de funcao
             chuteNeg = pchute; // armazenando o valor de chute de pressao que da o valor negativo
             // a cada nova busca em que val se aproxima de zero, mas ainda negativo
-            // chuteNeg Ã© atualizado com a Ãºltima pressao de chute
+            // chuteNeg é atualizado com a última pressao de chute
             while (val < 0) {
                 if (fabs(pchute2 - pchute) / pchute < (1. - reduz) / 10. && kontaiter > 50) {
                     pchute2 *= 0.5;
@@ -17467,7 +17607,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                 }
                 val = marchaProdPerm2(pchute2);
                 if (fabs(val) > 1.01e10) {
-                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
                     else
@@ -17495,7 +17635,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                             return 1.1e10;
                     }
                 }
-                while (val < -0.9e10) { // a reduÃ§Ã£o de pressao foi demais e a marcha nÃ£o foi capaz
+                while (val < -0.9e10) { // a redução de pressao foi demais e a marcha não foi capaz
                     // de ir ate o final sem que a pressao ficasse inferior a 0.5kgf/cm2
                     // deve-se aumentar a estimativa de pressao baixa
                     chutelim = pchute2;
@@ -17511,7 +17651,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                     }
                     val = marchaProdPerm2(pchute2);
                     if (fabs(val) > 1.01e10) {
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
                         else
@@ -17542,13 +17682,13 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                 }
             }
             chutePos = pchute2;
-        } else if (val > 0.) { // caso em que Vazao no choke<Vazao da mistura na tubulaÃ§Ã£o,
+        } else if (val > 0.) { // caso em que Vazao no choke<Vazao da mistura na tubulação,
             // isto implica em pressao de chute baixa , deve-se agora buscar
             // uma pressao de chute alta para que val seja negativo e assim iniciar o processo
             // de calculo de zero de funcao
             chutePos = pchute; // armazenando o valor de chute de pressao que da o valor positivo
             // a cada nova busca em que val se aproxima de zero, mas ainda positivo
-            // chutePos e atualizado com a Ãºltima pressao de chute
+            // chutePos e atualizado com a última pressao de chute
             while (val > 0) {
                 pchuteAux = pchute2;
                 if ((*vg1dSP).chaverede == 0)
@@ -17576,7 +17716,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                 }
                 val = marchaProdPerm2(pchute2);
                 if (fabs(val) > 1.01e10) {
-                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
                     else
@@ -17588,7 +17728,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                         pchute2 *= 1.001;
                         val = marchaProdPerm2(pchute2);
                         if (fabs(val) > 1.01e10) {
-                            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                             if ((*vg1dSP).iterRede > 0)
                                 return -1.1e10;
                             else
@@ -17650,7 +17790,7 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
                     }
                     val = marchaProdPerm2(pchute2);
                     if (fabs(val) > 1.01e10) {
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
                         else
@@ -17690,6 +17830,8 @@ double SProd::buscaProdPfundoPerm2(double chute, int kontaTenta) {
 }
 
 double SProd::buscaProdPfundoPerm3(double pentrada) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     revPerm = 0;
     monitConvPerm = 1000.;
     double alfini;
@@ -17724,7 +17866,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
 
     // esta marcha e feita para quando se tem alguma fonte no inicio da tubulacao,
     // portanto, admite-se que o duto esta fechado e coloca-se uma fonte no centro da
-    // primeira celula. As vazoes na fronteira esquerda da celula sÃ£o portanto = 0
+    // primeira celula. As vazoes na fronteira esquerda da celula são portanto = 0
     celula[0].tempL = celula[0].temp;
     celula[1].tempL = celula[0].temp;
     celula[0].tempini = celula[0].temp;
@@ -17757,8 +17899,8 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
         // entre a linha de gas e de producao e mais difoicil, para se conseguir um sistema
         // melhor acoplado, deve-se fazer uma marcha iterativa a mais
     }
-    // arq.CriterioConvergPerm Ã© um criterio de convergencia da marcha, so faz sentido
-    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia nÃ£o
+    // arq.CriterioConvergPerm é um criterio de convergencia da marcha, so faz sentido
+    // quando a aceleracao de convergencia esta desligada. Observe que esta convergencia não
     // e de fato a conevregencia do problema, e apenas um repeticao de marcha para um determinado
     // chute de pressao ou de vazao no inicio da tubulacao. O que a convergencia busca de fato e
     // determinar qual a pressao ou vazao de fundo que satisfaz as condicoes de contorno no fim
@@ -17853,7 +17995,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
                 // caso exista alguma BCS ou incremento de pressao
                 if (arq.flashCompleto != 2)
                     RenovaMassPerm(i); // verifica se existe alguma fonte na celula anterior, com isto, atualiza
-                // as vazoes massica na fronteira a esquerda, alÃ©m das propriedades dos fluidos,
+                // as vazoes massica na fronteira a esquerda, além das propriedades dos fluidos,
                 // densidade do gas, RGO, API, BSW, beta
                 else
                     RenovaMassPermComp(i);
@@ -17880,7 +18022,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
                 // das celulas a esquerda e a direita
                 for (int j = 0; j < arq.nvalvgas; j++) { // reavaliacao da vazao da valvula de gas lift, quando
                     // a celula tem uma.
-                    // P.S. parece uma acao desnecessÃ¡ria e talvez atÃ© um complicador
+                    // P.S. parece uma acao desnecessária e talvez até um complicador
                     // densecessario, em vavliacao
                     if (posicVGLP[j] == i) {
                         int k = posicVGLG[j];
@@ -17891,7 +18033,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
                     RenovaTransMassPerm(i - 1);
                 else
                     RenovaTransMassPermGas(i - 1); // caso seja uma tabela PVTSim, calcula-se a
-                // taxa de transferÃªncia de massa entre as fases para o uso no calculo de
+                // taxa de transferência de massa entre as fases para o uso no calculo de
                 // calor latente da equacao de energia
                 if (arq.ordperm > 1) { // correcao de segunda ordem
                     double D0presaux = celula[i].presaux - celula[i - 1].pres;
@@ -17915,9 +18057,9 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
                         RenovaTransMassPermGas(i - 1);
                 }
 
-                // apÃ³s se atingir a pressao no centro da celula i, primeira iteracao de marcha
+                // após se atingir a pressao no centro da celula i, primeira iteracao de marcha
                 // verifica-se se existe uma VGL em i e faz-se uma estimativa inicial da Vazao de
-                // GL (caso exista linha de gas). Observar que isto sÃ³ Ã© feito para a iteracao zero.
+                // GL (caso exista linha de gas). Observar que isto só é feito para a iteracao zero.
                 if (arq.lingas > 0 && arq.nvalvgas > 0 && iterperm == 0)
                     IniciaVazValvGasPerm(i);
                 i++;
@@ -17941,7 +18083,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
             if (i == ncel + 1)
                 corrigechute = 0; // fim da marcha
         }
-        // apÃ³s o fim da marcha da linha de produÃ§Ã£o, Ã© feita a marcha da linha de gas
+        // após o fim da marcha da linha de produção, é feita a marcha da linha de gas
         // caso exista
         if (pentrada > 0 && arq.lingas > 0 && arq.nvalvgas > 0) {
             if (celulaG[0].tipoCC == 0) {            // marcha para o caso, pressao de injecao
@@ -17987,7 +18129,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
         // opcao de acelerador de convergencia esta desligado
         iterperm++; // atualiza a ieteracao da marcha
         if (iterperm > 200 && arq.AP == 0)
-            NumError("ConvergÃƒÂªncia em marchaProdPerm1 atingiu maximo de iteracoes");
+            NumError("Convergência em marchaProdPerm1 atingiu maximo de iteracoes");
         else if (iterperm > 200)
             return 1.1e10;
     }
@@ -17998,7 +18140,7 @@ double SProd::buscaProdPfundoPerm3(double pentrada) {
 
     pGSup = (celula[ncel].pres + corrigePresF);
 
-    return celula[ncel].pres; // caso a marcha tenha conseguido ir atÃ© a Ãºltima celula,
+    return celula[ncel].pres; // caso a marcha tenha conseguido ir até a última celula,
     // retorna a pressao da ultima celula calculada pela marcha
 }
 
@@ -18342,7 +18484,7 @@ double SProd::marchaProdPresPres1Rev(double mchute) {
 
         iterperm++;
         if (iterperm > 200 && arq.AP == 0)
-            NumError("ConvergÃƒÂªncia em marchaProdPerm1 atingiu maximo de iteracoes");
+            NumError("Convergência em marchaProdPerm1 atingiu maximo de iteracoes");
         else if (iterperm > 200)
             return 1.1e10;
         if (arq.tipoFluido != 10000) {
@@ -18400,6 +18542,8 @@ double SProd::marchaProdPresPres1Rev(double mchute) {
 }
 
 double SProd::buscaProdPresPresPerm(double chute, double maxvaz, int kontaiter) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     revPerm = 0;
     monitConvPerm = 1000.;
     double mchute = chute;
@@ -18594,6 +18738,8 @@ double SProd::buscaProdPresPresPerm(double chute, double maxvaz, int kontaiter) 
 }
 
 double SProd::buscaProdPresPresPermRev(double chute, double maxvaz, int kontaiter) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     revPerm = 1;
     monitConvPerm = 1000.;
     if (celula[0].acsr.tipo == 1) {
@@ -18944,6 +19090,8 @@ double SProd::marchaProdPresPres2(double mchute) {
 }
 
 double SProd::buscaProdPresPresPerm2(double chute, double maxvaz) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
     revPerm = 0;
     monitConvPerm = 1000.;
     double mchute = chute;
@@ -19274,6 +19422,8 @@ double SProd::marchaProdPresPres3(double mchute) {
 }
 
 double SProd::buscaProdPresPresPerm3(double chute, double maxvaz) {
+    if ((*vg1dSP).chaverede == 1)
+        logger.setTramo(arq.impfile, (*vg1dSP).qualRede);
 
     revPerm = 0;
     monitConvPerm = 1000.;
@@ -19324,7 +19474,7 @@ double SProd::buscaProdPresPresPerm3(double chute, double maxvaz) {
             vazTot += adVaz;
             if (vazTot < 0)
                 vazTot -= adVaz;
-            // tambÃ©m se evita um chute com valores maiores que o limite maximo de uma tabela
+            // também se evita um chute com valores maiores que o limite maximo de uma tabela
             // no caso de se estar usando PVTSim
             if (arq.usaTabela == 1 && (arq.tabent.pmax - pchute) < (*vg1dSP).localtiny)
                 pchute = 0.9 * arq.tabent.pmax;
@@ -19498,8 +19648,8 @@ double SProd::marchaGasPerm1(double chutemass) {
     double erro1 = 10.;
     if (chutemass < 0) {
         for (int j = 0; j < nvalv; j++)
-            massGas += celulaG[posicVGLG[j]].massfonteCH; // caso nÃƒÂ£o se tenha um chute da vazao massica
-        // na entrada da linha de injecao, faz-se o somatÃƒÂ³rio dos valores de vazao em cada VGL
+            massGas += celulaG[posicVGLG[j]].massfonteCH; // caso não se tenha um chute da vazao massica
+        // na entrada da linha de injecao, faz-se o somatório dos valores de vazao em cada VGL
     } else
         massGas = chutemass;
     int itera = 0;
@@ -19537,7 +19687,7 @@ double SProd::marchaGasPerm1(double chutemass) {
             if (isnan(celulaG[i].temp))
                 NumError("Temperatrura na linha de servico com valor NaN");
             calcVazGasPerm(i); // verifica se no centro desta celula tem uma VGL, calcula a vazao da VGL
-            // retira este valor da vazÃƒÂ£o total na linha
+            // retira este valor da vazão total na linha
             celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
             celulaG[i - 1].rgR = celulaG[i].rg;
             celulaG[i].u1L = celulaG[i].duto.area * celulaG[i].rg;
@@ -19587,10 +19737,10 @@ double SProd::buscaGasPresPerm2() {
     int maisprof = 0;
     for (int i = 1; i < nvalv; i++)
         if (posicVGLP[i] < posicVGLP[maisprof])
-            maisprof = i;                      // busca a vÃ¡lvula mais profunda
+            maisprof = i;                      // busca a válvula mais profunda
     pchute = celula[posicVGLP[maisprof]].pres; // estima uma pressao para a valvula mais profunda da linha,
     // a pressao na coluna de producao para esta valvula, observar que quando este metodo e chamado,
-    // a marcha na linha de producao jÃ¡ foi feita
+    // a marcha na linha de producao já foi feita
     double tempchute;
     if (iterperm == 0) {                              // para o caso da primeira iteracao do sistema linha de producao-linha de gas
         tempchute = celula[posicVGLP[maisprof]].temp; // estimativa da temperatura na VGL mais profunda
@@ -19608,7 +19758,7 @@ double SProd::buscaGasPresPerm2() {
 
     double delmas = 10;
     delmas = marchaGasPerm2(pchute); // marcha feita com a pressao de injecao estimada e a vazao de
-    // injecao definida, retorna a diferenca entre a soma das vazÃµes em cada VGL calculadas na marcha
+    // injecao definida, retorna a diferenca entre a soma das vazões em cada VGL calculadas na marcha
     // e a vazao de injecao definida, se negativa->pchute baixo, se positiva-> pchute alto
     double pchute2 = pchute;
     int kontaiter = 0;
@@ -19669,11 +19819,11 @@ double SProd::buscaGasPresPerm3() {
     // dois chutes de pressao a montante do choke de injecao, a convergencia para este caso,
     // choke de injecao e mais dificil, portanto, se testa mais possibiliodades de hutes:
     double pchute = chokeInj.presEstag * 0.8; // pressao a montante do choke 20% menor que a pressao a jusante
-    double pchute2 = celulaG[0].pres;         // Na primeira iteracao este valor Ã© a prÃ³pria pressao a montante
+    double pchute2 = celulaG[0].pres;         // Na primeira iteracao este valor é a própria pressao a montante
 
     // duas marchas para os dois chutes:
     double delmas;
-    delmas = marchaGasPerm3(pchute); // o valor retornado Ã© a diferenca entre a soma das vazoes VGL
+    delmas = marchaGasPerm3(pchute); // o valor retornado é a diferenca entre a soma das vazoes VGL
     // e o valor calculado da vazao no choke de injecao, se der negativo, significa que a pressao a montante
     // se positivo, pressao a montante muito grande
     double delmas2;
@@ -19709,7 +19859,7 @@ double SProd::buscaGasPresPerm3() {
             }
             chuteNeg = pchute;
         }
-        // caso nÃ£o funcione com o primeiro chute
+        // caso não funcione com o primeiro chute
         if (delmas2 >= 0 && kontaiter >= 800) { // chute de pressao pequeno, deve ser aumentado
             kontaiter = 0;
             chutePos = pchute2;
@@ -19772,7 +19922,7 @@ double SProd::marchaGasPerm2(double pchute, double chutemass) {
     celulaG[0].u1LL = celulaG[0].u1L;
     celulaG[1].u1LL = celulaG[0].u1L;
     celulaG[0].VGasL = 0.;
-    if (chutemass < 0) // se nenhum valor de chutemass for colocado na lista de parÃ£metro,
+    if (chutemass < 0) // se nenhum valor de chutemass for colocado na lista de parãmetro,
                        // usa o valor dado no json para a injecao de gas
         celulaG[0].massfonteCH = arq.gasinj.vazgas[0] * celulaG[0].flui.MasEspGas(1., 15.6) / 86400.;
     else
@@ -19786,7 +19936,7 @@ double SProd::marchaGasPerm2(double pchute, double chutemass) {
         if (isnan(celulaG[i].temp))
             NumError("Temperatrura na linha de servico com valor NaN");
         calcVazGasPerm(i); // verifica se no centro desta celula tem uma VGL, calcula a vazao da VGL
-        // retira este valor da vazÃƒÂ£o total na linha
+        // retira este valor da vazão total na linha
         celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
         celulaG[i - 1].rgR = celulaG[i].rg;
         celulaG[i].u1L = celulaG[i].duto.area * celulaG[i].rg;
@@ -19830,7 +19980,7 @@ double SProd::marchaGasPerm3(double pchute) {
         if (isnan(celulaG[i].temp))
             NumError("Temperatura na linha de servico com valor NaN");
         calcVazGasPerm(i); // verifica se no centro desta celula tem uma VGL, calcula a vazao da VGL
-        // retira este valor da vazÃƒÂ£o total na linha
+        // retira este valor da vazão total na linha
         celulaG[i].rg = celulaG[i].flui.MasEspGas(celulaG[i].pres, celulaG[i].temp);
         celulaG[i - 1].rgR = celulaG[i].rg;
         celulaG[i].u1L = celulaG[i].duto.area * celulaG[i].rg;
@@ -20163,7 +20313,7 @@ void SProd::corrDeng(int i) {
         // entre a densidade do gas dissolvido e do gas livre
         // rDgD= razao entre a densidade do gas dissolvido e o gas nas condicoes standard
         // rDgL= razao entre a densidade do gas livre e o gas nas condicoes standard
-        // arq.corrDeng==0 implica em nÃƒÂ£o haver distincao entre as densidades
+        // arq.corrDeng==0 implica em não haver distincao entre as densidades
         celula[i].flui.rDgD = 1.;
         celula[i].flui.rDgL = 1.;
         celula[i].flui.PCis = celula[i].flui.PC;
@@ -20328,25 +20478,25 @@ void SProd::RenovaMassPerm(int i) {
         tmed = (celula[i].dx * celula[i].temp + celula[i].dxL * celula[i].tempL) / (celula[i].dx + celula[i].dxL);
     else
         tmed = celula[i - 1].temp;
-    // primeiro teste: nÃƒÂ£o ha fontes na celula i-1:
+    // primeiro teste: não ha fontes na celula i-1:
     if (celula[i - 1].acsr.tipo != 1 && celula[i - 1].acsr.tipo != 2 && celula[i - 1].acsr.tipo != 3 && celula[i - 1].acsr.tipo != 10 && (celula[i - 1].acsr.tipo != 9 || (celula[i - 1].acsr.tipo == 9 && celula[i - 1].acsr.fontechk.abertura <= 1e-6)) && celula[i - 1].acsr.tipo != 15 && celula[i - 1].acsr.tipo != 16) {
-        // neste caso, variaveis como RGO de separador, BSW, API, densidade de gas e outras nÃƒÂ£o muda, sao iguais
+        // neste caso, variaveis como RGO de separador, BSW, API, densidade de gas e outras não muda, sao iguais
         // aos valores da celula i-1
         double hol = 1 - celula[i - 1].alf;
         double bet = celula[i - 1].bet;
         double bsw = celula[i - 1].FW;
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
-        // o valor de volume de leve ÃƒÂ© atualizado neste ponto,
-        // seguindo o equacionamento mostrado em relatorio, nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas
-        // deve ser calculado, pois ÃƒÂ© utilizado como entrada no transiente
+        // o valor de volume de leve é atualizado neste ponto,
+        // seguindo o equacionamento mostrado em relatorio, não é relevante para o permanente, mas
+        // deve ser calculado, pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
 
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny))
                 celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
             if (celula[i].flui.RGO > (*vg1dSP).RGOMax && mudaRGO == 1 && celula[i].flui.RGO < 1e7)
@@ -20372,7 +20522,7 @@ void SProd::RenovaMassPerm(int i) {
             corrDeng(i);
         }
         if (celula[i - 1].bet > (*vg1dSP).localtiny * 1e-6) { // reavaliacao da fracao volumetrica do liquido complementar
-            // mesmo que nÃƒÂ£o tenha fonte, ela pode mudar, devido ao encolhimento do liquido produzido
+            // mesmo que não tenha fonte, ela pode mudar, devido ao encolhimento do liquido produzido
             if (celula[i].flui.RGO < 1e6)
                 boI = celula[i].flui.BOFunc(celula[i].presaux, tmed);
             else
@@ -20429,28 +20579,28 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) && mudaRGO == 1)
                 celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
             if (celula[i].flui.RGO > (*vg1dSP).RGOMax && mudaRGO == 1 && celula[i].flui.RGO < 1e7)
                 celula[i].flui.RGO = (*vg1dSP).RGOMax;
         }
         double rgo;
-        // calculo de novo RGO de separador - sem escorregamento - a partir das vazÃƒÂµes satndard de gas e oleo
+        // calculo de novo RGO de separador - sem escorregamento - a partir das vazões satndard de gas e oleo
         if (qostd > (*vg1dSP).localtiny && mudaRGO == 1)
             rgo = qgstd / qostd;
         else
             rgo = celula[i - 1].flui.RGO;
         celula[i].flui.RGO = rgo;
 
-        celula[i].flui.BSW = celula[i - 1].flui.BSW; // bsw nÃƒÂ£o muda devido a uma fonte de gas
+        celula[i].flui.BSW = celula[i - 1].flui.BSW; // bsw não muda devido a uma fonte de gas
 
         if (arq.flashCompleto == 0) { // nesta chave se faz o carregamento na celula i
             // de variaveis importantes para o modelo black oil
@@ -20469,7 +20619,7 @@ void SProd::RenovaMassPerm(int i) {
 
         if (celula[i - 1].bet > (*vg1dSP).localtiny * 1e-6 && celula[i - 1].alf < 1. - (*vg1dSP).localtiny * 1e-6 && fabs(celula[i - 1].acsr.injg.QGas) > 1e-15) {
             // reavaliacao da fracao volumetrica do liquido complementar
-            // mesmo que nÃƒÂ£o tenha fonte de liquido, ela pode mudar,
+            // mesmo que não tenha fonte de liquido, ela pode mudar,
             // devido ao encolhimento do liquido produzido
             boI = celula[i].flui.BOFunc(celula[i].presaux, tmed);
             baI = celula[i].flui.BAFunc(celula[i].presaux, tmed);
@@ -20532,14 +20682,14 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) && mudaRGO == 1)
                 celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
             if (celula[i].flui.RGO > (*vg1dSP).RGOMax && mudaRGO == 1 && celula[i].flui.RGO < 1e7)
@@ -20555,7 +20705,7 @@ void SProd::RenovaMassPerm(int i) {
             celula[i].flui.RGO = celula[i - 1].flui.RGO;
 
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -20587,7 +20737,7 @@ void SProd::RenovaMassPerm(int i) {
             else
                 celula[i].flui.Denag = celula[i - 1].flui.Denag;
             // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-            // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+            // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
             // e minima para a construcao dos pares
             if (fabs(qostd + qostd2) > 1e-15 && arq.flashCompleto == 0 && fabs(celula[i - 1].acsr.injg.QGas) > 1e-15) { // vazao de liquido >0
                 celula[i].flui.TempL = tL;
@@ -20684,16 +20834,16 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
 
         if (fabs(celula[i - 1].acsr.injl.QLiq) > 1e-15) {
             if (arq.trackRGO == -1) {
-                // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-                // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+                // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+                // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
                 if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) && mudaRGO == 1)
                     celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
                 if (celula[i].flui.RGO > (*vg1dSP).RGOMax && mudaRGO == 1)
@@ -20720,7 +20870,7 @@ void SProd::RenovaMassPerm(int i) {
         else if (fabs(celula[i - 1].acsr.injl.QLiq) <= 1e-15)
             celula[i].flui.yco2 = celula[i - 1].flui.yco2;
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -20756,7 +20906,7 @@ void SProd::RenovaMassPerm(int i) {
             else
                 celula[i].flui.Denag = celula[i - 1].flui.Denag;
             // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-            // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+            // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
             // e minima para a construcao dos pares
             if (fabs(qostd1 + qostd2) > 1e-15 && arq.flashCompleto == 0 &&
                 fabs(celula[i - 1].acsr.injl.QLiq) > 1e-15) { // vazao de liquido >0
@@ -20840,14 +20990,14 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if ((celula[i - 1].fontemassLR) > 1e-15 && (celula[i - 1].fontemassGR) > 1e-15) {
                 if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) &&
                     mudaRGO == 1 && fabs(celula[i - 1].fontemassLR) > 1e-15)
@@ -20878,7 +21028,7 @@ void SProd::RenovaMassPerm(int i) {
         else
             celula[i].flui.yco2 = celula[i - 1].flui.yco2;
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -20914,7 +21064,7 @@ void SProd::RenovaMassPerm(int i) {
                 celula[i].flui.Denag = celula[i - 1].flui.Denag;
             if ((qostd1 + qostd2) > 1e-15 && arq.flashCompleto == 0 && (celula[i - 1].fontemassLR) > 1e-15) {
                 // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-                // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+                // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
                 // e minima para a construcao dos pares
                 celula[i].flui.TempL = tL;
                 celula[i].flui.TempH = tH;
@@ -20995,15 +21145,15 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
 
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if ((celula[i - 1].acsr.injm.MassG + celula[i - 1].acsr.injm.MassP) > 1e-15) {
                 if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) && mudaRGO == 1)
                     celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
@@ -21034,7 +21184,7 @@ void SProd::RenovaMassPerm(int i) {
         else
             celula[i].flui.yco2 = celula[i - 1].flui.yco2;
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -21071,7 +21221,7 @@ void SProd::RenovaMassPerm(int i) {
             else
                 celula[i].flui.Denag = celula[i - 1].flui.Denag;
             // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-            // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+            // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
             // e minima para a construcao dos pares
             if (fabs(qostd1 + qostd2) > 1e-15 && arq.flashCompleto == 0 &&
                 (celula[i - 1].acsr.injm.MassG + celula[i - 1].acsr.injm.MassP) > 1e-15) { // vazao de liquido >0
@@ -21119,7 +21269,7 @@ void SProd::RenovaMassPerm(int i) {
     // caso especial, fonte de vazamento:
     else if (celula[i - 1].acsr.tipo == 9 && celula[i - 1].acsr.fontechk.abertura > 1e-6) {
         ProFlu fluF;
-        // define qual o fluido envolvido na fonte, se a pressÃƒÂ£o ambiente for menor do que a
+        // define qual o fluido envolvido na fonte, se a pressão ambiente for menor do que a
         // pressao da tubulacao, fluido da tubulacao, senao, fluido definido como
         // fluido ambiente
         if (celula[i - 1].acsr.fontechk.presT > celula[i - 1].acsr.fontechk.pamb) {
@@ -21158,15 +21308,15 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
 
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny * 1e-6) && bsw < (1. - (*vg1dSP).localtiny) && mudaRGO == 1)
                 celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
             if (celula[i].flui.RGO > (*vg1dSP).RGOMax && mudaRGO == 1)
@@ -21192,7 +21342,7 @@ void SProd::RenovaMassPerm(int i) {
                 celula[i].flui.yco2 = (qostd1 * celula[i - 1].flui.RGO * celula[i - 1].flui.yco2 + fluF.yco2 * celula[i - 1].fontemassGR / (fluF.Deng * 1.225)) / qgstd;
         }
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -21221,7 +21371,7 @@ void SProd::RenovaMassPerm(int i) {
 
             if (fabs(qostd1 + qostd2) > 1e-15 && arq.flashCompleto == 0) {
                 // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-                // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+                // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
                 // e minima para a construcao dos pares
                 celula[i].flui.TempL = tL;
                 celula[i].flui.TempH = tH;
@@ -21300,14 +21450,14 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (fabs(celula[i - 1].fontemassLR) > 1e-15) {
                 if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) &&
                     mudaRGO == 1 && fabs(celula[i - 1].fontemassLR) > 1e-15)
@@ -21338,7 +21488,7 @@ void SProd::RenovaMassPerm(int i) {
         else
             celula[i].flui.yco2 = celula[i - 1].flui.yco2;
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -21374,7 +21524,7 @@ void SProd::RenovaMassPerm(int i) {
                 celula[i].flui.Denag = celula[i - 1].flui.Denag;
             if (fabs(qostd1 + qostd2) > 1e-15 && arq.flashCompleto == 0 && (celula[i - 1].fontemassLR) > 1e-15) {
                 // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-                // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+                // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
                 // e minima para a construcao dos pares
                 celula[i].flui.TempL = tL;
                 celula[i].flui.TempH = tH;
@@ -21453,14 +21603,14 @@ void SProd::RenovaMassPerm(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃƒÂ£o ÃƒÂ© relevante para o permanente, mas deve ser calculado,
-        // pois ÃƒÂ© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
         if (arq.trackRGO == -1) {
-            // esta chave nÃƒÂ£o ÃƒÂ© utilizada, ÃƒÂ© mantida aqui como reserva, atualmente este
-            // calculo nÃƒÂ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (fabs(celula[i - 1].fontemassLR) > 1e-15) {
                 if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) &&
                     mudaRGO == 1 && fabs(celula[i - 1].fontemassLR) > 1e-15)
@@ -21491,7 +21641,7 @@ void SProd::RenovaMassPerm(int i) {
         else
             celula[i].flui.yco2 = celula[i - 1].flui.yco2;
         if (nfluP > 1 || (*vg1dSP).chaverede == 1) {
-            // o modelo seja ASTM. Observar que isto sÃƒÂ³ faz sentido se se tiver mais de um fluido
+            // o modelo seja ASTM. Observar que isto só faz sentido se se tiver mais de um fluido
             // de producao cadastrado no JSON, ou a simulacao se insere em um sistema de redes
             // com varios tramos alimentando outros tramos com fluidos com propriedades diferentes
             // entre cada tramo
@@ -21528,7 +21678,7 @@ void SProd::RenovaMassPerm(int i) {
                 celula[i].flui.Denag = celula[i - 1].flui.Denag;
             if (fabs(qostd1 + qostd2) > 1e-15 && arq.flashCompleto == 0 && (celula[i - 1].fontemassLR) > 1e-15) {
                 // reavaliacao dos pares necessarios para o modelo de viscosidade de oleo morto
-                // ASTM. Isto ÃƒÂ© feito tendo sempre os mesmos valores de temperatura maxima e
+                // ASTM. Isto é feito tendo sempre os mesmos valores de temperatura maxima e
                 // e minima para a construcao dos pares
                 celula[i].flui.TempL = tL;
                 celula[i].flui.TempH = tH;
@@ -21570,7 +21720,7 @@ void SProd::RenovaMassPerm(int i) {
             celula[i].bet = celula[i - 1].bet;
     }
 
-    // atualizaÃ§Ã£o da vazao massica da mistura:
+    // atualização da vazao massica da mistura:
     celula[i].MC = celula[i - 1].MC + celula[i - 1].fontemassCR + celula[i - 1].fontemassLR + celula[i - 1].fontemassGR;
     celula[i - 1].MR = celula[i].MC;
     if (i < ncel)
@@ -22164,7 +22314,7 @@ void SProd::RenovaMassPermRev(int i) {
                 ud = 0.;
             }
 
-            // para o caso permanente, a fracao de vazio Ã© obtida a partir das relacoes de escorregamento
+            // para o caso permanente, a fracao de vazio é obtida a partir das relacoes de escorregamento
             // portanto, e neste ponto que se obtem Co e Ud:
             else if (fabs(celula[i].QG) > (*vg1dSP).localtiny && fabs(celula[i].QL) > (*vg1dSP).localtiny * 1e-6)
                 CalcC0UdPerm(i, c0, ud);
@@ -22405,26 +22555,26 @@ void SProd::RenovaMassPermComp(int i) {
     celula[i - 1].FWini = celula[i - 1].FW;
     double tmed;
     // temperatura na fronteira entre a celula i-1 e a celula i, da segunda iteracao em diante, pode-se
-    // usar a temperatura da celula i, pois jÃ¡ a tem calculada, mas isto pode ser um complicador de
+    // usar a temperatura da celula i, pois já a tem calculada, mas isto pode ser um complicador de
     // convergencia, mais seguro manter o criterio em todas as iteracoes, neste caso, a temperatura na
     // fronteira e admitida = a temperatura da celula i-1
     if (iterperm != 0 && arq.AceleraConvergPerm == 0)
         tmed = (celula[i].dx * celula[i].temp + celula[i].dxL * celula[i].tempL) / (celula[i].dx + celula[i].dxL);
     else
         tmed = celula[i - 1].temp;
-    // primeiro teste: nÃ£o hÃ¡ fontes na celula i-1:
+    // primeiro teste: não há fontes na celula i-1:
     if (celula[i - 1].acsr.tipo != 1 && celula[i - 1].acsr.tipo != 2 && celula[i - 1].acsr.tipo != 3 && celula[i - 1].acsr.tipo != 10 && (celula[i - 1].acsr.tipo != 9 || (celula[i - 1].acsr.tipo == 9 && celula[i - 1].acsr.fontechk.abertura <= 1e-6)) &&
         celula[i - 1].acsr.tipo != 15 && celula[i - 1].acsr.tipo != 16) {
-        // neste caso, variaveis como RGO de separador, BSW, API, densidade de gas e outras nÃ£o muda, sao iguais
+        // neste caso, variaveis como RGO de separador, BSW, API, densidade de gas e outras não muda, sao iguais
         // aos valores da celula i-1
         double hol = 1 - celula[i - 1].alf;
         double bet = celula[i - 1].bet;
         double bsw = celula[i - 1].FW;
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
-        // o valor de volume de leve Ã© atualizado neste ponto,
-        // seguindo o equacionamento mostrado em relatorio, nÃ£o Ã© relevante para o permanente, mas
-        // deve ser calculado, pois Ã© utilizado como entrada no transiente
+        // o valor de volume de leve é atualizado neste ponto,
+        // seguindo o equacionamento mostrado em relatorio, não é relevante para o permanente, mas
+        // deve ser calculado, pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
@@ -22456,7 +22606,7 @@ void SProd::RenovaMassPermComp(int i) {
         }
 
         if (arq.tipoFluido == 0) { // reavaliacao da fracao volumetrica do liquido complementar
-            // mesmo que nÃ£o tenha fonte, ela pode mudar, devido ao encolhimento do liquido produzido
+            // mesmo que não tenha fonte, ela pode mudar, devido ao encolhimento do liquido produzido
             double boI;
             double baI;
             if (celula[i].flui.RGO < 1e6)
@@ -22554,14 +22704,14 @@ void SProd::RenovaMassPermComp(int i) {
         double rhog = celula[i - 1].flui.MasEspGas(celula[i - 1].pres, celula[i - 1].temp);
         double rhogST = celula[i - 1].flui.Deng * 1.225;
         // calculo do volume de leve na celula i, seguindo o equacionamento mostrado em relatorio,
-        // nÃ£o Ã© relevante para o permanente, mas deve ser calculado,
-        // pois Ã© utilizado como entrada no transiente
+        // não é relevante para o permanente, mas deve ser calculado,
+        // pois é utilizado como entrada no transiente
         celula[i - 1].VolLeveST = (((1 - hol) * rhog / rhogST) + hol * (1 - bet) * (1. - bsw) * rs / bo);
         if (celula[i - 1].VolLeveST < 1e-15)
             celula[i - 1].VolLeveST = 0.;
         if (arq.trackRGO == -1) {
-            // esta chave nÃ£o Ã© utilizada, Ã© mantida aqui como reserva, atualmente este
-            // calculo nÃ£o esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
+            // esta chave não é utilizada, é mantida aqui como reserva, atualmente este
+            // calculo não esta funcionando, lembrando que arq.trackRGO assume apenas 2 valores, 0 ou 1
             if (hol > (*vg1dSP).localtiny && bet < (1. - (*vg1dSP).localtiny) && bsw < (1. - (*vg1dSP).localtiny) && mudaRGO == 1)
                 celula[i].flui.RGO = celula[i - 1].VolLeveST * bo / (hol * (1 - bet) * (1 - bsw));
             if (celula[i].flui.RGO > (*vg1dSP).RGOMax && mudaRGO == 1 && celula[i].flui.RGO < 1e6)
@@ -22634,7 +22784,7 @@ void SProd::RenovaMassPermComp(int i) {
             mHidro = celula[i].MC - mComp;
         }
     }
-    // atualizaÃ§Ã£o da vazao massica da mistura:
+    // atualização da vazao massica da mistura:
     celula[i].MC = celula[i - 1].MC + celula[i - 1].fontemassCR + celula[i - 1].fontemassLR + celula[i - 1].fontemassGR;
     celula[i - 1].MR = celula[i].MC;
     if (i < ncel)
@@ -22904,7 +23054,7 @@ void SProd::RenovaMassPermComp(int i) {
                     c0 = 1.;
                     ud = 0.;
                 }
-                // para o caso permanente, a fracao de vazio Ã© obtida a partir das relacoes de escorregamento
+                // para o caso permanente, a fracao de vazio é obtida a partir das relacoes de escorregamento
                 // portanto, e neste ponto que se obtem Co e Ud:
                 else if (fabs(celula[i].QG) > (*vg1dSP).localtiny * 1e-5 && fabs(celula[i].QL) > (*vg1dSP).localtiny * 1e-5)
                     CalcC0UdPerm(i, c0, ud);
@@ -23336,7 +23486,7 @@ void SProd::RenovaMassPermCompRev(int i) {
                 ud = 0.;
             }
 
-            // para o caso permanente, a fracao de vazio Ã© obtida a partir das relacoes de escorregamento
+            // para o caso permanente, a fracao de vazio é obtida a partir das relacoes de escorregamento
             // portanto, e neste ponto que se obtem Co e Ud:
             else if (fabs(celula[i].QG) > (*vg1dSP).localtiny && fabs(celula[i].QL) > (*vg1dSP).localtiny * 1e-6)
                 CalcC0UdPerm(i, c0, ud);
@@ -23742,7 +23892,7 @@ void SProd::RenovaTempPerm(int i, int RK) {
     ulsmed = celula[i].QL / area; // velocidade superficial de liquido
     double sinalJ = 1.;
     if (fabs(ugsmed + ulsmed) > 0.05 && semTermo == 0) { // calculo termico e feito para velocidades de mistura superiores a 0,1 m/s,
-        // para velocidades inferiores se admite que a temperatura do fluidoÃƒÂ© igual ÃƒÂ  temperatura ambiente
+        // para velocidades inferiores se admite que a temperatura do fluidoé igual à temperatura ambiente
         sinalJ = (ugsmed + ulsmed) / fabs(ugsmed + ulsmed);
         double pmedi = celula[i].presaux + 0 * celula[i - 1].acsr.dpB / 98066.5;
         double tmedi;
@@ -23750,7 +23900,7 @@ void SProd::RenovaTempPerm(int i, int RK) {
             // caso em que se considera que ja foi
             // feita uma iteracao e ja se tem a temperatura na celula i vinda da iteracao anterior
             // isto pode dificultar a convergencia, quando se deseja a aceleracao da convergencia
-            // admite-se que a temperatura na fronteira esquerda ÃƒÂ© a temperatura da celula esquerda
+            // admite-se que a temperatura na fronteira esquerda é a temperatura da celula esquerda
             tmedi = (celula[i].dx * celula[i].temp + celula[i].dxL * celula[i].tempL) / (celula[i].dx + celula[i].dxL);
         else
             tmedi = celula[i - 1].temp;
@@ -23805,7 +23955,7 @@ void SProd::RenovaTempPerm(int i, int RK) {
                 // no modelo acoplado, a coluna nao tem a definicao da parede revestimento+cimento+formacao
                 // para se obter esta resistencia, precisa-se recorrer ao modelo de troca termica
                 // do anular, o que e feito aqui:
-                // obs:isto Ã© feito ate uma celula antes de se chegar na master (i-1)<ColunaAnulaIni,
+                // obs:isto é feito ate uma celula antes de se chegar na master (i-1)<ColunaAnulaIni,
                 // se esta fazendo igual ao que se faz no simulador involuta, para melhorar
                 // a estimativa da temperatura na ANM. Na celula da anm, so se considera a troca termica com o gas
                 // desde a primeira iteracao
@@ -23817,7 +23967,7 @@ void SProd::RenovaTempPerm(int i, int RK) {
                 celulaG[j].calor.viscint = celula[i - 1].flui.ViscGas(pmedi, tmedi) * 1.e-3;
                 celulaG[j].fluxcal = celulaG[j].calor.transperm(); // troca termica no anular
                 resanul = celulaG[j].calor.resGlob;                // resistencia das paredes
-                // observe que nÃ£o se esta de fato interessado no fluxo de calor, mas apenas em obter a resistencia
+                // observe que não se esta de fato interessado no fluxo de calor, mas apenas em obter a resistencia
                 // termica do conjunto de paredes a partir do revestimento em direcao aa formacao
                 celula[i - 1].calor.Vextern1 = 100.;
                 celula[i - 1].calor.kextern1 = celulaG[j].calor.kint;
@@ -23835,7 +23985,7 @@ void SProd::RenovaTempPerm(int i, int RK) {
             }
             if (iterperm == 0)
                 celula[i - 1].calor.Textern1 = celulaG[j].calor.Textern1; // na primeira iteracao, como se
-            // usa toda a resistencia termica do poco, a temperatura externa utilizada Ã© a geotermica
+            // usa toda a resistencia termica do poco, a temperatura externa utilizada é a geotermica
             else
                 celula[i - 1].calor.Textern1 = celulaG[j].temp; // nas iteracoes seguintes, a temperatura ambiente
             // e a temperatura do gas
@@ -23867,7 +24017,7 @@ void SProd::RenovaTempPerm(int i, int RK) {
             //  e a pressao no centro de celula para o calculoi de Dp/Dx
             dpdx = 2. * (celula[i].presaux - celula[i - 1].pres) * 98066.5 / celula[i - 1].dx;
         }
-        celula[i].VTemper = ulsmed; // esta velocidade so e util no caso transiente, Ã© armazenada aqui
+        celula[i].VTemper = ulsmed; // esta velocidade so e util no caso transiente, é armazenada aqui
         // apenas para se ter um valor quando a simulacao transiente se iniciar
         double dtdx = (-celula[i - 1].temp) / dxmed;
 
@@ -24197,7 +24347,7 @@ void SProd::RenovaTempPermRev(int i, int RK) {
             }
             if (iterperm == 0)
                 celula[i + 1].calor.Textern1 = celulaG[j].calor.Textern1; // na primeira iteracao, como se
-            // usa toda a resistencia termica do poco, a temperatura externa utilizada Ã© a geotermica
+            // usa toda a resistencia termica do poco, a temperatura externa utilizada é a geotermica
             else
                 celula[i + 1].calor.Textern1 = celulaG[j].temp; // nas iteracoes seguintes, a temperatura ambiente
             // e a temperatura do gas
@@ -24220,7 +24370,7 @@ void SProd::RenovaTempPermRev(int i, int RK) {
             //  e a pressao no centro de celula para o calculoi de Dp/Dx
             dpdx = (pmedi - celula[i + 1].pres) * 98600. / dx;
         }
-        celula[i].VTemper = ulsmed; // esta velocidade so e util no caso transiente, Ã© armazenada aqui
+        celula[i].VTemper = ulsmed; // esta velocidade so e util no caso transiente, é armazenada aqui
         // apenas para se ter um valor quando a simulacao transiente se iniciar
         double dtdx = (-celula[i + 1].temp) / dxmed;
 
@@ -25393,7 +25543,7 @@ double SProd::buscaInjPfundoPerm1(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
                     NumError(
-                        "PoÃ§o injetor com problemas na iteracao na busca de um chute de vazao inicial, perda de carga muito alta");
+                        "Poço injetor com problemas na iteracao na busca de um chute de vazao inicial, perda de carga muito alta");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
@@ -25410,7 +25560,7 @@ double SProd::buscaInjPfundoPerm1(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
                     NumError(
-                        "PoÃ§o injetor com problemas na iteracao na busca de um chute de vazao inicial, Vazao muito baixa");
+                        "Poço injetor com problemas na iteracao na busca de um chute de vazao inicial, Vazao muito baixa");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
@@ -25592,7 +25742,7 @@ double SProd::buscaInjPfundoPerm2(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
                     NumError(
-                        "PoÃ§o injetor com problemas na iteracao na busca de um chute de pressao inicial, perda de carga muito alta");
+                        "Poço injetor com problemas na iteracao na busca de um chute de pressao inicial, perda de carga muito alta");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
@@ -25609,7 +25759,7 @@ double SProd::buscaInjPfundoPerm2(double chute) {
             if (kontaiter > 200) {
                 if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
                     NumError(
-                        "PoÃ§o injetor com problemas na iteracao na busca de um chute de vazao inicial, pressao muito alta");
+                        "Poço injetor com problemas na iteracao na busca de um chute de vazao inicial, pressao muito alta");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
@@ -25715,7 +25865,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
     celula[ncel].pres = arq.condpocinj.presfundo;
     if (celula[ncel].pres < celula[ncel].acsr.ipr.Pres) {
         if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-            NumError("Valor de pressao de fundo menor que a pressao de reservatÃ³rio");
+            NumError("Valor de pressao de fundo menor que a pressao de reservatório");
         else {
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
@@ -25739,7 +25889,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
                 celula[i - 1].pres = celula[i].pres + rhol * 9.81 * sin(celula[i].duto.teta) * dxmed / 98066.5;
                 if (celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - celula[i + 1].pres) > -(*vg1dSP).localtiny) {
                     if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-                        NumError("Valor de pressao de fundo menor que a pressao de reservatÃ³rio");
+                        NumError("Valor de pressao de fundo menor que a pressao de reservatório");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
@@ -25768,7 +25918,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
                 celula[i - 1].pres = celula[i].pres + rhol * 9.81 * sin(celula[i].duto.teta) * dxmed / 98066.5;
                 if (celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - celula[i + 1].pres) > -(*vg1dSP).localtiny) {
                     if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-                        NumError("Valor de pressao de fundo menor que a pressao de reservatÃ³rio");
+                        NumError("Valor de pressao de fundo menor que a pressao de reservatório");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
@@ -25793,7 +25943,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
     if (val < -0.9e10) {
         if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
             NumError(
-                "PoÃ§o injetor com problemas na iteracao na busca de um chute de pressao inicial, perda de carga muito alta");
+                "Poço injetor com problemas na iteracao na busca de um chute de pressao inicial, perda de carga muito alta");
         else {
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
@@ -25804,7 +25954,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
     if (val > 0.9e10) {
         if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
             NumError(
-                "PoÃ§o injetor com problemas na iteracao na busca de um chute de vazao inicial, pressao muito alta");
+                "Poço injetor com problemas na iteracao na busca de um chute de vazao inicial, pressao muito alta");
         else {
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
@@ -25824,7 +25974,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
                 celula[i - 1].pres = celula[i].pres + delpInjPerm(i);
                 if (celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - celula[i + 1].pres) > -(*vg1dSP).localtiny) {
                     if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-                        NumError("Valor de pressao de fundo menor que a pressao de reservatÃ³rio");
+                        NumError("Valor de pressao de fundo menor que a pressao de reservatório");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
@@ -25848,7 +25998,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
                 celula[i - 1].pres = celula[i].pres + delpInjPerm(i);
                 if (celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - celula[i + 1].pres) > -(*vg1dSP).localtiny) {
                     if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-                        NumError("Valor de pressao de fundo menor que a pressao de reservatÃ³rio");
+                        NumError("Valor de pressao de fundo menor que a pressao de reservatório");
                     else {
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
@@ -25870,7 +26020,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
         if (val < -0.9e10) {
             if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
                 NumError(
-                    "PoÃ§o injetor com problemas na iteracao na busca de um chute de pressao inicial, perda de carga muito alta");
+                    "Poço injetor com problemas na iteracao na busca de um chute de pressao inicial, perda de carga muito alta");
             else {
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
@@ -25881,7 +26031,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
         if (val > 0.9e10) {
             if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
                 NumError(
-                    "PoÃ§o injetor com problemas na iteracao na busca de um chute de pressao inicial, pressao muito alta");
+                    "Poço injetor com problemas na iteracao na busca de um chute de pressao inicial, pressao muito alta");
             else {
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
@@ -25892,7 +26042,7 @@ double SProd::buscaInjPfundoPerm3(double chute) {
     }
     if (konta >= 200) {
         if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-            NumError("PoÃ§o injetor com problemas na iteracao");
+            NumError("Poço injetor com problemas na iteracao");
         else {
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
@@ -26017,7 +26167,7 @@ double SProd::buscaInjPfundoPerm4() {
                 }
             } else if ((celula[i - 1].acsr.tipo == 3 && (celula[i - 1].acsr.ipr.Pres - celula[i - 1].pres) > -(*vg1dSP).localtiny)) {
                 if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-                    NumError("Valor de pressao de fundo menor que a pressao de reservatÃ³rio");
+                    NumError("Valor de pressao de fundo menor que a pressao de reservatório");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
@@ -26026,7 +26176,7 @@ double SProd::buscaInjPfundoPerm4() {
                 }
             } else if (i < (ncel + 1) && masfim < -(*vg1dSP).localtiny) {
                 if ((*vg1dSP).chaverede == 0 && arq.AP == 0)
-                    NumError("Vazao massica de injeÃ§Ã£o menor que 0");
+                    NumError("Vazao massica de injeção menor que 0");
                 else {
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
@@ -26830,7 +26980,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
         double valtemp;
         valtemp = marchaProdPerm2(pchuteAux); // marcha with pchuteAux
         if (fabs(valtemp) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
@@ -26840,7 +26990,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
             pchuteAux *= 0.99;                                       // reducing the estimate
             valtemp = marchaProdPerm2(pchuteAux);
             if (fabs(valtemp) > 1.01e10) {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -26858,7 +27008,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
                 pchuteAux = 0.9 * arq.tabent.pmax;
             valtemp = marchaProdPerm2(pchuteAux); // new try
             if (fabs(valtemp) > 1.01e10) {
-                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                 if ((*vg1dSP).iterRede > 0)
                     return -1.1e10;
                 else
@@ -26871,7 +27021,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
         }
         valtemp = marchaProdPerm2(pchuteAux);
         if (fabs(valtemp) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
@@ -26903,7 +27053,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
 
         val = marchaProdPerm2(pchute);
         if (fabs(val) > 1.01e10) {
-            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
             if ((*vg1dSP).iterRede > 0)
                 return -1.1e10;
             else
@@ -26912,7 +27062,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
         kontaiter++;
     }
     if (kontaiter > 50) {
-        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
         if ((*vg1dSP).iterRede > 0)
             return -1.1e10;
         else
@@ -26954,7 +27104,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
                     pchute2 = 0.9 * arq.tabent.pmax;
                 val = marchaProdPerm2(pchute2);
                 if (fabs(val) > 1.01e10) {
-                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
                     else
@@ -26987,7 +27137,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
                     }
                     val = marchaProdPerm2(pchute2);
                     if (fabs(val) > 1.01e10) {
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
                         else
@@ -27023,7 +27173,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
                 int limpres = 0;
                 val = marchaProdPerm2(pchute2);
                 if (fabs(val) > 1.01e10) {
-                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                    cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                     if ((*vg1dSP).iterRede > 0)
                         return -1.1e10;
                     else
@@ -27035,7 +27185,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
                         pchute2 *= 1.001;
                         val = marchaProdPerm2(pchute2);
                         if (fabs(val) > 1.01e10) {
-                            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                            cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                             if ((*vg1dSP).iterRede > 0)
                                 return -1.1e10;
                             else
@@ -27072,7 +27222,7 @@ double SProd::buscaTramoSecVazPerm(double pPartida, int indPartida) {
                         pchute2 = 0.9 * arq.tabent.pmax;
                     val = marchaProdPerm2(pchute2);
                     if (fabs(val) > 1.01e10) {
-                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÃŠNCIA##############################" << endl;
+                        cout << "#################PERMANENTE FALHOU EM SUA CONVERGÊNCIA##############################" << endl;
                         if ((*vg1dSP).iterRede > 0)
                             return -1.1e10;
                         else

@@ -42,7 +42,7 @@ class BomCentSub {
     double potBT;
     double potTermo;
 
-    double FalsaCorda(int, double, double, double delta = 0.000001, double epsn = 0.000001, int maxit = 100) const; // Calculo de zero de fun��o apenas para calculo de zero na FNDran
+    double FalsaCorda(int, double, double, double delta = 0.000001, double epsn = 0.000001, int maxit = 100) const; // Calculo de zero de função apenas para calculo de zero na FNDran
 
     BomCentSub(int n = 0, const double *const Vvaz = 0, const double *const Vhead = 0,
                const double *const Vpower = 0, const double *const Vefic = 0, double Vfreq = 0, int nestag = 1, double VeficM = 100,

@@ -106,7 +106,7 @@ CelG::CelG(const DadosGeo vdutoL, const DadosGeo vduto,
     tipoFatorFric=fatFric;
 }
 
-CelG::CelG(const CelG &vcel) : TL(3), local(3, 9) { // construtor por c�pia
+CelG::CelG(const CelG &vcel) : TL(3), local(3, 9) { // construtor por cópia
 
     // Solver de Hidratos
     j_H = vcel.j_H;

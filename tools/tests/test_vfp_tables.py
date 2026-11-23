@@ -37,7 +37,7 @@ def engine():
 def run_ap(engine, directory, mode, parallel=False, rates=(1000, 2000, 3000),
            pressures=(10, 20), table=True, choke=None, threads=2,
            inlet_condition=0, series_length=1, analysis_override=None,
-           expected_error=None, model_override=None):
+           expected_error=None, model_override=None, expected_returncode=0):
     directory.mkdir(parents=True, exist_ok=True)
     model = json.loads((ROOT / "demos/smoothPipeFriction/atritoTuboLiso.mr3").read_text(encoding="utf-8"))
     model["configuracaoInicial"].update({
@@ -97,7 +97,7 @@ def run_ap(engine, directory, mode, parallel=False, rates=(1000, 2000, 3000),
         assert process.returncode != 0, details
         assert expected_error in details, details
     else:
-        assert process.returncode == 0, details
+        assert process.returncode == expected_returncode, details
     return directory
 
 
@@ -190,7 +190,8 @@ def test_temperature_matches_downstream_choke(engine, tmp_path, mode, parallel):
 
 @pytest.mark.parametrize("mode", range(4))
 def test_failed_vfp_case_preserves_position(engine, tmp_path, mode):
-    run_ap(engine, tmp_path, mode, rates=(2000, 1e12), pressures=(10,))
+    # exit 5: partial execution, the failed case is discarded and the others are kept
+    run_ap(engine, tmp_path, mode, rates=(2000, 1e12), pressures=(10,), expected_returncode=5)
     rows, values_per_row = (1, 2) if mode in (1, 3) else (2, 1)
     pressure_name, temperature_name = TABLE_FILES[mode]
     pressures = [value for row in table_rows(tmp_path / pressure_name, rows) for value in row[-values_per_row:]]

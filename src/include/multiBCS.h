@@ -23,10 +23,10 @@ using namespace std;
 #include "PropFluCol.h"
 
 class multiBomCentSub{ // BCS � uma  classe que trabalha com spline,
-//a princ�pio ter�amos apenas dois vetores para a interpola��o, mas iremos trabalhar com quatro vetores, onde 3 fun��es
-//s�o interpoladas pelo primeiro vetor
+//a princípio teríamos apenas dois vetores para a interpolação, mas iremos trabalhar com quatro vetores, onde 3 funções
+//são interpoladas pelo primeiro vetor
         public:
-        double freq;//freq��ncia da bomba em Hertz
+        double freq;//frequência da bomba em Hertz
         double freqnova;
         double eficM;
         double freqMinima;
@@ -53,7 +53,7 @@ class multiBomCentSub{ // BCS � uma  classe que trabalha com spline,
 					    double vfreqcMinima=0., int vcorrecHI=1,int vequilTerm=1, double vfracTermMotorEfic=0.,
 			            ProFlu vflui=ProFlu(),
 			            ProFluCol vfluiCol=ProFluCol()); //construtor
-        multiBomCentSub(const multiBomCentSub&);//construtor de c�pia
+        multiBomCentSub(const multiBomCentSub&);//construtor de cópia
         ~multiBomCentSub(){
         			  if(nBCS>0 && nestagParcFab!=0)delete[] nestagParcFab;
         			  if(nBCS>0 && nestagParc!=0)delete[] nestagParc;

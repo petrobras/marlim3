@@ -5,6 +5,7 @@
  *      Author: Eduardo
  */
 #include "LerAP.h"
+#include <set>
 #include <limits>
 
 using namespace rapidjson;
@@ -193,6 +194,18 @@ void APara::liberaSequencias() {
 }
 
 int APara::tamanhoSerie(const Value &serie, const string &chaveJson) {
+    if (!serie.IsArray() || serie.Empty()) {
+        logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                   "Analise parametrica requer uma serie nao vazia", chaveJson, "");
+        logger.write_logs_and_exit();
+    }
+    for (SizeType i = 0; i < serie.Size(); i++) {
+        if (!serie[i].IsNumber()) {
+            logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                       "Valor nao numerico na serie da analise parametrica", chaveJson + "/" + to_string(i), "");
+            logger.write_logs_and_exit();
+        }
+    }
     if (!combinacao) {
         if (!serie.IsArray() || serie.Empty() ||
             serie.Size() > static_cast<SizeType>(numeric_limits<int>::max())) {
@@ -219,17 +232,17 @@ Document APara::parseEntrada() {
     char mensagemFalha[5000];
     // declarar o documento raiz do arquivo entrada
     Document jsonDoc;
-    // definir arquivo Rede de entrada da simulaÃ§Ã£o
+    // definir arquivo Rede de entrada da simulação
     FILE *APInFile = NULL;
-    // definir buffer de entrada da simulaÃ§Ã£o
+    // definir buffer de entrada da simulação
     char APInBuf[65536];
     // realizar a leitura do arquivo de rede
     try {
-        // atualizar a estrutura de resultado do parse do arquivo de entrada da simulaÃ§Ã£o
+        // atualizar a estrutura de resultado do parse do arquivo de entrada da simulação
         logger.setNomeArqEntrada(entrada);
-        // abrir arquivo de entrada da simulaÃ§Ã£o
+        // abrir arquivo de entrada da simulação
         APInFile = fopen(entrada.c_str(), "r");
-        // criar stream para o arquivo de entrada da simulaÃ§Ã£o
+        // criar stream para o arquivo de entrada da simulação
         FileReadStream APInStream(APInFile, APInBuf, sizeof(APInBuf));
         // realizar o parse de AP de entrada
         jsonDoc.ParseStream(APInStream);
@@ -245,7 +258,7 @@ Document APara::parseEntrada() {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
     } catch (exception &e) {
         // incluir falha
@@ -253,7 +266,7 @@ Document APara::parseEntrada() {
         // gerar o arquivo de saida da simulacao
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
     // incluir info de conclusao do parse de AP no log
     logger.log(LOGGER_INFO, LOG_INFO_PARSE_PROCESS_FINISHED, "Verificar formato JSON de Analise de Parametrica", "", "SUCESSO");
@@ -454,7 +467,7 @@ void APara::parse_FonLiq(Value &FonLiq_json) {
                 total = APFonLiq[iFL].parserieTemp + APFonLiq[iFL].parserieBet + APFonLiq[iFL].parserieVL + APFonLiq[iFL].parserieFlu;
                 if (total == 0) {
                     logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                               "Chave 'FonteLiq-AP' sem variavel temperatura ou vazÃ£o de lÃ­quido, beta ou fluido",
+                               "Chave 'FonteLiq-AP' sem variavel temperatura ou vazão de líquido, beta ou fluido",
                                "#/FonteLiq", "Indice de FonteLiq na AP = " + to_string(iFL));
                 }
             }
@@ -521,7 +534,7 @@ void APara::parse_FonGas(Value &FonGas_json) {
                 total = APFonGas[iFG].parserieTemp + APFonGas[iFG].parserieVazC + APFonGas[iFG].parserieVazG;
                 if (total == 0) {
                     logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                               "Chave 'FonteGas-AP' sem variavel temperatura ou vazÃ£o de gÃ¡s ou vazÃ£o complementar",
+                               "Chave 'FonteGas-AP' sem variavel temperatura ou vazão de gás ou vazão complementar",
                                "#/FonteGas", "Indice de FonteGas na AP = " + to_string(iFG));
                 }
             }
@@ -609,7 +622,7 @@ void APara::parse_FonMas(Value &FonMas_json) {
                 int total = APFonMas[iFM].parserieTemp + APFonMas[iFM].parserieMP + APFonMas[iFM].parserieMC + APFonMas[iFM].parserieMG + APFonMas[iFM].parserieFlu;
                 if (total == 0) {
                     logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                               "Chave 'FonteMas-AP' sem variavel temperatura ou vazÃ£o tptal, ou complementar ou gas ou fluido",
+                               "Chave 'FonteMas-AP' sem variavel temperatura ou vazão tptal, ou complementar ou gas ou fluido",
                                "#/FonteMas", "Indice de FonteMas na AP = " + to_string(iFM));
                 }
             }
@@ -1576,11 +1589,27 @@ void APara::lerArq() {
         // gerar o arquivo de saida da simulacao
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
 
     // parse do documento raiz do arquivo de entrada
     Document jsonDoc = parseEntrada();
+    if (!jsonDoc.IsObject()) {
+        logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                   "Arquivo de analise parametrica deve ser um objeto JSON", "#", "");
+        logger.write_logs_and_exit();
+    }
+    static const set<string> chavesAP = {
+        "BCS", "BVol", "Condutividade", "DP", "FonteGas", "FonteLiquido", "FonteMassa", "GasLift", "IPR",
+        "MultiBCS", "Valvula", "Vazamento", "choke", "combinacao", "dPdLFric", "dPdLHidro", "dTdL",
+        "imprimePerfil", "nthread", "pentrada", "pocoInjetor", "psep", "RGO-fluido0", "BSW-fluido0",
+        "secaoTransversal", "tipoAP",
+        "vazpentrada", "vfp"};
+    for (auto it = jsonDoc.MemberBegin(); it != jsonDoc.MemberEnd(); ++it) {
+        if (!chavesAP.count(it->name.GetString()))
+            logger.log(LOGGER_AVISO, LOG_WARN_PARSE_BUSINESS_RULE_VALIDATION,
+                       "Chave desconhecida ignorada na analise parametrica", string("#/") + it->name.GetString(), "");
+    }
 
     dim = 0;
     nthrdAP = 1;
@@ -1731,10 +1760,8 @@ void APara::lerArq() {
         parse_injecPoco(jsonDoc["pocoInjetor"]);
     }
 
-    if (!combinacao && logger.getStResultadoSimulacao().totalFalhas > 0) {
-        logger.writeOutputLog();
-        exit(EXIT_FAILURE);
-    }
+    if (logger.getStResultadoSimulacao().totalFalhas > 0)
+        logger.write_logs_and_exit();
 
     varSeq[0] = listaV.vpsep;
     varSeq[1] = listaV.vRGO;
@@ -1760,11 +1787,10 @@ void APara::lerArq() {
     varSeq[21] = listaV.vchk;
     varSeq[22] = listaV.vpocinj;
 
-    if (!combinacao && dim == 0) {
+    if (dim == 0) {
         logger.log(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
-                   "Modo agrupado requer ao menos uma serie", "#/combinacao", "");
-        logger.writeOutputLog();
-        exit(EXIT_FAILURE);
+                   "Analise parametrica requer ao menos uma serie de variavel reconhecida", "#", "");
+        logger.write_logs_and_exit();
     }
     if (nVariaveis >= 1 && dim > 0) {
         sequenciaAP = new casoVEC[nVariaveis];
@@ -7063,9 +7089,9 @@ void APara::selecaoAPImexsemImpre(int ncelG, choke &chokeSup, Cel *celula, CelG 
 
 void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 
-    // SaÃ­das inerentes das BHPs - IMEX e Eclipse
+    // Saídas inerentes das BHPs - IMEX e Eclipse
 
-    // variÃ¡vel vfp (deve-se entrar no .json com os valores de 0 ou 1, descritos como segue)
+    // variável vfp (deve-se entrar no .json com os valores de 0 ou 1, descritos como segue)
     // 0-para solver IMEX
     // 1-para solver Eclipse
     // vfp=0; //chris
@@ -7099,13 +7125,13 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		//int vfp1=1;
 		if (vfp==0) { //alteracao aditivo
 		//escreveIni1 <<"sequencias da Analise de Sensibilidade para um Tramo "<< "\n";
-		escreveIni1 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; //add data e horÃ¡rio such as: 12/23/2015 2:47:47 PM
+		escreveIni1 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; //add data e horário such as: 12/23/2015 2:47:47 PM
 		escreveIni1 << "\n" << endl;
 		//escreveIni1 << "** IDENTIFICACAO :" << " CSantim10" << endl;
-		//escreveIni1 << "** Titulo....... :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
-		//escreveIni1 << "** Responsavel.. :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
-		////escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se Ã© necessÃ¡rio string de entrada
-		//escreveIni1 << "** Comentario... :" << endl;   //verificar se Ã© necessÃ¡rio string de entrada
+		//escreveIni1 << "** Titulo....... :" << endl; //verificar se é necessário string de entrada
+		//escreveIni1 << "** Responsavel.. :" << endl; //verificar se é necessário string de entrada
+		////escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se é necessário string de entrada
+		//escreveIni1 << "** Comentario... :" << endl;   //verificar se é necessário string de entrada
 		escreveIni1 << "\n" << endl;
 
 
@@ -7115,7 +7141,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		escreveIni1 << "** Grau API do oleo...... : " << flup[0].API << endl; //add entrada 21.3
 		escreveIni1 << "** Densidade da agua .... : " << flup[0].MasEspAgua(celp[0].pres, celp[0].temp) << endl; //add entrada 1.030
 		escreveIni1 << "** Densidade do gas  .... : " << flup[0].MasEspGas(celp[0].pres, celp[0].temp) << endl; //add entrada 0.000
-		//escreveIni1 << "** CorrelaÃ§Ãµes :" << endl; //add entrada Analise PVT
+		//escreveIni1 << "** Correlações :" << endl; //add entrada Analise PVT
 		escreveIni1 << "\n" << endl;
 
         // profundidade da BCS i
@@ -7125,7 +7151,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		if (nAPBCS>0&&nAPBCS<10) {
 			escreveIni1 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
 		for (int i = 0; i < nAPBCS; ++i) {
-		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia índice da AS â†’ posição na malha
 		    escreveIni1 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
 		    escreveIni1 << "** Frequencia da BCS (Hz): "
 		                << (APBCS[i].parserieFreq > 0 ? APBCS[i].freq.front() : bcs[APBCS[i].indBCS].freq[0]) << endl;
@@ -7135,7 +7161,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		if (nAPMBCS>0&&nAPMBCS<10) {
 			escreveIni1 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
 		for (int i = 0; i < nAPMBCS; ++i) {
-		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+		   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia índice da AS â†’ posição na malha
 		    escreveIni1 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
 		    escreveIni1 << "** Frequencia da BCS (Hz): " << APMBCS[i].freq.front() << endl;
 		}
@@ -7146,10 +7172,10 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 
 		//}
 		//if (ASFonGas->vazgas[i]!=0) {
-		//escreveIni1 << "** VÃ¡lvula injetora" << endl;
+		//escreveIni1 << "** Válvula injetora" << endl;
 		//int icel=fonteg[ASFonGas[iFG].indFG].posicP;
 		//int indcelfongas=ASFonGas->indFG;
-		// profundidade da Fonte de GÃ¡s i
+		// profundidade da Fonte de Gás i
 		if (nAPFG>0&&nAPFG<10) {
 			escreveIni1 << "** Modo de operacao :" << " Elevacao por Injecao de Gas " << endl; //add entrada QGI_VALV  = 225600.0
 		for (int i = 0; i < nAPFG; ++i) {
@@ -7220,13 +7246,13 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		else if (vfp==2) { //alteracao aditivo
 
 			//escreveIni1 <<"sequencias da Analise de Sensibilidade para um Tramo "<< "\n";
-			escreveIni3 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; //add data e horÃ¡rio such as: 12/23/2015 2:47:47 PM
+			escreveIni3 << "** Relatorio do IMEX gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; //add data e horário such as: 12/23/2015 2:47:47 PM
 			escreveIni3 << "\n" << endl;
 			//escreveIni1 << "** IDENTIFICACAO :" << " CSantim10" << endl;
-			//escreveIni1 << "** Titulo....... :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
-			//escreveIni1 << "** Responsavel.. :" << endl; //verificar se Ã© necessÃ¡rio string de entrada
-			////escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se Ã© necessÃ¡rio string de entrada
-			//escreveIni1 << "** Comentario... :" << endl;   //verificar se Ã© necessÃ¡rio string de entrada
+			//escreveIni1 << "** Titulo....... :" << endl; //verificar se é necessário string de entrada
+			//escreveIni1 << "** Responsavel.. :" << endl; //verificar se é necessário string de entrada
+			////escreveIni1 << "** Data......... :" << endl; //19092007   //verificar se é necessário string de entrada
+			//escreveIni1 << "** Comentario... :" << endl;   //verificar se é necessário string de entrada
 			//escreveIni3 << "\n" << endl;
 
 
@@ -7234,14 +7260,14 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			escreveIni3 << "** Grau API do oleo...... : " << flup[0].API << endl; //add entrada 21.3
 			escreveIni3 << "** Densidade da agua .... : " << flup[0].MasEspAgua(celp[0].pres, celp[0].temp) << endl; //add entrada 1.030
 			escreveIni3 << "** Densidade do gas  .... : " << flup[0].MasEspGas(celp[0].pres, celp[0].temp) << endl; //add entrada 0.000
-			//escreveIni1 << "** CorrelaÃ§Ãµes :" << endl; //add entrada Analise PVT
+			//escreveIni1 << "** Correlações :" << endl; //add entrada Analise PVT
 			escreveIni3 << "\n" << endl;
 
 			//for (int i; ncel; i++) {
 			//if (BSW_json.HasMember("BSW")) {
 			//if (listaV.vBSW==1) {
 			//if (ASBCS->freq[i]!=0) {
-			//escreveIni1 << "** VÃ¡lvula injetora" << endl;
+			//escreveIni1 << "** Válvula injetora" << endl;
 			//int indcelbcs=ASBCS->indBCS;
 			// profundidade da BCS i
 
@@ -7250,7 +7276,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			if (nAPBCS>0&&nAPBCS<10) {
 				escreveIni3 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
 			for (int i = 0; i < nAPBCS; ++i) {
-			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia índice da AS â†’ posição na malha
 			    escreveIni3 << "** Profundidade BCS: " << celp[bcs[ APBCS[i].indBCS ].posicP].profundiM << endl;
 			    escreveIni3 << "** Frequencia da BCS (Hz): "
 			                << (APBCS[i].parserieFreq > 0 ? APBCS[i].freq.front() : bcs[APBCS[i].indBCS].freq[0]) << endl;
@@ -7260,7 +7286,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			if (nAPMBCS>0&&nAPMBCS<10) {
 				escreveIni3 << "** Modo de operacao :" << " Elevacao por BCS " << endl; //add entrada QGI_VALV  = 225600.0
 			for (int i = 0; i < nAPMBCS; ++i) {
-			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia Ã­ndice da AS â†’ posiÃ§Ã£o na malha
+			   // int icel = bcs[ ASBCS[i].indBCS ].posicP;  // mapeia índice da AS â†’ posição na malha
 			    escreveIni3 << "** Profundidade BCS: " << celp[mbcs[ APMBCS[i].indBCS ].posicP].profundiM << endl;
 			    escreveIni3 << "** Frequencia da BCS (Hz): " << APMBCS[i].freq.front() << endl;
 			}
@@ -7271,10 +7297,10 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 
 			//}
 			//if (ASFonGas->vazgas[i]!=0) {
-			//escreveIni1 << "** VÃ¡lvula injetora" << endl;
+			//escreveIni1 << "** Válvula injetora" << endl;
 			//int icel=fonteg[ASFonGas[iFG].indFG].posicP;
 			//int indcelfongas=ASFonGas->indFG;
-			// profundidade da Fonte de GÃ¡s i
+			// profundidade da Fonte de Gás i
 			if (nAPFG>0&&nAPFG<10) {
 				escreveIni3 << "** Modo de operacao :" << " Elevacao por Gas-Lift " << endl; //add entrada QGI_VALV  = 225600.0
 			for (int i = 0; i < nAPFG; ++i) {
@@ -7293,7 +7319,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			//}
 			//}
 
-			//POÃ‡O PRODUTOR - PTUBE1; 1: 1 POÃ‡O
+			//POÇO PRODUTOR - PTUBE1; 1: 1 POÇO
 			escreveIni3 << "*PTUBE1 1" << endl; //
 			escreveIni3 << "*DEPTH  " << celp[0].profundiM << endl; //add entrada  2688.6
 
@@ -7301,7 +7327,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 
 		    //chris new -> troquei a ordem para o IMEX
 
-			escreveIni3 << "*OIL " ; //PODE SER POR FONTE DE LÃ�QUIDO
+			escreveIni3 << "*OIL " ; //PODE SER POR FONTE DE LÍQUIDO
 			//double* rate;
 			escreveIni3 << "**";
 		    for (int i = 0; i < APFonLiq->parserieVL; ++i) {
@@ -7363,7 +7389,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		    }
 		    escreveIni3 << "  " << endl;
 
-		    //*ALQ teria segunda linha como add(i). PorÃ©m a informaÃ§Ã£o vem como
+		    //*ALQ teria segunda linha como add(i). Porém a informação vem como
 
 			escreveIni3 << "*WHP " ; // " tamanho vetor " << ASPsep.parseriePres << endl; //PSEP
 			//double* whp;
@@ -7393,7 +7419,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 		else if (vfp==3) {
 
 //system("pause");
-				escreveIni4 << "-- Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl;  //add data e horÃ¡rio, such as: 4/9/2009 15:25:21
+				escreveIni4 << "-- Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl;  //add data e horário, such as: 4/9/2009 15:25:21
 				escreveIni4 << "\n";
                 escreveIni4 << (saidaTemperatura ? "-- Tabela de THTs (C) para utilizacao no simulador Eclipse." : "-- Tabela de BHPs para utilizacao no simulador Eclipse.") << endl;
 				escreveIni4 << "-- Tabela gerada pelo simulador Marlim 3." << endl;
@@ -7415,13 +7441,13 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 				    escreveIni4 << "-- Profundidade Medida de injecao de gas (m): " << celp[fonteg[ APFonGas[i].indFG ].posicP].profundiM << endl;
 				}
 				}
-				//escreveIni2 << "-- Profundidade Medida de injeÃ§Ã£o de gÃ¡s (m):" << endl; //add profundidade 2035
+				//escreveIni2 << "-- Profundidade Medida de injeção de gás (m):" << endl; //add profundidade 2035
 				//add tal variable VFPPROD   --------------
 				escreveIni4 << "VFPPROD" << endl;
 
 				//escreveIni2 << "\n" << endl;
 				//escreveIni2 << "-- N   profundidade canhoneado (m)" << endl;
-				////verificar o que Ã© vetor e o que Ã© entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
+				////verificar o que é vetor e o que é entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
                 escreveIni4 << " 1 " << celp[0].profundiM << " LIQ " << " WCT " << " GOR " << " THP " << " ' ' " << " METRIC " << (saidaTemperatura ? " THT " : " BHP ") << "   / Basic data" << endl;
 				////escreveIni2 << " 1 " << celp[0].profundiM << " 'LIQ' " << " 'WCT' " << " 'GOR' " << " 'THP' " << " 'GRAT' " << " 'METRIC' " <<"'BHP'" << "   /" << endl;
 				//escreveIni2 << "-- QLIQ (Sm3/d)" << endl; //" tamanho vetor " << ASFonLiq->parserieVL << endl;
@@ -7505,11 +7531,11 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 			    //escreveIni2 << "   /" << endl;
 
 
-				/*escreveIni2 << "-- Obs:1)Se os ranges das correlaÃ§Ãµes do programa MARLIM 3 forem ultrapassados," << endl;
-				escreveIni2 << "-- o cÃ¡lculo nÃ£o serÃ¡ possÃ­vel e, de acordo com o manual do Eclipse, um" << endl;
-				escreveIni2 << "-- valor padrÃ£o BHP=1.0E+10 Ã© impresso." << endl;*/
+				/*escreveIni2 << "-- Obs:1)Se os ranges das correlações do programa MARLIM 3 forem ultrapassados," << endl;
+				escreveIni2 << "-- o cálculo não será possível e, de acordo com o manual do Eclipse, um" << endl;
+				escreveIni2 << "-- valor padrão BHP=1.0E+10 é impresso." << endl;*/
 
-				//nÃºmero de colunas da tabela do Eclipse (solver de ReservatÃ³rio) depende do nÃºmero de variÃ¡veis de entrada e de como elas
+				//número de colunas da tabela do Eclipse (solver de Reservatório) depende do número de variáveis de entrada e de como elas
 			//	escreveIni2 << "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
 
@@ -7521,7 +7547,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
 				}
     else if (vfp == 1) {
 
-        escreveIni2 << "** Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; // add data e horÃ¡rio, such as: 4/9/2009 15:25:21
+        escreveIni2 << "** Relatorio do ECLIPSE gerado pelo Marlim 3 em " << __DATE__ << " " << __TIME__ << endl; // add data e horário, such as: 4/9/2009 15:25:21
         escreveIni2 << "\n";
         escreveIni2 << (saidaTemperatura ? "-- Tabela de THTs (C) para utilizacao no simulador Eclipse." : "-- Tabela de BHPs para utilizacao no simulador Eclipse.") << endl;
         escreveIni2 << "-- Tabela gerada pelo simulador Marlim 3." << endl;
@@ -7543,13 +7569,13 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
                 escreveIni2 << "-- Profundidade Medida de injecao de gas (m): " << celp[fonteg[APFonGas[i].indFG].posicP].profundiM << endl;
             }
         }
-        // escreveIni2 << "-- Profundidade Medida de injeÃ§Ã£o de gÃ¡s (m):" << endl; //add profundidade 2035
+        // escreveIni2 << "-- Profundidade Medida de injeção de gás (m):" << endl; //add profundidade 2035
         escreveIni2 << "VFPPROD   --------------" << endl;
 
         escreveIni2 << "\n"
                     << endl;
         escreveIni2 << "-- N   profundidade canhoneado (m)" << endl;
-        // verificar o que Ã© vetor e o que Ã© entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
+        // verificar o que é vetor e o que é entrada   1      2655.0     'LIQ' 'WCT' 'GOR' 'THP' 'GRAT' 'METRIC' 'BHP'   /
         escreveIni2 << " 1 " << celp[0].profundiM << " 'LIQ' " << " 'WCT' " << " 'GOR' " << " 'THP' " << " 'GRAT' " << " 'METRIC' " << (saidaTemperatura ? "'THT'" : "'BHP'") << "   /" << endl;
         escreveIni2 << "-- QLIQ (Sm3/d)" << endl; //" tamanho vetor " << APFonLiq->parserieVL << endl;
         for (int i = 0; i < APFonLiq->parserieVL; ++i) {
@@ -7621,7 +7647,7 @@ void APara::tabelaGenericaCabecalho(bool saidaTemperatura) {
             escreveIni2 << "   /" << endl;
         }
 
-        // nÃºmero de colunas da tabela do Eclipse (solver de ReservatÃ³rio) depende do nÃºmero de variÃ¡veis de entrada e de como elas
+        // número de colunas da tabela do Eclipse (solver de Reservatório) depende do número de variáveis de entrada e de como elas
         escreveIni2 << "--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------" << endl;
 
     } else {
@@ -8745,7 +8771,7 @@ void APara::tabelaGenerica(int ncelG, choke &chokeSup, Cel *celula, CelG *celula
     escreveIni.close();
 
 
-	//nÃ£o deletar !!!
+	//não deletar !!!
 	/*double BHP00, BHP11, BHP22, BHP33;
 	double BHP0, BHP1, BHP2, BHP3;
 	if (vfp==0&&chrisao==0) BHP0=saidaBHP[seq][coluna];

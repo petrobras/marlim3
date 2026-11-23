@@ -3,10 +3,12 @@
 // funcao de erro:
 template <class T>
 void error(const T &t) { // aviso de erro em matriz
+    // incluir falha
+    logger.log(LOGGER_FALHA, LOG_ERR_NUMERICAL_FAILURE, string(t), "", "");
     // gravar arquivo de log
     logger.writeOutputLog();
     // abandonar a aplicacao
-    exit(EXIT_SUCCESS);
+    exit(logger.codigoSaida());
 }
 
 template <class T>
@@ -25,10 +27,10 @@ ostream &operator<<(ostream &s, const FullMtx<T> &mat) { // saida de valores de 
     return s;
 }
 
-// Fun��es para Matriz Cheia:
+// Funções para Matriz Cheia:
 // membros:
 template <class T>
-FullMtx<T>::FullMtx(int n, int m, const T **const dbp) { // construtor a partir de uma �rea j� armazenada, n->n de linhas, m-> n de colunas
+FullMtx<T>::FullMtx(int n, int m, const T **const dbp) { // construtor a partir de uma área já armazenada, n->n de linhas, m-> n de colunas
     this->nrows = n;
     ncols = m;
     mx = new T *[this->nrows];
@@ -52,7 +54,7 @@ FullMtx<T>::FullMtx(int n, int m, T a) { // construtor com valores da matriz igu
 }
 
 template <class T>
-FullMtx<T>::FullMtx(const FullMtx &mat) { // construtor de c�pia
+FullMtx<T>::FullMtx(const FullMtx &mat) { // construtor de cópia
     this->nrows = mat.nrows;
     ncols = mat.ncols;
     mx = new T *[this->nrows];
@@ -65,15 +67,15 @@ FullMtx<T>::FullMtx(const FullMtx &mat) { // construtor de c�pia
 
 template <class T>
 Vcr<T> FullMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
-    if (precn == 0) {                                       // sem pr�-condicionamento
+    if (precn == 0) {                                       // sem pré-condicionamento
         return r;
-    } else if (precn == 1) { // pr�-condicionamento diagonal
+    } else if (precn == 1) { // pré-condicionamento diagonal
         Vcr<T> z(this->nrows);
         for (int i = 0; i < this->nrows; i++)
             z[i] = r[i] / mx[i][i];
         return z;
-    } else if (precn == 2) { // pr�-condicionador sim�trico SOR
-        const T omega = 1.2; // par�metro do SOR
+    } else if (precn == 2) { // pré-condicionador simétrico SOR
+        const T omega = 1.2; // parâmetro do SOR
         Vcr<T> z(this->nrows);
         for (int i = 0; i < this->nrows; i++) {
             T sum = 0;
@@ -89,14 +91,14 @@ Vcr<T> FullMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
         }
         return z;
     } else {
-        error("n�mero inv�lido para sele��o de precondicionador > 2 ");
+        error("número inválido para seleção de precondicionador > 2 ");
         return Vcr<T>();
     }
 }
 
 template <class T>
 FullMtx<T> &FullMtx<T>::operator=(const FullMtx &mat) { // sobrecarga de operador =
-    if (this != &mat) {                                 // verifica se n�o se est� fazendo uma atribui��o de um objeto com ele mesmo
+    if (this != &mat) {                                 // verifica se não se está fazendo uma atribuição de um objeto com ele mesmo
         if (this->nrows != mat.nrows || ncols != mat.ncols) {
 
             for (int i = 0; i < this->nrows; i++)
@@ -117,14 +119,14 @@ FullMtx<T> &FullMtx<T>::operator=(const FullMtx &mat) { // sobrecarga de operado
                     mx[i][j] = mat.mx[i][j];
         }
     } else
-        error("erro, tentando atribuir uma matriz a ela pr�pria, ocorrido na opera��o =");
+        error("erro, tentando atribuir uma matriz a ela própria, ocorrido na operação =");
     return *this;
 }
 
 template <class T>
 FullMtx<T> &FullMtx<T>::operator+=(const FullMtx &mat) { // sobrecarga de operador +=
     if (this->nrows != mat.nrows || ncols != mat.ncols)
-        error("erro no tamanho da matriz coluna!=linha, ocorrido na opera��o =");
+        error("erro no tamanho da matriz coluna!=linha, ocorrido na operação =");
     for (int i = 0; i < this->nrows; i++)
         for (int j = 0; j < ncols; j++)
             mx[i][j] += mat.mx[i][j];
@@ -134,7 +136,7 @@ FullMtx<T> &FullMtx<T>::operator+=(const FullMtx &mat) { // sobrecarga de operad
 template <class T>
 FullMtx<T> &FullMtx<T>::operator-=(const FullMtx &mat) { // sobrecarga de operador -=
     if (this->nrows != mat.nrows || ncols != mat.ncols)
-        error("erro no tamanho da matriz coluna!=linha, ocorrido na opera��o =");
+        error("erro no tamanho da matriz coluna!=linha, ocorrido na operação =");
     for (int i = 0; i < this->nrows; i++)
         for (int j = 0; j < ncols; j++)
             mx[i][j] -= mat.mx[i][j];
@@ -142,7 +144,7 @@ FullMtx<T> &FullMtx<T>::operator-=(const FullMtx &mat) { // sobrecarga de operad
 }
 
 template <class T>
-FullMtx<T> FullMtx<T>::operator-() const { // sobrecarga de operador un�rio -
+FullMtx<T> FullMtx<T>::operator-() const { // sobrecarga de operador unário -
     FullMtx<T> zero(this->nrows, ncols);
     return zero - *this;
 }
@@ -162,7 +164,7 @@ FullMtx<T> FullMtx<T>::operator-(const FullMtx &mat) const { // sobrecarga de op
 }
 
 template <class T>
-FullMtx<T> FullMtx<T>::operator*(T a) const { // multiplica��o de matriz por um escalar
+FullMtx<T> FullMtx<T>::operator*(T a) const { // multiplicação de matriz por um escalar
     FullMtx<T> prod(this->nrows, ncols);
     for (int i = 0; i < this->nrows; i++)
         for (int j = 0; j < ncols; j++)
@@ -171,9 +173,9 @@ FullMtx<T> FullMtx<T>::operator*(T a) const { // multiplica��o de matriz por
 }
 
 template <class T>
-Vcr<T> FullMtx<T>::operator*(const Vcr<T> &v) const { // multiplica��o de matriz por vetor
+Vcr<T> FullMtx<T>::operator*(const Vcr<T> &v) const { // multiplicação de matriz por vetor
     if (ncols != v.size())
-        error("erro no tamanho da matriz coluna!=tamanho do vetor, ocorrido na opera��o Mat*Vet");
+        error("erro no tamanho da matriz coluna!=tamanho do vetor, ocorrido na operação Mat*Vet");
     Vcr<T> tm(this->nrows);
     for (int i = 0; i < this->nrows; i++)
         for (int j = 0; j < ncols; j++)
@@ -182,9 +184,9 @@ Vcr<T> FullMtx<T>::operator*(const Vcr<T> &v) const { // multiplica��o de ma
 }
 
 template <class T>
-FullMtx<T> FullMtx<T>::operator*(const FullMtx &mat) const { // multiplica��o de matriz por matriz
+FullMtx<T> FullMtx<T>::operator*(const FullMtx &mat) const { // multiplicação de matriz por matriz
     if (ncols != mat.nrows)
-        error("erro no n�mero de colunas em mat1!= n�mero de linhas em mat2, ocorrido na opera��o mat1*mat2");
+        error("erro no número de colunas em mat1!= número de linhas em mat2, ocorrido na operação mat1*mat2");
     FullMtx<T> nova(this->nrows, mat.ncols, 0.);
     for (int i = 0; i < this->nrows; i++)
         for (int j = 0; j < mat.ncols; j++)
@@ -194,14 +196,14 @@ FullMtx<T> FullMtx<T>::operator*(const FullMtx &mat) const { // multiplica��
 }
 
 template <class T>
-void FullMtx<T>::GaussElim(Vcr<T> &bb) const { // elimina��o gaussiana sem pivoteamento
+void FullMtx<T>::GaussElim(Vcr<T> &bb) const { // eliminação gaussiana sem pivoteamento
     if (this->nrows != bb.size() || this->nrows != ncols)
         error("tamanho de matriz ou de vetor difere");
     FullMtx<T> tmpx = *this;
 
     for (int k = 0; k < this->nrows - 1; k++) {
         if (tmpx.mx[k][k] == 0)
-            error("pivot � zero em FullMtx::GaussElim()");
+            error("pivot é zero em FullMtx::GaussElim()");
         for (int i = k + 1; i < this->nrows; i++) {
             if (tmpx.mx[i][k] != 0) {
                 T mult = tmpx.mx[i][k] / tmpx.mx[k][k];
@@ -224,7 +226,7 @@ void FullMtx<T>::GaussElim(Vcr<T> &bb) const { // elimina��o gaussiana sem p
 }
 
 template <class T>
-void FullMtx<T>::Inverte1(FullMtx<T> &bb) const { // elimina��o gaussiana sem pivoteamento
+void FullMtx<T>::Inverte1(FullMtx<T> &bb) const { // eliminação gaussiana sem pivoteamento
     if (this->nrows != bb.nrows || this->nrows != ncols)
         error("tamanho de matriz difere");
     FullMtx<T> tmpx = *this;
@@ -281,9 +283,9 @@ T FullMtx<T>::InterpolaUnif(T lin, T col) const {
 }
 
 template <class T>
-void FullMtx<T>::GaussElimPP(Vcr<T> &bb) const { // elimina��o gaussiana com pivoteamento parcial, bb � o vetor livre, que tamb�m ser� o vetor solu��o
+void FullMtx<T>::GaussElimPP(Vcr<T> &bb) const { // eliminação gaussiana com pivoteamento parcial, bb � o vetor livre, que também será o vetor solução
     if (this->nrows != bb.size() || this->nrows != ncols)
-        error("h� discord�ncia entre o tamanho do vetor e da matriz");
+        error("há discordância entre o tamanho do vetor e da matriz");
     FullMtx<T> tmpx = *this;
 
     Vcr<int> pvt(this->nrows); // vetor para fazer o pivoteamento parcial
@@ -291,8 +293,8 @@ void FullMtx<T>::GaussElimPP(Vcr<T> &bb) const { // elimina��o gaussiana com
         pvt[k] = k; // registra a ordem inicial das linhas da matriz
 
     for (int k = 0; k < this->nrows - 1; k++) { // loop principal
-        // a decomposi��o � sempre feita com a linha a partir de k (i>=k) que tenha o maior termo matriz[i][k]
-        //  a linha deve ser permutada sempre que n�o tiver o maior termo. Efetivamente, apenas o termo de pvt � permutado
+        // a decomposição � sempre feita com a linha a partir de k (i>=k) que tenha o maior termo matriz[i][k]
+        //  a linha deve ser permutada sempre que não tiver o maior termo. Efetivamente, apenas o termo de pvt � permutado
         int pc = k;
         double aet = fabs(tmpx.mx[pvt[k]][k]);
         for (int i = k + 1; i < this->nrows; i++) {
@@ -302,7 +304,7 @@ void FullMtx<T>::GaussElimPP(Vcr<T> &bb) const { // elimina��o gaussiana com
             }
         }
         if (!aet)
-            error("termo de diagonal � zero, erro ocorrido durante pivoteamento parcial");
+            error("termo de diagonal é zero, erro ocorrido durante pivoteamento parcial");
         if (pc != k) {
             swap(pvt[k], pvt[pc]);
         }
@@ -326,7 +328,7 @@ void FullMtx<T>::GaussElimPP(Vcr<T> &bb) const { // elimina��o gaussiana com
             bb[pvt[i]] -= tmpx.mx[pvt[i]][j] * bb[pvt[j]];
 
     // back substitution para Ux=y
-    Vcr<T> xx(this->nrows); // armazena a solu��o na ordem original
+    Vcr<T> xx(this->nrows); // armazena a solução na ordem original
     for (int i = this->nrows - 1; i >= 0; i--) {
         for (int j = i + 1; j < ncols; j++)
             bb[pvt[i]] -= tmpx.mx[pvt[i]][j] * xx[j];
@@ -337,12 +339,12 @@ void FullMtx<T>::GaussElimPP(Vcr<T> &bb) const { // elimina��o gaussiana com
 }
 
 template <class T>
-void FullMtx<T>::GaussElimCP(Vcr<T> &bb) const { // elimina��o gaussiana com pivoteamento completo,
-    // bb � o vetor livre, que tamb�m ser� o vetor solu��o
-    // esta subrotina � similar � de pivoteamento parcial, a diferen�a est� no fato de se buscar o termo de maior
-    // coeficiente para a diagonal n�o s� pivoteando as linhas, mas tamb�m pivoteando as colunas
+void FullMtx<T>::GaussElimCP(Vcr<T> &bb) const { // eliminação gaussiana com pivoteamento completo,
+    // bb � o vetor livre, que também será o vetor solução
+    // esta subrotina � similar � de pivoteamento parcial, a diferença está no fato de se buscar o termo de maior
+    // coeficiente para a diagonal não só pivoteando as linhas, mas também pivoteando as colunas
     if (this->nrows != bb.size() || this->nrows != ncols)
-        error("h� discord�ncia entre o tamanho do vetor e da matriz");
+        error("há discordância entre o tamanho do vetor e da matriz");
     FullMtx<T> tmpx = *this;
 
     Vcr<int> px(this->nrows); // pivoteamento das linhas
@@ -364,7 +366,7 @@ void FullMtx<T>::GaussElimCP(Vcr<T> &bb) const { // elimina��o gaussiana com
             }
         }
         if (!aet)
-            error("problemas na elimina��o de Gauss por pivoteamento completo, termo diagonal igual a zero");
+            error("problemas na eliminação de Gauss por pivoteamento completo, termo diagonal igual a zero");
         swap(px[k], px[pct]);
         swap(qy[k], qy[qdt]);
 
@@ -395,7 +397,7 @@ void FullMtx<T>::GaussElimCP(Vcr<T> &bb) const { // elimina��o gaussiana com
 template <class T>
 void FullMtx<T>::LU(Vcr<T> &bb) const {
     if (this->nrows != bb.size() || this->nrows != ncols)
-        error("h� discord�ncia entre o tamanho do vetor e da matriz");
+        error("há discordância entre o tamanho do vetor e da matriz");
     FullMtx<T> tmpx = *this;
 
     for (int k = 0; k < this->nrows; k++) {
@@ -436,77 +438,77 @@ void FullMtx<T>::LU(Vcr<T> &bb) const {
     }
 }
 
-// Fun��es para Matriz Banda:
-// membros e fun��es relacionadas:
+// Funções para Matriz Banda:
+// membros e funções relacionadas:
 
 template <class T>
-BandMtx<T>::BandMtx(int n, int p, int r, const T **const t) { // construtor a partir de �rea armazenada apontada por t
-    this->nrows = n;                                          // n�mero de equa��es a ser resolvidas
-    bwlef = p;                                                // range de elementos n�o-zero � esquerda
-    bwrit = r;                                                // range de elementos n�o-zero � direita
+BandMtx<T>::BandMtx(int n, int p, int r, const T **const t) { // construtor a partir de área armazenada apontada por t
+    this->nrows = n;                                          // número de equações a ser resolvidas
+    bwlef = p;                                                // range de elementos não-zero � esquerda
+    bwrit = r;                                                // range de elementos não-zero � direita
 
     bdmx = new T *[this->nrows];
     for (int i = 0; i < this->nrows; i++) {
-        bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos n�o-zeros � esquerda e � direita da diagonal
-        bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal t�m �ndice i=0
+        bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos não-zeros � esquerda e � direita da diagonal
+        bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal têm índice i=0
     }
 
     for (int i = 0; i < this->nrows; i++)
         for (int j = -bwlef; j <= bwrit; j++)
-            bdmx[i][j] = t[i][j]; // aten��o, observe que  t � armazenado da mesma maneira que bdmx
+            bdmx[i][j] = t[i][j]; // atenção, observe que  t � armazenado da mesma maneira que bdmx
 }
 
 template <class T>
-BandMtx<T>::BandMtx(int n, int p, int r, T t) { // construtor onde todos os termos t�m o valor t
-    this->nrows = n;                            // n�mero de equa��es a ser resolvidas
-    bwlef = p;                                  // range de elementos n�o-zero � esquerda
-    bwrit = r;                                  // range de elementos n�o-zero � direita
+BandMtx<T>::BandMtx(int n, int p, int r, T t) { // construtor onde todos os termos têm o valor t
+    this->nrows = n;                            // número de equações a ser resolvidas
+    bwlef = p;                                  // range de elementos não-zero � esquerda
+    bwrit = r;                                  // range de elementos não-zero � direita
     const int bandWidth = bwlef + bwrit + 1;
 
     bdmx = new T *[this->nrows];
     for (int i = 0; i < this->nrows; i++) {
-        T *row = new T[bandWidth]; // armazena o termo da diagonal principal, os termos n�o-zeros � esquerda e � direita da diagonal
+        T *row = new T[bandWidth]; // armazena o termo da diagonal principal, os termos não-zeros � esquerda e � direita da diagonal
         for (int j = 0; j < bandWidth; j++)
             row[j] = t;
-        bdmx[i] = row + bwlef; // offset, agora os termos na diagonal principal t�m �ndice i=0
+        bdmx[i] = row + bwlef; // offset, agora os termos na diagonal principal têm índice i=0
     }
 }
 
 template <class T>
 BandMtx<T>::BandMtx(int n, int p, int r, const FullMtx<T> &fm) { // construtor a partir de uma matriz cheia
-    this->nrows = n;                                             // n�mero de equa��es a ser resolvidas
-    bwlef = p;                                                   // range de elementos n�o-zero � esquerda
-    bwrit = r;                                                   // range de elementos n�o-zero � direita
+    this->nrows = n;                                             // número de equações a ser resolvidas
+    bwlef = p;                                                   // range de elementos não-zero � esquerda
+    bwrit = r;                                                   // range de elementos não-zero � direita
 
     bdmx = new T *[this->nrows];
     for (int i = 0; i < this->nrows; i++) {
-        bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos n�o-zeros � esquerda e � direita da diagonal
-        bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal t�m �ndice i=0
+        bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos não-zeros � esquerda e � direita da diagonal
+        bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal têm índice i=0
     }
 
     for (int i = 0; i < this->nrows; i++)
         for (int j = -bwlef; j <= bwrit; j++)
-            bdmx[i][j] = 0; // armazenamento inicial com zeros. A pr�ncipio isto seria desnecess�rio j� que a seguir haver� uma armazenagem com uma matriz cheia
+            bdmx[i][j] = 0; // armazenamento inicial com zeros. A princípio isto seria desnecessário já que a seguir haverá uma armazenagem com uma matriz cheia
 
     for (int i = 0; i < this->nrows; i++) {
         int ip = max(i - bwlef, 0);
         int ir = min(i + bwrit, this->nrows - 1);
         for (int j = ip; j <= ir; j++)
-            bdmx[i][j - i] = fm.mx[i][j]; // observe que j-i estar� sempre entre -bwlef e bwrit
+            bdmx[i][j - i] = fm.mx[i][j]; // observe que j-i estará sempre entre -bwlef e bwrit
     }
 }
 
 template <class T>
-BandMtx<T>::BandMtx(const BandMtx &bd) { // construtor c�pia
-    this->nrows = bd.nrows;              // n�mero de equa��es a ser resolvidas
-    bwlef = bd.bwlef;                    // range de elementos n�o-zero � esquerda
-    bwrit = bd.bwrit;                    // range de elementos n�o-zero � direita
+BandMtx<T>::BandMtx(const BandMtx &bd) { // construtor cópia
+    this->nrows = bd.nrows;              // número de equações a ser resolvidas
+    bwlef = bd.bwlef;                    // range de elementos não-zero � esquerda
+    bwrit = bd.bwrit;                    // range de elementos não-zero � direita
     const int bandWidth = bwlef + bwrit + 1;
 
     bdmx = new T *[this->nrows];
     for (int i = 0; i < this->nrows; i++) {
-        T *row = new T[bandWidth]; // armazena o termo da diagonal principal, os termos n�o-zeros � esquerda e � direita da diagonal
-        bdmx[i] = row + bwlef;     // offset, agora os termos na diagonal principal t�m �ndice i=0
+        T *row = new T[bandWidth]; // armazena o termo da diagonal principal, os termos não-zeros � esquerda e � direita da diagonal
+        bdmx[i] = row + bwlef;     // offset, agora os termos na diagonal principal têm índice i=0
         for (int j = 0; j < bandWidth; j++)
             row[j] = bd[i][j - bwlef];
     }
@@ -514,16 +516,16 @@ BandMtx<T>::BandMtx(const BandMtx &bd) { // construtor c�pia
 
 template <class T>
 Vcr<T> BandMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
-    if (precn == 0) {                                       // sem pr�-condicionamento
+    if (precn == 0) {                                       // sem pré-condicionamento
         return r;
-    } else if (precn == 1) { // pr�-condicionamento diagonal
+    } else if (precn == 1) { // pré-condicionamento diagonal
         Vcr<T> z(this->nrows);
         // #pragma omp parallel for num_threads(ntrd)
         for (int i = 0; i < this->nrows; i++)
             z[i] = r[i] / bdmx[i][0];
         return z;
-    } else if (precn == 2) { // pr�-condicionador sim�trico SOR
-        const T omega = 1.2; // par�metro do SOR
+    } else if (precn == 2) { // pré-condicionador simétrico SOR
+        const T omega = 1.2; // parâmetro do SOR
         Vcr<T> z(this->nrows);
         for (int i = 0; i < this->nrows; i++) {
             T sum = 0;
@@ -541,13 +543,13 @@ Vcr<T> BandMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
         }
         return z;
     } else {
-        error("n�mero inv�lido para sele��o de precondicionador > 2");
+        error("número inválido para seleção de precondicionador > 2");
         return Vcr<T>();
     }
 }
 
 template <class T>
-T BandMtx<T>::cheia(int i, int j) const { // trata a matriz com os �ndices normais de matriz cheia
+T BandMtx<T>::cheia(int i, int j) const { // trata a matriz com os índices normais de matriz cheia
     int entran = j - i;
     T val;
     if (entran < -bwlef || entran > bwrit)
@@ -562,15 +564,15 @@ BandMtx<T> &BandMtx<T>::operator=(const BandMtx &bd) { // sobrecarga de operador
     if (this->nrows > 0) {
         if (this->nrows != bd.nrows || bwlef != bd.bwlef || bwrit != bd.bwrit) {
             for (int i = 0; i < this->nrows; i++)
-                delete[] (bdmx[i] -= bwlef); // no construtor no momento do aramzenamento � feito um "offset", os termos diagonais tem �ndice zero, por isto, � necess�rio o -=bwleft
+                delete[] (bdmx[i] -= bwlef); // no construtor no momento do aramzenamento � feito um "offset", os termos diagonais tem índice zero, por isto, � necessário o -=bwleft
             delete[] bdmx;
             this->nrows = bd.nrows;
             bwlef = bd.bwlef;
             bwrit = bd.bwrit;
             bdmx = new T *[this->nrows];
             for (int i = 0; i < this->nrows; i++) {
-                bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos n�o-zeros � esquerda e � direita da diagonal
-                bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal t�m �ndice i=0
+                bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos não-zeros � esquerda e � direita da diagonal
+                bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal têm índice i=0
             }
         }
     } else {
@@ -579,8 +581,8 @@ BandMtx<T> &BandMtx<T>::operator=(const BandMtx &bd) { // sobrecarga de operador
         bwrit = bd.bwrit;
         bdmx = new T *[this->nrows];
         for (int i = 0; i < this->nrows; i++) {
-            bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos n�o-zeros � esquerda e � direita da diagonal
-            bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal t�m �ndice i=0
+            bdmx[i] = new T[bwlef + bwrit + 1]; // armazena o termo da diagonal principal, os termos não-zeros � esquerda e � direita da diagonal
+            bdmx[i] += bwlef;                   // offset, agora os termos na diagonal principal têm índice i=0
         }
     }
 
@@ -591,7 +593,7 @@ BandMtx<T> &BandMtx<T>::operator=(const BandMtx &bd) { // sobrecarga de operador
 }
 
 template <class T>
-BandMtx<T> BandMtx<T>::operator*(T a) const { // multiplica��o de matriz por escalar mat*a
+BandMtx<T> BandMtx<T>::operator*(T a) const { // multiplicação de matriz por escalar mat*a
     BandMtx<T> prod = *this;
     for (int i = 0; i < this->nrows; i++)
         for (int j = -bwlef; j <= bwrit; j++)
@@ -600,11 +602,11 @@ BandMtx<T> BandMtx<T>::operator*(T a) const { // multiplica��o de matriz por
 }
 
 template <class T>
-Vcr<T> BandMtx<T>::operator*(const Vcr<T> &vec) const { // sobrecarga de multiplica��o, matriz por vetor
+Vcr<T> BandMtx<T>::operator*(const Vcr<T> &vec) const { // sobrecarga de multiplicação, matriz por vetor
     if (this->nrows != vec.size())
-        error("tamanho de matriz e vetor s�o diferentes");
+        error("tamanho de matriz e vetor são diferentes");
     // observe que esta mensagem de erro seria mais correta se fosse comparado ncols com size,
-    // mas isto n�o � poss�vel para uma matriz banda, pontanto, esta checagem � feita partindo do pressuposto que se est� trabalhando
+    // mas isto não � possível para uma matriz banda, pontanto, esta checagem � feita partindo do pressuposto que se está trabalhando
     // com uma matriz quadrada
 
     Vcr<T> tm(this->nrows);
@@ -621,7 +623,7 @@ Vcr<T> BandMtx<T>::operator*(const Vcr<T> &vec) const { // sobrecarga de multipl
 template <class T>
 BandMtx<T> &BandMtx<T>::operator+=(const BandMtx &mat) { // sobrecarga de operador +=
     if (this->nrows != mat.nrows || bwlef != mat.bwlef || bwrit != mat.bwrit)
-        error("erro no tamanho da matriz coluna, ocorrido na opera��o +=");
+        error("erro no tamanho da matriz coluna, ocorrido na operação +=");
     for (int i = 0; i < this->nrows; i++)
         for (int j = -bwlef; j <= bwrit; j++)
             this->bdmx[i][j] += mat[i][j];
@@ -631,7 +633,7 @@ BandMtx<T> &BandMtx<T>::operator+=(const BandMtx &mat) { // sobrecarga de operad
 template <class T>
 BandMtx<T> &BandMtx<T>::operator-=(const BandMtx &mat) { // sobrecarga de operador -=
     if (this->nrows != mat.nrows || bwlef != mat.bwlef || bwrit != mat.bwrit)
-        error("erro no tamanho da matriz coluna, ocorrido na opera��o +=");
+        error("erro no tamanho da matriz coluna, ocorrido na operação +=");
     for (int i = 0; i < this->nrows; i++)
         for (int j = -bwlef; j <= bwrit; j++)
             this->bdmx[i][j] -= mat[i][j];
@@ -639,7 +641,7 @@ BandMtx<T> &BandMtx<T>::operator-=(const BandMtx &mat) { // sobrecarga de operad
 }
 
 template <class T>
-BandMtx<T> BandMtx<T>::operator-() const { // sobrecarga de operador un�rio -
+BandMtx<T> BandMtx<T>::operator-() const { // sobrecarga de operador unário -
     BandMtx<T> zero(this->nrows, bwlef, bwrit);
     return zero - *this;
 }
@@ -683,7 +685,7 @@ ostream &operator<<(ostream &s, const BandMtx<T> &mat) { // saida de valores de 
 template <class T>
 void BandMtx<T>::GaussElim(Vcr<T> &bb) const { // LU para matriz banda sem pivoteamento
     if (this->nrows != bb.size())
-        error("tamanho de matriz e vetor n�o confere, erro ocorrido na rotina LU sem pivoteamento para matriz banda");
+        error("tamanho de matriz e vetor não confere, erro ocorrido na rotina LU sem pivoteamento para matriz banda");
     BandMtx<T> tmx = *this;
 
     for (int k = 0; k < this->nrows; k++) {
@@ -721,7 +723,7 @@ void BandMtx<T>::GaussElim(Vcr<T> &bb) const { // LU para matriz banda sem pivot
 template <class T>
 void BandMtx<T>::GaussElimPP(Vcr<T> &bb) const { // LU para matriz banda com pivoteamento parcial
     if (this->nrows != bb.size())
-        error("tamanho de matriz e vetor n�o confere, erro ocorrido na rotina LU com pivoteamento parcial para matriz banda");
+        error("tamanho de matriz e vetor não confere, erro ocorrido na rotina LU com pivoteamento parcial para matriz banda");
 
     const int nrows = this->nrows;
     BandMtx<T> tx(nrows, bwlef, min(nrows - 1, bwlef + bwrit));
@@ -795,8 +797,8 @@ void BandMtx<T>::GaussElimPP(Vcr<T> &bb) const { // LU para matriz banda com piv
     delete[] pvt;
 }
 
-// Fun��es para Matriz Esparsa:
-// membros e fun��es relacionadas:
+// Funções para Matriz Esparsa:
+// membros e funções relacionadas:
 
 template <class T>
 void SparseMtx<T>::geraNivelFillinILU(std::vector<int> &level, std::vector<int> &linhaLev,
@@ -1135,7 +1137,7 @@ SparseMtx<T>::SparseMtx(int n, int m) { // construtor
 }
 
 template <class T>
-SparseMtx<T>::SparseMtx(const SparseMtx &mat) { // construtor de c�pia
+SparseMtx<T>::SparseMtx(const SparseMtx &mat) { // construtor de cópia
     this->nrows = mat.nrows;
     lenth = mat.lenth;
     sra = new T[lenth];
@@ -1207,14 +1209,14 @@ void SparseMtx<T>::qualPosILU(int &match, int &inf, int &sup, int linha, int col
 
 template <class T>
 Vcr<T> SparseMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
-    if (precn == 0) {                                         // sem pr�-condicionamento
+    if (precn == 0) {                                         // sem pré-condicionamento
         return r;
-    } else if (precn == 1) {      // pr�-condicionamento diagonal
+    } else if (precn == 1) {      // pré-condicionamento diagonal
         Vcr<T> diag(this->nrows); // termos diagonais
 #pragma omp parallel for num_threads(nthrdMatriz)
         for (int i = 0; i < this->nrows; i++) {
             for (int j = fnz[i]; j < fnz[i + 1]; j++)
-                diag[i] += sra[j] * sra[j]; // c�lculo de um valor m�dio para a diagonal
+                diag[i] += sra[j] * sra[j]; // cálculo de um valor médio para a diagonal
             diag[i] = sqrt(diag[i]);
         }
         Vcr<T> z(this->nrows);
@@ -1222,11 +1224,11 @@ Vcr<T> SparseMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
         for (int i = 0; i < this->nrows; i++)
             z[i] = r[i] / diag[i];
         return z;
-    } else if (precn == 2) {      // pr�-condicionador sim�trico SOR
-        const T omega = .3;       // par�metro do SOR
+    } else if (precn == 2) {      // pré-condicionador simétrico SOR
+        const T omega = .3;       // parâmetro do SOR
         Vcr<T> diag(this->nrows); // termos diagonais
 #pragma omp parallel for num_threads(nthrdMatriz)
-        for (int i = 0; i < this->nrows; i++) { // c�lculo do termo diagonal m�dio
+        for (int i = 0; i < this->nrows; i++) { // cálculo do termo diagonal médio
             for (int j = fnz[i]; j < fnz[i + 1]; j++) {
                 if (clm[j] == i)
                     diag[i] += sra[j] * sra[j];
@@ -1572,7 +1574,7 @@ Vcr<T> SparseMtx<T>::preconding(const Vcr<T> &r, int precn) { // const{
             return z; // Retorna o vetor resultante do pré-condicionamento
         }
     } else {
-        error("n�mero inv�lido para sele��o de precondicionador > 2");
+        error("número inválido para seleção de precondicionador > 2");
         return Vcr<T>();
     }
 }
@@ -1651,7 +1653,7 @@ SparseMtx<T> &SparseMtx<T>::operator=(const SparseMtx &ssm) { // sobrecarga do o
 }
 
 template <class T>
-SparseMtx<T> SparseMtx<T>::operator*(T a) const { // multiplica��o de matriz por escalar mat*a
+SparseMtx<T> SparseMtx<T>::operator*(T a) const { // multiplicação de matriz por escalar mat*a
     SparseMtx<T> tm(this->nrows, lenth);
     for (int i = 0; i < lenth; i++)
         tm[i] = sra[i] * a;
@@ -1659,9 +1661,9 @@ SparseMtx<T> SparseMtx<T>::operator*(T a) const { // multiplica��o de matriz
 }
 
 template <class T>
-Vcr<T> SparseMtx<T>::operator*(const Vcr<T> &vec) const { // multiplica��o entre matriz e vetor
+Vcr<T> SparseMtx<T>::operator*(const Vcr<T> &vec) const { // multiplicação entre matriz e vetor
     if (this->nrows != vec.size())
-        error("tamanho de matriz e de vetor n�o conferem, problema ocorrido na opera��o de multiplica��o matrizXvetor");
+        error("tamanho de matriz e de vetor não conferem, problema ocorrido na operação de multiplicação matrizXvetor");
     Vcr<T> tm(this->nrows);
 #pragma omp parallel for num_threads(nthrdMatriz)
     for (int i = 0; i < this->nrows; i++)
@@ -1685,7 +1687,7 @@ SparseMtx<T> &SparseMtx<T>::operator-=(const SparseMtx &ssm) { // sobrecarga de 
 }
 
 template <class T>
-SparseMtx<T> SparseMtx<T>::operator-() const { // sobrecarga de operador un�rio - -> m2=-m1
+SparseMtx<T> SparseMtx<T>::operator-() const { // sobrecarga de operador unário - -> m2=-m1
     SparseMtx<T> zero(this->nrows, lenth);
     return zero - *this;
 }
@@ -1693,52 +1695,52 @@ SparseMtx<T> SparseMtx<T>::operator-() const { // sobrecarga de operador un�ri
 template <class T>
 SparseMtx<T> SparseMtx<T>::operator+(const SparseMtx &ssm) const { // sobrecarga de operador +
     if (this->nrows != ssm.nrows)
-        error("matrizes t�m tamanhos diferentes, erro ocorrido na soma de matrizes esparsas");
+        error("matrizes têm tamanhos diferentes, erro ocorrido na soma de matrizes esparsas");
 
-    int templ = lenth + ssm.lenth; // tamanho de vetor tempor�rio para armazenar as entradas para a matriz de soma
-    T *tempm;                      // �rea de armazenamento tempor�rio para os valores n�o-zero da matriz
-    int *tempcol;                  // �rea de armazenamento tempor�rio para o �ndice da coluna de cada entrada n�o zero da matriz
-    int *tempini;                  // �rea de armazenamento tempor�rio para o �ndice da primeira entrada n�o zero em uma linha
+    int templ = lenth + ssm.lenth; // tamanho de vetor temporário para armazenar as entradas para a matriz de soma
+    T *tempm;                      // área de armazenamento temporário para os valores não-zero da matriz
+    int *tempcol;                  // área de armazenamento temporário para o índice da coluna de cada entrada não zero da matriz
+    int *tempini;                  // área de armazenamento temporário para o índice da primeira entrada não zero em uma linha
     tempm = new T[templ];
     tempcol = new int[templ];
     tempini = new int[this->nrows + 1];
 
-    int ltemp = 0;                                          // contador do n�mero de entradas n�o-zero
-    int l1 = 0;                                             // contador para rastrear em que posi��o de sra se encontra a primeira matriz na soma
-    int l2 = 0;                                             // contador para rastrear em que posi��o de sra se encontra a segunda matriz na soma
-    for (int i = 0; i < this->nrows; i++) {                 // la�o linha a linha
-        int col1 = clm[fnz[i]];                             // primeira coluna com termo n�o-zero na primeira matriz para a linha i
-        int col2 = ssm.clm[ssm.fnz[i]];                     // primeira coluna com termo n�o-zero na segunda matriz para a linha i
-        int fim1 = fnz[i + 1] - 1;                          // �ltima coluna com termo n�o-zero na primeira matriz para a linha i
-        int fim2 = ssm.fnz[i + 1] - 1;                      // �ltima coluna com termo n�o-zero na segunda matriz para a linha i
-        tempini[i] = ltemp;                                 // armazenando o �ndice do primeiro termo sra da nova matriz para a linha i
-        while (l1 <= fim1 || l2 <= fim2) {                  // o la�o s� termina quando todos os termos n�o-zeros da duas matrizes na linha que ser�o somados s�o rastreados
-            if (col1 < col2 || (l1 <= fim1 && l2 > fim2)) { // a primeira matriz tem um termo n�o zero antes de algum termo n�o zero da segunda
+    int ltemp = 0;                                          // contador do número de entradas não-zero
+    int l1 = 0;                                             // contador para rastrear em que posição de sra se encontra a primeira matriz na soma
+    int l2 = 0;                                             // contador para rastrear em que posição de sra se encontra a segunda matriz na soma
+    for (int i = 0; i < this->nrows; i++) {                 // laço linha a linha
+        int col1 = clm[fnz[i]];                             // primeira coluna com termo não-zero na primeira matriz para a linha i
+        int col2 = ssm.clm[ssm.fnz[i]];                     // primeira coluna com termo não-zero na segunda matriz para a linha i
+        int fim1 = fnz[i + 1] - 1;                          // última coluna com termo não-zero na primeira matriz para a linha i
+        int fim2 = ssm.fnz[i + 1] - 1;                      // última coluna com termo não-zero na segunda matriz para a linha i
+        tempini[i] = ltemp;                                 // armazenando o índice do primeiro termo sra da nova matriz para a linha i
+        while (l1 <= fim1 || l2 <= fim2) {                  // o laço só termina quando todos os termos não-zeros da duas matrizes na linha que serão somados são rastreados
+            if (col1 < col2 || (l1 <= fim1 && l2 > fim2)) { // a primeira matriz tem um termo não zero antes de algum termo não zero da segunda
                 tempm[ltemp] = sra[l1];
-                tempcol[ltemp] = col1; // a matriz soma receber� os valores da primeira matriz
+                tempcol[ltemp] = col1; // a matriz soma receberá os valores da primeira matriz
                 l1++;
                 ltemp++;
-                col1 = clm[l1];                                    // s� os �ndices da primeira matriz s�o acrescidos de 1
-            } else if (col2 < col1 || (l2 <= fim2 && l1 > fim1)) { // a segunda matriz tem um termo n�o zero antes de algum termo n�o zero da segunda
+                col1 = clm[l1];                                    // só os índices da primeira matriz são acrescidos de 1
+            } else if (col2 < col1 || (l2 <= fim2 && l1 > fim1)) { // a segunda matriz tem um termo não zero antes de algum termo não zero da segunda
                 tempm[ltemp] = ssm.sra[l2];
-                tempcol[ltemp] = col2; // a matriz soma receber� os valores da segunda matriz
+                tempcol[ltemp] = col2; // a matriz soma receberá os valores da segunda matriz
                 l2++;
                 ltemp++;
-                col2 = ssm.clm[l2]; // s� os �ndices da segundaa matriz s�o acrescidos de 1
-            } else {                // os termo n�o zero das duas matrizes coincidem na mesma coluna
+                col2 = ssm.clm[l2]; // só os índices da segundaa matriz são acrescidos de 1
+            } else {                // os termo não zero das duas matrizes coincidem na mesma coluna
                 tempm[ltemp] = sra[l1] + ssm.sra[l2];
-                tempcol[ltemp] = col1; // a matriz soma receber� a soma dos valores da primeira  e segunda matriz
+                tempcol[ltemp] = col1; // a matriz soma receberá a soma dos valores da primeira  e segunda matriz
                 l1++;
                 l2++;
                 ltemp++;
                 col1 = clm[l1];
-                col2 = ssm.clm[l2]; // os �ndices da primeira e da segunda matriz ser�o acrescidos de 1
+                col2 = ssm.clm[l2]; // os índices da primeira e da segunda matriz serão acrescidos de 1
             }
         }
     }
     tempini[this->nrows] = ltemp;
 
-    SparseMtx<T> sum(this->nrows, ltemp, tempm, tempcol, tempini); // constr�i nova matriz esparsa a partir dos vetores obtidos no la�o anterior
+    SparseMtx<T> sum(this->nrows, ltemp, tempm, tempcol, tempini); // constrói nova matriz esparsa a partir dos vetores obtidos no laço anterior
     delete[] tempm;
     delete[] tempcol;
     delete[] tempini;
@@ -1748,79 +1750,79 @@ SparseMtx<T> SparseMtx<T>::operator+(const SparseMtx &ssm) const { // sobrecarga
 template <class T>
 SparseMtx<T> SparseMtx<T>::operator-(const SparseMtx &ssm) const { // sobrecarga de operador +
     if (this->nrows != ssm.nrows)
-        error("matrizes t�m tamanhos diferentes, erro ocorrido na soma de matrizes esparsas");
+        error("matrizes têm tamanhos diferentes, erro ocorrido na soma de matrizes esparsas");
 
-    int templ = lenth + ssm.lenth; // tamanho de vetor tempor�rio para armazenar as entradas para a matriz de soma
-    T *tempm;                      // �rea de armazenamento tempor�rio para os valores n�o-zero da matriz
-    int *tempcol;                  // �rea de armazenamento tempor�rio para o �ndice da coluna de cada entrada n�o zero da matriz
-    int *tempini;                  // �rea de armazenamento tempor�rio para o �ndice da primeira entrada n�o zero em uma linha
+    int templ = lenth + ssm.lenth; // tamanho de vetor temporário para armazenar as entradas para a matriz de soma
+    T *tempm;                      // área de armazenamento temporário para os valores não-zero da matriz
+    int *tempcol;                  // área de armazenamento temporário para o índice da coluna de cada entrada não zero da matriz
+    int *tempini;                  // área de armazenamento temporário para o índice da primeira entrada não zero em uma linha
     tempm = new T[templ];
     tempcol = new int[templ];
     tempini = new int[this->nrows + 1];
 
-    int ltemp = 0;                                          // contador do n�mero de entradas n�o-zero
-    int l1 = 0;                                             // contador para rastrear em que posi��o de sra se encontra a primeira matriz na soma
-    int l2 = 0;                                             // contador para rastrear em que posi��o de sra se encontra a segunda matriz na soma
-    for (int i = 0; i < this->nrows; i++) {                 // la�o linha a linha
-        int col1 = clm[fnz[i]];                             // primeira coluna com termo n�o-zero na primeira matriz para a linha i
-        int col2 = ssm.clm[ssm.fnz[i]];                     // primeira coluna com termo n�o-zero na segunda matriz para a linha i
-        int fim1 = fnz[i + 1] - 1;                          // �ltima coluna com termo n�o-zero na primeira matriz para a linha i
-        int fim2 = ssm.fnz[i + 1] - 1;                      // �ltima coluna com termo n�o-zero na segunda matriz para a linha i
-        tempini[i] = ltemp;                                 // armazenando o �ndice do primeiro termo sra da nova matriz para a linha i
-        while (l1 <= fim1 || l2 <= fim2) {                  // o la�o s� termina quando todos os termos n�o-zeros da duas matrizes na linha que ser�o somados s�o rastreados
-            if (col1 < col2 || (l1 <= fim1 && l2 > fim2)) { // a primeira matriz tem um termo n�o zero antes de algum termo n�o zero da segunda
+    int ltemp = 0;                                          // contador do número de entradas não-zero
+    int l1 = 0;                                             // contador para rastrear em que posição de sra se encontra a primeira matriz na soma
+    int l2 = 0;                                             // contador para rastrear em que posição de sra se encontra a segunda matriz na soma
+    for (int i = 0; i < this->nrows; i++) {                 // laço linha a linha
+        int col1 = clm[fnz[i]];                             // primeira coluna com termo não-zero na primeira matriz para a linha i
+        int col2 = ssm.clm[ssm.fnz[i]];                     // primeira coluna com termo não-zero na segunda matriz para a linha i
+        int fim1 = fnz[i + 1] - 1;                          // última coluna com termo não-zero na primeira matriz para a linha i
+        int fim2 = ssm.fnz[i + 1] - 1;                      // última coluna com termo não-zero na segunda matriz para a linha i
+        tempini[i] = ltemp;                                 // armazenando o índice do primeiro termo sra da nova matriz para a linha i
+        while (l1 <= fim1 || l2 <= fim2) {                  // o laço só termina quando todos os termos não-zeros da duas matrizes na linha que serão somados são rastreados
+            if (col1 < col2 || (l1 <= fim1 && l2 > fim2)) { // a primeira matriz tem um termo não zero antes de algum termo não zero da segunda
                 tempm[ltemp] = sra[l1];
-                tempcol[ltemp] = col1; // a matriz soma receber� os valores da primeira matriz
+                tempcol[ltemp] = col1; // a matriz soma receberá os valores da primeira matriz
                 l1++;
                 ltemp++;
-                col1 = clm[l1];                                    // s� os �ndices da primeira matriz s�o acrescidos de 1
-            } else if (col2 < col1 || (l2 <= fim2 && l1 > fim1)) { // a segunda matriz tem um termo n�o zero antes de algum termo n�o zero da segunda
+                col1 = clm[l1];                                    // só os índices da primeira matriz são acrescidos de 1
+            } else if (col2 < col1 || (l2 <= fim2 && l1 > fim1)) { // a segunda matriz tem um termo não zero antes de algum termo não zero da segunda
                 tempm[ltemp] = -ssm.sra[l2];
-                tempcol[ltemp] = col2; // a matriz soma receber� os valores da segunda matriz
+                tempcol[ltemp] = col2; // a matriz soma receberá os valores da segunda matriz
                 l2++;
                 ltemp++;
-                col2 = ssm.clm[l2]; // s� os �ndices da segundaa matriz s�o acrescidos de 1
-            } else {                // os termo n�o zero das duas matrizes coincidem na mesma coluna
+                col2 = ssm.clm[l2]; // só os índices da segundaa matriz são acrescidos de 1
+            } else {                // os termo não zero das duas matrizes coincidem na mesma coluna
                 tempm[ltemp] = sra[l1] - ssm.sra[l2];
-                tempcol[ltemp] = col1; // a matriz soma receber� a soma dos valores da primeira  e segunda matriz
+                tempcol[ltemp] = col1; // a matriz soma receberá a soma dos valores da primeira  e segunda matriz
                 l1++;
                 l2++;
                 ltemp++;
                 col1 = clm[l1];
-                col2 = ssm.clm[l2]; // os �ndices da primeira e da segunda matriz ser�o acrescidos de 1
+                col2 = ssm.clm[l2]; // os índices da primeira e da segunda matriz serão acrescidos de 1
             }
         }
     }
     tempini[this->nrows] = ltemp;
 
-    SparseMtx<T> subtr(this->nrows, ltemp, tempm, tempcol, tempini); // constr�i nova matriz esparsa a partir dos vetores obtidos no la�o anterior
+    SparseMtx<T> subtr(this->nrows, ltemp, tempm, tempcol, tempini); // constrói nova matriz esparsa a partir dos vetores obtidos no laço anterior
     delete[] tempm;
     delete[] tempcol;
     delete[] tempini;
     return subtr;
 }
 
-// Fun��es para Matriz Abstrata:
+// Funções para Matriz Abstrata:
 template <class T>
 int SparseMtx<T>::CG(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn) { // gradiente conjugado
-    // Gradiente conjugado  com pr�-condicionador para um sistema do tipo Ax=b
+    // Gradiente conjugado  com pré-condicionador para um sistema do tipo Ax=b
     // retorna 0 se teve sucesso e 1 se ocorreu algum problema
     // A: Matriz Hermitiana positiova definida
-    // x: na entrada � o chute inicial, ap�s passar pela fun��o torna-se a solu��o aproximada
+    // x: na entrada � o chute inicial, após passar pela função torna-se a solução aproximada
     // b: vetor livre do lado direito
-    // eps: na entrada -> crit�rio para fim de itera��o, na sa�da res�duo da solu��o aproximada
-    // iter: na entrada-> m�paximo n�mero de itera��es; na sa�da-> n�mero de itera��as feitas durante a execu��o da fun��o
-    // pcn-> �ndice para escolah do pr�-condicionador
+    // eps: na entrada -> critério para fim de iteração, na saída resíduo da solução aproximada
+    // iter: na entrada-> máximo número de iterações; na saída-> número de iterações feitas durante a execução da função
+    // pcn-> índice para escolah do pré-condicionador
     if (this->nrows != b.size())
-        error("tamanho de matriz e vetor incompat�veis, erro ocorrido no gradiente conjugado");
+        error("tamanho de matriz e vetor incompatíveis, erro ocorrido no gradiente conjugado");
     const int maxiter = iter;
     Vcr<T> r = b - (*this) * x;           // erro inicial
     Vcr<T> z = preconding(r, pcn);        // solve precondit system
-    Vcr<T> p = z;                         // p:dire��o do gradiente conjugado
+    Vcr<T> p = z;                         // p:direção do gradiente conjugado
     T zr = dot(z, r);                     // produto interno
-    const double stp = eps * b.twonorm(); // crit�rio para parada da itera��o
+    const double stp = eps * b.twonorm(); // critério para parada da iteração
 
-    if (!r.maxnorm()) { // se o chute inicial � a solu��o
+    if (!r.maxnorm()) { // se o chute inicial � a solução
         eps = 0.0;
         iter = 0;
         return 0;
@@ -1836,8 +1838,8 @@ int SparseMtx<T>::CG(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn) { /
         x += alpha * p;
         r -= alpha * mp;
         if (r.twonorm() <= stp)
-            break;              // para la�o se convergiu
-        z = preconding(r, pcn); // pr�-condicionamento
+            break;              // para laço se convergiu
+        z = preconding(r, pcn); // pré-condicionamento
         T zrold = zr;
         zr = dot(z, r);
         T beta = zr / zrold;
@@ -1853,16 +1855,16 @@ int SparseMtx<T>::CG(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn) { /
 
 template <class T>
 int SparseMtx<T>::BiCGStab(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn) {
-    // BiCGStab  com pr�-condicionador para um sistema do tipo Ax=b
+    // BiCGStab  com pré-condicionador para um sistema do tipo Ax=b
     // retorna 0 se teve sucesso e 1 se ocorreu algum problema
     // A: Matriz Hermitiana positiova definida
-    // x: na entrada � o chute inicial, ap�s passar pela fun��o torna-se a solu��o aproximada
+    // x: na entrada � o chute inicial, após passar pela função torna-se a solução aproximada
     // b: vetor livre do lado direito
-    // eps: na entrada -> crit�rio para fim de itera��o, na sa�da res�duo da solu��o aproximada
-    // iter: na entrada-> m�paximo n�mero de itera��es; na sa�da-> n�mero de itera��as feitas durante a execu��o da fun��o
-    // pcn-> �ndice para escolah do pr�-condicionador
+    // eps: na entrada -> critério para fim de iteração, na saída resíduo da solução aproximada
+    // iter: na entrada-> máximo número de iterações; na saída-> número de iterações feitas durante a execução da função
+    // pcn-> índice para escolah do pré-condicionador
     if (this->nrows != b.size())
-        error("tamanho de matriz e vetor incompat�veis, erro ocorrido no gradiente conjugado");
+        error("tamanho de matriz e vetor incompatíveis, erro ocorrido no gradiente conjugado");
     const int maxiter = iter;
     Vcr<T> r = b - (*this) * x; // erro inicial
     Vcr<T> rstar = r;           // residuo star
@@ -1885,7 +1887,7 @@ int SparseMtx<T>::BiCGStab(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pc
     Vcr<T> spcn = Vcr<T>(this->nrows, 0.);
     ;
 
-    const double stp = eps * b.twonorm(); // crit�rio para parada da itera��o
+    const double stp = eps * b.twonorm(); // critério para parada da iteração
 
     if (!r.maxnorm()) { // se o chute inicial e a solucao
         eps = 0.0;
@@ -1915,7 +1917,7 @@ int SparseMtx<T>::BiCGStab(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pc
         r = s - w * t; // novo residuo
 
         if (r.twonorm() <= stp)
-            break; // para la�o se convergiu
+            break; // para laço se convergiu
     }
 
     eps = r.twonorm();
@@ -1927,49 +1929,49 @@ int SparseMtx<T>::BiCGStab(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pc
 
 template <class T>
 int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, int m) { // GMRES
-    // GMRES com opera��o de "restart", utiliza pr�-condicionador para um sistema do tipo Ax=b
+    // GMRES com operação de "restart", utiliza pré-condicionador para um sistema do tipo Ax=b
     // retorna 0 se teve sucesso e 1 se ocorreu algum problema
     // A: Matriz quaquer
-    // x: na entrada � o chute inicial, ap�s passar pela fun��o torna-se a solu��o aproximada
+    // x: na entrada � o chute inicial, após passar pela função torna-se a solução aproximada
     // b: vetor livre do lado direito
-    // eps: na entrada -> crit�rio para fim de itera��o, na sa�da res�duo da solu��o aproximada
-    // iter: na entrada-> m�paximo n�mero de itera��es; na sa�da-> n�mero de itera��as feitas durante a execu��o da fun��o
-    // pcn-> �ndice para escolah do pr�-condicionador
-    // m -> n�mero de itera��es ap�s as quais o GMRES � reiniciado
+    // eps: na entrada -> critério para fim de iteração, na saída resíduo da solução aproximada
+    // iter: na entrada-> máximo número de iterações; na saída-> número de iterações feitas durante a execução da função
+    // pcn-> índice para escolah do pré-condicionador
+    // m -> número de iterações após as quais o GMRES � reiniciado
     const int maxiter = iter;
     const T stp = (preconding(b, pcn)).twonorm() * eps;
     Vcr<T> r = preconding(b - (*this) * x, pcn);
     T beta = r.twonorm();
     bool conv = false;
     if (m > this->nrows)
-        error("n�mero de itera��es para restart � maior do que o n�mero de linhas");
-    if (fabs(beta) <= stp) { // finaliza o calculo se o chute inicial for a solu��o
+        error("número de iterações para restart é maior do que o número de linhas");
+    if (fabs(beta) <= stp) { // finaliza o calculo se o chute inicial for a solução
         eps = fabs(beta);
         iter = 0;
         return 0;
     }
 
-    // obten��o de uma base ortonormal para o espa�o de Krilov
+    // obtenção de uma base ortonormal para o espaço de Krilov
     Vcr<T> **v = new Vcr<T> *[m + 1];
     for (int i = 0; i <= m; i++)
-        v[i] = new Vcr<T>(this->nrows); // i-�sima base
+        v[i] = new Vcr<T>(this->nrows); // i-ésima base
 
     // Matriz de Hessenberg->h[m+1][m]
-    // s� a parte diferente de zero de h � armazenada
+    // só a parte diferente de zero de h � armazenada
     T **h = new T *[m];
     for (int i = 0; i < m; i++)
         h[i] = new T[i + 2];
 
     iter = 1;
-    while (iter <= maxiter) { // itera��es para gmres(m->par�metro de "restart")
+    while (iter <= maxiter) { // iterações para gmres(m->parâmetro de "restart")
         *v[0] = r / beta;
         Vcr<T> g(m + 1);
         g[0] = beta;
 
-        Vcr<T> cs(m), sn(m); // rota��o de Givens
+        Vcr<T> cs(m), sn(m); // rotação de Givens
         int k;
         for (k = 0; k < m && iter <= maxiter; k++, iter++) {
-            // ortogonaliza��o:
+            // ortogonalização:
             Vcr<T> w = preconding((*this) * (*v[k]), pcn);
             T nmw = w.twonorm();
             for (int i = 0; i <= k; i++) {
@@ -1977,7 +1979,7 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
                 w -= h[k][i] * (*v[i]);
             }
             h[k][k + 1] = w.twonorm();
-            // verifica o ortogonaliza��o: se h[k][k+1] � pequeno, faz-se uma reortogonaliza��o
+            // verifica o ortogonalização: se h[k][k+1] � pequeno, faz-se uma reortogonalização
             if (nmw + 1.0e-4 * h[k][k + 1] == nmw) {
                 for (int i = 0; i <= k; i++) {
                     T hri = dot(w, *v[i]);
@@ -1987,10 +1989,10 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
                 h[k][k + 1] = w.twonorm();
             }
             if (h[k][k + 1] == 0)
-                error("divis�o por zero no GMRES");
+                error("divisão por zero no GMRES");
             *v[k + 1] = w / h[k][k + 1];
 
-            // aplicando a rota��o de Givens para a coluna k de h
+            // aplicando a rotação de Givens para a coluna k de h
             for (int i = 0; i < k; i++) {
                 T tv[2] = {cs[i], sn[i]};
                 T tmp = dot(&h[k][i], tv, 2);
@@ -1998,7 +2000,7 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
                 h[k][i] = tmp;
             }
 
-            // gerando os termos para a rora��o de Givens, cs e sn
+            // gerando os termos para a rotação de Givens, cs e sn
             if (h[k][k + 1] == 0) {
                 cs[k] = 1;
                 sn[k] = 0;
@@ -2008,13 +2010,13 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
                 sn[k] = h[k][k + 1] / tpm;
             }
 
-            // aplicando a rota��o de Givens para a coluna k de h e g
+            // aplicando a rotação de Givens para a coluna k de h e g
             T tv[2] = {cs[k], sn[k]};
             h[k][k] = dot(&h[k][k], tv, 2);
             T tmp = dot(&g[k], tv, 2);
             g[k + 1] = -sn[k] * g[k] + cs[k] * g[k + 1];
             g[k] = tmp;
-            if (fabs(g[k + 1]) <= stp) { // para quando o res�duo for pequeno
+            if (fabs(g[k + 1]) <= stp) { // para quando o resíduo for pequeno
                 k++;
                 break;
             }
@@ -2032,7 +2034,7 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
         for (int i = 0; i < k; i++)
             x += (*v[i]) * g[i];
 
-        // calcula o res�duo e checa a converg�ncia
+        // calcula o resíduo e checa a convergência
         r = preconding(b - (*this) * x, pcn);
         beta = r.twonorm();
         if (fabs(beta) <= stp) {
@@ -2041,7 +2043,7 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
         }
     }
 
-    eps = (b - (*this) * x).twonorm(); // res�duo final
+    eps = (b - (*this) * x).twonorm(); // resíduo final
 
     for (int i = 0; i <= m; i++)
         delete v[i];
@@ -2058,23 +2060,23 @@ int SparseMtx<T>::GMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, 
 
 template <class T>
 int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn, int m) { // GMRES
-    // FGMRES com opera��o de "restart", utiliza pr�-condicionador para um sistema do tipo Ax=b
+    // FGMRES com operação de "restart", utiliza pré-condicionador para um sistema do tipo Ax=b
     // retorna 0 se teve sucesso e 1 se ocorreu algum problema
     // A: Matriz quaquer
-    // x: na entrada � o chute inicial, ap�s passar pela fun��o torna-se a solu��o aproximada
+    // x: na entrada � o chute inicial, após passar pela função torna-se a solução aproximada
     // b: vetor livre do lado direito
-    // eps: na entrada -> crit�rio para fim de itera��o, na sa�da res�duo da solu��o aproximada
-    // iter: na entrada-> m�paximo n�mero de itera��es; na sa�da-> n�mero de itera��as feitas durante a execu��o da fun��o
-    // pcn-> �ndice para escolah do pr�-condicionador
-    // m -> n�mero de itera��es ap�s as quais o GMRES � reiniciado
+    // eps: na entrada -> critério para fim de iteração, na saída resíduo da solução aproximada
+    // iter: na entrada-> máximo número de iterações; na saída-> número de iterações feitas durante a execução da função
+    // pcn-> índice para escolah do pré-condicionador
+    // m -> número de iterações após as quais o GMRES � reiniciado
     const int maxiter = iter;
     const T stp = (preconding(b, pcn)).twonorm() * eps;
     Vcr<T> r = b - (*this) * x;
     T beta = r.twonorm();
     bool conv = false;
     if (m > this->nrows)
-        error("n�mero de itera��es para restart � maior do que o n�mero de linhas");
-    if (fabs(beta) <= stp) { // finaliza o calculo se o chute inicial for a solu��o
+        error("número de iterações para restart é maior do que o número de linhas");
+    if (fabs(beta) <= stp) { // finaliza o calculo se o chute inicial for a solução
         eps = fabs(beta);
         iter = 0;
         return 0;
@@ -2084,30 +2086,30 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
     T razReducao = 0.;
     int pcnEfetivo = pcn;
 
-    // obten��o de uma base ortonormal para o espa�o de Krilov
+    // obtenção de uma base ortonormal para o espaço de Krilov
     Vcr<T> **v = new Vcr<T> *[m + 1];
     Vcr<T> **z = new Vcr<T> *[m + 1];
     for (int i = 0; i <= m; i++)
-        v[i] = new Vcr<T>(this->nrows); // i-�sima base
+        v[i] = new Vcr<T>(this->nrows); // i-ésima base
     for (int i = 0; i <= m; i++)
-        z[i] = new Vcr<T>(this->nrows); // i-�sima base
+        z[i] = new Vcr<T>(this->nrows); // i-ésima base
 
     // Matriz de Hessenberg->h[m+1][m]
-    // s� a parte diferente de zero de h � armazenada
+    // só a parte diferente de zero de h � armazenada
     T **h = new T *[m];
     for (int i = 0; i < m; i++)
         h[i] = new T[i + 2];
 
     iter = 1;
-    while (iter <= maxiter) { // itera��es para gmres(m->par�metro de "restart")
+    while (iter <= maxiter) { // iterações para gmres(m->parâmetro de "restart")
         *v[0] = r / beta;
         Vcr<T> g(m + 1);
         g[0] = beta;
 
-        Vcr<T> cs(m), sn(m); // rota��o de Givens
+        Vcr<T> cs(m), sn(m); // rotação de Givens
         int k;
         for (k = 0; k < m && iter <= maxiter; k++, iter++) {
-            // ortogonaliza��o:
+            // ortogonalização:
 
             if (razReducao > 0.9) { // Estagnação: redução < 10%
                 pcnEfetivo = pcn;   // Usa pré-condicionador robusto
@@ -2123,7 +2125,7 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
                 w -= h[k][i] * (*v[i]);
             }
             h[k][k + 1] = w.twonorm();
-            // verifica o ortogonaliza��o: se h[k][k+1] � pequeno, faz-se uma reortogonaliza��o
+            // verifica o ortogonalização: se h[k][k+1] � pequeno, faz-se uma reortogonalização
             if (nmw + 1.0e-4 * h[k][k + 1] == nmw) {
                 for (int i = 0; i <= k; i++) {
                     T hri = dot(w, *v[i]);
@@ -2133,10 +2135,10 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
                 h[k][k + 1] = w.twonorm();
             }
             if (h[k][k + 1] == 0)
-                error("divis�o por zero no GMRES");
+                error("divisão por zero no GMRES");
             *v[k + 1] = w / h[k][k + 1];
 
-            // aplicando a rota��o de Givens para a coluna k de h
+            // aplicando a rotação de Givens para a coluna k de h
             for (int i = 0; i < k; i++) {
                 T tv[2] = {cs[i], sn[i]};
                 T tmp = dot(&h[k][i], tv, 2);
@@ -2144,7 +2146,7 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
                 h[k][i] = tmp;
             }
 
-            // gerando os termos para a rora��o de Givens, cs e sn
+            // gerando os termos para a rotação de Givens, cs e sn
             if (h[k][k + 1] == 0) {
                 cs[k] = 1;
                 sn[k] = 0;
@@ -2154,13 +2156,13 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
                 sn[k] = h[k][k + 1] / tpm;
             }
 
-            // aplicando a rota��o de Givens para a coluna k de h e g
+            // aplicando a rotação de Givens para a coluna k de h e g
             T tv[2] = {cs[k], sn[k]};
             h[k][k] = dot(&h[k][k], tv, 2);
             T tmp = dot(&g[k], tv, 2);
             g[k + 1] = -sn[k] * g[k] + cs[k] * g[k + 1];
             g[k] = tmp;
-            if (fabs(g[k + 1]) <= stp) { // para quando o res�duo for pequeno
+            if (fabs(g[k + 1]) <= stp) { // para quando o resíduo for pequeno
                 k++;
                 break;
             }
@@ -2178,7 +2180,7 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
         for (int i = 0; i < k; i++)
             x += (*z[i]) * g[i];
 
-        // calcula o res�duo e checa a converg�ncia
+        // calcula o resíduo e checa a convergência
         r = b - (*this) * x;
         beta = r.twonorm();
         // Dentro do loop, após calcular beta = r.twonorm()
@@ -2190,7 +2192,7 @@ int SparseMtx<T>::FGMRES(Vcr<T> &x, const Vcr<T> &b, T &eps, int &iter, int pcn,
         }
     }
 
-    eps = (b - (*this) * x).twonorm(); // res�duo final
+    eps = (b - (*this) * x).twonorm(); // resíduo final
 
     for (int i = 0; i <= m; i++)
         delete v[i];

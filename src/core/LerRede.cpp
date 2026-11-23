@@ -142,7 +142,7 @@ Document Rede::parseEntrada() {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
     } catch (exception &e) {
         // incluir falha
@@ -150,7 +150,7 @@ Document Rede::parseEntrada() {
         // gerar o arquivo de saida da simulacao
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
     // incluir info de conclusao do parse do rede no log
     logger.log(LOGGER_INFO, LOG_INFO_PARSE_PROCESS_FINISHED, "Verificar formato JSON", "", "SUCESSO");
@@ -193,7 +193,7 @@ Document Rede::parseSchema() {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
     } catch (exception &e) {
         // incluir falha no processo de parse
@@ -201,7 +201,7 @@ Document Rede::parseSchema() {
         // gerar o arquivo de saida da simulacao
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
     // retorna o documento do schema do Rede
     return schemaDoc;
@@ -230,7 +230,7 @@ void Rede::validateVsSchema(Document *schemaDoc, Document *jsonDoc) {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
     } catch (exception &e) {
         // incluir falha
@@ -238,7 +238,7 @@ void Rede::validateVsSchema(Document *schemaDoc, Document *jsonDoc) {
         // gerar o arquivo de saida da simulacao
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
     // incluir info de conclusao do parse do rede no log
     logger.log(LOGGER_INFO, LOG_INFO_PARSE_PROCESS_FINISHED, "Validar Rede x Schema-Rede", "", "SUCESSO");
@@ -538,7 +538,7 @@ void Rede::lerArq() {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
 
         // parse do documento raiz do arquivo de entrada
@@ -548,7 +548,7 @@ void Rede::lerArq() {
             // gerar o arquivo de saida da simulacao
             logger.writeOutputLog();
             // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
         // caso a validacao esteja ligada
         if (validacaoJson != tipoValidacaoJson_t::off) {
@@ -565,7 +565,7 @@ void Rede::lerArq() {
             // gravar arquivo de log
             logger.writeOutputLog();
             // abandonar a simulacao
-            exit(EXIT_SUCCESS);
+            exit(logger.codigoSaida());
         }
 
         (*vg1dSP).chaverede = 1;
@@ -589,6 +589,6 @@ void Rede::lerArq() {
         // gerar o arquivo de saida da simulacao
         logger.writeOutputLog();
         // encerrar a aplicacao
-        exit(EXIT_SUCCESS);
+        exit(logger.codigoSaida());
     }
 }

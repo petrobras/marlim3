@@ -41,7 +41,7 @@ public:
                  double vrl=10000., double vrg=1.,
                  double vmil=1./1000.,double vmig=1./10000,
                  double vhol=0.5,double vang=0., double vdina=0., int vmap=0,varGlob1D* Vvg1dSP=0); //construtor
-   arranjo(const arranjo&); //construtor por c�pia
+   arranjo(const arranjo&); //construtor por cópia
    ~arranjo(){} //destrutor
 
    arranjo& operator=(const arranjo&);
