@@ -11,7 +11,60 @@ module PvtSimCTMFileImport
 
     ! =============================================================
     ! =============================================================
-    subroutine ReadMixtureComponentsFromPVTSIMFileCTM(sPvtSimCTMFileName, bReadOnlyINComp, iNComp, oZ, oMW, oTc, oPc, oW, oParachors, &
+    subroutine ReadComponentCountFromPVTSIMFileCTM(sPvtSimCTMFileName, iNComp, iIER)
+
+        ! OBJETIVO: Ler, de um arquivo "ctm" exportado do PVTSIM, apenas o número de componentes do fluido: a linha
+        !   seguinte à marca "<Short Comp Name>". Não toca nas propriedades, que ReadMixtureComponentsFromPVTSIMFileCTM
+        !   carrega quando já se sabe o tamanho dos vetores.
+        implicit none
+
+        ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
+        character(len=*), intent(in) :: sPvtSimCTMFileName              ! Nome do arquivo "ctm" do PvtSim.
+        integer(c_int), intent(out) :: iNComp                           ! RESULTADO: Número de componentes.
+        integer(c_int), intent(out) :: iIER                             ! RESULTADO: Código de erros, conforme convenção.
+
+        ! ------------ DECLARAÇÃO E DESCRIÇÃO DAS VARIÁVEIS LOCAIS:
+        integer :: iFileOperationsError
+        character(len=200) :: sPvtSimCTMFileLine
+        logical :: bCountIsOnThisLine
+
+        ! ------------ CONSTANTES:
+        integer, parameter :: iPvtSimCTMFileUnit = 1
+
+        ! ------------ PROCEDIMENTOS:
+
+        iIER = ERROR_EverythingOK
+        iNComp = 0
+
+        OPEN(UNIT=iPvtSimCTMFileUnit, FILE=sPvtSimCTMFileName, STATUS='OLD', ACTION='READ', IOSTAT=iFileOperationsError)
+        if(iFileOperationsError.NE.0) then
+            iIER = ERROR_FailedToOpenExternalFileForMixtureProperties
+            return
+        end if
+
+        bCountIsOnThisLine = .false.
+        readLoop: do
+            read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine
+            if(iFileOperationsError.NE.0) then
+                ! O arquivo acabou, ou a leitura falhou, antes da contagem.
+                iIER = ERROR_ErrorWhileReadingExternalFileForMixtureProperties
+                exit readLoop
+            end if
+            if(bCountIsOnThisLine) then
+                read(sPvtSimCTMFileLine, '(I5)', IOSTAT=iFileOperationsError) iNComp
+                if(iFileOperationsError.NE.0) iIER = ERROR_ErrorWhileReadingExternalFileForMixtureProperties
+                exit readLoop
+            end if
+            bCountIsOnThisLine = (sPvtSimCTMFileLine(1:17) == '<Short Comp Name>')
+        end do readLoop
+
+        CLOSE(UNIT=iPvtSimCTMFileUnit)
+
+    end subroutine ReadComponentCountFromPVTSIMFileCTM
+
+    ! =============================================================
+    ! =============================================================
+    subroutine ReadMixtureComponentsFromPVTSIMFileCTM(sPvtSimCTMFileName, iNComp, oZ, oMW, oTc, oPc, oW, oParachors, &
                                                         oKij, oLij, oTIndep_Peneloux, iThermodynamicModel, oCpIGCoefs, oPVTSIMViscCSPTuningParam, &
                                                         iIER)
 
@@ -22,8 +75,7 @@ module PvtSimCTMFileImport
 
         ! ------------ DECLARAÇÃO E DESCRIÇÃO DOS ARGUMENTOS:
         character(len=*), intent(in) :: sPvtSimCTMFileName              ! Nome do arquivo "ctm" do PvtSim do qual se deseja importar os dados.
-        logical, intent(in) :: bReadOnlyINComp                          ! "True" para ler apenas o número de componentes e sair.
-        integer(c_int), intent(out) :: iNComp                           ! RESULTADO: Número de componentes.
+        integer(c_int), intent(inout) :: iNComp                         ! RESULTADO: Número de componentes.
         real(c_double), dimension(:), intent(out) :: oZ                 ! RESULTADO: Frações molares dos componentes na mistura.
         real(c_double), dimension(:), intent(out) :: oMW                ! RESULTADO: Massas molares dos componentes na mistura (g/gmol).
         real(c_double), dimension(:), intent(out) :: oTc                ! RESULTADO: Temperaturas críticas dos componentes na mistura.
@@ -70,6 +122,8 @@ module PvtSimCTMFileImport
         logical, parameter :: bReadEOSFromFluidIPROPSSection = .true.
 
         ! ------------ PROCEDIMENTOS:
+
+        iIER = ERROR_EverythingOK
 
         ! Abrir o arquivo:
         OPEN(UNIT=iPvtSimCTMFileUnit, FILE=sPvtSimCTMFileName, STATUS='OLD', ACTION='READ', IOSTAT=iFileOperationsError)
@@ -124,17 +178,6 @@ module PvtSimCTMFileImport
 
                 bReadNumberOfComponentsFromThisLine = .false.
 
-                if(bReadOnlyINComp) then
-
-                    ! Rebobinar e fechar o arquivo!
-                    REWIND(UNIT=iPvtSimCTMFileUnit)
-                    CLOSE(UNIT=iPvtSimCTMFileUnit)
-
-                    ! Retornar
-                    return
-
-                end if
-
                 cycle readLoop
 
             else if(sPvtSimCTMFileLine(1:17) == '<Short Comp Name>') then lineType
@@ -143,8 +186,7 @@ module PvtSimCTMFileImport
                 bReadNumberOfComponentsFromThisLine = .true.
                 cycle readLoop
 
-            else if(    ((sPvtSimCTMFileLine(1:29) == '<Comp Amount CT> mole percent').OR.(sPvtSimCTMFileLine(1:28) == '<Comp Amount CT> mol percent')) &
-                        .AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:29) == '<Comp Amount CT> mole percent').OR.(sPvtSimCTMFileLine(1:28) == '<Comp Amount CT> mol percent')) then lineType
 
                 ! Ler, das próximas linhas, as porcentagens molares:
                 call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, iNComp, 0.01d0, &
@@ -152,7 +194,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:17) == '<Acentric Factor>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:17) == '<Acentric Factor>')) then lineType
 
                 ! Ler das próximas linhas os fatores acêntricos:
                 call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, iNComp, 1.0d0, &
@@ -160,7 +202,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:4) == '<Tc>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:4) == '<Tc>')) then lineType
 
                     ! Ler das próximas linhas as temperaturas críticas:
                     tCUnit: if(sPvtSimCTMFileLine(5:len_trim(sPvtSimCTMFileLine)) == ' (K)') then
@@ -176,7 +218,7 @@ module PvtSimCTMFileImport
 
                     if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:4) == '<Pc>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:4) == '<Pc>')) then lineType
 
                 ! Ler das próximas linhas as pressões críticas:
                 pCUnit: if(sPvtSimCTMFileLine(5:len_trim(sPvtSimCTMFileLine)) == ' (atm)') then
@@ -192,7 +234,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:9) == '<Cpen PR>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:9) == '<Cpen PR>')) then lineType
 
                 ! Ler coeficientes de Peneloux para EOS de Peng-Robinson.
                 cPenPRUnit: if(sPvtSimCTMFileLine(10:len_trim(sPvtSimCTMFileLine)) == ' c/R (K/atm)') then
@@ -217,7 +259,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:10) == '<Cpen SRK>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:10) == '<Cpen SRK>')) then lineType
 
                 ! Ler coeficientes de Peneloux para EOS de SRK.
                 cPenSRKUnit: if(sPvtSimCTMFileLine(11:len_trim(sPvtSimCTMFileLine)) == ' c/R (K/atm)') then
@@ -242,7 +284,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:12) == '<Cpen T SRK>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:12) == '<Cpen T SRK>')) then lineType
 
                 ! Ler coeficientes de Peneloux (dependência com a temperatura) para EOS de SRK
                 cPenTSRKUnit: if(sPvtSimCTMFileLine(13:len_trim(sPvtSimCTMFileLine)) == ' cT/R (1/atm)') then
@@ -269,7 +311,7 @@ module PvtSimCTMFileImport
 
                 ! 2 DE FEVEREIRO DE 2026: trecho de código lido e conferido. Leitura funcionando (confirmado via debug).
 
-            else if((sPvtSimCTMFileLine(1:11) == '<Cpen T PR>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:11) == '<Cpen T PR>')) then lineType
 
                 ! Ler coeficientes de Peneloux (dependência com a temperatura) para EOS de PR
                 cPenTPRUnit: if(sPvtSimCTMFileLine(12:len_trim(sPvtSimCTMFileLine)) == ' cT/R (1/atm)') then
@@ -298,7 +340,7 @@ module PvtSimCTMFileImport
 
                 ! 2 DE FEVEREIRO DE 2026: trecho de código lido e conferido. Leitura funcionando (confirmado via debug)!
 
-            else if((sPvtSimCTMFileLine(1:20) == '<Mwn> Number average').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:20) == '<Mwn> Number average')) then lineType
 
                 ! Ler das próximas linhas as massas molares:
                 mWUnit: if(sPvtSimCTMFileLine(21:28) == ' (g/mol)') then
@@ -314,7 +356,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:10) == '<Parachor>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:10) == '<Parachor>')) then lineType
 
                 ! Ler das próximas linhas as "parachors":
                 call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, iNComp, 1.0d0, &
@@ -322,7 +364,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:8) == '<kij PR>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:8) == '<kij PR>')) then lineType
 
                 ! Ler das próximas linhas os "kij" de Peng-Robinson.
                 iKijCTMVectorSize = (iNComp * iNComp - iNComp) / 2
@@ -339,7 +381,7 @@ module PvtSimCTMFileImport
 
                 if(iIER.NE.ERROR_EverythingOK) return
 
-            else if((sPvtSimCTMFileLine(1:14) == '<Fluid FPROPS>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:14) == '<Fluid FPROPS>')) then lineType
 
                 ! Agora, ler 17 coeficientes:
                 call ReadSequenceOfComponentValuesFromNextCTMFileLines(iPvtSimCTMFileUnit, 17, 1.0d0, &
@@ -355,7 +397,7 @@ module PvtSimCTMFileImport
                 oPVTSIMViscCSPTuningParam(3) = oFluidFPROPSValues(13)
                 oPVTSIMViscCSPTuningParam(4) = oFluidFPROPSValues(14)
 
-            else if((sPvtSimCTMFileLine(1:9) == '<kij SRK>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:9) == '<kij SRK>')) then lineType
 
                 ! Ler das próximas linhas os "kij" de SRK.
                 iKijCTMVectorSize = (iNComp * iNComp - iNComp) / 2
@@ -373,8 +415,7 @@ module PvtSimCTMFileImport
                 if(iIER.NE.ERROR_EverythingOK) return
 
             else if((sPvtSimCTMFileLine(1:3) == '<Cp').AND. &
-                    (sPvtSimCTMFileLine(11:44) == 'coefficient in expression for Cp/R').AND. &
-                    (.not.bReadOnlyINComp)) then lineType
+                    (sPvtSimCTMFileLine(11:44) == 'coefficient in expression for Cp/R')) then lineType
 
                 ! Ler mais coeficientes de Cp de gás ideal:
                 dMultFactor = 8.314d0   ! R em "J/(mol*K)" --> levando o Cp do polinômio a estas mesmas unidades (SI)
@@ -397,7 +438,7 @@ module PvtSimCTMFileImport
                     oCpIGCoefs(iCpIGCoefDegree, i) = oCpIGCoefs_Read(i)
                 end do
 
-            else if((sPvtSimCTMFileLine(1:14) == '<Fluid IPROPS>').AND.(.not.bReadOnlyINComp)) then lineType
+            else if((sPvtSimCTMFileLine(1:14) == '<Fluid IPROPS>')) then lineType
 
                 ! Ler duas linhas; ficar com a segunda (contém todas as opções separadas por vírgula):
                 read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine
@@ -507,9 +548,9 @@ module PvtSimCTMFileImport
 
                 end if getEosFromHere
 
-            !else if((sPvtSimCTMFileLine(1:20) == '<Fluid ExtraInfo CT>').AND.(.not.bReadOnlyINComp)) then lineType
+            !else if((sPvtSimCTMFileLine(1:20) == '<Fluid ExtraInfo CT>')) then lineType
             !   19/02/2021 - linha acima comentada e substituída pela abaixo.
-            else if((sPvtSimCTMFileLine(1:16) == '<Fluid Extra CT>').AND.(.not.bReadOnlyINComp).AND.(.not.bReadEOSFromFluidIPROPSSection)) then lineType
+            else if((sPvtSimCTMFileLine(1:16) == '<Fluid Extra CT>').AND.(.not.bReadEOSFromFluidIPROPSSection)) then lineType
 
                 ! Ler da próxima linha a Equação de Estado:
                 read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sPvtSimCTMFileLine
@@ -658,6 +699,8 @@ module PvtSimCTMFileImport
         real(c_double) :: dValueFromFile
 
         ! ------------ PROCEDIMENTOS:
+
+        iIER = ERROR_EverythingOK
 
         ! A primeira linha (próxima a ser lida) é lixo:
         read(iPvtSimCTMFileUnit, '(A)', IOSTAT=iFileOperationsError) sGarbageLine

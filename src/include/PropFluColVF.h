@@ -1,3 +1,4 @@
+#include "UnitConversions.h"
 /*
  * PropFluColVF.h
  *
@@ -80,7 +81,7 @@ class ProFluColVF {
                            double temp /*temperature in degrees Celsius*/,
                            double **VarInj /*property table for the CO2-rich gas*/) const; // Interpolates injection-fluid properties
     // loaded from a PVTSim file when the injection fluid is a CO2-rich gas
-    double psia(const double p) const { return (p * 0.9678411) * 14.69595; } // Converts pressure from kgf/cm2 to psia
+    double psia(const double p) const { return p * units::kPsiPerKgfPerCm2; } // Converts pressure from kgf/cm2 to psia
     double Faren(const double t) const { return 1.8 * t + 32; }              // Converts temperature from degrees Celsius to degrees Fahrenheit
     double calcDR(double ReyL);
 };

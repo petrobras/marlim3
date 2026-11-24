@@ -12,13 +12,13 @@
 ## Commands
 
 ```bash
-uv run pytest tests/ -v                                    # full suite
-uv run pytest tests/ -m "not simulacao"                    # no executable required
+uv run pytest tools/tests/ -v                              # full suite
+uv run pytest tools/tests/ -m "not simulacao"              # no executable required
 uv run pytest -m simulacao -v                              # simulation tests (need executable)
 uv run pytest agent_sessions/<session>/test_<slug>.py -v   # a session's tests
 ```
 
-Registered marker (defined in [pyproject.toml](../../../../pyproject.toml)): `simulacao` (runs the simulator, requires compiled executable). Unmarked tests must run without the executable. Session tests live outside `testpaths` (`tests/`), so the main suite never collects them — run them by path.
+Registered marker (defined in [pyproject.toml](../../../../pyproject.toml)): `simulacao` (runs the simulator, requires compiled executable). Unmarked tests must run without the executable. Session tests live outside `testpaths` (`tools/tests/`), so the main suite never collects them — run them by path.
 
 ## Mandatory pattern for simulation tests
 

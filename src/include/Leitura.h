@@ -9,21 +9,6 @@
 #define LEITURA_H_
 #define _USE_MATH_DEFINES // Enables access to the M_PI constant
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <math.h>
-#include <sstream>
-#include <stdio.h>
-#include <string.h>
-#include <string>
-#include <time.h>
-#include <utility> // Provides std::pair
-#include <vector>
-#include <set>
-//#include <filesystem>
-#include <limits.h>
-#include <stdlib.h>
 #include "Acidentes2.h"
 #include "Bcsm2.h"
 #include "BombaVol.h"
@@ -59,9 +44,21 @@
 #include "solverPoisson.h"
 #include "solverPoroso.h"
 #include "validaTipoJson.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include "SlugFlow_TaitelBarnea.h"
 #include "caixaValvula.h"
+#include <algorithm>
+#include <fstream>
+#include <iostream>
+#include <math.h>
+#include <sstream>
+#include <stdio.h>
+#include <string.h>
+#include <string>
+#include <time.h>
+#include <utility> // Provides std::pair
+#include <vector>
+#include <set>
 
 #ifdef linux
 // Directory separator used on Linux systems
@@ -410,7 +407,7 @@ struct detIPR {
 struct detGASINJ {
     int tipoCC;   // Boundary-condition type: 0 = injection pressure, 1 = injection flow rate
     int parserie; // Number of elements in the injection flow-rate or pressure time series
-    int chuteVaz; // Optional steady-state injection-flow initial guess for pressure-controlled injection
+    int chuteVaz = 0; // Optional steady-state injection-flow initial guess for pressure-controlled injection
     // Used to improve convergence
     double *temperatura; // Injection-temperature time-series values
     double *presinj;     // Injection-pressure time-series values, when applicable
@@ -1096,7 +1093,7 @@ struct tabelaFlash {
 
 struct composicional {
     string arquivo;
-    int npseudo;
+    int npseudo = 0;
     int liqModel;
     int vapModel;
     double *fracMol;
@@ -1190,6 +1187,7 @@ class Ler {
     int usaTabela;      // Indicates that a table is being used by either the black-oil or PVTSim model
     int ConContEntrada; // Defines the production-system inlet boundary condition: 0 = closed
     // 1 = pressure, 2 = inlet flow rate and pressure
+    std::string absoluteInputFilePath() const;
     string impfile;   // JSON file
     string pvtsimarq; // PVTSim file
     int modelcp;      // When 1, uses Cp values from a PVTSim table even with a black-oil model
@@ -1479,7 +1477,7 @@ class Ler {
 
     int estabCol;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
     int modoXY;
     double xProd0;
@@ -1565,7 +1563,7 @@ class Ler {
      * Fields Constructor
      */
     Ler(const string IMPFILE, const string ARQUIVO_LOG, const tipoValidacaoJson_t VALIDACAO_MRT,
-        const tipoSimulacao_t SIMULACAO_MRT, int vreverso = 0, varGlob1D *Vvg1dSP = 0, int vredeperm = 1);
+        const tipoSimulacao_t SIMULACAO_MRT, int vreverso = 0, SimulationContext *context = 0, int vredeperm = 1);
     /*
      * Copy Constructor
      */
@@ -2074,9 +2072,6 @@ class Ler {
         	delete [] resGlobAxiSim;
         }
     }
-
-    // Absolute, normalized path of impfile (UTF-8), written to output file headers
-    std::string caminhoArquivoEntradaAbs() const;
 
     void copiaSemJson(Ler &);
     void lerArq(); // Organizes JSON parsing and builds the cell-structure array

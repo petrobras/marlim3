@@ -13,7 +13,7 @@
 #include "PropVapor.h"
 #include "multiBCS.h"
 #include "solverPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>

@@ -13,7 +13,7 @@
 #include "Vetor.h"
 #include "estruturaUNV.h"
 #include "estruturasPoisson3D.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -110,7 +110,7 @@ class elem3dPoisson {
     double *v2;
     double *v3;
 
-    varGlob1D *DGP3D; // Pointer to shared global data used by the three-dimensional model.
+    SimulationContext *simulationContext; // Pointer to shared global data used by the three-dimensional model.
 
     Vcr<double> TL;        // Right-hand-side vector of the local system.
     FullMtx<double> local; // Local system matrix.
@@ -118,7 +118,7 @@ class elem3dPoisson {
     /*!
      * Construct and initialize a three-dimensional Poisson element.
      */
-    elem3dPoisson(varGlob1D *DGP3DV = 0, eleOBJ velementoUNV = eleOBJ(), double **xcoor = 0, int **noEle = 0, int *tipo = 0,
+    elem3dPoisson(SimulationContext *DGP3DV = 0, eleOBJ velementoUNV = eleOBJ(), double **xcoor = 0, int **noEle = 0, int *tipo = 0,
                   double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0,
                   int i = 0, double vtemp = 0., double vfluxCal = 0., double vcond = 0., double vcp = 0.,
                   double vrho = 0., double vdt = 0.);

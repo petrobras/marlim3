@@ -4,9 +4,11 @@
 
 #include "Log.h"
 #include "MarlimComposicional.h"
+#include "RuntimeDiagnostics.h"
 #include "Matriz.h"
 #include "Vetor.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
+#include "UnitConversions.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -178,6 +180,7 @@ class ProFlu {
     Vcr<double> APIEMW;
     Vcr<double> EMW;
     int corrSat; // Solution gas-oil ratio correlation, scf/bbl: 0 -> Vazquez-Beggs; 1 -> Lasater; 2 -> Standing; 3 -> Glaso; 4 -> Livia
+    bool awaitingSaturationTable = false; // Livia with the PVTSim RS-Pb table still to be built: RS and PB use Vazquez-Beggs meanwhile
     int corrOM;  // Dead-oil viscosity correlation, cP: 0 -> ASTM; 1 -> Beggs-Robinson; 2 -> modified Beggs-Robinson; 3 -> Glaso; 4 -> Kartoatmodjo-Schmidt; 5 -> Petrosky-Farshad; 6 -> Beal
     int corrOV;  // Live-oil viscosity correlation, cP: 0 -> Beggs-Robinson; 1 -> Kartoatmodjo-Schmidt; 2 -> Petrosky-Farshad
     int corrOS;  // Undersaturated-oil viscosity correlation, cP: 0 -> Vazquez-Beggs; 1 -> Kartoatmodjo-Schmidt; 2 -> Petrosky-Farshad; 3 -> Beal; 4 -> Khan
@@ -203,6 +206,8 @@ class ProFlu {
     double *PBPVTSim;    // Bubble-point pressure values loaded from a PVTSim file
     double *TBPVTSim;    // Bubble-point temperature values loaded from a PVTSim file
     double **TabRSLivia; // Table of solution gas-oil ratio values for the Black Oil model when using
+    int rsTablePressureCount;    // Pressure points of TabRSLivia: its rows 1 to this count (0: npontos)
+    int rsTableTemperatureCount; // Temperature points of TabRSLivia: its columns 1 to this count (0: npontos)
     // interpolated correlation values instead of direct calculation
     double aemul;  // Parameter a of the exponential emulsion model
     double bemul;  // Parameter b of the exponential emulsion model
@@ -319,7 +324,7 @@ class ProFlu {
     // ASTM method
     double bASTM2; // Auxiliary values used to calculate dead-oil viscosity with the
     // ASTM method
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
     int modoParafina;
     double *oPressurePoints;
@@ -362,20 +367,20 @@ class ProFlu {
     double quadleg(const double x1, const double x2, int tipo, int fase, const double par, const int n) const; // Gaussian quadrature using Legendre polynomials; x1 -> lower limit; x2 -> upper limit
     // n -> number of quadrature points; tipo -> integrate over pressure (1) or temperature (2); fase -> gas (1) or liquid (2); par -> pressure when tipo=2, temperature when tipo=1
 
-    ProFlu(varGlob1D *Vvg1dSP = 0, double vapi = 1, double vrgo = 1, double vdeng = 1, double vbsw = 1,
+    ProFlu(SimulationContext *context = 0, double vapi = 1, double vrgo = 1, double vdeng = 1, double vbsw = 1,
            double vdenag = 1, double vtempl = 10, double vlvisl = 1,
            double vtemph = 10, double vlvish = 1, int vtipoemul = 0, double vaemul = 0, double vbemul = 0,
            double vPHI100 = 0.765, double vbswCorte = 0, int vtab = 0, double vyco2 = 0, int vcorrC = 0,
            int vcorrSat = 0, int vcorrOM = 0, int vcorrOV = 0, int vcorrOS = 0,
            int vflash = 0, int id = 0, int vnpseudo = 0, double vpcf = 0, double vtcf = 0); // Default constructor
 
-    ProFlu(varGlob1D *Vvg1dSP, const double *const fluido, int vtipoemul,
+    ProFlu(SimulationContext *context, const double *const fluido, int vtipoemul,
            double vaemul, double vbemul, double vPHI100, double vbswCorte,
            int vtab, double vyco2, int vcorrC, int vcorrSat, int vcorrOM, int vcorrOV, int vcorrOS,
            int vflash,
            int vid, int vnpseudo = 0);
 
-    ProFlu(varGlob1D *Vvg1dSP, const double *const fluido, const double *const astm, int vtipoemul, double vaemul, double vbemul, double vPHI100,
+    ProFlu(SimulationContext *context, const double *const fluido, const double *const astm, int vtipoemul, double vaemul, double vbemul, double vPHI100,
            double vbswCorte, int vtab, double vyco2, int vcorrC, int vcorrSat,
            int vcorrOM, int vcorrOV, int vcorrOS, int vflash, int vid, int vnpseudo);
     ProFlu(const ProFlu &); // Copy constructor
@@ -391,7 +396,7 @@ class ProFlu {
             delete[] oCalculatedLiqComposition;
         if (flashCompleto == 2 && npseudo > 0)
             delete[] oCalculatedVapComposition;
-        if (flashCompleto == 2 && npseudo > 0 && (*vg1dSP).simulaTransiente == 1) {
+        if (flashCompleto == 2 && npseudo > 0 && (*simulationContext).transientSimulationEnabled == 1) {
             for (int j = 0; j < 2; j++) {
                 delete[] miniTabDin.rhogF[j];
                 delete[] miniTabDin.rholF[j];
@@ -514,8 +519,12 @@ class ProFlu {
                     double pmin /*minimum reduced pressure in the table*/,
                     double tmin /*minimum reduced temperature in the table*/) const; // Generates the Black Oil table of the compressibility-factor derivative with respect to temperature
     double interpolaVarProd(double pres /*pressure in kgf/cm2*/,
-                            double temp /*temperature in degrees Celsius*/, double **Var /*property table obtained from PVTSim*/) const; // Method
+                            double temp /*temperature in degrees Celsius*/, double **Var /*property table obtained from PVTSim*/,
+                            int pressureCount = 0 /*pressure points of Var; 0: npontos, on the flash axes*/,
+                            int temperatureCount = 0 /*temperature points of Var; 0: npontos, on the flash axes*/) const; // Method
     // that interpolates a PVTSim property at the specified pressure and temperature
+    int rsPressurePoints() const { return rsTablePressureCount > 0 ? rsTablePressureCount : npontos; }
+    int rsTemperaturePoints() const { return rsTableTemperatureCount > 0 ? rsTableTemperatureCount : npontos; }
     double BOFunc(double pres /*pressure in kgf/cm2*/, double temp /*temperature in degrees Celsius*/,
                   double varRS = -1 /*Solution gas-oil ratio in scf/bbl when already available; a negative value causes the method to calculate it*/
     ) const;                        // Calculates the formation volume factor
@@ -634,17 +643,20 @@ class ProFlu {
     double dRSdP(double, double) const;                                      // Unused
     double dBOSatdP(double, double) const;                                   // Unused
     double retornaR() const { return 8.0465 * 1000 / (Deng * 28.9625); }     // Returns the gas constant
-    double psia(const double p) const { return (p * 0.9678411) * 14.69595; } // Converts pressure from kgf/cm2 to psia
+    double psia(const double p) const { return p * units::kPsiPerKgfPerCm2; } // Converts pressure from kgf/cm2 to psia
     double Faren(const double t) const { return 1.8 * t + 32; }              // Converts temperature from degrees Celsius to degrees Fahrenheit
     double cel(const double t) const { return (t - 32) / 1.8; }              // Converts temperature from degrees Fahrenheit to degrees Celsius
-    double kgf(const double p) const { return p / (14.69595 * 0.9678411); }  // Converts pressure from psia to kgf/cm2
-    double ft3bbl() const { return RGO * 35.31467 / 6.29; }                  // Converts gas-oil ratio from m3/m3 to ft3/bbl
-    double m3m() const { return RGO * 6.29 / 35.31467; }                     // Converts gas-oil ratio from ft3/bbl to m3/m3
+    double kgf(const double p) const { return p / units::kPsiPerKgfPerCm2; }  // Converts pressure from psia to kgf/cm2
+    double ft3bbl() const { return RGO * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre; }                  // Converts gas-oil ratio from m3/m3 to ft3/bbl
+    double m3m() const { return RGO * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre; }                     // Converts gas-oil ratio from ft3/bbl to m3/m3
+
+    // The simulation time a diagnostic records; NaN for a fluid built without the run's globals
+    double simulationTime() const { return simulationContext != nullptr ? (*simulationContext).simulationTime : NAN; }
 
     // Updates compositional-model variables for the specified pressure and temperature
     void atualizaPropCompStandard(double GivenInitialBeta = -1.0, double *GivenInitialLiqComposition = NULL,
                                   double *GivenInitialVapComposition = NULL) {
-        double pres = 1.03322;
+        double pres = units::kAtmosphereInKgfPerCm2;
         double temp = 20.;
         double tempRGO = 100.;
         int nuloL = 0;
@@ -669,16 +681,22 @@ class ProFlu {
                                                                     &iCalculatedStockTankThermodynamicCondition,
                                                                     &dStockTankVaporMassFraction, &dStockTankLiquidDensity, &dStockTankVaporDensity,
                                                                     &tempRGO, &iIER);
+        if (iIER != 0)
+            diagnostics::recordFlashError(diagnostics::FlashRoutine::StockTank, iIER, pres, temp, simulationTime());
 
         if (dStockTankLiquidDensity > 0.01) {
             API = 141.5 / (dStockTankLiquidDensity / 1000.) - 131.5;
-        } else
+        } else {
             API = 50;
+            diagnostics::recordStockTankDefault(diagnostics::StockTankDefault::ApiGravity, simulationTime());
+        }
         Deng = dStockTankVaporDensity / 1.225;
         RGO = tempRGO;
-        if (dStockTankVaporMassFraction > 0 && RGO < 1e-15)
+        if (dStockTankVaporMassFraction > 0 && RGO < 1e-15) {
             RGO = 1e6;
-        IRGO = RGO * 35.31467 / 6.29;
+            diagnostics::recordStockTankDefault(diagnostics::StockTankDefault::GasOilRatio, simulationTime());
+        }
+        IRGO = RGO * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
         if (nuloL == 1)
             delete[] GivenInitialLiqComposition;
         if (nuloV == 1)
@@ -731,6 +749,7 @@ class ProFlu {
                                                           &dVaporPhaseMW, &dVaporMassFraction, &iIER);
         }
         if (monoGas == 0 && dMixtureMW <= (30. + 1e-15) && iIER > 0) {
+            diagnostics::recordLightMixtureFallback(iIER, pres, temp, dMixtureMW, simulationTime());
             iCalculatedThermodynamicCondition = 4;
             dVaporMassFraction = 1.;
             for (int i = 0; i < npseudo; i++) {
@@ -741,6 +760,8 @@ class ProFlu {
                 iIER = 0;
                 dVaporPhaseMW = dMixtureMW;
             }
+        } else if (monoGas == 0 && iIER != 0) {
+            diagnostics::recordFlashError(diagnostics::FlashRoutine::Mixture, iIER, pres, temp, simulationTime());
         }
         if (nuloL == 1)
             delete[] GivenInitialLiqComposition;

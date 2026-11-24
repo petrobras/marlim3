@@ -1,7 +1,9 @@
+#include "FrictionTransition.h"
 #include "celula3.h"
 #include "Leitura.h"
+#include "UnitConversions.h"
 
-Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
+Cel::Cel(SimulationContext *context, const DadosGeo vdutoL, const DadosGeo vduto,
          const DadosGeo vdutoR,
          const ProFlu vflui, const ProFluCol vfluicol,
          const double vtempL, const double vtemp,
@@ -58,12 +60,12 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     agua_consumida_massa = 0.;
     gas_consumido_massa = 0.;
 
-    agua_consumida_massa_step = 0.;
-    gas_consumido_massa_step = 0.;
+    waterMassConsumedByHydratesThisStep = 0.;
+    gasMassConsumedByHydratesThisStep = 0.;
 
     massa_hidrato = 0.0;
 
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     dutoL = vdutoL;
     duto = vduto;
     dutoR = vdutoR;
@@ -213,8 +215,8 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
         term2R = 0.;
     }
     double localtinyTemp;
-    if (vg1dSP != 0)
-        localtinyTemp = (*vg1dSP).localtiny;
+    if (simulationContext != 0)
+        localtinyTemp = (*simulationContext).smallValueTolerance;
     else
         localtinyTemp = 1e-9;
     if (fabs(alf) >= localtinyTemp && fabs(alf) <= 1 - localtinyTemp)
@@ -347,12 +349,10 @@ Cel::Cel(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
     angDir = 0.;
 
     mudaDT = 0;
-    mudaDTL = 0;
 
     dpdt = 0.;
     dpdtIni = 0.;
     m2d = 0.;
-    m2dL = 0.;
     d2pdt2 = 0.;
 
     alfPigERini = alfPigER;
@@ -459,8 +459,8 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     agua_consumida_massa = vcel.agua_consumida_massa;
     gas_consumido_massa = vcel.gas_consumido_massa;
 
-    agua_consumida_massa_step = vcel.agua_consumida_massa_step;
-    gas_consumido_massa_step = vcel.gas_consumido_massa_step;
+    waterMassConsumedByHydratesThisStep = vcel.waterMassConsumedByHydratesThisStep;
+    gasMassConsumedByHydratesThisStep = vcel.gasMassConsumedByHydratesThisStep;
 
     // modeloIII
 	kH=vcel.kH; //alteracao hidratos modelo 3
@@ -485,7 +485,7 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     mu_base_liq = vcel.mu_base_liq;
     mu_slurry = vcel.mu_slurry;
 
-    vg1dSP = vcel.vg1dSP;
+    simulationContext = vcel.simulationContext;
     dutoL = vcel.dutoL;
     duto = vcel.duto;
     dutoR = vcel.dutoR;
@@ -743,11 +743,9 @@ Cel::Cel(const Cel &vcel) : TL(2), local(2, 6) { // construtor por copia
     angDir = vcel.angDir;
 
     mudaDT = 0;
-    mudaDTL = 0;
     dpdt = vcel.dpdt;
     dpdtIni = vcel.dpdtIni;
     m2d = vcel.m2d;
-    m2dL = vcel.m2dL;
     d2pdt2 = vcel.d2pdt2;
 
     alfPigERini = vcel.alfPigERini;
@@ -864,8 +862,8 @@ Cel &Cel::operator=(const Cel &vcel) {
         agua_consumida_massa = vcel.agua_consumida_massa;
         gas_consumido_massa = vcel.gas_consumido_massa;
 
-        agua_consumida_massa_step = vcel.agua_consumida_massa_step;
-        gas_consumido_massa_step = vcel.gas_consumido_massa_step;
+        waterMassConsumedByHydratesThisStep = vcel.waterMassConsumedByHydratesThisStep;
+        gasMassConsumedByHydratesThisStep = vcel.gasMassConsumedByHydratesThisStep;
 
         // modeloIII
 	    kH=vcel.kH; //alteracao hidratos modelo 3
@@ -889,7 +887,7 @@ Cel &Cel::operator=(const Cel &vcel) {
         mu_slurry = vcel.mu_slurry;
         hidratado=vcel.hidratado;
 
-        vg1dSP = vcel.vg1dSP;
+        simulationContext = vcel.simulationContext;
         dutoL = vcel.dutoL;
         duto = vcel.duto;
         dutoR = vcel.dutoR;
@@ -1146,11 +1144,9 @@ Cel &Cel::operator=(const Cel &vcel) {
         angDir = vcel.angDir;
 
         mudaDT = vcel.mudaDT;
-        mudaDTL = vcel.mudaDTL;
         dpdt = vcel.dpdt;
         dpdtIni = vcel.dpdtIni;
         m2d = vcel.m2d;
-        m2dL = vcel.m2dL;
         d2pdt2 = vcel.d2pdt2;
 
         alfPigERini = vcel.alfPigERini;
@@ -1234,38 +1230,11 @@ double Cel::Rey(double dia, double vel,
                 double rho, double vis) {
     return dia * fabs(vel) * rho / (vis * 1e-3);
 }
-/*double Cel::fric(double re, double eps, int tipo) {
-
-    double val;
-    if (fabs(re) > 1e-5) {
-        if (re > 2400) {
-            if (tipo == -1)
-                val = 6.9 / fabs(re) + pow(eps / 3.7, 1.11);
-            else
-                val = 6.9 / fabs(re) + termRug;
-            val = -1.8 * (log(val) / 2.30259);
-            val *= val;
-            val = 1 / val;
-            for (int konta = 0; konta < 2; konta++) {
-                val = -2. * log(2.51 / fabs(re * sqrt(val)) + eps / 3.7) / 2.30259;
-                val *= val;
-                val = 1. / val;
-            }
-            val /= 4.;
-        } else
-            val = 16. / fabs(re);
-    } else
-        val = 0.;
-    return val;
-}*/
-
 double Cel::fric(double re, double eps, int tipo) {
 
     double val;
-    double reyL=2400.;
-    double reyT=4000.;
     if (fabs(re) > 1e-5) {
-        if (re > reyL) {
+        if (re > friction::kLaminarReynoldsLimit) {
         	switch (tipoFatorFric) {
         	case 0:
         		if (tipo == -1)
@@ -1292,10 +1261,7 @@ double Cel::fric(double re, double eps, int tipo) {
             	break;
         	}
             val /= 4.;
-            if(re<reyT){
-            	double facRe=(re-reyL)/(reyT-reyL);
-            	val=(1.-facRe)*(16. / fabs(re))+facRe*val;
-            }
+            val = friction::transitionFanningFactor(re, val);
         } else
             val = 16. / fabs(re);
     } else
@@ -1308,7 +1274,7 @@ void Cel::avancalf(int &reinicia, int ncel) {
     double convec = 0.;
     double term1Mass = 0.;
     dt1 = dt;
-    if (alf <= (*vg1dSP).CritCond && transmassR < 0.) {
+    if (alf <= (*simulationContext).condensationVoidFractionThreshold && transmassR < 0.) {
         transmassR = 0.;
         FonteMudaFase = 0.;
     }
@@ -1355,33 +1321,33 @@ void Cel::avancalf(int &reinicia, int ncel) {
         CoefDTL = 0.;
         coefTransBet = 0.;
     }
-    if (term1Mass > 0 && alfini > 1 - (*vg1dSP).localtiny)
+    if (term1Mass > 0 && alfini > 1 - (*simulationContext).smallValueTolerance)
         term1Mass = 0.;
-    if (term1Mass < 0 && alfini < (*vg1dSP).localtiny)
+    if (term1Mass < 0 && alfini < (*simulationContext).smallValueTolerance)
         term1Mass = 0.;
 
     alf = alfini +
           (term1Mass / (1 + CoefDTR / (rpC * duto.area))) * dt;
 
-    if (((alf <= (*vg1dSP).localtiny) && (alf >= -(*vg1dSP).localtiny)) ||
+    if (((alf <= (*simulationContext).smallValueTolerance) && (alf >= -(*simulationContext).smallValueTolerance)) ||
         ((alf <= 1e-3) && (alf >= -1e-3) && (fabs(QG) / duto.area) <= 1e-2)) {
         alf = fabs(0.);
-    } else if (alf < -(*vg1dSP).localtiny) {
+    } else if (alf < -(*simulationContext).smallValueTolerance) {
         double dtaux;
         dtaux = -alfini / (term1Mass / (1 + CoefDTR / (rpC * duto.area)));
-        if (reinicia == 0 && jmix > (*vg1dSP).CritDTMin) {
+        if (reinicia == 0 && jmix > (*simulationContext).fractionRestartVelocityThreshold) {
             dt1 = dtaux;
             reiniciaAlf = -1;
             alf = fabs(0.);
         } else
             alfIter = alf = fabs(0.);
-    } else if (((alf >= (1. - (*vg1dSP).localtiny) && alf <= (1. + (*vg1dSP).localtiny))) ||
+    } else if (((alf >= (1. - (*simulationContext).smallValueTolerance) && alf <= (1. + (*simulationContext).smallValueTolerance))) ||
                ((alf >= (1. - 1e-3) && alf <= (1. + 1e-3)) && (fabs(QL) / duto.area) <= 1e-2)) {
         alf = 1.;
-    } else if (alf > (1. + (*vg1dSP).localtiny)) {
+    } else if (alf > (1. + (*simulationContext).smallValueTolerance)) {
         double dtaux;
         dtaux = (1. - alfini) / (term1Mass / (1 + CoefDTR / (rpC * duto.area)));
-        if (reinicia == 0 && jmix > (*vg1dSP).CritDTMin) {
+        if (reinicia == 0 && jmix > (*simulationContext).fractionRestartVelocityThreshold) {
             dt1 = dtaux;
             reiniciaAlf = -1;
             alf = 1.;
@@ -1405,47 +1371,47 @@ void Cel::avancbet(int &reinicia, int ncel) {
     dt2 = dt;
 
     if (posic < ncel) {
-        if (alfini <= 1. - (*vg1dSP).localtiny) {
+        if (alfini <= 1. - (*simulationContext).smallValueTolerance) {
             convec = MliqCR / dx - MliqC / dx;
             term1Mass = (-convec + fator1 * betini * alf / dt - fator1 * betini * alfini / dt + fontemassCR / dx) / (fator1 - fator1 * alfini);
         } else
             term1Mass = 0.;
     } else {
         double dxncel = 1. * dx;
-        if (alfini <= 1. - (*vg1dSP).localtiny) {
+        if (alfini <= 1. - (*simulationContext).smallValueTolerance) {
             convec = (-MliqC / dx) / dxncel;
             term1Mass = (-convec + fator1 * betini * (alf - alfini) / dt + fontemassCR / dx) / (fator1 * (1 - alfini));
         } else
             term1Mass = 0.;
     }
 
-    if (term1Mass > 0 && betini > 1 - (*vg1dSP).localtiny)
+    if (term1Mass > 0 && betini > 1 - (*simulationContext).smallValueTolerance)
         term1Mass = 0.;
-    if (term1Mass < 0 && betini < (*vg1dSP).localtiny)
+    if (term1Mass < 0 && betini < (*simulationContext).smallValueTolerance)
         term1Mass = 0.;
     bet = betini + term1Mass * dt;
 
-    if (alfini >= 1 - (*vg1dSP).localtiny)
+    if (alfini >= 1 - (*simulationContext).smallValueTolerance)
         bet = 0.;
 
-    if (((bet <= (*vg1dSP).localtiny) && (bet >= -(*vg1dSP).localtiny))) {
+    if (((bet <= (*simulationContext).smallValueTolerance) && (bet >= -(*simulationContext).smallValueTolerance))) {
         bet = fabs(0.);
-    } else if (bet < -(*vg1dSP).localtiny) {
+    } else if (bet < -(*simulationContext).smallValueTolerance) {
         double dtaux;
 
         dtaux = -betini / term1Mass;
-        if (reinicia == 0 && jmix > (*vg1dSP).CritDTMin) {
+        if (reinicia == 0 && jmix > (*simulationContext).fractionRestartVelocityThreshold) {
             dt2 = dtaux;
             reiniciaBet = -1;
             bet = fabs(0.);
         } else
             bet = fabs(0.);
-    } else if ((bet >= (1. - (*vg1dSP).localtiny) && bet <= (1. + (*vg1dSP).localtiny))) {
+    } else if ((bet >= (1. - (*simulationContext).smallValueTolerance) && bet <= (1. + (*simulationContext).smallValueTolerance))) {
         bet = 1.;
-    } else if (bet > (1. + (*vg1dSP).localtiny)) {
+    } else if (bet > (1. + (*simulationContext).smallValueTolerance)) {
         double dtaux;
         dtaux = (1. - betini) / term1Mass;
-        if (reinicia == 0 && jmix > (*vg1dSP).CritDTMin) {
+        if (reinicia == 0 && jmix > (*simulationContext).fractionRestartVelocityThreshold) {
             dt2 = dtaux;
             reiniciaBet = -1;
             bet = 1.;
@@ -1482,7 +1448,7 @@ double Cel::delpJus(double presfim) {
     double f1 = fric(re1, duto.rug / dia);
     double gradfric = 0.5 * f1 * rhomix * (fabs(j) * j) * si * dxmed / area;
     double gradhidro = 9.82 * sin(duto.teta) * rhomix * dxmed;
-    return (0 * gradfric + gradhidro) / 98066.5;
+    return (0 * gradfric + gradhidro) / units::kPascalPerKgfPerCm2;
 }
 
 void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
@@ -1514,8 +1480,6 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
         double drhoLdp = 0.;
         double multL = 1.;
         double multR = 1.;
-        double corDRhol = 1. - 0 * mudaDTL;
-        double corDRholC = 1. - 0 * mudaDT;
 
         if (ciclo == 0) {
 
@@ -1557,7 +1521,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             if (ciclo == 0) {
                 compres = (*fluiL).Zdran(presL, tempL);
                 dzdp = (*fluiL).DZDP(presL, tempL);
-                dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = rhogL * (1 / (presL * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
                 dpdrho = 1. / dpdrho;
                 double rholdp;
                 if ((*fluiL).flashCompleto != 2 || miniTabAtraso > 0)
@@ -1570,12 +1534,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 }
                 drhoLdp = (rpL - rholdp) / (0.001 * presL);
 
-                if (alfLini <= (*vg1dSP).CritCond && transmassL < 0.)
+                if (alfLini <= (*simulationContext).condensationVoidFractionThreshold && transmassL < 0.)
                     transmassL = 0.;
 
                 local[0][0] = -dxL * (1 / rhogL - 1 / rpL) * DTransDxLp;
                 local[0][1] = -((1. / rhogL) * (1. - term1L) + multL * term1L) - dxL * (1 / rhogL - 1 / rpL) * term1L * DTransDxL;
-                local[0][2] = dxL * AL * (((alfL / rhogL) / dpdrho) * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt -
+                local[0][2] = dxL * AL * (((alfL / rhogL) / dpdrho) * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt -
                               dxL * (1 / rhogL - 1 / rpL) * (DTransDxLp + DTransDxRp);
                 local[0][3] = (1. / rhogL) * (1 - term1) + multR * term1 - dxL * (1 / rhogL - 1 / rpL) * term1 * DTransDxR;
                 local[0][4] = -dxL * (1 / rhogL - 1 / rpL) * DTransDxRp;
@@ -1585,12 +1549,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                     fontemassGL += corrigeMassaPres * dxL;
 
                 if (TMModelL == 1 || TMModelL == 2 || TMModelL == 3) {
-                    TL[0] = dxL * AL * (((alfL / rhogL) / dpdrho) * presL * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
+                    TL[0] = dxL * AL * (((alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
                             (1 / rhogL - multR) * term2 -
                             (1 / rhogL - multL) * term2L +
                             (fontemassGL / rhogL + (fontemassLL / rpL + fontemassCL / rcL)) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
                 } else if (TMModelL == 0) {
-                    TL[0] = dxL * AL * (((alfL / rhogL) / dpdrho) * presL * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
+                    TL[0] = dxL * AL * (((alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
                             (1 / rhogL - multR) * term2 -
                             (1 / rhogL - multL) * term2L +
                             (fontemassGL / rhogL + (fontemassLL / rpL + fontemassCL / rcL)) +
@@ -1661,7 +1625,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             	alfM=alf;
             	rhogM=rhogC;
             }
-            if (alfM > (*vg1dSP).localtiny)
+            if (alfM > (*simulationContext).smallValueTolerance)
                 ugL /= (alfM*rhogM);
             else
                 ugL = 0.;
@@ -1671,7 +1635,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             	alfJ=alfR;
             	rhogJ=rhogR;
             }
-            if (alfJ > (*vg1dSP).localtiny)
+            if (alfJ > (*simulationContext).smallValueTolerance)
                 ugR /= (alfJ*rhogJ);
             else
                 ugR = 0.;
@@ -1681,7 +1645,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             if(ulL<0.){
             	rholM=rholC;
             }
-            if ((1. - alf) > (*vg1dSP).localtiny)
+            if ((1. - alf) > (*simulationContext).smallValueTolerance)
                 ulL /= ((1. - alfM)*rholM);
             else
                 ulL = 0.;
@@ -1690,7 +1654,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             if(ulR<0.){
             	rholJ=rholR;
             }
-            if ((1. - alfJ) > (*vg1dSP).localtiny)
+            if ((1. - alfJ) > (*simulationContext).smallValueTolerance)
                 ulR /= ((1. - alfJ)*rholJ);
             else
                 ulR = 0.;
@@ -1734,12 +1698,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
 
             local[1][1] = 0.;
             local[1][2] = -ugL * (1 - term1) / dx - ulL * term1 / dx;
-            local[1][3] = -Amed*multTermoDin * 98066.5 / dxmed;
-            local[1][4] = (1 - (1. - corDRholC * deriMas) * term1R) / dt +
+            local[1][3] = -Amed*multTermoDin * units::kPascalPerKgfPerCm2 / dxmed;
+            local[1][4] = (1 - (1. - deriMas) * term1R) / dt +
             		ugR * (1 - term1R) / dx + ulR * term1R / dx;
-            local[1][5] = Amed*multTermoDin * 98066.5 / dxmed;
+            local[1][5] = Amed*multTermoDin * units::kPascalPerKgfPerCm2 / dxmed;
 
-            TL[1] = (MR - (1. - corDRholC * deriMas) * MliqiniR) / dt + (1. - corDRholC * deriMas) * term2R / dt + (ugR * term2R - ugL * term2) / dx -
+            TL[1] = (MR - (1. - deriMas) * MliqiniR) / dt + (1. - deriMas) * term2R / dt + (ugR * term2R - ugL * term2) / dx -
                     (ulR * term2R - ulL * term2) / dx-termoDinExpli;
 
             double j1;
@@ -1843,7 +1807,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             }
             if (acsr.tipo == 4 && acsr.bcs.freqnova > 1. && j1 >= 0.) {
                 double vazmix = j1 * AC;
-                vazmix *= (86400 / 0.1589876);
+                vazmix *= (86400 / units::kCubicMetrePerBarrel);
                 acsr.bcs.NovaVis(viscmix1, rhomix1, vazmix);
                 acsr.dpB=dpB = 0.3048 * acsr.bcs.Hvis * rhomix1 * 9.82;
                 acsr.potB=potB = acsr.bcs.Pvis * 745.7;
@@ -1854,13 +1818,13 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 	acsr.potBT=potBT = 0.;
                 potTermo += potBT * (1. - acsr.bcs.eficM / 100.) * acsr.bcs.fracTermMotorEfic;
                 acsr.potTermo=potTermo;
-                double Cdpb = AC * (86400 / 0.1589876);
+                double Cdpb = AC * (86400 / units::kCubicMetrePerBarrel);
                 double djdm = (term1R / rholC + (1 - term1R) / rhogC) / AC;
                 acsr.bcs.NovaVis(viscmix1, rhomix1, vazmix * 1.001);
                 double dpdvaz = (0.3048 * acsr.bcs.Hvis * rhomix1 * 9.82 - dpB) / (0.001 * vazmix);
                 coefDpB = Cdpb * djdm * dpdvaz;
             } else if (acsr.tipo == 7) {
-            	acsr.dpB=dpB = acsr.delp * 98066.5;
+            	acsr.dpB=dpB = acsr.delp * units::kPascalPerKgfPerCm2;
                 double qgMon = (MR - MliqiniR) / rhogC;
                 double qlmon = MliqiniR / rholC;
                 double npoli = 1.;
@@ -1874,10 +1838,10 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 double Wbomb;
                 Wbomb = (100. / acsr.eficLiq) * dpB * qlmon;
                 if (acsr.tipoCompGas != 2)
-                    Wcomp = -(presauxR * 98066.5 * qgMon / (1. - npoli)) *
+                    Wcomp = -(presauxR * units::kPascalPerKgfPerCm2 * qgMon / (1. - npoli)) *
                             (pow(1 + acsr.delp / presauxR, (npoli - 1.) / npoli) - 1.);
                 else
-                    Wcomp = presauxR * 98066.5 * qgMon * log(1 + acsr.delp / presauxR);
+                    Wcomp = presauxR * units::kPascalPerKgfPerCm2 * qgMon * log(1 + acsr.delp / presauxR);
                 Wcomp *= (100. / acsr.eficGas);
                 acsr.potB=potB = Wcomp + Wbomb;
                 acsr.potTermo=potTermo = ((1. - acsr.eficLiq / 100.) * Wbomb + (1. - acsr.eficGas / 100.) * Wcomp);
@@ -1888,18 +1852,18 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 acsr.multibcs.flui = flui;
                 acsr.multibcs.fluicol = fluicol;
                 acsr.multibcs.marchaMultiBcs((MR - MliqiniR) / rhogC, MliqiniR / rholC, presauxR, temp, alf0, bet0);
-                acsr.dpB=dpB = acsr.multibcs.dpB * 98066.52;
+                acsr.dpB=dpB = acsr.multibcs.dpB * units::kPascalPerKgfPerCm2;
                 acsr.potB=potB = acsr.multibcs.potB;
                 acsr.potBT=potBT = acsr.multibcs.potBT;
                 acsr.potTermo=potTermo = acsr.multibcs.potTermo;
                 potTermo += potBT * (1. - acsr.multibcs.eficM / 100.) * acsr.multibcs.fracTermMotorEfic;
                 acsr.potTermo=potTermo;
-                double Cdpb = AC * (86400 / 0.1589876);
+                double Cdpb = AC * (86400 / units::kCubicMetrePerBarrel);
                 double djdm = (term1R / rholC + (1 - term1R) / rhogC) / AC;
                 double vazmix = (MR - MliqiniR) / rhogC + MliqiniR / rholC;
-                vazmix *= (86400 / 0.1589876);
+                vazmix *= (86400 / units::kCubicMetrePerBarrel);
                 acsr.multibcs.marchaMultiBcs((MR - MliqiniR) * 1.001 / rhogC, MliqiniR * 1.001 / rholC, presauxR, temp, alf0, bet0);
-                double dpdvaz = (acsr.multibcs.dpB * 98066.52 - dpB) / (0.001 * vazmix);
+                double dpdvaz = (acsr.multibcs.dpB * units::kPascalPerKgfPerCm2 - dpB) / (0.001 * vazmix);
                 coefDpB = Cdpb * djdm * dpdvaz;
             }
             double delpChoke = 0.;
@@ -1910,13 +1874,13 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
             local[1][4] += (coefTensC * coef1C + coefTensR * coef1R + estrat1);
             local[1][4] -= coefDpB * Amed / dxmed;
             local[1][4] += perdArea;
-            TL[1] -= (dpfric + dphidro - (dpB + delpChoke - coefDpB * MR - (sinalPig * DelPig * velPig * 98066.5)) * Amed / dxmed + estrat2);
+            TL[1] -= (dpfric + dphidro - (dpB + delpChoke - coefDpB * MR - (sinalPig * DelPig * velPig * units::kPascalPerKgfPerCm2)) * Amed / dxmed + estrat2);
             cinematico = 0;
         } else {
             if (ciclo == 0) {
                 compres = flui.Zdran(pres, temp);
                 dzdp = flui.DZDP(pres, temp);
-                dpdrho = rhogC * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = rhogC * (1 / (pres * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
                 dpdrho = 1. / dpdrho;
                 multL = ((1 / rpC) * (1 - betI) * rpCi + (1 / rcC) * betI * rcCi) / ((1 - betI) * rpCi + betI * rcCi);
                 double drhoLdpC = (rpC - flui.MasEspLiq(pres * 0.999, temp)) / (0.001 * pres);
@@ -1924,11 +1888,11 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                     drhoLdpC = 0.1;
                 local[1][1] = 0.;
                 local[1][2] = -((1. / rhogC) * (1. - term1) + multL * term1);
-                local[1][3] = dx * AC * (((alf / rhogC) / dpdrho) * 98066.5 + corDRholC * (deriPres * (1. - alf) * (1 - bet) * drhoLdpC / rpC + deriPres * (1 / AC) * (1 / rhogC - 1 / rpC) * DTransDtp)) / dt;
+                local[1][3] = dx * AC * (((alf / rhogC) / dpdrho) * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alf) * (1 - bet) * drhoLdpC / rpC + deriPres * (1 / AC) * (1 / rhogC - 1 / rpC) * DTransDtp)) / dt;
                 local[1][4] = 0.;
                 local[1][5] = 0.;
 
-                TL[1] = dx * AC * (((alf / rhogC) / dpdrho) * pres * 98066.5 + corDRholC * (deriPres * (1. - alf) * (1 - bet) * drhoLdp * pres / rpC + deriPres * (1 / AC) * (1 / rhogC - 1 / rpC) * DTransDtp * pres)) / dt - (1 / rhogC - multL) * term2 +
+                TL[1] = dx * AC * (((alf / rhogC) / dpdrho) * pres * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alf) * (1 - bet) * drhoLdp * pres / rpC + deriPres * (1 / AC) * (1 / rhogC - 1 / rpC) * DTransDtp * pres)) / dt - (1 / rhogC - multL) * term2 +
                         (fontemassGR / rhogC + (fontemassLR / rpC + fontemassCR / rcC)) + dx * (1 / rhogC - 1 / rpC) * transmassR;
             }
             double drhodt = flui.drhodt(pres, temp);
@@ -1940,16 +1904,14 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 double drhodp1;
                 compres = flui.Zdran(presR, tempR);
                 dzdp = flui.DZDP(presR, tempR);
-                drhodp1 = rhogR * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
-                double correcBVol = -(-(1 / rhogR) * drhodp * pres * 98066.5 + rhogC * drhodp1 * presR * 98066.5 / (rhogR * rhogR));
-                local[1][3] += (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC + acsr.bvol.MLiqC / rcC)) * (1 / rhogR) * drhodp * 98066.5;
-                local[1][5] -= (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC + acsr.bvol.MLiqC / rcC)) * rhogC * drhodp1 * 98066.5 / (rhogR * rhogR);
+                drhodp1 = rhogR * (1 / (pres * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
+                double correcBVol = -(-(1 / rhogR) * drhodp * pres * units::kPascalPerKgfPerCm2 + rhogC * drhodp1 * presR * units::kPascalPerKgfPerCm2 / (rhogR * rhogR));
+                local[1][3] += (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC + acsr.bvol.MLiqC / rcC)) * (1 / rhogR) * drhodp * units::kPascalPerKgfPerCm2;
+                local[1][5] -= (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC + acsr.bvol.MLiqC / rcC)) * rhogC * drhodp1 * units::kPascalPerKgfPerCm2 / (rhogR * rhogR);
                 TL[1] += (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC + acsr.bvol.MLiqC / rcC)) * correcBVol;
             }
         }
     } else if (posic == ncel) {
-        double corDRhol = 1. - 0 * mudaDTL;
-        double corDRholC = 1. - 0 * mudaDT;
         if (masChkSup == 0) {
             double AL = dutoL.area;
             double rhogL = (*fluiL).MasEspGas(presL, tempL);
@@ -1957,7 +1919,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 double rholL = rpL * (1 - betL) + rcL * betL;
                 double compres = (*fluiL).Zdran(presL, tempL);
                 double dzdp = (*fluiL).DZDP(presL, tempL);
-                double dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+                double dpdrho = rhogL * (1 / (presL * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
                 dpdrho = 1. / dpdrho;
                 double drhoLdp;
                 if ((*fluiL).flashCompleto != 2 || miniTabAtraso > 0)
@@ -1977,12 +1939,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                     coluna = 1.;
 
                 local[0][1] = -((1. / rhogL) * (1. - term1L) + multL * term1L);
-                local[0][2] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt;
+                local[0][2] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt;
                 local[0][3] = (1. / rhogL) * (1 - term1) + multR * term1;
                 local[0][4] = 0.;
                 local[0][5] = 0.;
 
-                TL[0] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * presL * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
+                TL[0] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt +
                         (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
                         (fontemassGL / rhogL + (fontemassLL / rpL + fontemassCL / rcL) / rholL) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
             }
@@ -1997,7 +1959,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 local[1][3] = 1.;
                 local[1][4] = 0.;
                 local[1][5] = 0.;
-                if (((*vg1dSP).chaveredeT == 0 || noextremo == 1) && corrigeContSep == 1) {
+                if (((*simulationContext).networkTransientEnabled == 0 || noextremo == 1) && corrigeContSep == 1) {
                     double dxmed = 0.5 * dx;
                     double j1;
 
@@ -2041,8 +2003,8 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                     termoHidro = dphidro;
                     termoFric = coefTensC * j1;
 
-                    local[1][2] -= (coefTensC * coef1C) * dxmed / 98066.5;
-                    TL[1] = presfim + (dpfric + dphidro) * dxmed / 98066.5;
+                    local[1][2] -= (coefTensC * coef1C) * dxmed / units::kPascalPerKgfPerCm2;
+                    TL[1] = presfim + (dpfric + dphidro) * dxmed / units::kPascalPerKgfPerCm2;
                 } else
                     TL[1] = presfim;
             }
@@ -2059,7 +2021,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
 
                 compres = (*fluiL).Zdran(presL, tempL);
                 dzdp = (*fluiL).DZDP(presL, tempL);
-                dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = rhogL * (1 / (presL * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
                 dpdrho = 1. / dpdrho;
                 double drhoLdp;
                 if ((*fluiL).flashCompleto != 2 || miniTabAtraso > 0)
@@ -2078,12 +2040,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
 
                 local[0][0] = 0.;
                 local[0][1] = -((1. / rhogL) * (1. - term1L) + multL * term1L);
-                local[0][2] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt;
+                local[0][2] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL)) / dt;
                 local[0][3] = (1. / rhogL) * (1 - term1) + multR * term1;
                 local[0][4] = 0.;
                 local[0][5] = 0.;
 
-                TL[0] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * presL * 98066.5 + corDRhol * (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
+                TL[0] = coluna * dxL * AL * (((alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alfL) * (1 - betL) * drhoLdp * presL / rpL + deriPres * (1 / AL) * (1 / rhogL - 1 / rpL) * DTransDtpL * presL)) / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
                         (fontemassGL / rhogL + (fontemassLL / rpL + fontemassCL / rcL)) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
             }
             double drhodt = (*fluiL).drhodt(presL, tempL);
@@ -2099,7 +2061,7 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 rhog = flui.MasEspGas(pres, temp);
                 compres = flui.Zdran(pres, temp);
                 dzdp = flui.DZDP(pres, temp);
-                dpdrho = rhog * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
+                dpdrho = rhog * (1 / (pres * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
                 dpdrho = 1. / dpdrho;
                 double drhoLdp;
                 if (flui.flashCompleto != 2 || miniTabAtraso > 0)
@@ -2122,12 +2084,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
                 local[1][0] = 0.;
                 local[1][1] = 0.;
                 local[1][2] = -((1. / rhog) * (1. - term1) + multL * term1);
-                local[1][3] = coluna * dxncel * AC * (((alf / rhog) / dpdrho) * 98066.5 + corDRholC * (deriPres * (1. - alf) * (1 - bet) * drhoLdp / rpC + deriPres * (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtp)) / dt -
+                local[1][3] = coluna * dxncel * AC * (((alf / rhog) / dpdrho) * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alf) * (1 - bet) * drhoLdp / rpC + deriPres * (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtp)) / dt -
                               (DmasschokeG / rhog + DmasschokeL / rpC + DmasschokeC / rcC);
                 local[1][4] = 0.;
                 local[1][5] = 0.;
 
-                TL[1] = coluna * dxncel * AC * (((alf / rhog) / dpdrho) * pres * 98066.5 + corDRholC * (deriPres * (1. - alf) * (1 - bet) * drhoLdp * pres / rpC + deriPres * (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtp * pres)) / dt - (1 / rhog - multL) * term2 +
+                TL[1] = coluna * dxncel * AC * (((alf / rhog) / dpdrho) * pres * units::kPascalPerKgfPerCm2 + (deriPres * (1. - alf) * (1 - bet) * drhoLdp * pres / rpC + deriPres * (1 / AC) * (1 / rhog - 1 / rpC) * DTransDtp * pres)) / dt - (1 / rhog - multL) * term2 +
                         ((fontemassGR - DmasschokeG * pres) / rhog + (fontemassLR - DmasschokeL * pres) / rpC +
                          (fontemassCR - DmasschokeC * pres) / rcC);
             }
@@ -2145,7 +2107,6 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
         }
     } else if (posic == 0 && ciclo == 0) {
 
-        double corDRholC = 1. - 0 * mudaDT;
         if (presE < 0) {
             local[0][1] = 0.;
             local[0][2] = 0.;
@@ -2197,12 +2158,12 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
 
             local[0][1] = 0.;
             local[0][2] = 0.;
-            local[0][3] = coefTensC * coef1C + (1. - (1. - corDRholC * deriMas)) * term1 / dt;
-            local[0][4] = Amed * 98066.5 / (dx);
+            local[0][3] = coefTensC * coef1C + (1. - (1. - deriMas)) * term1 / dt;
+            local[0][4] = Amed * units::kPascalPerKgfPerCm2 / (dx);
             local[0][5] = 0;
 
-            TL[0] = (MC - (1. - corDRholC * deriMas) * Mliqini) / dt + (1. - corDRholC * deriMas) * term2 / dt;
-            TL[0] += (Amed * 98066.5 * presE / (dx) - (dpfric + dphidro));
+            TL[0] = (MC - (1. - deriMas) * Mliqini) / dt + (1. - deriMas) * term2 / dt;
+            TL[0] += (Amed * units::kPascalPerKgfPerCm2 * presE / (dx) - (dpfric + dphidro));
         }
 
         double AC = duto.area;
@@ -2219,11 +2180,11 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
 
         local[1][1] = 0.;
         local[1][2] = 0.;
-        local[1][3] = -Amed * 98066.5 / dxmed;
-        local[1][4] = (1 - (1. - corDRholC * deriMas) * term1R) / dt;
-        local[1][5] = Amed * 98066.5 / dxmed;
+        local[1][3] = -Amed * units::kPascalPerKgfPerCm2 / dxmed;
+        local[1][4] = (1 - (1. - deriMas) * term1R) / dt;
+        local[1][5] = Amed * units::kPascalPerKgfPerCm2 / dxmed;
 
-        TL[1] = (MR - (1. - corDRholC * deriMas) * MliqiniR) / dt + (1. - corDRholC * deriMas) * term2R / dt;
+        TL[1] = (MR - (1. - deriMas) * MliqiniR) / dt + (1. - deriMas) * term2R / dt;
 
         double j1;
         double j2;
@@ -2287,23 +2248,23 @@ void Cel::GeraLocal(double presfim, int masChkSup, int ncel, double razareativa,
 void Cel::avancPig(int &reinicia) {
     razPig = (razPigini * dx + velPig * dt) / dx;
 
-    if (((razPig <= (*vg1dSP).localtiny) && (razPig >= -(*vg1dSP).localtiny)))
+    if (((razPig <= (*simulationContext).smallValueTolerance) && (razPig >= -(*simulationContext).smallValueTolerance)))
         razPig = 0;
-    else if (razPig < -(*vg1dSP).localtiny) {
+    else if (razPig < -(*simulationContext).smallValueTolerance) {
         double dtaux;
         dtaux = -razPigini * dx / velPig;
-        if (dtaux > (*vg1dSP).localtiny) {
+        if (dtaux > (*simulationContext).smallValueTolerance) {
             dtPig = dtaux;
             reiniciaPig = -1;
             razPig = fabs(0.);
         } else
             razPig = fabs(0.);
-    } else if ((razPig >= (1. - (*vg1dSP).localtiny) && razPig <= (1. + (*vg1dSP).localtiny))) {
+    } else if ((razPig >= (1. - (*simulationContext).smallValueTolerance) && razPig <= (1. + (*simulationContext).smallValueTolerance))) {
         razPig = 1.;
-    } else if (razPig > (1. + (*vg1dSP).localtiny)) {
+    } else if (razPig > (1. + (*simulationContext).smallValueTolerance)) {
         double dtaux;
         dtaux = (1. - razPigini) * dx / velPig;
-        if (dtaux > (*vg1dSP).localtiny) {
+        if (dtaux > (*simulationContext).smallValueTolerance) {
             dtPig = dtaux;
             reiniciaPig = -1;
             razPig = 1.;
@@ -2314,10 +2275,10 @@ void Cel::avancPig(int &reinicia) {
 
 void Cel::avancalfPig() {
     double term1Mass = 0.;
-    if (alf <= (*vg1dSP).localtiny) {
+    if (alf <= (*simulationContext).smallValueTolerance) {
         alfPigD = 0.;
         alfPigE = 0.;
-    } else if (alf >= (1. - (*vg1dSP).localtiny)) {
+    } else if (alf >= (1. - (*simulationContext).smallValueTolerance)) {
         alfPigD = 1.;
         alfPigE = 1.;
     } else {
@@ -2338,11 +2299,11 @@ void Cel::avancalfPig() {
                               (dTtemp)*ativaDeri;
             }
 
-            if (RazAreaPig > (*vg1dSP).localtiny) {
+            if (RazAreaPig > (*simulationContext).smallValueTolerance) {
                 double areagarg = RazAreaPig * duto.area;
                 double rlm = (1. - alfPigEini) * ((1 - betPigEini) * rpC + betPigEini * rcC) +
                              alfPigEini * flui.MasEspGas(pres, temp);
-                double massica = areagarg * sqrt(2. * rlm * (DelPig * velPig) * 98066.52);
+                double massica = areagarg * sqrt(2. * rlm * (DelPig * velPig) * units::kPascalPerKgfPerCm2);
                 massica = cdpig * massica;
                 VazaPig = massica / rlm;
             } else
@@ -2350,7 +2311,7 @@ void Cel::avancalfPig() {
             double fontepigL = VazaPig * (1. - alfPigEini) * (1. - betPigEini) * rpC;
             double fontepigC = VazaPig * (1. - alfPigEini) * (betPigEini)*rcC;
 
-            if (razPig <= (1. - (*vg1dSP).localtiny)) {
+            if (razPig <= (1. - (*simulationContext).smallValueTolerance)) {
                 double rlm = (1 - betPigDini) * rpC + betPigDini * rcC;
 
                 double fator1 = 1. - (rcC - rpC) * betPigDini / rlm;
@@ -2410,11 +2371,11 @@ void Cel::avancalfPig() {
                 termoDrholT = (duto.area * (1. - alf) * (1 - bet) / rpC) * ((rpC - flui.MasEspLiq(presini, temp * 0.999)) / (0.001 * temp)) *
                               (dTtemp)*ativaDeri;
             }
-            if (RazAreaPig > (*vg1dSP).localtiny) {
+            if (RazAreaPig > (*simulationContext).smallValueTolerance) {
                 double areagarg = RazAreaPig * duto.area;
                 double rlm = (alfPigDini) * ((1 - betPigDini) * rpC + betPigDini * rcC) +
                              alfPigDini * flui.MasEspGas(pres, temp);
-                double massica = areagarg * sqrt(2. * rlm * (DelPig * fabs(velPig)) * 98066.52);
+                double massica = areagarg * sqrt(2. * rlm * (DelPig * fabs(velPig)) * units::kPascalPerKgfPerCm2);
                 massica = cdpig * massica;
                 VazaPig = -massica / rlm;
             } else
@@ -2422,7 +2383,7 @@ void Cel::avancalfPig() {
             double fontepigL = -VazaPig * (1. - alfPigDini) * (1. - betPigDini) * rpC;
             double fontepigC = -VazaPig * (1. - alfPigDini) * (betPigDini)*rcC;
 
-            if (razPig >= (*vg1dSP).localtiny) {
+            if (razPig >= (*simulationContext).smallValueTolerance) {
 
                 double rlm = (1 - betPigEini) * rpC + betPigEini * rcC;
 
@@ -2476,16 +2437,16 @@ void Cel::avancbetPig() {
     double term1Mass = 0.;
 
     double fator1 = rcC * duto.area;
-    if (bet <= (*vg1dSP).localtiny) {
+    if (bet <= (*simulationContext).smallValueTolerance) {
         betPigD = 0.;
         betPigE = 0.;
-    } else if (bet >= (1. - (*vg1dSP).localtiny)) {
+    } else if (bet >= (1. - (*simulationContext).smallValueTolerance)) {
         betPigD = 1.;
         betPigE = 1.;
     } else {
         if (velPig >= 0.) {
             double fontepigC = VazaPig * (1. - alfPigEini) * (betPigEini)*rcC;
-            if (razPig <= (1. - (*vg1dSP).localtiny)) {
+            if (razPig <= (1. - (*simulationContext).smallValueTolerance)) {
                 double bet0 = betPigDini;
                 double bet1;
                 if (MliqiniR > 0)
@@ -2519,7 +2480,7 @@ void Cel::avancbetPig() {
             }
         } else {
             double fontepigC = -VazaPig * (1. - alfPigDini) * (betPigDini)*rcC;
-            if (razPig >= (*vg1dSP).localtiny) {
+            if (razPig >= (*simulationContext).smallValueTolerance) {
                 double bet0;
                 if (Mliqini > 0)
                     bet0 = betLini;
@@ -2967,22 +2928,22 @@ void Cel::GeraLocalExplicito(double presfim, int masChkSup, int ncel, double raz
             Amed = AC;
 
         double ugL = vexpi * ((ML - MliqiniL) / (rhogL)) / AL;
-        if (alfL > (*vg1dSP).localtiny)
+        if (alfL > (*simulationContext).smallValueTolerance)
                 ugL /= alfL;
         else
                 ugL = 0.;
         double ugR = vexpi * ((MR - MliqiniR) / (rhogR)) / AR;
-        if (alfR > (*vg1dSP).localtiny)
+        if (alfR > (*simulationContext).smallValueTolerance)
                 ugR /= alfR;
         else
                 ugR = 0.;
         double ulL = vexpi * ((Mliqini) / (rholC)) / AC;
-        if ((1. - alf) > (*vg1dSP).localtiny)
+        if ((1. - alf) > (*simulationContext).smallValueTolerance)
                 ulL /= (1. - alf);
         else
                 ulL = 0.;
         double ulR = vexpi * ((MliqiniR) / (rholR)) / AR;
-        if ((1. - alfR) > (*vg1dSP).localtiny)
+        if ((1. - alfR) > (*simulationContext).smallValueTolerance)
                 ulR /= (1. - alfR);
         else
                 ulR = 0.;
@@ -3206,7 +3167,7 @@ void Cel::GeraLocalExplicito(double presfim, int masChkSup, int ncel, double raz
            else MCExpli=0.;
         }
     } else if (posic == ncel) {
-        double corDRhol = 1. - 0 * mudaDTL;
+        double corDRhol = 1.;
         double corDRholC = 1. - 0 * mudaDT;
         if (masChkSup == 0) {
             double AL = dutoL.area;
@@ -3257,7 +3218,7 @@ void Cel::GeraLocalExplicito(double presfim, int masChkSup, int ncel, double raz
                 local[1][3] = 1.;
                 local[1][4] = 0.;
                 local[1][5] = 0.;
-                if (((*vg1dSP).chaveredeT == 0 || noextremo == 1) && corrigeContSep == 1) {
+                if (((*simulationContext).networkTransientEnabled == 0 || noextremo == 1) && corrigeContSep == 1) {
                     double dxmed = 0.5 * dx;
                     double j1;
 
@@ -3782,7 +3743,7 @@ double Cel::termAdSomVel() {
         muOil = MultipVisc * muOil;
         muOilf = MultipVisc * muOilf;
 
-        double Tint = calor.Tcamada[0][0] + 273.15;
+        double Tint = calor.Tcamada[0][0] + units::kZeroCelsiusInKelvin;
         double MwOil = flui.dInterpolatedLiqMWOutput;
         detParCel.difusividadeParafina = Dparaffin = MultipDwax * 7.4E-12 * Tint * pow(AssocParam * MwOil, 0.5) / (muOilf * pow(Vwax, 0.6)); // imprimir nova saida
         for (int i = 0; i < comp; i++) {
@@ -4060,7 +4021,7 @@ void Cel::WaxDeposition(dadosParafina &detalParafina, int ncel) {
         // FIXME: Temporarily using the absolute value for testing purposes.
         // A negative thickness indicates that something may be incorrect in the calculation.
         double dCwaxdTemp = Sum_dCwaxdT;
-		for(int icomp=0; icomp<comp; icomp++)detParCel.auxGradMolarConcentration_Component.push_back(0.);
+        detParCel.auxGradMolarConcentration_Component.resize(comp);
         if (Sum_dCwaxdT < 0)
             dCwaxdTemp = 0.;
        // detParCel.auxRatioHeatFluxMixtureThermalConductivity = heatFluxInt / kMix; // Imprimir e comparar com o Olga - Obs: imprimir e comparar o fluxo de calor na interface do depósito também - Samuel - 30/07/2026

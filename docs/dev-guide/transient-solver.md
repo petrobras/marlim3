@@ -190,7 +190,7 @@ This is computed by `determinaDTExpli()`, which loops over all cells and takes t
 
 ### Monophase transition band
 
-The simulator uses a transition band to avoid excessive time-step penalization near the monophase boundaries ($\alpha = 0$ or $\alpha = 1$). The threshold is configured via the JSON entry **`Avancado.CriterioMonofasico`** (default `1e-4`), which is internally assigned to `(*vg1dSP).localtiny`. Rather than checking for exact $\alpha = 0$ or $\alpha = 1$, the code applies:
+The simulator uses a transition band to avoid excessive time-step penalization near the monophase boundaries ($\alpha = 0$ or $\alpha = 1$). The threshold is configured via the JSON entry **`Avancado.CriterioMonofasico`** (default `1e-4`), which is internally assigned to `(*simulationContext).smallValueTolerance`. Rather than checking for exact $\alpha = 0$ or $\alpha = 1$, the code applies:
 
 - If $\alpha < \text{localtiny}$: the cell is effectively all-liquid
 - If $\alpha > 1 - \text{localtiny}$: the cell is effectively all-gas
@@ -226,7 +226,7 @@ while (t < t_final):
     2. determinaDT(vExpli)        — compute Δt
     3. dtauxCFL = dt              — save CFL-limited Δt for diagnostics
 
-    4. aberturaVal0/Val1          — valve opening/closing schedule
+    4. captureValveAreaRatios    — snapshots before and after boundary updates
     5. BuscaPresInjDesc()         — descent control (if controDesc == 1)
 
     6. solveLinGas()              — advance gas-lift service line
@@ -294,7 +294,7 @@ This two-pass scheme provides an **implicit-like coupling** between pressure cha
 - **`BuscaPresInjDesc()`**: if `controDesc == 1` (descent control enabled), the solver applies pressure descent limits at discharge — enforcing `presMaxDesc` (maximum descending injection pressure) and `presMinDesc` (minimum) thresholds. This prevents erratic injection pressure changes when the producer pressure drops rapidly, effectively limiting the injection rate ramp.
 - **`arq.atualiza()`**: called at each time step, this method (in class `Leitura`) evaluates all user-defined time-dependent schedule events — separator pressure changes, Master1 choke opening, BCS frequency changes, surface choke opening profiles, injection pressure schedules, and any other temporal data defined in the JSON input.
 - **`kSP`**: global time-step counter, incremented at each time step.
-- **`lixo5`**: global wall-clock time variable, updated to the current simulation time $t$ at step completion.
+- **`simulationTime`**: global wall-clock time variable, updated to the current simulation time $t$ at step completion.
 
 When `modeloCompleto == 0` (quasi-steady periods), only one pass is executed, saving roughly half the computational cost.
 

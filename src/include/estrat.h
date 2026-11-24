@@ -1,12 +1,13 @@
 #ifndef _ESTRAT
 #define _ESTRAT
-#define _USE_MATH_DEFINES // Enable mathematical constants such as M_PI.
+#define _USE_MATH_DEFINES
 
 #include <algorithm>
 #include <complex>
 #include <fstream>
 #include <iostream>
 #include <math.h>
+#include <numbers>
 #include <stdlib.h>
 
 using namespace std;
@@ -85,7 +86,7 @@ class estratificado {
      * \return Liquid cross-sectional area.
      */
     double al(const double var, const double dia) {
-        return 0.25 * dia * dia * (M_PI - acos(var) + var * sqrt(1 - var * var));
+        return 0.25 * dia * dia * (std::numbers::pi - acos(var) + var * sqrt(1 - var * var));
     }
 
     /*!
@@ -103,7 +104,7 @@ class estratificado {
      */
     double sl(const double var, const double dia) {
         double peri;
-        peri = dia * (M_PI - acos(var));
+        peri = dia * (std::numbers::pi - acos(var));
         if (peri < 4. * 1e-20)
             peri = 4. * 1e-20;
         return peri;
@@ -137,7 +138,7 @@ class estratificado {
     double fraiz(const double hfilm, const double hol,
                  const double dia) {
         double var = 2. * hfilm / dia - 1.;
-        return 4. * al(var, dia) / (M_PI * dia * dia) - hol;
+        return 4. * al(var, dia) / (std::numbers::pi * dia * dia) - hol;
     }
 
     /*!
@@ -161,7 +162,7 @@ class estratificado {
             double rtn = x1;
             for (int j = 0; j < maxit; j++) {
                 double f = fraiz(rtn, hol, dia);
-                double df = 4. * si(rtn, dia) / (M_PI * dia * dia);
+                double df = 4. * si(rtn, dia) / (std::numbers::pi * dia * dia);
                 double dx = f / df;
                 rtn -= dx;
                 if (fabs(dx) < epsn || fabs(f) < tol || rtn < dia / 50)

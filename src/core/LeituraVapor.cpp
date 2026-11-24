@@ -13,11 +13,12 @@
  */
 
 #include "LeituraVapor.h"
+#include "UnitConversions.h"
 
 using namespace rapidjson;
 
-LerVap::LerVap(const string IMPFILE, varGlob1D *Vvg1dSP) {
-    vg1dSP = Vvg1dSP;
+LerVap::LerVap(const string IMPFILE, SimulationContext *context) {
+    simulationContext = context;
     dtmaxserie.parserie = 0;
     ConContEntrada = 0;
     nmaterial = 0;
@@ -69,7 +70,7 @@ LerVap::LerVap(const string IMPFILE, varGlob1D *Vvg1dSP) {
 }
 
 LerVap::LerVap(const LerVap &vler) {
-    vg1dSP = vler.vg1dSP;
+    simulationContext = vler.simulationContext;
     dtmaxserie.parserie = 0;
     ConContEntrada = 0;
     nmaterial = 0;
@@ -121,7 +122,7 @@ LerVap::LerVap(const LerVap &vler) {
 }
 
 LerVap::LerVap() {
-    vg1dSP = 0;
+    simulationContext = 0;
     mono = 0;
     ConContEntrada = 0;
     eventoabrePXO = 0;
@@ -330,7 +331,7 @@ LerVap &LerVap::operator=(const LerVap &vler) {
 
         if (ntela > 0)
             delete[] tela;
-        vg1dSP = vler.vg1dSP;
+        simulationContext = vler.simulationContext;
         impfile = vler.impfile;
         lerArq();
     }
@@ -2060,7 +2061,7 @@ void LerVap::novatrans(TransCal &transfer,
 
     int kL = litologia;
 
-    transfer = TransCal(vg1dSP, geom, perm, vncamada, vdrcamada, vTcamada,
+    transfer = TransCal(simulationContext, geom, perm, vncamada, vdrcamada, vTcamada,
                         tint, text, 0., vint, vext, dircon, dt, ki, cpi, rhoi, visci, ki, cpe,
                         rhoe, visce, vformacao, ambext, formacPoc[kL].tempo, formacPoc[kL].cond,
                         formacPoc[kL].cp, formacPoc[kL].rho, pres);
@@ -2261,8 +2262,8 @@ void LerVap::geracelp(CelVap *celula) {
                   celp[i].textern, celp[i].vextern, jmix, celp[i].dirconv, dtmax,
                   vkint, vcpint, vrhomix, vviscint, celp[i].kextern, celp[i].cpextern,
                   celp[i].rhoextern, celp[i].viscextern, celp[i].formacCel, celp[i].lito, celp[i].ambext,
-                  1.0197 + celp[i].profundiM * 1000 * 9.81 / 98066.52);
-        celula[i] = CelVap(vg1dSP, dutosMRT[idutoL], dutosMRT[iduto],
+                  units::kKgfPerCm2PerBar + celp[i].profundiM * 1000 * 9.81 / units::kPascalPerKgfPerCm2);
+        celula[i] = CelVap(simulationContext, dutosMRT[idutoL], dutosMRT[iduto],
                            dutosMRT[idutoR], flup, tmedL, tmed, tmedR, tmed,
                            pmedL, pmed, pmedR, vML, vMC, vMR, vMliqL, vMliq, vMliqR, vazioL,
                            vazio, vazioR, vdxL, vdx, vdxR, dtmax, i, entrada);
@@ -2515,7 +2516,7 @@ void LerVap::atualiza(int inicio, int extrem,
 
     if (npig > 0) {
         for (int i = 0; i < npig; i++) {
-            if (tempo < (pig[i].tempo + 0.1) && tempo > (pig[i].tempo - (*vg1dSP).localtiny)) {
+            if (tempo < (pig[i].tempo + 0.1) && tempo > (pig[i].tempo - (*simulationContext).smallValueTolerance)) {
                 int celpos = pig[i].lanca;
                 celula[celpos].estadoPig = 1;
                 celula[celpos].razPig = 0.5;
@@ -2536,7 +2537,7 @@ void LerVap::atualiza(int inicio, int extrem,
         abersup = chokep.abertura[ind];
     chokeSup.AreaGarg = (aberinf * raz + (1 - raz) * abersup) * celula[celpos].duto.area;
 
-    if ((*vg1dSP).chaverede == 0 || extrem == 1) {
+    if ((*simulationContext).networkMode == 0 || extrem == 1) {
         indraz(ind, raz, tempo, psep.parserie, psep.tempo);
     }
 
@@ -2604,14 +2605,14 @@ void LerVap::imprimeProfile(CelVap *const celula,
                 k++;
             }
             if (profp.ug == 1) {
-                if (celula[i].alf > (*vg1dSP).localtiny)
+                if (celula[i].alf > (*simulationContext).smallValueTolerance)
                     flut[i][k] = celula[i].QG / (celula[i].duto.area * celula[i].alf);
                 else
                     flut[i][k] = 0;
                 k++;
             }
             if (profp.ul == 1) {
-                if (celula[i].alf < 1. - (*vg1dSP).localtiny)
+                if (celula[i].alf < 1. - (*simulationContext).smallValueTolerance)
                     flut[i][k] = celula[i].QL / (celula[i].duto.area * (1. - celula[i].alf));
                 else
                     flut[i][k] = 0;
@@ -2680,7 +2681,7 @@ void LerVap::imprimeProfile(CelVap *const celula,
             saidaP << "Tramo" << indTramo << "-" << "PERFISP" << "-" << numero << ".dat";
         string tmp = saidaP.str();
         ofstream escreveIni(tmp.c_str(), ios_base::out);
-        escreveIni << "# Passo de tempo = " << (*vg1dSP).contador << "\n";
+        escreveIni << "# Passo de tempo = " << (*simulationContext).timeStepIndex << "\n";
         escreveIni << " Comprimento (m) ;";
         escreveIni << " Tempo (s) ;";
         if (profp.pres == 1)
@@ -2759,7 +2760,7 @@ void LerVap::imprimeProfileTrans(
             string tmp = saidaP.str();
 
             ofstream escreveIni(tmp.c_str(), ios_base::out);
-            escreveIni << "# Passo de tempo = " << (*vg1dSP).contador << "\n";
+            escreveIni << "# Passo de tempo = " << (*simulationContext).timeStepIndex << "\n";
             escreveIni << "# Tempo (s) = " << tempo << "\n";
             escreveIni << "# Comprimento a partir do Fundo de Poco(m) = "
                        << comprimento << "\n";
@@ -2802,14 +2803,14 @@ void LerVap::imprimeTrend(CelVap *const celula,
             k++;
         }
         if (trendp[trend].ug == 1) {
-            if (celula[i].alf > (*vg1dSP).localtiny)
+            if (celula[i].alf > (*simulationContext).smallValueTolerance)
                 flut[linha][k] = celula[i].QG / (celula[i].duto.area * celula[i].alf);
             else
                 flut[linha][k] = 0;
             k++;
         }
         if (trendp[trend].ul == 1) {
-            if (celula[i].alf < 1. - (*vg1dSP).localtiny)
+            if (celula[i].alf < 1. - (*simulationContext).smallValueTolerance)
                 flut[linha][k] = celula[i].QL / (celula[i].duto.area * (1. - celula[i].alf));
             else
                 flut[linha][k] = 0;

@@ -2,8 +2,8 @@
 """Compact index of the definitions in the Marlim3 sources.
 
 Prints one line per function, method, type or Fortran unit: name, path:line and
-signature. The engine sources are large (src/core/SisProd.cpp alone is above
-1 MB), so look a symbol up here and read only the lines around it.
+signature. Several engine sources and extracted SisProd solver modules are
+large, so look a symbol up here and read only the lines around it.
 
 Examples:
     python .github/skills/development/scripts/symbol_index.py --grep Perm --path SisProd

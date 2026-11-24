@@ -16,7 +16,7 @@
 #include "Matriz.h"
 #include "Vetor.h"
 #include "estruturasPoisson.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -43,9 +43,9 @@ class solverPAxiSim {
     malha2dAxiSim malha;
     int kontaTempo;
     double tempProd;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
     int precn;
-    solverPAxiSim(varGlob1D *Vvg1dSP, string nomeArquivoEntrada, double* vresGlob = 0,
+    solverPAxiSim(SimulationContext *context, string nomeArquivoEntrada, double* vresGlob = 0,
             double* vTint = 0, double* vdiamI = 0
 			, double* dxCel=0, int vncel=0, double* vgeoterm=0, double vtempProd=0.);
     solverPAxiSim();
@@ -53,6 +53,7 @@ class solverPAxiSim {
     solverPAxiSim &operator=(const solverPAxiSim &);
     ~solverPAxiSim();
 
+    /// Returns formation thermal resistance per unit axial length, in m K/W.
     double ResForm(double tempprod, double diaExt,double condform, double rhoform, double cpform);
     void indrazT(int &ind, double &raz);
     void permanentePoisson();

@@ -428,16 +428,16 @@ These parameters control when the full model — which includes time derivatives
 These parameters are applicable to transient simulations with compositional fluid models only.
 
 - `dynTableMinDelay` · `miniTabDinAtraso`
-  **Default:** `0`
-  Every N time steps (as defined here), a local flash mini-table is generated per cell, storing P and T flash data using the increments defined below.
+  **Default:** `5`
+  A configured zero is treated as one. Without the advanced section, the delay is one. Every N time steps (as defined here), a local flash mini-table is generated per cell, storing P and T flash data using the increments defined below.
 
 - `dynTableMinDp` · `miniTabDinDp`
-  **Default:** `0` kgf/cm²
-  Pressure increment/decrement used when generating flash mini-tables.
+  **Default:** `5` kgf/cm²
+  Values below five are treated as five. Pressure increment/decrement used when generating flash mini-tables.
 
 - `dynTableMinDt` · `miniTabDinDt`
-  **Default:** `0` °C
-  Temperature increment/decrement used when generating flash mini-tables.
+  **Default:** `5` °C
+  Values below five are treated as five. Temperature increment/decrement used when generating flash mini-tables.
 
 ---
 

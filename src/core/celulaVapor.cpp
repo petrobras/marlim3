@@ -5,8 +5,9 @@
  *      Author: eduardo
  */
 #include "celulaVapor.h"
+#include "UnitConversions.h"
 
-CelVap::CelVap(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
+CelVap::CelVap(SimulationContext *context, const DadosGeo vdutoL, const DadosGeo vduto,
                const DadosGeo vdutoR,
                const ProVap vflui,
                const double vtempL, const double vtemp,
@@ -21,7 +22,7 @@ CelVap::CelVap(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
                const acessorio vacsr,
                acessorio *vacsrL) : TL(2), local(2, 5) { // construtor default
 
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     dutoL = vdutoL;
     duto = vduto;
     dutoR = vdutoR;
@@ -109,8 +110,8 @@ CelVap::CelVap(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
         term2R = 0.;
     }
     double localtinyTemp;
-    if (vg1dSP != 0)
-        localtinyTemp = (*vg1dSP).localtiny;
+    if (simulationContext != 0)
+        localtinyTemp = (*simulationContext).smallValueTolerance;
     else
         localtinyTemp = 1e-9;
     if (fabs(alf) >= localtinyTemp && fabs(alf) <= 1 - localtinyTemp)
@@ -186,7 +187,7 @@ CelVap::CelVap(varGlob1D *Vvg1dSP, const DadosGeo vdutoL, const DadosGeo vduto,
 }
 
 CelVap::CelVap(const CelVap &vcel) : TL(2), local(2, 5) { // construtor por copia
-    vg1dSP = vcel.vg1dSP;
+    simulationContext = vcel.simulationContext;
     dutoL = vcel.dutoL;
     duto = vcel.duto;
     dutoR = vcel.dutoR;
@@ -321,7 +322,7 @@ CelVap::CelVap(const CelVap &vcel) : TL(2), local(2, 5) { // construtor por copi
 
 CelVap &CelVap::operator=(const CelVap &vcel) {
     if (this != &vcel) {
-        vg1dSP = vcel.vg1dSP;
+        simulationContext = vcel.simulationContext;
         dutoL = vcel.dutoL;
         duto = vcel.duto;
         dutoR = vcel.dutoR;
@@ -497,7 +498,7 @@ void CelVap::avancalf(int &reinicia, int ncel) {
 
     double rlm = rpC;
     double fator1 = 1.;
-    if (alf <= (*vg1dSP).CritCond && transmassR < 0.) {
+    if (alf <= (*simulationContext).condensationVoidFractionThreshold && transmassR < 0.) {
         transmassR = 0.;
         FonteMudaFase = 0.;
     }
@@ -510,35 +511,35 @@ void CelVap::avancalf(int &reinicia, int ncel) {
         CoefDTR = 0.;
         CoefDTL = 0.;
     }
-    if (term1Mass > 0 && alfini > 1 - (*vg1dSP).localtiny)
+    if (term1Mass > 0 && alfini > 1 - (*simulationContext).smallValueTolerance)
         term1Mass = 0.;
-    if (term1Mass < 0 && alfini < (*vg1dSP).localtiny)
+    if (term1Mass < 0 && alfini < (*simulationContext).smallValueTolerance)
         term1Mass = 0.;
     alf = (1 - CoefDTL / (rpC * duto.area)) * alfini / (1 + CoefDTR / (rpC * duto.area)) +
           ((CoefDTR + CoefDTL) / (rpC * duto.area)) / (1 + CoefDTR / (rpC * duto.area)) +
           (term1Mass / (1 + CoefDTR / (rpC * duto.area))) * dt;
 
-    if (((alf <= (*vg1dSP).localtiny) && (alf >= -(*vg1dSP).localtiny))) {
+    if (((alf <= (*simulationContext).smallValueTolerance) && (alf >= -(*simulationContext).smallValueTolerance))) {
         alf = fabs(0.);
-    } else if (alf < -(*vg1dSP).localtiny) {
+    } else if (alf < -(*simulationContext).smallValueTolerance) {
         double dtaux;
         dtaux = -((1 - CoefDTL * fator1 / (rlm * duto.area)) * alfini / (1 + CoefDTR * fator1 / (rlm * duto.area)) +
                   ((CoefDTR * fator1 + CoefDTL * fator1) / (rlm * duto.area)) / (1 + CoefDTR * fator1 / (rlm * duto.area))) /
                 (term1Mass / (1 + CoefDTR * fator1 / (rlm * duto.area)));
-        if (dtaux > (*vg1dSP).localtiny) {
+        if (dtaux > (*simulationContext).smallValueTolerance) {
             dt = dtaux;
             reinicia = -1;
             alf = fabs(0.);
         } else
             alf = fabs(0.);
-    } else if ((alf >= (1. - (*vg1dSP).localtiny) && alf <= (1. + (*vg1dSP).localtiny))) {
+    } else if ((alf >= (1. - (*simulationContext).smallValueTolerance) && alf <= (1. + (*simulationContext).smallValueTolerance))) {
         alf = 1.;
-    } else if (alf > (1. + (*vg1dSP).localtiny)) {
+    } else if (alf > (1. + (*simulationContext).smallValueTolerance)) {
         double dtaux;
         dtaux = (1. - ((1 - CoefDTL * fator1 / (rlm * duto.area)) * alfini / (1 + CoefDTR * fator1 / (rlm * duto.area)) +
                        ((CoefDTR * fator1 + CoefDTL * fator1) / (rlm * duto.area)) / (1 + CoefDTR * fator1 / (rlm * duto.area)))) /
                 (term1Mass / (1 + CoefDTR * fator1 / (rlm * duto.area)));
-        if (dtaux > (*vg1dSP).localtiny) {
+        if (dtaux > (*simulationContext).smallValueTolerance) {
             dt = dtaux;
             reinicia = -1;
             alf = 1.;
@@ -578,14 +579,14 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
 
             compres = flui.ZFunc(presL, tempL);
             dzdp = flui.DZDPFunc(presL, tempL);
-            dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+            dpdrho = rhogL * (1 / (presL * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
             dpdrho = 1. / dpdrho;
 
-            if (alfLini <= (*vg1dSP).CritCond && transmassL < 0.)
+            if (alfLini <= (*simulationContext).condensationVoidFractionThreshold && transmassL < 0.)
                 transmassL = 0.;
 
             local[0][0] = -((1. / rhogL) * (1. - term1L) + multL * term1L) - dxL * (1 / rhogL - 1 / rpL) * term1L * DTransDxL;
-            local[0][1] = dxL * (AL * (alfL / rhogL) / dpdrho) * 98066.5 / dt;
+            local[0][1] = dxL * (AL * (alfL / rhogL) / dpdrho) * units::kPascalPerKgfPerCm2 / dt;
             local[0][2] = (1. / rhogL) * (1 - term1) + multR * term1 - dxL * (1 / rhogL - 1 / rpL) * term1 * DTransDxR;
             local[0][3] = 0.;
             local[0][4] = 0.;
@@ -594,11 +595,11 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
                 fontemassGL += corrigeMassaPres * dxL;
 
             if (TMModelL == 1 || TMModelL == 2 || TMModelL == 3) {
-                TL[0] = (dxL * AL * (alfL / rhogL) / dpdrho) * presL * 98066.5 / dt + (1 / rhogL - multR) * term2 -
+                TL[0] = (dxL * AL * (alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 / dt + (1 / rhogL - multR) * term2 -
                         (1 / rhogL - multL) * term2L +
                         (fontemassGL / rhogL + (fontemassLL / rpL)) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
             } else if (TMModelL == 0) {
-                TL[0] = (dxL * AL * (alfL / rhogL) / dpdrho) * presL * 98066.5 / dt + (1 / rhogL - multR) * term2 -
+                TL[0] = (dxL * AL * (alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 / dt + (1 / rhogL - multR) * term2 -
                         (1 / rhogL - multL) * term2L +
                         (fontemassGL / rhogL + (fontemassLL / rpL)) +
                         dxL * (1 / rhogL - 1 / rpL) * (DTransDt1 * (1. - alfL) / dt + DTransDt0 * (1. - alfLini) / dt + term2 * DTransDxR + term2L * DTransDxL);
@@ -627,20 +628,20 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
             double Amed = (dx * AC + dxR * AR) / (dx + dxR);
 
             double ugL = 0 * ((MC - Mliqini) / (rhogC)) / AC;
-            if (alf > (*vg1dSP).localtiny)
+            if (alf > (*simulationContext).smallValueTolerance)
                 ugL /= alf;
             else
                 ugL = 0.;
             double ugR = 0 * ((MR - MliqiniR) / (rhogR)) / AR;
-            if (alfR > (*vg1dSP).localtiny)
+            if (alfR > (*simulationContext).smallValueTolerance)
                 ugR /= alfR;
             else
                 ugR = 0.;
             local[1][0] = 0.;
             local[1][1] = -ugL * (1 - term1) / dx;
-            local[1][2] = -Amed * 98066.5 / dxmed;
+            local[1][2] = -Amed * units::kPascalPerKgfPerCm2 / dxmed;
             local[1][3] = (1 - term1R) / dt + ugR * (1 - term1R) / dx;
-            local[1][4] = Amed * 98066.5 / dxmed;
+            local[1][4] = Amed * units::kPascalPerKgfPerCm2 / dxmed;
 
             TL[1] = (MR - MliqiniR) / dt + term2R / dt + (ugR * term2R - ugL * term2) / dx;
 
@@ -726,7 +727,7 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
                 double dpdvaz = (0.3048 * acsr.bcs.Hvis * rhomix1 * 9.82 - dpB) / (0.001 * vazmix);
                 coefDpB = Cdpb * djdm * dpdvaz;
             } else if (acsr.tipo == 7)
-                dpB = acsr.delp * 98066.5;
+                dpB = acsr.delp * units::kPascalPerKgfPerCm2;
 
             double delpChoke = 0.;
 
@@ -736,32 +737,32 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
 
             local[1][3] += (coefTensC * coef1C + coefTensR * coef1R + estrat1);
             local[1][3] -= coefDpB * ((dx * AC + dxR * AR) / (dx + dxR)) / dx;
-            TL[1] -= (dpfric + dphidro - (dpB + delpChoke - coefDpB * MR - (sinalPig * DelPig * velPig * 98066.5)) * ((dx * AC + dxR * AR) / (dx + dxR)) / dx + estrat2);
+            TL[1] -= (dpfric + dphidro - (dpB + delpChoke - coefDpB * MR - (sinalPig * DelPig * velPig * units::kPascalPerKgfPerCm2)) * ((dx * AC + dxR * AR) / (dx + dxR)) / dx + estrat2);
 
-            cinematico = (fabs(MR - MRini) / dt) / fabs((Amed * 98066.5 / dxmed) * (presR - pres));
+            cinematico = (fabs(MR - MRini) / dt) / fabs((Amed * units::kPascalPerKgfPerCm2 / dxmed) * (presR - pres));
         } else {
             compres = flui.ZFunc(pres, temp);
             dzdp = flui.DZDPFunc(pres, temp);
-            dpdrho = rhogC * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
+            dpdrho = rhogC * (1 / (pres * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
             dpdrho = 1. / dpdrho;
             multL = ((1 / rpC) * rpCi) / (rpCi);
             local[1][0] = 0.;
             local[1][1] = -((1. / rhogC) * (1. - term1) + multL * term1);
-            local[1][2] = dx * (AC * (alf / rhogC) / dpdrho) * 98066.5 / dt;
+            local[1][2] = dx * (AC * (alf / rhogC) / dpdrho) * units::kPascalPerKgfPerCm2 / dt;
             local[1][3] = 0.;
             local[1][4] = 0.;
 
-            TL[1] = (dx * AC * (alf / rhogC) / dpdrho) * pres * 98066.5 / dt - (1 / rhogC - multL) * term2 +
+            TL[1] = (dx * AC * (alf / rhogC) / dpdrho) * pres * units::kPascalPerKgfPerCm2 / dt - (1 / rhogC - multL) * term2 +
                     (fontemassGR / rhogC + (fontemassLR / rpC)) + dx * (1 / rhogC - 1 / rpC) * transmassR;
             if (acsr.tipo == 8) {
                 double drhodp = 1 / dpdrho;
                 double drhodp1;
                 compres = flui.ZFunc(presR, tempR);
                 dzdp = flui.DZDTFunc(presR, tempR);
-                drhodp1 = rhogR * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
-                double correcBVol = -(-(1 / rhogR) * drhodp * pres * 98066.5 + rhogC * drhodp1 * presR * 98066.5 / (rhogR * rhogR));
-                local[1][2] += (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC)) * (1 / rhogR) * drhodp * 98066.5;
-                local[1][4] -= (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC)) * rhogC * drhodp1 * 98066.5 / (rhogR * rhogR);
+                drhodp1 = rhogR * (1 / (pres * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
+                double correcBVol = -(-(1 / rhogR) * drhodp * pres * units::kPascalPerKgfPerCm2 + rhogC * drhodp1 * presR * units::kPascalPerKgfPerCm2 / (rhogR * rhogR));
+                local[1][2] += (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC)) * (1 / rhogR) * drhodp * units::kPascalPerKgfPerCm2;
+                local[1][4] -= (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC)) * rhogC * drhodp1 * units::kPascalPerKgfPerCm2 / (rhogR * rhogR);
                 TL[1] += (acsr.bvol.MultGas / rhogC + (acsr.bvol.MLiqP / rpC)) * correcBVol;
             }
         }
@@ -772,7 +773,7 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
             double rholL = rpL;
             double compres = flui.ZFunc(presL, tempL);
             double dzdp = flui.DZDPFunc(presL, tempL);
-            double dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+            double dpdrho = rhogL * (1 / (presL * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
             dpdrho = 1. / dpdrho;
             double multL = ((1 / rpL) * rpLi) / (rpLi);
             double multR = ((1 / rpL) * rpCi) / (rpCi);
@@ -782,12 +783,12 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
                 coluna = 0.;
 
             local[0][0] = -((1. / rhogL) * (1. - term1L) + multL * term1L);
-            local[0][1] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * 98066.5 / dt;
+            local[0][1] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * units::kPascalPerKgfPerCm2 / dt;
             local[0][2] = (1. / rhogL) * (1 - term1) + multR * term1;
             local[0][3] = 0.;
             local[0][4] = 0.;
 
-            TL[0] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * presL * 98066.5 / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
+            TL[0] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
                     (fontemassGL / rhogL + (fontemassLL / rpL) / rholL) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
 
             local[1][0] = 0.;
@@ -802,7 +803,7 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
             double rhogL = flui.MasEspGas(presL, tempL, TEMP);
             double compres = flui.ZFunc(presL, tempL);
             double dzdp = flui.DZDPFunc(presL, tempL);
-            double dpdrho = rhogL * (1 / (presL * 98066.5) - (1 / compres) * dzdp);
+            double dpdrho = rhogL * (1 / (presL * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
             dpdrho = 1. / dpdrho;
             double multL = ((1 / rpL) * rpLi) / (rpLi);
             double multR = ((1 / rpL) * rpCi) / (rpCi);
@@ -812,12 +813,12 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
                 coluna = 1.;
 
             local[0][0] = -((1. / rhogL) * (1. - term1L) + multL * term1L);
-            local[0][1] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * 98066.5 / dt;
+            local[0][1] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * units::kPascalPerKgfPerCm2 / dt;
             local[0][2] = (1. / rhogL) * (1 - term1) + multR * term1;
             local[0][3] = 0.;
             local[0][4] = 0.;
 
-            TL[0] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * presL * 98066.5 / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
+            TL[0] = coluna * (dxL * AL * (alfL / rhogL) / dpdrho) * presL * units::kPascalPerKgfPerCm2 / dt + (1 / rhogL - multR) * term2 - (1 / rhogL - multL) * term2L +
                     (fontemassGL / rhogL + (fontemassLL / rpL)) + dxL * (1 / rhogL - 1 / rpL) * transmassL;
 
             double dxncel = 1. * dx;
@@ -825,7 +826,7 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
             double rhog = flui.MasEspGas(pres, temp, TEMP);
             compres = flui.ZFunc(pres, temp);
             dzdp = flui.DZDPFunc(pres, temp);
-            dpdrho = rhog * (1 / (pres * 98066.5) - (1 / compres) * dzdp);
+            dpdrho = rhog * (1 / (pres * units::kPascalPerKgfPerCm2) - (1 / compres) * dzdp);
             dpdrho = 1. / dpdrho;
 
             coluna = 1.;
@@ -836,12 +837,12 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
 
             local[1][0] = 0.;
             local[1][1] = -((1. / rhog) * (1. - term1) + multL * term1);
-            local[1][2] = coluna * (dxncel * AC * (alf / rhog) / dpdrho) * 98066.5 / dt -
+            local[1][2] = coluna * (dxncel * AC * (alf / rhog) / dpdrho) * units::kPascalPerKgfPerCm2 / dt -
                           (DmasschokeG / rhog + DmasschokeL / rpC);
             local[1][3] = 0.;
             local[1][4] = 0.;
 
-            TL[1] = coluna * (dxncel * AC * (alf / rhog) / dpdrho) * pres * 98066.5 / dt - (1 / rhog - multL) * term2 +
+            TL[1] = coluna * (dxncel * AC * (alf / rhog) / dpdrho) * pres * units::kPascalPerKgfPerCm2 / dt - (1 / rhog - multL) * term2 +
                     ((fontemassGR - DmasschokeG * pres) / rhog + (fontemassLR - DmasschokeL * pres) / rpC);
         }
     } else if (posic == 0) {
@@ -883,11 +884,11 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
             local[0][0] = 0.;
             local[0][1] = 0.;
             local[0][2] = coefTensC * coef1C + (1 - term1) / dt;
-            local[0][3] = Amed * 98066.5 / (dx);
+            local[0][3] = Amed * units::kPascalPerKgfPerCm2 / (dx);
             local[0][4] = 0;
 
             TL[0] = (MC - Mliqini) / dt + term2 / dt;
-            TL[0] += (Amed * 98066.5 * presE / (dx) - (dpfric + dphidro));
+            TL[0] += (Amed * units::kPascalPerKgfPerCm2 * presE / (dx) - (dpfric + dphidro));
         }
 
         double AC = duto.area;
@@ -904,9 +905,9 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
 
         local[1][0] = 0.;
         local[1][1] = 0.;
-        local[1][2] = -Amed * 98066.5 / dxmed;
+        local[1][2] = -Amed * units::kPascalPerKgfPerCm2 / dxmed;
         local[1][3] = (1 - term1R) / dt;
-        local[1][4] = Amed * 98066.5 / dxmed;
+        local[1][4] = Amed * units::kPascalPerKgfPerCm2 / dxmed;
 
         TL[1] = (MR - MliqiniR) / dt + term2R / dt;
 
@@ -968,23 +969,23 @@ void CelVap::GeraLocal(double presfim, int masChkSup, int ncel, double razareati
 void CelVap::avancPig(int &reinicia) {
     razPig = (razPigini * dx + velPig * dt) / dx;
 
-    if (((razPig <= (*vg1dSP).localtiny) && (razPig >= -(*vg1dSP).localtiny)))
+    if (((razPig <= (*simulationContext).smallValueTolerance) && (razPig >= -(*simulationContext).smallValueTolerance)))
         razPig = 0;
-    else if (razPig < -(*vg1dSP).localtiny) {
+    else if (razPig < -(*simulationContext).smallValueTolerance) {
         double dtaux;
         dtaux = -razPigini * dx / velPig;
-        if (dtaux > (*vg1dSP).localtiny) {
+        if (dtaux > (*simulationContext).smallValueTolerance) {
             dtPig = dtaux;
             reinicia = -1;
             razPig = fabs(0.);
         } else
             razPig = fabs(0.);
-    } else if ((razPig >= (1. - (*vg1dSP).localtiny) && razPig <= (1. + (*vg1dSP).localtiny))) {
+    } else if ((razPig >= (1. - (*simulationContext).smallValueTolerance) && razPig <= (1. + (*simulationContext).smallValueTolerance))) {
         razPig = 1.;
-    } else if (razPig > (1. + (*vg1dSP).localtiny)) {
+    } else if (razPig > (1. + (*simulationContext).smallValueTolerance)) {
         double dtaux;
         dtaux = (1. - razPigini) * dx / velPig;
-        if (dtaux > (*vg1dSP).localtiny) {
+        if (dtaux > (*simulationContext).smallValueTolerance) {
             dtPig = dtaux;
             reinicia = -1;
             razPig = 1.;
@@ -995,27 +996,27 @@ void CelVap::avancPig(int &reinicia) {
 
 void CelVap::avancalfPig() {
     double term1Mass = 0.;
-    if (alf <= (*vg1dSP).localtiny) {
+    if (alf <= (*simulationContext).smallValueTolerance) {
         alfPigD = 0.;
         alfPigE = 0.;
-    } else if (alf >= (1. - (*vg1dSP).localtiny)) {
+    } else if (alf >= (1. - (*simulationContext).smallValueTolerance)) {
         alfPigD = 1.;
         alfPigE = 1.;
     } else {
         if (velPig >= 0.) {
 
-            if (RazAreaPig > (*vg1dSP).localtiny) {
+            if (RazAreaPig > (*simulationContext).smallValueTolerance) {
                 double areagarg = RazAreaPig * duto.area;
                 double rlm = (1. - alfPigEini) * (rpC) +
                              alfPigEini * flui.MasEspGas(pres, temp, TEMP);
-                double massica = areagarg * sqrt(2. * rlm * (DelPig * velPig) * 98066.52);
+                double massica = areagarg * sqrt(2. * rlm * (DelPig * velPig) * units::kPascalPerKgfPerCm2);
                 massica = cdpig * massica;
                 VazaPig = massica / rlm;
             } else
                 VazaPig = 0.;
             double fontepigL = VazaPig * (1. - alfPigEini) * rpC;
 
-            if (razPig <= (1. - (*vg1dSP).localtiny)) {
+            if (razPig <= (1. - (*simulationContext).smallValueTolerance)) {
                 double rlm = rpC;
 
                 double fator1 = 1.;
@@ -1043,18 +1044,18 @@ void CelVap::avancalfPig() {
             }
         } else {
 
-            if (RazAreaPig > (*vg1dSP).localtiny) {
+            if (RazAreaPig > (*simulationContext).smallValueTolerance) {
                 double areagarg = RazAreaPig * duto.area;
                 double rlm = (alfPigDini) * (rpC) +
                              alfPigDini * flui.MasEspGas(pres, temp, TEMP);
-                double massica = areagarg * sqrt(2. * rlm * (DelPig * fabs(velPig)) * 98066.52);
+                double massica = areagarg * sqrt(2. * rlm * (DelPig * fabs(velPig)) * units::kPascalPerKgfPerCm2);
                 massica = cdpig * massica;
                 VazaPig = -massica / rlm;
             } else
                 VazaPig = 0.;
             double fontepigL = -VazaPig * (1. - alfPigDini) * rpC;
 
-            if (razPig >= (*vg1dSP).localtiny) {
+            if (razPig >= (*simulationContext).smallValueTolerance) {
 
                 double rlm = rpC;
 

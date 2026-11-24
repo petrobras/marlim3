@@ -91,8 +91,8 @@ class dadosPAxiSim {
     corteAxiSim *corte;
     int nzonas;
     double* zonaProf;
-    int profIni;
-    int profFim;
+    double profIni;
+    double profFim;
     int ncelPoco;
     double* dxPoco;
     double* perfiGeoterm;

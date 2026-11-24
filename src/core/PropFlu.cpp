@@ -1,7 +1,20 @@
 using namespace std;
 #include "PropFlu.h"
+#include "UnitConversions.h"
+#include <algorithm>
+#include <array>
+#include <bit>
+#include <cstdint>
 #include <cmath>
 #include <cstring>
+
+// The cell of the dynamic property table that holds a value. The table has pointCount points from axisMin, step
+// apart; the cell is the interval floor((value - axisMin) / step), kept inside the table, so that a value on its
+// last point interpolates up to that point instead of reading past it.
+static inline int dynamicTableCell(double value, double axisMin, double step, int pointCount){
+    const int cell=static_cast<int>(std::floor((value-axisMin)/step));
+    return std::clamp(cell, 0, pointCount-2);
+}
 
 namespace {
 inline double interpolaTabela2D(double x, double y, double** tabela, int ix, int iy, double* const eixoY) {
@@ -16,7 +29,7 @@ inline double interpolaTabela2D(double x, double y, double** tabela, int ix, int
 }
 
 
-ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double vbsw ,
+ProFlu::ProFlu(SimulationContext* context ,double vapi,double vrgo,double vdeng,double vbsw ,
                                     double vdenag,double vtempl,double vlvisl,double vtemph,
                                     double vlvish,int vtipoemul, double vaemul,double vbemul,
 									double vPHI100, double vbswCorte, int vtab, double vyco2,
@@ -40,7 +53,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
   phi_h_disp_local=0; //alteracao hidratos 3
   
   mascor=1.;
-  vg1dSP=Vvg1dSP;
+  simulationContext=context;
   API=vapi;
   RGO=vrgo;
   Deng=vdeng;
@@ -79,7 +92,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
    Cvb = 11.172;
   }
 
-  IRGO=RGO*35.31467/6.29;
+  IRGO=RGO*units::kCubicFootPerCubicMetre/units::kBarrelPerCubicMetre;
 
   yco2=vyco2;
   corrC=vcorrC;
@@ -105,7 +118,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
     PC*=(1.-ES/TC);
     TC-=ES;
     PC=psia(PC);
-    TC=Faren(TC-273.15)+460.;
+    TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
   }
   else if(corrC==2){
      double k=3.8216+17.438*Deng-3.2191*(Deng*Deng)-7.0485*yco2;
@@ -113,7 +126,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
      TC=k*k/(1.8*j);
      PC=0.124105621*TC/j;
    PC=psia(PC);
-   TC=Faren(TC-273.15)+460.;
+   TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
   }
 
 
@@ -171,6 +184,8 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
   PBPVTSim=0;
   TBPVTSim=0;
   TabRSLivia=0;
+  rsTablePressureCount=0;
+  rsTableTemperatureCount=0;
   tabRSPB=0;
 
   flashCompleto=vflash;
@@ -311,7 +326,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
 
   multbcs=0;
   int simulaTransienteTemp=0;
-  if(vg1dSP!=0)simulaTransienteTemp=(*vg1dSP).simulaTransiente;
+  if(simulationContext!=0)simulaTransienteTemp=(*simulationContext).transientSimulationEnabled;
   if(flashCompleto==2 && npseudo>0 && simulaTransienteTemp==1){
 	  	int dim=2;
 	  	miniTabDin.rholF=new double*[dim];
@@ -406,7 +421,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP ,double vapi,double vrgo,double vdeng,double v
 
 }
 
-ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
+ProFlu::ProFlu(SimulationContext* context, const double* const fluido, int vtipoemul,
                                 double vaemul, double vbemul,double vPHI100, double vbswCorte,
                                 int vtab, double vyco2, int vcorrC,int vcorrSat,int vcorrOM,int vcorrOV,
 								int vcorrOS,int vflash, int vid, int vnpseudo):
@@ -427,7 +442,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
 	  phi_h_disp_local=0; //alteracao hidratos 3
 	  
   mascor=1;
-  vg1dSP=Vvg1dSP;
+  simulationContext=context;
   API=fluido[0];
   RGO=fluido[1];
   Deng=fluido[2];
@@ -467,7 +482,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
    Cvb = 11.172;
   }
 
-  IRGO=RGO*35.31467/6.29;
+  IRGO=RGO*units::kCubicFootPerCubicMetre/units::kBarrelPerCubicMetre;
 
   yco2=vyco2;
   corrC=vcorrC;
@@ -493,7 +508,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
     PC*=(1.-ES/TC);
     TC-=ES;
     PC=psia(PC);
-    TC=Faren(TC-273.15)+460.;
+    TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
   }
   else if(corrC==2){
      double k=3.8216+17.438*Deng-3.2191*(Deng*Deng)-7.0485*yco2;
@@ -501,7 +516,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
      TC=k*k/(1.8*j);
      PC=0.124105621*TC/j;
    PC=psia(PC);
-   TC=Faren(TC-273.15)+460.;
+   TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
   }
 
   double delaux= BSW*1000.*Denag+(1-BSW)*(141.5*1000./(131.5+API));
@@ -559,6 +574,8 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
   PBPVTSim=0;
   TBPVTSim=0;
   TabRSLivia=0;
+  rsTablePressureCount=0;
+  rsTableTemperatureCount=0;
  tabRSPB=0;
  flashCompleto=vflash;
  lingas=0;
@@ -700,7 +717,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
 
  multbcs=0;
  int simulaTransienteTemp=0;
- if(vg1dSP!=0)simulaTransienteTemp=(*vg1dSP).simulaTransiente;
+ if(simulationContext!=0)simulaTransienteTemp=(*simulationContext).transientSimulationEnabled;
  if(flashCompleto==2 && npseudo>0 && simulaTransienteTemp==1){
 	  	int dim=2;
 	  	miniTabDin.rholF=new double*[dim];
@@ -795,7 +812,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, int vtipoemul,
 
 }
 
-ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* const astm, int vtipoemul
+ProFlu::ProFlu(SimulationContext* context, const double* const fluido, const double* const astm, int vtipoemul
                                , double vaemul, double vbemul,double vPHI100,
                                 double vbswCorte,int vtab, double vyco2,
 								int vcorrC,int vcorrSat,int vcorrOM,int vcorrOV,
@@ -818,7 +835,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* con
 	  phi_h_disp_local=0; //alteracao hidratos 3
 	  
   mascor=1.;
-  vg1dSP=Vvg1dSP;
+  simulationContext=context;
   API=fluido[0];
   RGO=fluido[1];
   Deng=fluido[2];
@@ -858,7 +875,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* con
    Cvb = 11.172;
   }
 
-  IRGO=RGO*35.31467/6.29;
+  IRGO=RGO*units::kCubicFootPerCubicMetre/units::kBarrelPerCubicMetre;
   yco2=vyco2;
   corrC=vcorrC;
   if(corrC==0){
@@ -883,7 +900,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* con
     PC*=(1.-ES/TC);
     TC-=ES;
     PC=psia(PC);
-    TC=Faren(TC-273.15)+460.;
+    TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
   }
   else if(corrC==2){
      double k=3.8216+17.438*Deng-3.2191*(Deng*Deng)-7.0485*yco2;
@@ -891,7 +908,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* con
      TC=k*k/(1.8*j);
      PC=0.124105621*TC/j;
    PC=psia(PC);
-   TC=Faren(TC-273.15)+460.;
+   TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
   }
 
   double delaux= BSW*1000.*Denag+(1-BSW)*(141.5*1000./(131.5+API));
@@ -945,6 +962,8 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* con
   PBPVTSim=0;
   TBPVTSim=0;
   TabRSLivia=0;
+  rsTablePressureCount=0;
+  rsTableTemperatureCount=0;
   tabRSPB=0;
   flashCompleto=vflash;
   lingas=0;
@@ -1087,7 +1106,7 @@ ProFlu::ProFlu(varGlob1D* Vvg1dSP, const double* const fluido, const double* con
 
   multbcs=0;
   int simulaTransienteTemp=0;
-  if(vg1dSP!=0)simulaTransienteTemp=(*vg1dSP).simulaTransiente;
+  if(simulationContext!=0)simulaTransienteTemp=(*simulationContext).transientSimulationEnabled;
   if(flashCompleto==2 && npseudo>0 && simulaTransienteTemp==1){
 	  	int dim=2;
 	  	miniTabDin.rholF=new double*[dim];
@@ -1190,7 +1209,7 @@ ProFlu::ProFlu(const ProFlu& fluido):
 	  phi_h_disp_local=fluido.phi_h_disp_local; //alteracao hidratos 3
 
   mascor=fluido.mascor;
-  vg1dSP=fluido.vg1dSP;
+  simulationContext=fluido.simulationContext;
   API=fluido.API;
   RGO=fluido.RGO;
   Deng=fluido.Deng;
@@ -1268,6 +1287,7 @@ ProFlu::ProFlu(const ProFlu& fluido):
   EMW[9]=100;
 
   corrSat=fluido.corrSat;
+  awaitingSaturationTable=fluido.awaitingSaturationTable;
   corrOM=fluido.corrOM;
   corrOV=fluido.corrOV;
   corrOS=fluido.corrOS;
@@ -1277,6 +1297,8 @@ ProFlu::ProFlu(const ProFlu& fluido):
   PBPVTSim=fluido.PBPVTSim;
   TBPVTSim=fluido.TBPVTSim;
   TabRSLivia=fluido.TabRSLivia;
+  rsTablePressureCount=fluido.rsTablePressureCount;
+  rsTableTemperatureCount=fluido.rsTableTemperatureCount;
   tabRSPB=fluido.tabRSPB;
 
   flashCompleto=fluido.flashCompleto;
@@ -1444,7 +1466,7 @@ ProFlu::ProFlu(const ProFlu& fluido):
 
   multbcs=fluido.multbcs;
   int simulaTransienteTemp=0;
-  if(vg1dSP!=0)simulaTransienteTemp=(*vg1dSP).simulaTransiente;
+  if(simulationContext!=0)simulaTransienteTemp=(*simulationContext).transientSimulationEnabled;
   if(flashCompleto==2 && npseudo>0 && simulaTransienteTemp==1){
 	  	int dim=2;
 	  	miniTabDin.rholF=new double*[dim];
@@ -1539,7 +1561,7 @@ ProFlu& ProFlu::operator =(const ProFlu& fluido){
   //iguala duas listas de primitivas
  if(this!=&fluido){//verifica se se est          igualando a mesma lista
    mascor=fluido.mascor;
-   vg1dSP=fluido.vg1dSP;
+   simulationContext=fluido.simulationContext;
    API=fluido.API;
    RGO=fluido.RGO;
    Deng=fluido.Deng;
@@ -1597,6 +1619,7 @@ ProFlu& ProFlu::operator =(const ProFlu& fluido){
   lingas=fluido.lingas;
 
   corrSat=fluido.corrSat;
+  awaitingSaturationTable=fluido.awaitingSaturationTable;
   corrOM=fluido.corrOM;
   corrOV=fluido.corrOV;
   corrOS=fluido.corrOS;
@@ -1606,6 +1629,8 @@ ProFlu& ProFlu::operator =(const ProFlu& fluido){
   PBPVTSim=fluido.PBPVTSim;
   TBPVTSim=fluido.TBPVTSim;
   TabRSLivia=fluido.TabRSLivia;
+  rsTablePressureCount=fluido.rsTablePressureCount;
+  rsTableTemperatureCount=fluido.rsTableTemperatureCount;
  tabRSPB=fluido.tabRSPB;
 
  flashCompleto=fluido.flashCompleto;
@@ -1726,7 +1751,7 @@ ProFlu& ProFlu::operator =(const ProFlu& fluido){
 
  multbcs=fluido.multbcs;
  int simulaTransienteTemp=0;
- if(vg1dSP!=0)simulaTransienteTemp=(*vg1dSP).simulaTransiente;
+ if(simulationContext!=0)simulaTransienteTemp=(*simulationContext).transientSimulationEnabled;
  if(flashCompleto==2 && npseudo>0 && simulaTransienteTemp==1){
 		for(int j=0; j<2;j++){
 				delete[] miniTabDin.rhogF[j];
@@ -1976,28 +2001,33 @@ ProFlu ProFlu::operator+(const ProFlu& fluido) const{
 
 }
 
-double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int renovaInd*/) const{
+double ProFlu::interpolaVarProd(double pres, double temp, double** Var, int pressureCount, int temperatureCount) const{
     int ipres=0;
     int itemp=0;
     double varprop;
-    const int ndiv=npontos-1;
-    const int upperIndex=ndiv+1;
+    // A table with sizes of its own is not on the flash axes, so the search ranges built for those do not apply.
+    const bool flashAxes=pressureCount==0 && temperatureCount==0;
+    const int pressureUpper=pressureCount>0 ? pressureCount : npontos;
+    const int temperatureUpper=temperatureCount>0 ? temperatureCount : npontos;
     double* const tempAxis=Var[0];
     const double presMin=Var[1][0];
-    const double presMax=Var[upperIndex][0];
+    const double presMax=Var[pressureUpper][0];
     const double tempMin=tempAxis[1];
-    const double tempMax=tempAxis[upperIndex];
+    const double tempMax=tempAxis[temperatureUpper];
     if(pres<presMin || pres>=presMax || temp<tempMin || temp>=tempMax){
     	varprop=1.225*Deng;
 		if(pres>=presMax|| temp<tempMin || temp>=tempMax){
+#pragma omp critical(marlim_property_iteration_limit)
+            {
             // incluir falha
-            string complementoFalha = string("Limite alto na tabela ") + to_string((*vg1dSP).contaExit);
+            string complementoFalha = string("Limite alto na tabela ") + to_string((*simulationContext).propertyIterationLimitCount);
             logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "Pressão ou temperatura excedeu o limite máximo da tabela de Flash", "N/A",
                 complementoFalha);
             // gravar arquivo de log
             logger.writeOutputLog();
             // encerrar a aplicacao
             exit(EXIT_SUCCESS);
+            }
     		int para;
     		para++;
     	}
@@ -2005,7 +2035,9 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
 
     else{
       int e, m, d;
-      if(pres>=Var[indMinEquP][0] && erroP==0){
+      // The search ranges exist only for tables on a flash table's axes; any other table is
+      // bracketed by bisection over the whole axis.
+      if(flashAxes && erroP==0 && !pchange.empty() && pres>=Var[indMinEquP][0]){
           int busca=0;
           while(pres>pchange[busca])busca++;
           double pmax=Var[ipchange[busca]][0];
@@ -2014,7 +2046,7 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
       }
       else{
         e = 1;
-        if(erroP==1)d = ndiv+1;
+        if(!flashAxes || erroP==1 || pchange.empty())d = pressureUpper;
         else d = indMinEquP;
         ipres=d;
         while (e <= d) {
@@ -2023,7 +2055,7 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
  	    	  ipres=m;
  	    	  break;
  	      }
- 	      else if (m==ndiv+1 && Var[m][0] == pres){
+ 	      else if (m==pressureUpper && Var[m][0] == pres){
  	    	ipres=m-1;
  	    	break;
  	      }
@@ -2035,7 +2067,7 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
 	      else d = m - 1;
 	    }
       }
-      if(temp>=Var[0][indMinEquT] && erroT==0){
+      if(flashAxes && erroT==0 && !tchange.empty() && temp>=Var[0][indMinEquT]){
           int busca=0;
           while(temp>tchange[busca])busca++;
           double tmax=tempAxis[itchange[busca]];
@@ -2044,7 +2076,7 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
       }
       else{
         e = 1;
-        if(erroT==1)d = ndiv+1;
+        if(!flashAxes || erroT==1 || tchange.empty())d = temperatureUpper;
         else d = indMinEquT;
         itemp=d;
         while (e <= d) {
@@ -2053,7 +2085,7 @@ double ProFlu::interpolaVarProd(double pres, double temp, double** Var/*,int ren
             itemp=m;
             break;
           }
-          else if (m==ndiv+1 && tempAxis[m] == temp){
+          else if (m==temperatureUpper && tempAxis[m] == temp){
             itemp=m-1;
             break;
           }
@@ -2090,7 +2122,7 @@ void ProFlu::RenovaFluido() {
 	   Cvb = 11.172;
 	  }
 
-	  IRGO=RGO*35.31467/6.29;
+	  IRGO=RGO*units::kCubicFootPerCubicMetre/units::kBarrelPerCubicMetre;
 
 	  if(corrC==0){
 	    if(Deng<=0.7){
@@ -2114,7 +2146,7 @@ void ProFlu::RenovaFluido() {
 		  PC*=(1.-ES/TC);
 		  TC-=ES;
 		  PC=psia(PC);
-		  TC=Faren(TC-273.15)+460.;
+		  TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
 	  }
 	  else if(corrC==2){
 	     double k=3.8216+17.438*Deng-3.2191*(Deng*Deng)-7.0485*yco2;
@@ -2122,7 +2154,7 @@ void ProFlu::RenovaFluido() {
 	     TC=k*k/(1.8*j);
 	     PC=0.124105621*TC/j;
 		 PC=psia(PC);
-		 TC=Faren(TC-273.15)+460.;
+		 TC=Faren(TC-units::kZeroCelsiusInKelvin)+460.;
 	  }
 
 	  double delaux= BSW*1000.*Denag+(1-BSW)*(141.5*1000./(131.5+API));
@@ -2167,7 +2199,7 @@ void ProFlu::PcTcIS(){
 		  PCis*=(1.-ES/TCis);
 		  TCis-=ES;
 		  PCis=psia(PCis);
-		  TCis=Faren(TCis-273.15)+460.;
+		  TCis=Faren(TCis-units::kZeroCelsiusInKelvin)+460.;
 	  }
 	  else if(corrC==2){
 	     double k=3.8216+17.438*dgis-3.2191*(dgis*dgis)-7.0485*yco2;
@@ -2175,7 +2207,7 @@ void ProFlu::PcTcIS(){
 	     TCis=k*k/(1.8*j);
 	     PCis=0.124105621*TCis/j;
 		 PCis=psia(PCis);
-		 TCis=Faren(TCis-273.15)+460.;
+		 TCis=Faren(TCis-units::kZeroCelsiusInKelvin)+460.;
 	  }
 }
 
@@ -2193,10 +2225,10 @@ double ProFlu::VisOM(double temper) const{
 	 //ASTM
      double rhol=1*(141.5/(131.5 + API));
 
-     double bASTM = bASTM1/log10((TempL + 273)/(TempH + 273));
+     double bASTM = bASTM1/log10((TempL + units::kZeroCelsiusInKelvin)/(TempH + units::kZeroCelsiusInKelvin));
 
-     double visASTM=rhol*(pow(10,pow(10,(bASTM*log10((temper + 273)/
-         		 (TempL + 273))+bASTM2)))-0.7);
+     double visASTM=rhol*(pow(10,pow(10,(bASTM*log10((temper + units::kZeroCelsiusInKelvin)/
+         		 (TempL + units::kZeroCelsiusInKelvin))+bASTM2)))-0.7);
      return visASTM;
    }
    else{
@@ -2277,7 +2309,7 @@ double ProFlu::VisOM(double temper) const{
    }
  }
  else{
-	 return interpolaVarProd(1.033210485, temper, viscO);
+	 return interpolaVarProd(units::kAtmosphereInKgfPerCm2, temper, viscO);
  }
 
 
@@ -2349,8 +2381,19 @@ double ProFlu::interpolaLas3( double var)const{
 
 
 
+// Ends the run on a bubble curve interpolaPB cannot use; kept out of line, off its hot path.
+[[noreturn]] [[gnu::cold]] [[gnu::noinline]] static void failBubbleCurveSize(int pointCount){
+    logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "Curva de bolha do PVTSim com menos de dois pontos", "N/A",
+        string("npontosB = ") + to_string(pointCount));
+    logger.writeOutputLog();
+    exit(EXIT_SUCCESS);
+}
+
 double ProFlu::interpolaPB( double temp)const{
 
+    // The curve interpolates between two points at least; a fluid given its pointers without its size would
+    // read outside it.
+    if(npontosB<2)failBubbleCurveSize(npontosB);
     int itemp=0;
     double var;
     int ndiv=npontosB-1;
@@ -2393,10 +2436,11 @@ double ProFlu::interpolaRS( double pres, double temp)const{
   double delt=TabRSLivia[0][2]-TabRSLivia[0][1];
   int itemp=floor((temp-tmin)/delt)+2;
 
-  double pmax=TabRSLivia[npontos][0];
-  double delp=TabRSLivia[npontos][0]-TabRSLivia[npontos-1][0];
+  const int pressurePoints=rsPressurePoints();
+  double pmax=TabRSLivia[pressurePoints][0];
+  double delp=TabRSLivia[pressurePoints][0]-TabRSLivia[pressurePoints-1][0];
   int ipres=floor((pmax-pres)/delp)+1;
-  ipres=npontos-ipres;
+  ipres=pressurePoints-ipres;
 
   double razpres=(pres-TabRSLivia[ipres][0])/(TabRSLivia[ipres+1][0]-TabRSLivia[ipres][0]);
   double raztemp=(temp-TabRSLivia[0][itemp])/(TabRSLivia[0][itemp+1]-TabRSLivia[0][itemp]);
@@ -2418,9 +2462,9 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
  double rstemp;
  double pbtemp;
  if(flashCompleto==0 || flashCompleto==3){
-    if(corrSat==0 || corrSat==-4){
-	   if(tabRSPB==1 && pres<TabRSLivia[npontos][0] && pres >TabRSLivia[1][0] &&
-			   temp<TabRSLivia[0][npontos] && temp>TabRSLivia[0][1]){
+    if(corrSat==0 || awaitingSaturationTable){
+	   if(tabRSPB==1 && pres<TabRSLivia[rsPressurePoints()][0] && pres >TabRSLivia[1][0] &&
+			   temp<TabRSLivia[0][rsTemperaturePoints()] && temp>TabRSLivia[0][1]){
 	    rstemp=interpolaRS(pres,temp);
 
 	   }
@@ -2436,8 +2480,8 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
     }
 
     else if(corrSat==1){
-	   if(tabRSPB==1 && pres<TabRSLivia[npontos][0] && pres >TabRSLivia[1][0] &&
-			   temp<TabRSLivia[0][npontos] && temp>TabRSLivia[0][1]){
+	   if(tabRSPB==1 && pres<TabRSLivia[rsPressurePoints()][0] && pres >TabRSLivia[1][0] &&
+			   temp<TabRSLivia[0][rsTemperaturePoints()] && temp>TabRSLivia[0][1]){
 	     rstemp=interpolaRS(pres,temp);
 
 	   }
@@ -2477,8 +2521,8 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
     }
 
     else if(corrSat==2){
-	   if(tabRSPB==1 && pres<TabRSLivia[npontos][0] && pres >TabRSLivia[1][0] &&
-			   temp<TabRSLivia[0][npontos] && temp>TabRSLivia[0][1]){
+	   if(tabRSPB==1 && pres<TabRSLivia[rsPressurePoints()][0] && pres >TabRSLivia[1][0] &&
+			   temp<TabRSLivia[0][rsTemperaturePoints()] && temp>TabRSLivia[0][1]){
 	    rstemp=interpolaRS(pres,temp);
 
 	   }
@@ -2497,8 +2541,8 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
 
 
     else if(corrSat==3){
-	   if(tabRSPB==1 && pres<TabRSLivia[npontos][0] && pres >TabRSLivia[1][0] &&
-			   temp<TabRSLivia[0][npontos] && temp>TabRSLivia[0][1]){
+	   if(tabRSPB==1 && pres<TabRSLivia[rsPressurePoints()][0] && pres >TabRSLivia[1][0] &&
+			   temp<TabRSLivia[0][rsTemperaturePoints()] && temp>TabRSLivia[0][1]){
 	    rstemp=interpolaRS(pres,temp);
 
 	   }
@@ -2531,9 +2575,9 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
     }
     else if(corrSat==4){
 
-       if(tabRSPB==1 && pres<TabRSLivia[npontos][0] && pres >TabRSLivia[1][0] &&
-			   temp<TabRSLivia[0][npontos] && temp>TabRSLivia[0][1]){
-         rstemp=interpolaVarProd(pres,temp, TabRSLivia);
+       if(tabRSPB==1 && pres<TabRSLivia[rsPressurePoints()][0] && pres >TabRSLivia[1][0] &&
+			   temp<TabRSLivia[0][rsTemperaturePoints()] && temp>TabRSLivia[0][1]){
+         rstemp=interpolaVarProd(pres,temp, TabRSLivia, rsPressurePoints(), rsTemperaturePoints());
          return rstemp*IRGO;
        }
        else{
@@ -2544,8 +2588,8 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
         	 pbtemp = PB(pres,temp);
          else pbtemp=varPb;
 
-         double P_psi = ipres - 14.69;
-         PbLivia=pbtemp-14.69;
+         double P_psi = ipres - units::kAtmosphereInPsi;
+         PbLivia=pbtemp-units::kAtmosphereInPsi;
 
          double Pr = P_psi/PbLivia; //eq. 2b do paper
 
@@ -2599,7 +2643,7 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
  }
  else{
     double rstemptemp;
-     if((*vg1dSP).modoTransiente==0 || multbcs==1){
+     if((*simulationContext).transientPropertyMode==0 || multbcs==1){
     	 if(tabelaDinamica==0){
     		 Marlim_CalculateSolutionGasOilRatio(dVaporMassFraction,dStockTankVaporMassFraction,
     				 dStockTankLiquidDensity,dStockTankVaporDensity, &rstemptemp);
@@ -2613,8 +2657,8 @@ double ProFlu::RS(double pres, double temp, double varPb) const{
     		 if(pres<tabDin.pmin) pres=tabDin.pmin;
     		 if(pres>tabDin.pmax)pres=tabDin.pmax;
     		 if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-    			 int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-    			 int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+    			 int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+    			 int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
     			 double raztemp;
     			 double razpres;
     			 double valT0;
@@ -2681,7 +2725,7 @@ double ProFlu::PB(double pres, double temp) const{
  double itemp;
  double pbtemp=0;
  if(flashCompleto==0 || flashCompleto==3){
-   if(corrSat==0|| corrSat==-4){
+   if(corrSat==0 || awaitingSaturationTable){
 	  if(tabRSPB==1){
 	    pbtemp=interpolaPB(temp);
 
@@ -2781,7 +2825,7 @@ double ProFlu::PB(double pres, double temp) const{
 	 pbtemp = interpolaPB(temp);
  }
  else{
-	 if((*vg1dSP).modoTransiente==0 || multbcs==1){
+	 if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 		 if(tabelaDinamica==0){
 
 			 itemp=Faren(temp)+460;
@@ -2793,15 +2837,12 @@ double ProFlu::PB(double pres, double temp) const{
 			 if(pres<tabDin.pmin) pres=tabDin.pmin;
 			 if(pres>tabDin.pmax)pres=tabDin.pmax;
 			 if(temp>=tabDin.tmin && temp<=tabDin.tmax){
-				 int posic=floor(temp-tabDin.tmin)/(tabDin.delT);
-				 if(posic<tabDin.npontosT){
-					 double raztemp=(temp-tabDin.TBF[posic])/(tabDin.delT);
-					 pbtemp=raztemp*tabDin.PBF[posic+1]+(1.-raztemp)*tabDin.PBF[posic];
-				 }
-				 else pbtemp=tabDin.PBF[posic+1];
+				 int posic=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+				 double raztemp=(temp-tabDin.TBF[posic])/(tabDin.delT);
+				 pbtemp=raztemp*tabDin.PBF[posic+1]+(1.-raztemp)*tabDin.PBF[posic];
 			 }
 			 else{
-				 pbtemp=psia(dCalculatedBubbleP/98066.52);
+				 pbtemp=psia(dCalculatedBubbleP/units::kPascalPerKgfPerCm2);
 			 }
 		 }
 	 }
@@ -2881,7 +2922,7 @@ double ProFlu::ViscOleo(double pres, double temp,int semEmul) const{
 		 else if((ipres>PBolha || (flashCompleto==2 && (iCalculatedThermodynamicCondition==0 || iCalculatedThermodynamicCondition==4))) && RGO>0.){
 
 			 double visSat=0.;
-			 double pBolhaKGF=PBolha/(0.9678411*14.69595);
+			 double pBolhaKGF=PBolha/units::kPsiPerKgfPerCm2;
 			 ////Calculo da viscosidade na pressão de bolha:
 			 if(corrOV==0){
 	    //Beggs_Robinson
@@ -3004,8 +3045,8 @@ double ProFlu::ViscOleo(double pres, double temp,int semEmul) const{
 			if(pres<tabDin.pmin) pres=tabDin.pmin;
 			if(pres>tabDin.pmax)pres=tabDin.pmax;
 		 if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-		 		 int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-		 		 int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+		 		 int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+		 		 int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 		 		 posicT++;
 		 		 posicP++;
  				 viso=ViscGas(pres,temp);
@@ -3036,7 +3077,7 @@ double ProFlu::ViscOleo(double pres, double temp,int semEmul) const{
 double ProFlu::ViscGas(double pres,double temp) const{
    if(flashCompleto==0 || flashCompleto==2 || flashCompleto==3){
      double TF=Faren(temp);
-     double TR=TF+459.67;
+     double TR=TF+units::kZeroFahrenheitInRankine;
      double wg=rDgL*Deng*29;
      double AK=(9.4+0.02*wg)*pow(TR,1.5)/(209.+19.*wg+TR);
      double x=3.5+(986/TR)+0.01*wg;
@@ -3157,6 +3198,27 @@ double ProFlu::FNdran(double PR, double TR, double denr) const{
 
 
 double ProFlu::FalsaCorda(double a,double b,double PR,double TR,double delta ,double epsn,int maxit)const{
+    struct CachedRoot {
+        std::array<std::uint64_t, 6> arguments{};
+        int iterationLimit = 0;
+        double value = 0.;
+        bool valid = false;
+    };
+    thread_local std::array<CachedRoot, 4> cachedRoots;
+    thread_local std::size_t nextCachedRoot = 0;
+    const std::array<double, 6> arguments{a, b, PR, TR, delta, epsn};
+    std::array<std::uint64_t, 6> key;
+    bool cacheable = TR > 0. && PR >= 0. && delta > 0. && epsn > 0. && maxit > 0;
+    for (std::size_t i = 0; i < arguments.size(); ++i) {
+        key[i] = std::bit_cast<std::uint64_t>(arguments[i]);
+        cacheable = cacheable && std::isfinite(arguments[i]);
+    }
+    if (cacheable) {
+        for (const auto &entry : cachedRoots)
+            if (entry.valid && entry.iterationLimit == maxit && entry.arguments == key)
+                return entry.value;
+    }
+
         //a e b-> chutes iniciais para a falsa corda
         //epsn -> limite em que se admite F(double) aproximadamente zero
         //delta-> limite a partir do qual admite-se que ja nao existe variacao no calculo da raiz
@@ -3200,30 +3262,39 @@ double ProFlu::FalsaCorda(double a,double b,double PR,double TR,double delta ,do
             e*=0.5;
             c=a+e;
             double w=FNdran(PR,TR,c);
-            if(fabs(e)<delta||fabs(w)<epsn) return c;
+            if(fabs(e)<delta||fabs(w)<epsn) {
+                if (cacheable && std::isfinite(c) && std::isfinite(w)) {
+                    cachedRoots[nextCachedRoot] = {key, maxit, c, true};
+                    nextCachedRoot = (nextCachedRoot + 1) % cachedRoots.size();
+                }
+                return c;
+            }
             ((u>0&&w<0)||(u<0&&w>0))?(b=c):(a=c,u=w);
             controla++;
           }
-          if(controla>=maxit)(*vg1dSP).contaExit++;
-          if((*vg1dSP).contaExit>400) {
-            // incluir falha
-            string complementoFalha = string("Maximo falhas atingido: ") + to_string((*vg1dSP).contaExit);
-            logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "Falsa corda em PropFlu atingiu numero maximo de iteracoes", "N/A",
-                complementoFalha);
-            // gravar arquivo de log
-            logger.writeOutputLog();
-            // encerrar a aplicacao
-            exit(EXIT_SUCCESS);
+#pragma omp critical(marlim_property_iteration_limit)
+          {
+              if(controla>=maxit)(*simulationContext).propertyIterationLimitCount++;
+              if((*simulationContext).propertyIterationLimitCount>400) {
+                  // incluir falha
+                  string complementoFalha = string("Maximo falhas atingido: ") + to_string((*simulationContext).propertyIterationLimitCount);
+                  logger.log(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "Falsa corda em PropFlu atingiu numero maximo de iteracoes", "N/A",
+                      complementoFalha);
+                  // gravar arquivo de log
+                  logger.writeOutputLog();
+                  // encerrar a aplicacao
+                  exit(EXIT_SUCCESS);
+              }
           }
           return c;
 }
 
 double ProFlu::PreRog(double a,double b,double rog,double temp,double delta ,double epsn,int maxit)const{
     double valz=Zdran(a,temp);
-	double valp=rog/(((rDgL*Deng*28.9625)*98066.5)/(8.0465*1000*valz*(temp + 273)));
+	double valp=rog/(((rDgL*Deng*28.9625)*units::kPascalPerKgfPerCm2)/(8.0465*1000*valz*(temp + units::kZeroCelsiusInKelvin)));
 	for(int i=0;i<5;i++){
 			valz=Zdran(valp,temp);
-			valp=rog/(((rDgL*Deng*28.9625)*98066.5)/(8.0465*1000*valz*(temp + 273)));
+			valp=rog/(((rDgL*Deng*28.9625)*units::kPascalPerKgfPerCm2)/(8.0465*1000*valz*(temp + units::kZeroCelsiusInKelvin)));
 	}
 	return valp;
 }
@@ -3266,7 +3337,7 @@ double ProFlu::ZdranOriginal(double pres, double temp, int cordg, double a, doub
 
 double ProFlu::Zdran(double pres, double temp, int cordg, double masespG)const{
   double zt=0.;
-  const double tempKelvin=temp + 273.15;
+  const double tempKelvin=temp + units::kZeroCelsiusInKelvin;
   if(flashCompleto==0 || flashCompleto==3 || (flashCompleto==2 && (tab==1 || lingas==1))){
 	  if(masespG<0){
 		  double PCtemp;
@@ -3280,7 +3351,7 @@ double ProFlu::Zdran(double pres, double temp, int cordg, double masespG)const{
 			  TCtemp=TC;
 		  }
 		  int interno=1;
-		  double presR=(0.9678411*14.69595*pres)/PCtemp;
+		  double presR=(units::kPsiPerKgfPerCm2*pres)/PCtemp;
 		  double tempR=(1.8*temp+32+460)/TCtemp;
 		  if(tab>0){
 			  const int upperIndex=npontos+1;
@@ -3334,14 +3405,14 @@ double ProFlu::Zdran(double pres, double temp, int cordg, double masespG)const{
 		  else zt=ZdranOriginal(pres,temp,cordg,1,10,interno);
 	  }
 	  else{
-		  zt=((rDgL*Deng*28.9625)*pres*98066.5)/(8.0465*1000*masespG*tempKelvin);
+		  zt=((rDgL*Deng*28.9625)*pres*units::kPascalPerKgfPerCm2)/(8.0465*1000*masespG*tempKelvin);
 	  }
   }
   else if(flashCompleto==1){
 	  double masesp;
 	  if(masespG<0)masesp=interpolaVarProd(pres, temp, rhogF);
 	  else masesp=masespG;
-	  zt=((Deng*28.9625)*pres*98066.5/masesp)/(8.0465*1000*tempKelvin);
+	  zt=((Deng*28.9625)*pres*units::kPascalPerKgfPerCm2/masesp)/(8.0465*1000*tempKelvin);
   }
   else{
 	  const auto calculaZComposicional = [&]() -> double {
@@ -3356,7 +3427,7 @@ double ProFlu::Zdran(double pres, double temp, int cordg, double masespG)const{
 		  if(iCalculatedThermodynamicCondition==0 || iCalculatedThermodynamicCondition==1)ztC=1.;
 		  return ztC;
 	  };
-	  if((*vg1dSP).modoTransiente==0 || multbcs==1){
+	  if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 		  if(tabelaDinamica==0){
 			  zt=calculaZComposicional();
 		  }
@@ -3366,8 +3437,8 @@ double ProFlu::Zdran(double pres, double temp, int cordg, double masespG)const{
 			  if(pres<tabDin.pmin) pres=tabDin.pmin;
 			  if(pres>tabDin.pmax)pres=tabDin.pmax;
 			  if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-				  int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-				  int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+				  int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+				  int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 				  double raztemp;
 				  double razpres;
 				  double valT0;
@@ -3481,9 +3552,9 @@ double ProFlu::DZDT(double pres, double temp,double masespG)const{
   double zt=0.;
   if(flashCompleto==0 || flashCompleto==3 || (flashCompleto==2 && (tab==1 || lingas==1))){
     int interno=1;
-    double presR=(0.9678411*14.69595*pres)/PCis;
+    double presR=(units::kPsiPerKgfPerCm2*pres)/PCis;
     double tempR=(1.8*temp+32+460)/TCis;
-    if(tab>0){
+    if(tab>0 && std::isfinite(presR) && std::isfinite(tempR)){
       if(presR>dzdtP[1][0]-1e-5)interno=0;
       if(presR<dzdtP[npontos+1][0]+1e-5)interno=0;
       if(tempR>dzdtP[0][1]-1e-5)interno=0;
@@ -3518,13 +3589,13 @@ double ProFlu::DZDT(double pres, double temp,double masespG)const{
 	  if(masespG<0)masesp=interpolaVarProd(pres, temp, rhogF);
 	  else masesp=masespG;
 	  double drhodt=interpolaVarProd(pres, temp, DrhogDtF);
-	  double constante=((Deng*28.9625)*98066.5)/(8.0465*1000);
-	  zt=((Deng*28.9625)*pres*98066.5/masesp)/(8.0465*1000*(temp + 273.15));
-	  double tK=temp + 273.15;
+	  double constante=((Deng*28.9625)*units::kPascalPerKgfPerCm2)/(8.0465*1000);
+	  zt=((Deng*28.9625)*pres*units::kPascalPerKgfPerCm2/masesp)/(8.0465*1000*(temp + units::kZeroCelsiusInKelvin));
+	  double tK=temp + units::kZeroCelsiusInKelvin;
 	  zt=-(drhodt+constante*pres/(zt*tK*tK))*(zt*zt*tK/(constante*pres));
   }
   else{
-	  if((*vg1dSP).modoTransiente==0 || multbcs==1){
+	  if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 		  if(tabelaDinamica==0){
 			  int iIER;
 			  double tempZ;
@@ -3547,8 +3618,8 @@ double ProFlu::DZDT(double pres, double temp,double masespG)const{
 			  if(pres<tabDin.pmin) pres=tabDin.pmin;
 			  if(pres>tabDin.pmax)pres=tabDin.pmax;
 			  if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-				  int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-				  int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+				  int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+				  int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 				  double raztemp;
 				  double razpres;
 				  double valT0;
@@ -3671,7 +3742,7 @@ if(rDgLtemp*Deng<=100){
  double zvar = ZdranOriginal(pres, temp,cordg);
  double TR = (itemp + 460)/TCtemp;
  double PR = ipres/PCtemp;
- double PCPA = 6894.8*PCtemp;
+ double PCPA = units::kPascalPerPsi*PCtemp;
  double Adran = 0.064225133;
  double Bdran = 0.53530771*TR - 0.61232032;
  double Cdran = 0.31506237*TR - 1.04670990 - 0.57832728/(TR*TR);
@@ -3693,16 +3764,16 @@ else{
 	double dp;
 	if(fabs(pres)>1e-5)dp=pres*0.01;
 	else dp=0.01;
-	return (Zdran(pres+dp, temp,cordg)-Zdran(pres, temp,cordg))/(98066.5*dp);
+	return (Zdran(pres+dp, temp,cordg)-Zdran(pres, temp,cordg))/(units::kPascalPerKgfPerCm2*dp);
 }
 }
 double ProFlu::DZDP(double pres, double temp,double masespG)const{
   double zt=0.;
   if(flashCompleto==0 || flashCompleto==3 || (flashCompleto==2 && (tab==1 || lingas==1))){
     int interno=1;
-    double presR=(0.9678411*14.69595*pres)/PCis;
+    double presR=(units::kPsiPerKgfPerCm2*pres)/PCis;
     double tempR=(1.8*temp+32+460)/TCis;
-    if(tab>0){
+    if(tab>0 && std::isfinite(presR) && std::isfinite(tempR)){
       if(presR>dzdpP[1][0]-1e-5)interno=0;
       if(presR<dzdpP[npontos+1][0]+1e-5)interno=0;
       if(tempR>dzdpP[0][1]-1e-5)interno=0;
@@ -3724,7 +3795,7 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 	          double raztemp=(dzdpP[0][itemp]-tempR)/(dzdpP[0][itemp]-dzdpP[0][itemp+1]);
 	          double latp1=(1-razpres)*(dzdpP[ipres][itemp])+razpres*(dzdpP[ipres+1][itemp]);
 	          double latp2=(1-razpres)*(dzdpP[ipres][itemp+1])+razpres*(dzdpP[ipres+1][itemp+1]);
-	          zt=((1-raztemp)*latp1+raztemp*latp2)/(PCis*6894.8);
+	          zt=((1-raztemp)*latp1+raztemp*latp2)/(PCis*units::kPascalPerPsi);
           }
         }
       }
@@ -3738,12 +3809,12 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 	  else masesp=masespG;
 	  double drhodp=interpolaVarProd(pres, temp, DrhogDpF);
 	  double constante=((Deng*28.9625))/(8.0465*1000);
-	  zt=((Deng*28.9625)*pres*98066.5/masesp)/(8.0465*1000*(temp + 273.15));
-	  double tK=temp + 273.15;
-	  zt=-(drhodp-constante/(zt*tK))*(zt*zt*tK/(constante*pres*98066.5));
+	  zt=((Deng*28.9625)*pres*units::kPascalPerKgfPerCm2/masesp)/(8.0465*1000*(temp + units::kZeroCelsiusInKelvin));
+	  double tK=temp + units::kZeroCelsiusInKelvin;
+	  zt=-(drhodp-constante/(zt*tK))*(zt*zt*tK/(constante*pres*units::kPascalPerKgfPerCm2));
   }
   else{
-	  if((*vg1dSP).modoTransiente==0 || multbcs==1){
+	  if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 		  if(tabelaDinamica==0){
 			  int iIER;
 			  double tempZ;
@@ -3757,7 +3828,7 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 					  presCrit, fatAcent, kij, lij, TIndepPeneloux, dVaporPhaseMW,
 					  &tempZ, &dZdT, &drhogdT, &dZdp, &drhogdp, &iIER);
 			  if(dVaporMassFraction<1e-15)dZdp=0.;
-			  zt=dZdp/98066.5;
+			  zt=dZdp/units::kPascalPerKgfPerCm2;
 		  }
 		  else{
 			  if(temp<tabDin.tmin)temp=tabDin.tmin;
@@ -3765,8 +3836,8 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 			  if(pres<tabDin.pmin) pres=tabDin.pmin;
 			  if(pres>tabDin.pmax)pres=tabDin.pmax;
 			  if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-				  int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-				  int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+				  int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+				  int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 				  double raztemp;
 				  double razpres;
 				  double valT0;
@@ -3792,7 +3863,7 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 							  presCrit, fatAcent, kij, lij, TIndepPeneloux, dVaporPhaseMW,
 							  &tempZ, &dZdT, &drhogdT, &dZdp, &drhogdp, &iIER);
 					  if(dVaporMassFraction<1e-15)dZdp=0.;
-					  zt=dZdp/98066.5;
+					  zt=dZdp/units::kPascalPerKgfPerCm2;
 				 }
 				 else{
 					 raztemp=(temp-tabDin.valdZdP[0][posicT])/(tabDin.delT);
@@ -3816,7 +3887,7 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 						  presCrit, fatAcent, kij, lij, TIndepPeneloux, dVaporPhaseMW,
 						  &tempZ, &dZdT, &drhogdT, &dZdp, &drhogdp, &iIER);
 				  if(dVaporMassFraction<1e-15)dZdp=0.;
-				  zt=dZdp/98066.5;
+				  zt=dZdp/units::kPascalPerKgfPerCm2;
 			  }
 		  }
 	  }
@@ -3857,7 +3928,7 @@ double ProFlu::DZDP(double pres, double temp,double masespG)const{
 						  presCrit, fatAcent, kij, lij, TIndepPeneloux, dVaporPhaseMW,
 						  &tempZ, &dZdT, &drhogdT, &dZdp, &drhogdp, &iIER);
 				  if(dVaporMassFraction<1e-15)dZdp=0.;
-				  zt=dZdp/98066.5;
+				  zt=dZdp/units::kPascalPerKgfPerCm2;
 	    	 }
 	     }
   }
@@ -3873,7 +3944,7 @@ void ProFlu::tabela(double pmax, double tmax,
     FullMtx<double> zdran(npontos+2,npontos+2);
     if(tab==1){
       for(int i=1; i<=npontos+1;i++){
-    	  double ptesteN=PC*pteste/(0.9678411*14.69595);
+    	  double ptesteN=PC*pteste/units::kPsiPerKgfPerCm2;
     	  zdranP[i][0]=pteste;
     	  for(int j=1;j<=npontos+1;j++){
     		  double ttesteN=(TC*tteste-460-32)/1.8;
@@ -3921,12 +3992,12 @@ void ProFlu::tabelaDZDP(double pmax, double tmax,
     FullMtx<double> saida(npontos+2,npontos+2,0.);
     if(tab==1){
       for(int i=1; i<=npontos+1;i++){
-    	double ptesteN=PC*pteste/(0.9678411*14.69595);
+    	double ptesteN=PC*pteste/units::kPsiPerKgfPerCm2;
     	dzdpP[i][0]=pteste;
     	for(int j=1;j<=npontos+1;j++){
     		double ttesteN=(TC*tteste-460-32)/1.8;
     		dzdpP[0][j]=tteste;
-    		dzdpP[i][j]=DZDPOriginal(ptesteN,ttesteN,1)*(PC*6894.8);
+    		dzdpP[i][j]=DZDPOriginal(ptesteN,ttesteN,1)*(PC*units::kPascalPerPsi);
     		tteste-=dtteste;
     	}
     	pteste-=dpteste;
@@ -3954,7 +4025,7 @@ void ProFlu::tabelaDZDT(double pmax, double tmax,
     FullMtx<double> saida(npontos+2,npontos+2,0.);
     if(tab==1){
       for(int i=1; i<=npontos+1;i++){
-      	double ptesteN=PC*pteste/(0.9678411*14.69595);
+      	double ptesteN=PC*pteste/units::kPsiPerKgfPerCm2;
     	dzdtP[i][0]=pteste;
     	for(int j=1;j<=npontos+1;j++){
     		double ttesteN=(TC*tteste-460-32)/1.8;
@@ -3985,7 +4056,7 @@ double BO;
 if(flashCompleto==0 || flashCompleto==3){
 	if(IRGO>0){
 	double kgf100= kgf(100);
-	const double tempKelvin=temp + 273.;
+	const double tempKelvin=temp + units::kZeroCelsiusInKelvin;
     double ipres=psia(pres);
     double itemp= Faren(temp);
     double SG100 = (kgf100*293*Deng)/(Zdran(kgf100, temp,1)*tempKelvin);
@@ -4022,7 +4093,7 @@ if(flashCompleto==0 || flashCompleto==3){
 		double rhostd=1000.*141.5/(131.5+API);
 		double rho1=rhostd-(624/rhostd)*(temp-15.56);
 		double phi=(1.9818*1e-5)*exp((2.4169*1e-4)*temp+(8.6835*1e5+(4.1868*1e3)*temp)/(rho1*rho1));
-		double rhois=rho1/(1.-phi*(pres-1.03322745)/1.01971621);
+		double rhois=rho1/(1.-phi*(pres-units::kAtmosphereInKgfPerCm2)/units::kKgfPerCm2PerBar);
 		BO=rhostd/rhois;
 	}
  }
@@ -4032,10 +4103,10 @@ if(flashCompleto==0 || flashCompleto==3){
 	 if(varRS<0)rs=interpolaVarProd(pres, temp, RSF);
 	 else rs=varRS;
 	 double rhostd=141.5*1000./(131.5+API);
-	 BO=(rhostd+Deng*1.225*rs*6.29/35.31467)/rhol;
+	 BO=(rhostd+Deng*1.225*rs*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre)/rhol;
  }
  else{
-	 if((*vg1dSP).modoTransiente==0 || multbcs==1){
+	 if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 		 if(tabelaDinamica==0){
 			 double tempBO=1.;
 			 int iIER;
@@ -4052,8 +4123,8 @@ if(flashCompleto==0 || flashCompleto==3){
 		 }
 		 else{
 			 if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-		 		 	 int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-		 		 	 int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+		 		 	 int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+		 		 	 int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 		 		 	 double raztemp;
 		 		 	 double razpres;
 		 		 	 double valT0;
@@ -4152,7 +4223,7 @@ if(flashCompleto==0 || flashCompleto==3){
 double ProFlu::dBOSatdP(double pres, double temp)const{
  double kgf100= kgf(100);
  double itemp= Faren(temp);
- double SG100 = (kgf100*293*Deng)/(Zdran(kgf100, temp,1)*(temp + 273));
+ double SG100 = (kgf100*293*Deng)/(Zdran(kgf100, temp,1)*(temp + units::kZeroCelsiusInKelvin));
  double Dvazbeg = (itemp - 60)*API/SG100;
  double Bvazbeg;
  if(API > 30)  Bvazbeg = 0.1337;
@@ -4198,7 +4269,7 @@ double ProFlu::interpolaCpl(double pres, double temp) const{
       double latp2=(1-razpres)*(cpl[ipres][itemp+1])+razpres*(cpl[ipres+1][itemp+1]);
       vcpl=(1-raztemp)*latp1+raztemp*latp2;
       double CPWI;
-      double tempK=temp+273.16;
+      double tempK=temp+units::kZeroCelsiusInKelvin;
       double xliq= MasAgua(pres,temp)/MasLiq(pres, temp);
       if(tempK<410.0) CPWI=4185.5*(2.13974-9.68137*tempK/1000.+2.68536*tempK*tempK/100000.-
       2.42139*pow(10.,-8.)*tempK*tempK*tempK);
@@ -4213,7 +4284,7 @@ double ProFlu::CalorLiqOriginal(double pres, double temp) const{
  double CPWI;
  double Bcp=0.06103;
  double tempfar=Faren(temp);
- double tempK=temp+273.16;
+ double tempK=temp+units::kZeroCelsiusInKelvin;
  double xliq= MasAgua(pres,temp)/MasLiq(pres, temp);
  double CPOI=4187.0*((2.6948*pow(10.,-6)*API+3.88402/10000.)*tempfar+(0.0027665*API+0.366079)-Bcp);
  if(tempK<410.0) CPWI=4185.5*(2.13974-9.68137*tempK/1000.+2.68536*tempK*tempK/100000.-
@@ -4233,7 +4304,7 @@ double ProFlu::CalorLiq(double pres, double temp) const{
 		else{
 			vcp=interpolaVarProd(pres, temp, cplF);
 			double CPWI;
-			double tempK=temp+273.16;
+			double tempK=temp+units::kZeroCelsiusInKelvin;
 			double xliq= MasAgua(pres,temp)/MasLiq(pres, temp);
 			if(tempK<410.0) CPWI=4185.5*(2.13974-9.68137*tempK/1000.+2.68536*tempK*tempK/100000.-
 					2.42139*pow(10.,-8.)*tempK*tempK*tempK);
@@ -4243,7 +4314,7 @@ double ProFlu::CalorLiq(double pres, double temp) const{
 		}
 	}
 	else{
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double entalp;
@@ -4261,8 +4332,8 @@ double ProFlu::CalorLiq(double pres, double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -4326,7 +4397,7 @@ double ProFlu::CalorLiq(double pres, double temp) const{
 	    	 }
 	     }
 		double CPWI;
-		double tempK=temp+273.16;
+		double tempK=temp+units::kZeroCelsiusInKelvin;
 		double xliq= MasAgua(pres,temp)/MasLiq(pres, temp);
 		if(tempK<410.0) CPWI=4185.5*(2.13974-9.68137*tempK/1000.+2.68536*tempK*tempK/100000.-
 				2.42139*pow(10.,-8.)*tempK*tempK*tempK);
@@ -4422,7 +4493,7 @@ double ProFlu::interpolaDrholDT(double pres, double temp) const{
 
 double ProFlu::CalorGasOriginal(double pres, double temp) const{
 	double RG=(8.0465*1000)/(rDgL*Deng*28.9625);
-	double tempK=temp+273.16;
+	double tempK=temp+units::kZeroCelsiusInKelvin;
 	if (tempK < 240.0) tempK = 240.0;
     if (tempK > 480.0) tempK = 480.0;
     double CP0mM = 0.047801*tempK + 21.714;
@@ -4451,7 +4522,7 @@ double ProFlu::CalorGasOriginal(double pres, double temp) const{
     double dzdt=DZDT(pres,temp);
     double dzdp=DZDP(pres,temp);
     double TF=Faren(temp);
-    double TRan=TF+459.67;
+    double TRan=TF+units::kZeroFahrenheitInRankine;
     double Ppsi=psia(pres);
     double PR = Ppsi/PCis;
     double TR = TRan/TCis;
@@ -4478,7 +4549,7 @@ double ProFlu::CalorGas(double pres, double temp) const{
 		}
 	}
 	else{
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double entalp;
@@ -4496,8 +4567,8 @@ double ProFlu::CalorGas(double pres, double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -4570,13 +4641,13 @@ double ProFlu::CalorGasVolMod(double pres, double temp,double rhogini) const{
   double dzdt=DZDT(pres,temp,rhog);
   double dzdp=DZDP(pres,temp,rhog);
   double zg=Zdran(pres,temp,rhog);
-  double dvdt=(1/rhog)*(1/(temp+273)+dzdt/zg);
-  double dvdp=(1/rhog)*(-1/(pres*98066.5)+dzdp/zg);
+  double dvdt=(1/rhog)*(1/(temp+units::kZeroCelsiusInKelvin)+dzdt/zg);
+  double dvdp=(1/rhog)*(-1/(pres*units::kPascalPerKgfPerCm2)+dzdp/zg);
 
   double RG=(8.0465*1000)/(rDgL*Deng*28.9625);
-  double cv=cpg+(temp+273)*dvdt*dvdt/dvdp;
-  double rel1=zg+(temp+273)*dzdt;
-  double rel2=zg-dzdp*(pres*98066.5);
+  double cv=cpg+(temp+units::kZeroCelsiusInKelvin)*dvdt*dvdt/dvdp;
+  double rel1=zg+(temp+units::kZeroCelsiusInKelvin)*dzdt;
+  double rel2=zg-dzdp*(pres*units::kPascalPerKgfPerCm2);
   return cv-RG*rel1*(0*1-rel1/rel2);
 }
 double ProFlu::CalorGasVolMod2(double pres, double temp,double rhogini) const{
@@ -4587,13 +4658,13 @@ double ProFlu::CalorGasVolMod2(double pres, double temp,double rhogini) const{
   double dzdt=DZDT(pres,temp,rhog);
   double dzdp=DZDP(pres,temp,rhog);
   double zg=Zdran(pres,temp,rhog);
-  double dvdt=(1/rhog)*(1/(temp+273)+dzdt/zg);
-  double dvdp=(1/rhog)*(-1/(pres*98066.5)+dzdp/zg);
+  double dvdt=(1/rhog)*(1/(temp+units::kZeroCelsiusInKelvin)+dzdt/zg);
+  double dvdp=(1/rhog)*(-1/(pres*units::kPascalPerKgfPerCm2)+dzdp/zg);
 
   double RG=(8.0465*1000)/(rDgL*Deng*28.9625);
-  double cv=cpg+(temp+273)*dvdt*dvdt/dvdp;
-  double rel1=zg+(temp+273)*dzdt;
-  double rel2=zg-dzdp*(pres*98066.5);
+  double cv=cpg+(temp+units::kZeroCelsiusInKelvin)*dvdt*dvdt/dvdp;
+  double rel1=zg+(temp+units::kZeroCelsiusInKelvin)*dzdt;
+  double rel2=zg-dzdp*(pres*units::kPascalPerKgfPerCm2);
   return cv+RG*rel1*(rel1/rel2);
 }
 double ProFlu::CalorGasPresMod(double pres, double temp,double rhogini) const{
@@ -4604,15 +4675,15 @@ double ProFlu::CalorGasPresMod(double pres, double temp,double rhogini) const{
 	double dzdt=DZDT(pres,temp,rhog);
 	double dzdp=DZDP(pres,temp,rhog);
 	double zg=Zdran(pres,temp,rhog);
-	double drhodp=rhog*(1/(pres*98066.5)-dzdp/zg);
+	double drhodp=rhog*(1/(pres*units::kPascalPerKgfPerCm2)-dzdp/zg);
 
-	double rel1=zg+(temp+273)*dzdt;
-	double rel2=zg-dzdp*(pres*98066.5);
-	return (1/(rhog*zg))*rel2*(1-rel1/rel2)-(pres*98066.5/(rhog*rhog))*drhodp;
+	double rel1=zg+(temp+units::kZeroCelsiusInKelvin)*dzdt;
+	double rel2=zg-dzdp*(pres*units::kPascalPerKgfPerCm2);
+	return (1/(rhog*zg))*rel2*(1-rel1/rel2)-(pres*units::kPascalPerKgfPerCm2/(rhog*rhog))*drhodp;
 }
 
 double ProFlu::CondLiq(double pres,double temp)const{
-       double tempK=temp+273.16;
+       double tempK=temp+units::kZeroCelsiusInKelvin;
        double XKWDI;
        double tempfar;
        double XKOI;
@@ -4654,18 +4725,18 @@ double ProFlu::ConstAdG(double pres, double temp,double rhogini) const{
   double dzdt=DZDT(pres,temp,rhog);
   double dzdp=DZDP(pres,temp,rhog);
   double zg=Zdran(pres,temp,rhog);
-  double dvdt=(1/rhog)*(1/(temp+273)+dzdt/zg);
-  double dvdp=(1/rhog)*(-1/(pres*98066.5)+dzdp/zg);
-  double aux=cpg/(cpg+(temp+273)*dvdt*dvdt/dvdp);
+  double dvdt=(1/rhog)*(1/(temp+units::kZeroCelsiusInKelvin)+dzdt/zg);
+  double dvdp=(1/rhog)*(-1/(pres*units::kPascalPerKgfPerCm2)+dzdp/zg);
+  double aux=cpg/(cpg+(temp+units::kZeroCelsiusInKelvin)*dvdt*dvdt/dvdp);
   if(aux<0.)aux=1.4;//atencao: observar esta acochambracao
-  return 0*cpg/(cpg-pres*98066.5/((temp+273)*rhog*zg))+aux;
+  return 0*cpg/(cpg-pres*units::kPascalPerKgfPerCm2/((temp+units::kZeroCelsiusInKelvin)*rhog*zg))+aux;
 }
 
 double ProFlu::CondGas(double pres,double temp)const{
 	double XK1;
 	if(condBlackOil==1){
-		double ppas=98066.5*pres;
-		double fatT=(temp+273.15)/191.1;
+		double ppas=units::kPascalPerKgfPerCm2*pres;
+		double fatT=(temp+units::kZeroCelsiusInKelvin)/191.1;
 		XK1=3.04314/100.+(1.3242/10000.+1.27534*temp/10000000.)*temp;
 		double RXK=0.99783+(1.973/100000000.+7.8868*pow(10.,-16.)*ppas)*ppas;
 		if(fatT<3.0)return XK1*(1.+(1.-RXK)*(fatT-3.)/1.354);
@@ -4696,7 +4767,7 @@ double ProFlu::DrholDT(double pres, double temp) const{
 		}
 	}
 	else{
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double tempZ;
@@ -4718,8 +4789,8 @@ double ProFlu::DrholDT(double pres, double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -4823,14 +4894,14 @@ double ProFlu::JTL(double pres,double temp) const{
 	double roIS=MasEspoleo(pres,temp);
 	double fw=BSW/(bo+BSW-BSW*bo);
 	double jtl;
-	jtl=-(1./roIS+(1.- JTLiquidoSimple)*(temp+273.15)*(DrholDT(pres, temp)/(roIS*roIS)));
+	jtl=-(1./roIS+(1.- JTLiquidoSimple)*(temp+units::kZeroCelsiusInKelvin)*(DrholDT(pres, temp)/(roIS*roIS)));
 	double jtw;
 	double corrjtw=1;
 	if(Modeljtl==2)corrjtw=0;
-	if(flashCompleto!=1 || modelaAgua==1)jtw=(-1/(1000.*Denag)+corrjtw*(temp+273.15)*(3*1e-4)/(1000.*Denag));
+	if(flashCompleto!=1 || modelaAgua==1)jtw=(-1/(1000.*Denag)+corrjtw*(temp+units::kZeroCelsiusInKelvin)*(3*1e-4)/(1000.*Denag));
 	else{
 		double drhowdt=interpolaVarProd(pres, temp, DrhowDtF);
-		jtw=-1/(1000.*Denag)+(temp+273.15)*drhowdt/(1000.*Denag*1000*Denag);
+		jtw=-1/(1000.*Denag)+(temp+units::kZeroCelsiusInKelvin)*drhowdt/(1000.*Denag*1000*Denag);
 	}
 
 	return (1-fw)*jtl+fw*jtw;
@@ -4843,8 +4914,8 @@ double ProFlu::JTL(double pres,double temp) const{
 
 
 double ProFlu::JTG(double pres,double temp, double rhog) const{
-	if(rhog<0)return (temp+273.16)*DZDT(pres, temp)/(Zdran(pres, temp)*MasEspGas(pres, temp));
-	else return (temp+273.16)*DZDT(pres, temp,rhog)/(Zdran(pres, temp,rhog)*rhog);
+	if(rhog<0)return (temp+units::kZeroCelsiusInKelvin)*DZDT(pres, temp)/(Zdran(pres, temp)*MasEspGas(pres, temp));
+	else return (temp+units::kZeroCelsiusInKelvin)*DZDT(pres, temp,rhog)/(Zdran(pres, temp,rhog)*rhog);
 }
 
 
@@ -4857,7 +4928,7 @@ double ProFlu::EntalpLiq(double pres,double temp) const{
 	}
 	else{
 		double entalp;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double cp;
@@ -4873,8 +4944,8 @@ double ProFlu::EntalpLiq(double pres,double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -4972,7 +5043,7 @@ double ProFlu::EntalpGas(double pres,double temp) const{
 	}
 	else{
 		double entalp;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double cp;
@@ -4988,8 +5059,8 @@ double ProFlu::EntalpGas(double pres,double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -5121,10 +5192,10 @@ double ProFlu::quadleg(const double x1, const double x2, int tipo,int fase,const
  double s=0;
  if(tipo==1){
   if(fase==1){
-   double Rgas=8.0465*1000./(rDgL*Deng*28.9625*98066.5);
-   for(int i=0;i<n;i++)s+=-w[i]*((par+273.16)*(Rgas/x[i])*(Zdran(x[i], par)+(par+273.16)*DZDT(x[i], par))-1/MasEspGas(x[i], par))*98066.5;
+   double Rgas=8.0465*1000./(rDgL*Deng*28.9625*units::kPascalPerKgfPerCm2);
+   for(int i=0;i<n;i++)s+=-w[i]*((par+units::kZeroCelsiusInKelvin)*(Rgas/x[i])*(Zdran(x[i], par)+(par+units::kZeroCelsiusInKelvin)*DZDT(x[i], par))-1/MasEspGas(x[i], par))*units::kPascalPerKgfPerCm2;
   }
-  else for(int i=0;i<n;i++)s+=(w[i]/MasEspLiq(x[i], par))*98066.5;
+  else for(int i=0;i<n;i++)s+=(w[i]/MasEspLiq(x[i], par))*units::kPascalPerKgfPerCm2;
  }
  else{
   if(fase==1)
@@ -5144,14 +5215,14 @@ double ProFlu::MasEspoleo(double pres, double temp,double varRS) const{
 			if(varRS<0 && flashCompleto!=2)rsVar=RS(pres, temp);
 			else rsVar=varRS;
 			return (1000*141.5/(131.5 + API) +
-					rDgD*Deng*1.225*rsVar*6.29/35.31467)/BOFunc(pres, temp,rsVar);
+					rDgD*Deng*1.225*rsVar*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre)/BOFunc(pres, temp,rsVar);
 		}
 		else
 			return interpolaVarProd(pres, temp, rholF);
 	}
 	else{
 		double rhol;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double presC=pres;
@@ -5171,8 +5242,8 @@ double ProFlu::MasEspoleo(double pres, double temp,double varRS) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -5280,12 +5351,12 @@ double ProFlu::MasEspOleoComp(double pres, double temp) const{
 double ProFlu::drhodt(double pres, double temp) const{
 	if(flashCompleto!=2 || lingas==1){
 		double z=Zdran(pres,temp);
-		double masesp=((rDgL*Deng*28.9625)*pres*98066.5)/(8.0465*1000*z*(temp + 273));
+		double masesp=((rDgL*Deng*28.9625)*pres*units::kPascalPerKgfPerCm2)/(8.0465*1000*z*(temp + units::kZeroCelsiusInKelvin));
 		double dzdt=DZDT(pres,temp);
-		return -masesp*(1./(temp+272.15)+dzdt/z);
+		return -masesp*(1./(temp+units::kZeroCelsiusInKelvin)+dzdt/z);
 	}
 	else{
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double tempZ;
@@ -5308,8 +5379,8 @@ double ProFlu::drhodt(double pres, double temp) const{
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
 					double drhogdT=0.;
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -5411,12 +5482,12 @@ double ProFlu::drhodt(double pres, double temp) const{
 double ProFlu::drhodp(double pres, double temp) const{
 	if(flashCompleto!=2 || lingas==1){
 		double z=Zdran(pres,temp);
-		double masesp=((rDgL*Deng*28.9625)*pres*98066.5)/(8.0465*1000*z*(temp + 272.15));
+		double masesp=((rDgL*Deng*28.9625)*pres*units::kPascalPerKgfPerCm2)/(8.0465*1000*z*(temp + units::kZeroCelsiusInKelvin));
 		double dzdp=DZDP(pres,temp);
-		return masesp*(1./(pres*98066.52)-dzdp/z);
+		return masesp*(1./(pres*units::kPascalPerKgfPerCm2)-dzdp/z);
 	}
 	else{
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double tempZ;
@@ -5439,8 +5510,8 @@ double ProFlu::drhodp(double pres, double temp) const{
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
 					double drhogdp=0.;
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -5539,7 +5610,7 @@ double ProFlu::drhodp(double pres, double temp) const{
 
 void ProFlu::razDegD(double pres, double temp){
 	if(flashCompleto==0  || flashCompleto==3|| (flashCompleto==2 && tab==1)){
-		double rs=RS(pres, temp)* (6.29 / 35.31467);
+		double rs=RS(pres, temp)* (units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre);
 		double SGDG = (API + 12.5)/50 - 0.0000035715*API*rs;
 		if (SGDG < Deng) SGDG = Deng;
 		rDgD=SGDG/Deng;
@@ -5561,7 +5632,7 @@ void ProFlu::razDegD(double pres, double temp){
 }
 void ProFlu::rzDegL(double pres , double temp){
 	if(flashCompleto==0 || flashCompleto==3 || (flashCompleto==2 && tab==1)){
-		double rs=RS(pres, temp)* (6.29 / 35.31467);
+		double rs=RS(pres, temp)* (units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre);
 		double SGFG;
 		if(fabs(RGO - rs)>1e-5)SGFG= Deng*(RGO-rDgD*rs)/(RGO - rs);
 		else SGFG=Deng;
@@ -5575,12 +5646,12 @@ void ProFlu::rzDegL(double pres , double temp){
 double ProFlu::MasEspGas(double pres, double temp) const{
 //Massa especifica do gas kg/m^3, pressao em kgf/cm2 e temperatura em Celcius
 	if(flashCompleto==0 || flashCompleto==3 || (flashCompleto==2 && (tab==1 || lingas==1)))
-      return ((rDgL*Deng*28.9625)*pres*98066.5)/(8.0465*1000*Zdran(pres, temp)*(temp + 273.15));
+      return ((rDgL*Deng*28.9625)*pres*units::kPascalPerKgfPerCm2)/(8.0465*1000*Zdran(pres, temp)*(temp + units::kZeroCelsiusInKelvin));
 	else if(flashCompleto==1)
 		return interpolaVarProd(pres, temp, rhogF);
 	else{
 		double rhog;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 
 				rhog=MasEspGasComp(pres, temp);
@@ -5591,8 +5662,8 @@ double ProFlu::MasEspGas(double pres, double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -5701,7 +5772,7 @@ double ProFlu::DMasEspAgua(double pres, double temp) const{
 	  double rhomist=(1-x)/rholw+x/(din*1000.);
 	  double t1= -1./(rhomist*rhomist);
 	  double t2=((1-x)/(rholw*rholw))*(1000./(bw*bw))*bwAmb;
-	  double t3=- 3.33e-06*0.9678411*14.69595;
+	  double t3=- 3.33e-06*units::kPsiPerKgfPerCm2;
 	  return t1*t2*t3;
 }
 double ProFlu::BAFunc(double pres, double temp) const{
@@ -5716,7 +5787,7 @@ double ProFlu::MasEspLiq(double pres, double temp,double varRS) const{
 		if(varRS<0)rs=RS(pres, temp);
 		else rs=varRS;
 		double masoleo=((1-BSW)*(1000*141.5/(131.5 + API) +
-    		rDgD*Deng*1.225*rs*6.29/35.31467));
+    		rDgD*Deng*1.225*rs*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre));
 		double bo=BOFunc(pres, temp, rs);
 		double masagua=BSW*1000.*Denag;
 		double rhoa;
@@ -5730,7 +5801,7 @@ double ProFlu::MasEspLiq(double pres, double temp,double varRS) const{
 	else{
 		double rhol;
 		double bo;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 
 				rhol=MasEspLiqComp(pres, temp);
@@ -5742,8 +5813,8 @@ double ProFlu::MasEspLiq(double pres, double temp,double varRS) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -5858,7 +5929,7 @@ double ProFlu::MasOleo(double pres, double temp,double varRS) const{
  if(varRS<0)rs=RS(pres, temp);
  else rs=varRS;
  double var;
-	 var=(1000*141.5/(131.5 + API)+rDgD*Deng*1.225*rs*6.29/35.31467);
+	 var=(1000*141.5/(131.5 + API)+rDgD*Deng*1.225*rs*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre);
  return var;
 }
 
@@ -5868,7 +5939,7 @@ double ProFlu::MasOleoHidra(double pres, double temp,double varRS) const{
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
 	 double var;
-		 var=(1-BSW)*(1000*141.5/(131.5 + API)+rDgD*Deng*1.225*rs*6.29/35.31467);
+		 var=(1-BSW)*(1000*141.5/(131.5 + API)+rDgD*Deng*1.225*rs*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre);
 	 return var;
 }
 
@@ -5878,7 +5949,7 @@ double ProFlu::MasLiq(double pres, double temp,double varRS) const{
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
 	 double var;
-		 var=(1-BSW)*(1000*141.5/(131.5 + API)+rDgD*Deng*1.225*rs*6.29/35.31467)+BSW*1000*Denag;
+		 var=(1-BSW)*(1000*141.5/(131.5 + API)+rDgD*Deng*1.225*rs*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre)+BSW*1000*Denag;
 	 return var;
 }
 
@@ -5892,9 +5963,8 @@ double ProFlu::MasGasLivre(double pres, double temp,double varRS) const{
 	 double rs;
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
-	 double val=1.225*Deng*(IRGO - rDgD*rs)*6.29/35.31467;
-	 if(val<0.)val=0.;
-     return val;
+     const double freeGasMass = 1.225*Deng*(IRGO - rDgD*rs)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
+     return freeGasMass < 0. ? 0. : freeGasMass;
 }
 double ProFlu::FracAguaInSitu(double pres, double temp,double varRS) const{
 	if(flashCompleto!=2){
@@ -5909,7 +5979,7 @@ double ProFlu::FracAguaInSitu(double pres, double temp,double varRS) const{
 	}
 	else{
 		double bo;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0){
 				int iIER;
 				double rhol;
@@ -5982,9 +6052,8 @@ double ProFlu::MasGasLivreHidra(double pres, double temp,double varRS) const{
 	 double rs;
 	 if(varRS<0)rs=RS(pres, temp);
 	 else rs=varRS;
-	 double val=(1-BSW)*1.225*Deng*(IRGO - rDgD*rs)*6.29/35.31467;
-	 if(val<0.)val=0.;
-	 return val;
+	 const double freeGasMass = (1-BSW)*1.225*Deng*(IRGO - rDgD*rs)*units::kBarrelPerCubicMetre/units::kCubicFootPerCubicMetre;
+     return freeGasMass < 0. ? 0. : freeGasMass;
 }
 
 double ProFlu::FracMass(double pres, double temp) const{
@@ -5994,7 +6063,7 @@ double ProFlu::FracMass(double pres, double temp) const{
 		return MasGasLivre(pres, temp,rs)/(MasGasLivre(pres, temp,rs)+MasOleo(pres, temp,rs));
 	}
 	else{
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0)return dVaporMassFraction;
 			else{
 				double valx;
@@ -6003,8 +6072,8 @@ double ProFlu::FracMass(double pres, double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;
@@ -6070,7 +6139,7 @@ double ProFlu::FracMassHidra(double pres, double temp) const{
 		double rhoWF=MasEspAgua(pres, temp);
 		double titF=(1-fwF)*rhoOF/((1-fwF)*rhoOF+fwF*rhoWF);
 		double titG;
-		if((*vg1dSP).modoTransiente==0 || multbcs==1){
+		if((*simulationContext).transientPropertyMode==0 || multbcs==1){
 			if(tabelaDinamica==0)titG=dVaporMassFraction;
 			else{
 				if(temp<tabDin.tmin)temp=tabDin.tmin;
@@ -6078,8 +6147,8 @@ double ProFlu::FracMassHidra(double pres, double temp) const{
 				if(pres<tabDin.pmin) pres=tabDin.pmin;
 				if(pres>tabDin.pmax)pres=tabDin.pmax;
 				if(temp>=tabDin.tmin && temp<=tabDin.tmax && pres>=tabDin.pmin && pres<=tabDin.pmax){
-					int posicT=floor(temp-tabDin.tmin)/(tabDin.delT);
-					int posicP=floor(pres-tabDin.pmin)/(tabDin.delP);
+					int posicT=dynamicTableCell(temp, tabDin.tmin, tabDin.delT, tabDin.npontosT);
+					int posicP=dynamicTableCell(pres, tabDin.pmin, tabDin.delP, tabDin.npontosP);
 					double raztemp;
 					double razpres;
 					double valT0;

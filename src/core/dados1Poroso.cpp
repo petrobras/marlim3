@@ -6,20 +6,22 @@
  */
 
 #include "dados1Poroso.h"
+#include "InputPaths.h"
+#include "UnitConversions.h"
 
-dadosPoro::dadosPoro(varGlob1D *Vvg1dSP, string nomeArquivoEntrada) {
-    vg1dSP = Vvg1dSP;
+dadosPoro::dadosPoro(SimulationContext *context, string nomeArquivoEntrada) {
+    simulationContext = context;
     iniciaVariaveis();
     lerPoroso(nomeArquivoEntrada);
 }
 
 dadosPoro::dadosPoro() {
-    vg1dSP = 0;
+    simulationContext = 0;
     iniciaVariaveis();
 }
 
 dadosPoro::dadosPoro(const dadosPoro &vPoroso) {
-    vg1dSP = vPoroso.vg1dSP;
+    simulationContext = vPoroso.simulationContext;
     iniciaVariaveis();
     lerPoroso(vPoroso.entrada);
 }
@@ -142,7 +144,7 @@ dadosPoro &dadosPoro::operator=(const dadosPoro &vPoroso) {
             delete[] satLRes;
             delete[] tempoSatLRes;
         }
-        vg1dSP = vPoroso.vg1dSP;
+        simulationContext = vPoroso.simulationContext;
         iniciaVariaveis();
         lerPoroso(vPoroso.entrada);
     }
@@ -285,6 +287,9 @@ void dadosPoro::lerPoroso(string nomeArquivoEntrada) {
 
     entrada = nomeArquivoEntrada;
     FILE *fp = fopen(nomeArquivoEntrada.c_str(), "r");
+    if (!fp)
+        logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
+                                       "Arquivo inexistente", "", nomeArquivoEntrada);
     char readBuffer[125536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));
     Document elementoPorosoRaiz;
@@ -366,10 +371,10 @@ void dadosPoro::lerPoroso(string nomeArquivoEntrada) {
         if (flup.PC > PCMax)
             PCMax = flup.PC;
         tabentCrit.npont = tabent.npont;
-        tabentCrit.tmin = (tabent.tmin + 273.15) / ((TCMax - 460. - 32.) / 1.8 + 273.15);
-        tabentCrit.tmax = (tabent.tmax + 273.15) / ((TCMin - 460. - 32.) / 1.8 + 273.15);
-        tabentCrit.pmin = tabent.pmin * 0.9678411 * 14.69595 / PCMax;
-        tabentCrit.pmax = tabent.pmax * 0.9678411 * 14.69595 / PCMin;
+        tabentCrit.tmin = (tabent.tmin + units::kZeroCelsiusInKelvin) / ((TCMax - 460. - 32.) / 1.8 + units::kZeroCelsiusInKelvin);
+        tabentCrit.tmax = (tabent.tmax + units::kZeroCelsiusInKelvin) / ((TCMin - 460. - 32.) / 1.8 + units::kZeroCelsiusInKelvin);
+        tabentCrit.pmin = tabent.pmin * units::kPsiPerKgfPerCm2 / PCMax;
+        tabentCrit.pmax = tabent.pmax * units::kPsiPerKgfPerCm2 / PCMin;
 
         flup.tabela(tabentCrit.pmax, tabentCrit.tmax, tabentCrit.pmin,
                     tabentCrit.tmin);
@@ -378,7 +383,7 @@ void dadosPoro::lerPoroso(string nomeArquivoEntrada) {
         flup.tabelaDZDT(tabentCrit.pmax, tabentCrit.tmax,
                         tabentCrit.pmin, tabentCrit.tmin);
     }
-    pBolha = flup.PB(1., tRes) / (0.9678411 * 14.69595);
+    pBolha = flup.PB(1., tRes) / units::kPsiPerKgfPerCm2;
     if (tipoModelOleo == 0) {
         rhoRef = flup.MasEspoleo(pRes, tRes);
         double dpPres = 0.01 * pRes;
@@ -463,7 +468,7 @@ void dadosPoro::lerPoroso(string nomeArquivoEntrada) {
         int perm = -1;
 
         pInt = pW.val[0];
-        transfer = PorosRad(dutosMRT, vg1dSP, perm, vncamada, vdrcamada, vPcamada,
+        transfer = PorosRad(dutosMRT, simulationContext, perm, vncamada, vdrcamada, vPcamada,
                             pInt, pRes, tRes, temp.dtmax[0], pW.val[0], corte.zDatum0 - zDatumRef, corte.zDatum1 - zDatumRef, espessuraRes,
                             vsO, vsW, satLRes[0], satAPoc[0], satAPoc[0], satAconat, ippoco,
                             kRelOA, kRelOG, pcOA, pcGO, fluc, flup);
@@ -866,7 +871,7 @@ void dadosPoro::parse_pcOA(Value &pcOA_json) {
     pcOA.presCapOW = new double[pcOA.npont];
     for (int i = 0; i < pcOA.npont; i++) {
         pcOA.satW[i] = pcOA_json["satA"][i].GetDouble();
-        pcOA.presCapOW[i] = pcOA_json["pcOA"][i].GetDouble() / (14.69595 * 0.9678411);
+        pcOA.presCapOW[i] = pcOA_json["pcOA"][i].GetDouble() / units::kPsiPerKgfPerCm2;
     }
 
     pcGO.npont = 1;
@@ -985,10 +990,10 @@ void dadosPoro::geraTabFlash(int var) {
         lendoPVTSim >> chave;
     lendoPVTSim.get(line, 4000);
     tenta = strtok(line, " ,()=");
-    presPVTSim[0] = atof(tenta) * 1.01971621e-5;
+    presPVTSim[0] = atof(tenta) / units::kPascalPerKgfPerCm2;
     for (int kontaPVT = 1; kontaPVT <= ndiv; kontaPVT++) {
         tenta = strtok(NULL, " ,");
-        presPVTSim[kontaPVT] = atof(tenta) * 1.01971621e-5;
+        presPVTSim[kontaPVT] = atof(tenta) / units::kPascalPerKgfPerCm2;
     }
     while (chave != "TEMPERATURE")
         lendoPVTSim >> chave;
@@ -1070,11 +1075,11 @@ void dadosPoro::geraTabFlash(int var) {
                 if (var == 8 && i > 0 && j > 0) {
                     double rhostd = 141.5 * 1000. / (131.5 + flup.API);
                     double rgstd = 1.225 * flup.Deng;
-                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * 35.31467 / 6.29;
+                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
                     if (flash.RSF[i][j] < 0)
                         flash.RSF[i][j] = 0.;
                     // falcatrua-teste de consistencia de RS do PVTSIM
-                    VarTemp[i][j] = flash.RSF[i][j] * 6.29 / 35.31467;
+                    VarTemp[i][j] = flash.RSF[i][j] * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
                 }
                 if ((var == 16 || var == 17) && i > 0 && j > 0) {
                     if (var == 16)
@@ -1116,11 +1121,11 @@ void dadosPoro::geraTabFlash(int var) {
                 if (var == 8 && i > 0 && j > 0) {
                     double rhostd = 141.5 * 1000. / (131.5 + flup.API);
                     double rgstd = 1.225 * flup.Deng;
-                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * 35.31467 / 6.29;
+                    flash.RSF[i][j] = (flup.RGO - (rhostd + rgstd * flup.RGO) * flash.RSF[i][j] / rgstd) * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
                     if (flash.RSF[i][j] < 0)
                         flash.RSF[i][j] = 0.;
                     // falcatrua-teste de consistencia de RS do PVTSIM
-                    VarTemp[i][j] = flash.RSF[i][j] * 6.29 / 35.31467;
+                    VarTemp[i][j] = flash.RSF[i][j] * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
                 }
                 if ((var == 16 || var == 17) && i > 0 && j > 0) {
                     if (var == 16)
@@ -1345,7 +1350,7 @@ void dadosPoro::parse_fluido_producao(
             corrDeng =
                 fluidos_producao_json["correcaoDenGas"].GetInt();
 
-        flup = ProFlu(vg1dSP, api, rgo, deng, bsw,
+        flup = ProFlu(simulationContext, api, rgo, deng, bsw,
                       denag, templ, lvisl, temph, lvish, tipoemul, aemul,
                       bemul, PHI100, bswCorte, tabp, yco2, corrC, corrSat,
                       vcorrOM, vcorrOV, vcorrOS, flashCompleto, 0);
@@ -1366,7 +1371,7 @@ void dadosPoro::parse_fluido_producao(
     } else if (flashCompleto == 1) {
 
         if (fluidos_producao_json.HasMember("pvtsimArq"))
-            pvtsimarq = pathArqExtEntrada + string(fluidos_producao_json["pvtsimArq"].GetString());
+            pvtsimarq = namedInputPath(string(fluidos_producao_json["pvtsimArq"].GetString()));
 
         string dadosMRPre;
         dadosMRPre = pvtsimarq;
@@ -1613,7 +1618,7 @@ void dadosPoro::parse_fluido_producao(
         api /= 1000.;
         api = 141.5 / api - 131.5;
 
-        flup = ProFlu(vg1dSP, api, rgo, deng, bsw,
+        flup = ProFlu(simulationContext, api, rgo, deng, bsw,
                       denag, templ, lvisl, temph, lvish, tipoemul, aemul,
                       bemul, PHI100, bswCorte, tabp, yco2, corrC, corrSat,
                       vcorrOM, vcorrOV, vcorrOS, flashCompleto, 0);
@@ -1631,12 +1636,12 @@ void dadosPoro::parse_fluido_producao(
         }
         lendoPVTSim.get(line, 4000);
         tenta = strtok(line, " ,()=");
-        flash.PBF[0] = atof(tenta) * 0.00014503773800722;
+        flash.PBF[0] = atof(tenta) / units::kPascalPerPsi;
         for (int kontaPVT = 1; kontaPVT <= lacoleitura;
              kontaPVT++) {
             tenta = strtok(NULL, " ,");
             testatok = atof(tenta);
-            flash.PBF[kontaPVT] = testatok * 0.00014503773800722;
+            flash.PBF[kontaPVT] = testatok / units::kPascalPerPsi;
         }
         while (chave != "BUBBLETEMPERATURES") {
             lendoPVTSim >> chave;
@@ -1701,7 +1706,7 @@ void dadosPoro::parse_fluido_producao(
         double dt1;
 
         int imin = 1;
-        while (flup.rhogF[imin][0] <= 1.0332274497825)
+        while (flup.rhogF[imin][0] <= units::kAtmosphereInKgfPerCm2)
             imin++;
         flup.indMinEquP = imin + 1;
         int iant = imin + 1;
@@ -1813,7 +1818,7 @@ void dadosPoro::parse_fluido_producao(
         rgo = fluidos_producao_json["rgo"].GetDouble();
         if (rgo > flup.RGO) {
             flup.RGO = rgo;
-            flup.IRGO = flup.RGO * 35.31467 / 6.29;
+            flup.IRGO = flup.RGO * units::kCubicFootPerCubicMetre / units::kBarrelPerCubicMetre;
         }
 
         if (flash.rhogF[0][1] < 20 && flash.rhogF[1][0] < 1.01)
@@ -2000,7 +2005,7 @@ void dadosPoro::parse_fluido_producao(
             }
         }
 
-        flup = ProFlu(vg1dSP, api, rgo, deng, bsw,
+        flup = ProFlu(simulationContext, api, rgo, deng, bsw,
                       denag, templ, lvisl, temph, lvish, tipoemul, aemul,
                       bemul, PHI100, bswCorte, tabp, yco2, corrC, corrSat,
                       vcorrOM, vcorrOV, vcorrOS, flashCompleto, 0, npseudo);
@@ -2209,7 +2214,7 @@ void dadosPoro::parse_tempo(Value &tempo_json) {
     }
     if (flashCompleto == 1 || flashCompleto == 2) {
         if (tempo_json.HasMember("pvtsimArq"))
-            pvtsimarq = pathArqExtEntrada + string(tempo_json["pvtsimArq"].GetString());
+            pvtsimarq = namedInputPath(string(tempo_json["pvtsimArq"].GetString()));
         else {
             logger.log(LOGGER_FALHA,
                        LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
@@ -2596,21 +2601,21 @@ void dadosPoro::parse_malha(Value &malha_json) {
         unv = malha_json["tipoArquivo"].GetInt();
     if (unv == 0) {
         if (malha_json.HasMember("elemento"))
-            elearq = pathArqExtEntrada + string(malha_json["elemento"].GetString());
+            elearq = namedInputPath(string(malha_json["elemento"].GetString()));
         else
             logger.log(LOGGER_FALHA,
                        LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
                        "Chave 'arquivo de elemento' inexistente", chaveJson, "malha");
 
         if (malha_json.HasMember("no"))
-            noarq = pathArqExtEntrada + string(malha_json["no"].GetString());
+            noarq = namedInputPath(string(malha_json["no"].GetString()));
         else
             logger.log(LOGGER_FALHA,
                        LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,
                        "Chave 'arquivo de no' inexistente", chaveJson, "malha");
     } else {
         if (malha_json.HasMember("elemento"))
-            elearq = pathArqExtEntrada + string(malha_json["elemento"].GetString());
+            elearq = namedInputPath(string(malha_json["elemento"].GetString()));
         else
             logger.log(LOGGER_FALHA,
                        LOG_ERR_PARSE_BUSINESS_RULE_VALIDATION,

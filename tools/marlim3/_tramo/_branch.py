@@ -50,7 +50,7 @@ def _is_empty(d):
     return all(v is None or v == {} for v in d.values())
 
 
-# Removed on purpose in 82df1ce; input versioning is tracked separately.
+# Input version keys are omitted from model serialization.
 _LEGACY_KEYS = {'version', 'jsonVersion', 'versao', 'versaoJson', 'versaoJSON'}
 
 

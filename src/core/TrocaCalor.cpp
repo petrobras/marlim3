@@ -9,14 +9,17 @@
 #include "TrocaCalor.h"
 #include "Matriz.h"
 #include "Vetor.h"
+#include "UnitConversions.h"
 #include <algorithm>
+#include <array>
+#include <memory>
 #include <fstream>
 #include <math.h>
 #include <stdlib.h>
 
 using namespace std;
 
-TransCal::TransCal(varGlob1D *Vvg1dSP, const DadosGeo vgeom, const int vpermanente, const int *const vncamada,
+TransCal::TransCal(SimulationContext *context, const DadosGeo vgeom, const int vpermanente, const int *const vncamada,
                    const double *const vdrcamada, double **const vTcamada, const double vTint,
                    const double vTextern1, const double vTextern2, const double vVint, const double vVextern1,
                    const int vdirconvExt, const double vdt, const double vkint, const double vcpint,
@@ -28,7 +31,7 @@ TransCal::TransCal(varGlob1D *Vvg1dSP, const DadosGeo vgeom, const int vpermanen
                    const double vcpextern2, const double vrhoextern2,
                    const double vviscextern2, const int vcoluna, const double vcolunaDia) : localvet(2),
                                                                                             localmat(2, 6) {
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
     geom = vgeom;
     permanente = vpermanente;
     lenth = geom.ncamadas;
@@ -60,7 +63,7 @@ TransCal::TransCal(varGlob1D *Vvg1dSP, const DadosGeo vgeom, const int vpermanen
     RGas = 8314.4621;
     pressao = pres;
     TCNitro = Faren(-146.9) + 460.;
-    PCNitro = psia(3399.9 * 1000. / 98066.52);
+    PCNitro = psia(3399.9 * 1000. / units::kPascalPerKgfPerCm2);
 
     reyi = 0;
     reye = 0;
@@ -126,7 +129,7 @@ TransCal::TransCal(varGlob1D *Vvg1dSP, const DadosGeo vgeom, const int vpermanen
         Vextern1 = vVextern1;
         dirconvExt = vdirconvExt;
         dt = vdt;
-        betext = 1 / (273.15 + Textern1);
+        betext = 1 / (units::kZeroCelsiusInKelvin + Textern1);
         betint = 1.;
 
         kint = vkint;
@@ -179,7 +182,7 @@ TransCal::TransCal(varGlob1D *Vvg1dSP, const DadosGeo vgeom, const int vpermanen
 TransCal::TransCal(const TransCal &vTransCal) : localvet(2),
                                                 localmat(2, 6) {
 
-    vg1dSP = vTransCal.vg1dSP;
+    simulationContext = vTransCal.simulationContext;
     geom = vTransCal.geom;
     permanente = vTransCal.permanente;
     lenth = geom.ncamadas;
@@ -337,7 +340,7 @@ TransCal &TransCal::operator=(const TransCal &vTransCal) {
 
     localvet = vTransCal.localvet;
     localmat = vTransCal.localmat;
-    vg1dSP = vTransCal.vg1dSP;
+    simulationContext = vTransCal.simulationContext;
     if (lenth > 0) {
         if (this != &vTransCal) {
             geom = vTransCal.geom;
@@ -689,7 +692,7 @@ double TransCal::MasEspGas(double temp) const {
     double itemp = Faren(temp);
     double PR = ipres / PCNitro;
     double TR = (itemp + 460) / TCNitro;
-    return ((Deng * 28.9625) * pressao * 98066.5) / (8.0465 * 1000 * ZGopal(PR, TR) * (temp + 273));
+    return ((Deng * 28.9625) * pressao * units::kPascalPerKgfPerCm2) / (8.0465 * 1000 * ZGopal(PR, TR) * (temp + units::kZeroCelsiusInKelvin));
 }
 
 double TransCal::CalorGas(double temp) const {
@@ -698,8 +701,8 @@ double TransCal::CalorGas(double temp) const {
 }
 
 double TransCal::CondGas(double temp) const {
-    double ppas = 98066.5 * pressao;
-    double fatT = (temp + 273.15) / 191.1;
+    double ppas = units::kPascalPerKgfPerCm2 * pressao;
+    double fatT = (temp + units::kZeroCelsiusInKelvin) / 191.1;
     double XK1 = 3.04314 / 100. + (1.3242 / 10000. + 1.27534 * temp / 10000000.) * temp;
     double RXK = 0.99783 + (1.973 / 100000000. + 7.8868 * pow(10., -16.) * ppas) * ppas;
     if (fatT < 3.0)
@@ -711,7 +714,7 @@ double TransCal::CondGas(double temp) const {
 double TransCal::ViscGas(double temp) const {
     double Deng = 0.9669;
     double TF = Faren(temp);
-    double TR = TF + 459.67;
+    double TR = TF + units::kZeroFahrenheitInRankine;
     double wg = Deng * 29;
     double AK = (9.4 + 0.02 * wg) * pow(TR, 1.5) / (209. + 19. * wg + TR);
     double x = 3.5 + (986 / TR) + 0.01 * wg;
@@ -765,12 +768,12 @@ double TransCal::NussConf2(double Ra, double heigth, double delD, double teta) {
         double nu90 = 0.;
         double nu60 = 0.;
         double nufim;
-        double nu1 = 0.0605 * pow(Ra, 1. / 3.);
+        double nu1 = 0.0605 * pow(Ra, 1. / 3);
 
         double val1 = pow(Ra, 0.293);
         double val2 = pow(6310 / Ra, 1.36);
         double val3 = pow(0.104 * val1 / (1 + val2), 3.);
-        double nu2 = pow(1 + val3, 1. / 3.);
+        double nu2 = pow(1 + val3, 1. / 3);
 
         double a = heigth / delD;
         double nu3 = 0.242 * pow(Ra / a, 0.272);
@@ -958,7 +961,7 @@ double TransCal::CalorLiq(double temp) const {
 
 double TransCal::MasEspAr(double temp) const {
 
-    return 101325.0 * airMW / (RGas * (temp + 273.15));
+    return units::kPascalPerAtmosphere * airMW / (RGas * (temp + units::kZeroCelsiusInKelvin));
 }
 
 double TransCal::VisAr(double temp) const {
@@ -1632,7 +1635,7 @@ double TransCal::transperm(double resanul) {
             if (ncamada[i] > 1) {
                 for (int j = 1; j < ncamada[i]; j++) {
                     Tini[i][j] = Tcamada[i][j];
-                    Tcamada[i][j] = Tcamada[i][0] + (1.0*j / (ncamada[i]*1.0)) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
+                    Tcamada[i][j] = Tcamada[i][0] + (static_cast<double>(j) / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
                 }
             }
         }
@@ -1709,8 +1712,10 @@ void TransCal::transcel(int icam, int idisc,int newman, double qcal) {
             r1 = geom.a / 2. + idisc * drcamada[0];
             if (idisc < ncamada[0])
                 r2 = geom.a / 2. + (idisc + 1) * drcamada[0];
-            else
+            else if (0 < lastLayer)
                 r2 = geom.diamC[0] / 2. + drcamada[1];
+            else
+                r2 = r1;
         }
         rho = geom.rhoC[icam];
         cp = geom.cp[icam];
@@ -1890,11 +1895,8 @@ void TransCal::transcel(int icam, int idisc,int newman, double qcal) {
         localmat[0][3] = -(1 / (0.5 * (r1 + r0))) / (r1 - r0);
         localvet[0] = Tcamada[icam][idisc] * (rho * cp) / dt;
         if (icam < lastLayer || (icam == lastLayer && idisc < layerDiscCount)) {
-            double ciL;
-            ///?????????????/////////////////////////////////////////////
-            //ciL = (tec1 / (2. * M_PI) + 0.5 * k1 * (r1 + r2) / (r2 - r1));
-            /////???????????????????????////////////////////////////////
-            ciL = (tec1 / (2. * M_PI) +  k1 *  r2 / (r2 - r1));
+            // Adjacent radial temperatures exchange heat through their mean cylindrical radius.
+            const double ciL = (tec1 / (2. * M_PI) + 0.5 * k1 * (r1 + r2) / (r2 - r1));
             localmat[1][0] = 0;
             localmat[1][2] = ciL;
             localmat[1][3] = 1.;
@@ -1945,8 +1947,55 @@ double TransCal::transtrans(int newman, double qcal) {
             nglob += ncamada[i];
         }
         nglob = 2 * (nglob + 1);
-        Vcr<double> vetliv(nglob);
-        BandMtx<double> matglob(nglob, 3, 2);
+        struct Buffers {
+            Vcr<double> rhs;
+            BandMtx<double> matrix;
+            bool inUse = false;
+            explicit Buffers(int rows) : rhs(rows), matrix(rows, 3, 2) {}
+        };
+        constexpr std::size_t maximumRetainedBytesPerEntry = 1024 * 1024;
+        constexpr std::size_t bytesPerRow = 7 * sizeof(double) + sizeof(double *);
+        thread_local std::array<std::unique_ptr<Buffers>, 4> cachedBuffers;
+        thread_local std::size_t nextBuffer = 0;
+        Buffers *buffers = nullptr;
+        std::unique_ptr<Buffers> temporary;
+        if (static_cast<std::size_t>(nglob) <= maximumRetainedBytesPerEntry / bytesPerRow) {
+            for (const auto &entry : cachedBuffers) {
+                if (entry && !entry->inUse && entry->rhs.size() == nglob) {
+                    buffers = entry.get();
+                    break;
+                }
+            }
+            if (!buffers) {
+                for (std::size_t offset = 0; offset < cachedBuffers.size(); ++offset) {
+                    const std::size_t index = (nextBuffer + offset) % cachedBuffers.size();
+                    auto &entry = cachedBuffers[index];
+                    if (!entry || !entry->inUse) {
+                        auto replacement = std::make_unique<Buffers>(nglob);
+                        entry = std::move(replacement);
+                        buffers = entry.get();
+                        nextBuffer = (index + 1) % cachedBuffers.size();
+                        break;
+                    }
+                }
+            }
+        }
+        if (!buffers) {
+            temporary = std::make_unique<Buffers>(nglob);
+            buffers = temporary.get();
+        }
+        struct Lease {
+            Buffers &buffers;
+            ~Lease() { buffers.inUse = false; }
+        } lease{*buffers};
+        buffers->inUse = true;
+        Vcr<double> &vetliv = buffers->rhs;
+        BandMtx<double> &matglob = buffers->matrix;
+        for (int row = 0; row < nglob; ++row) {
+            vetliv[row] = 0.;
+            for (int column = -3; column <= 2; ++column)
+                matglob[row][column] = 0.;
+        }
         transcel(0, 0,newman,qcal);
         vetliv[0] = localvet[0];
         vetliv[1] = localvet[1];
@@ -2137,7 +2186,7 @@ double TransCal::transperm2D() {
         if (ncamada[i] > 1) {
             for (int j = 1; j < ncamada[i]; j++) {
                 Tini[i][j] = Tcamada[i][j];
-                Tcamada[i][j] = Tcamada[i][0] + (j / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
+                Tcamada[i][j] = Tcamada[i][0] + (static_cast<double>(j) / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
             }
         }
     }
@@ -2156,7 +2205,7 @@ double TransCal::transtrans2D() {
     double rug = geom.rug / geom.dia;
     dimExt = poisson2D.dados.diamExt;
 
-    if ((*vg1dSP).lixo5 < 1e-15) {
+    if ((*simulationContext).simulationTime < 1e-15) {
         if (poisson2D.dados.temp.perm == 1 && poisson2D.dados.temp.trans == 1) {
             for (int i = 0; i < poisson2D.malha.nele; i++) {
                 poisson2D.malha.mlh2d[i].perm = 0;
@@ -2278,7 +2327,7 @@ double TransCal::transtrans2D() {
         if (ncamada[i] > 1) {
             for (int j = 1; j < ncamada[i]; j++) {
                 Tini[i][j] = Tcamada[i][j];
-                Tcamada[i][j] = Tcamada[i][0] + (j / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
+                Tcamada[i][j] = Tcamada[i][0] + (static_cast<double>(j) / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
             }
         }
     }
@@ -2389,7 +2438,7 @@ void TransCal::transtransAxiSim(double cal) {
         if (ncamada[i] > 1) {
             for (int j = 1; j < ncamada[i]; j++) {
                 Tini[i][j] = Tcamada[i][j];
-                Tcamada[i][j] = Tcamada[i][0] + (j / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
+                Tcamada[i][j] = Tcamada[i][0] + (static_cast<double>(j) / ncamada[i]) * (Tcamada[i][ncamada[i]] - Tcamada[i][0]);
             }
         }
     }

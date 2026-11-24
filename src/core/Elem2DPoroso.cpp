@@ -5,11 +5,12 @@
  *      Author: Eduardo
  */
 #include "Elem2DPoroso.h"
+#include "UnitConversions.h"
 
-elem2dPoroso::elem2dPoroso(varGlob1D *Vvg1dSP, double **xcoor, int **noEle, int *tipo, double *atributo, int nVert, int nele, int nno,
+elem2dPoroso::elem2dPoroso(SimulationContext *context, double **xcoor, int **noEle, int *tipo, double *atributo, int nVert, int nele, int nno,
                            int vperm, int vtrans, int i, ProFlu vflup, tabelaPemRelOA vkRelOA, tabelaPemRelOG vkRelOG,
                            tabelaPresCapOA vpcOA, tabelaPresCapGO vpcGO) : TL(1), local(1, nVert + 1) {
-    vg1dSP = Vvg1dSP;
+    simulationContext = context;
 
     double vfluxCal = 0.;
     double vdt = 0.;
@@ -86,8 +87,8 @@ elem2dPoroso::elem2dPoroso(varGlob1D *Vvg1dSP, double **xcoor, int **noEle, int 
         if ((cel2D.presC + fabs(tRes) + flup.API) > 1.) {
             cel2D.vbo = flup.BOFunc(cel2D.presC, tRes);
             cel2D.rhostd = 1000. * 141.5 / (131.5 + flup.API);
-            cel2D.rhogstd = flup.MasEspGas(1.033, 20.);
-            cel2D.rhoastd = flup.MasEspAgua(1.033, 20.);
+            cel2D.rhogstd = flup.MasEspGas(units::kAtmosphereInKgfPerCm2, 20.);
+            cel2D.rhoastd = flup.MasEspAgua(units::kAtmosphereInKgfPerCm2, 20.);
             cel2D.rhoP = flup.MasEspoleo(cel2D.presC, tRes);
             cel2D.rhogP = flup.MasEspGas(cel2D.presC, tRes);
             cel2D.rhoaP = flup.MasEspAgua(cel2D.presC, tRes);
@@ -486,7 +487,7 @@ elem2dPoroso::elem2dPoroso(varGlob1D *Vvg1dSP, double **xcoor, int **noEle, int 
     }
 }
 elem2dPoroso::elem2dPoroso(const elem2dPoroso &velem) : TL(1), local(1, velem.cel2D.nvert + 1) {
-    vg1dSP = velem.vg1dSP;
+    simulationContext = velem.simulationContext;
     cel2D.nvert = velem.cel2D.nvert;
     cel2D.dim = velem.cel2D.dim;
     cel2D.indEle = velem.cel2D.indEle;
@@ -990,7 +991,7 @@ elem2dPoroso &elem2dPoroso::operator=(const elem2dPoroso &velem) {
             delete[] fonteTHR;
             delete[] cel2D.vecSDif;
         }
-        vg1dSP = velem.vg1dSP;
+        simulationContext = velem.simulationContext;
         cel2D.nvert = velem.cel2D.nvert;
         cel2D.dim = velem.cel2D.dim;
         cel2D.indEle = velem.cel2D.indEle;
@@ -1517,7 +1518,7 @@ void elem2dPoroso::atualizaCC(int i) {
     double raz;
     if (diri == 1) {
 
-        indraz(ind, raz, (*vg1dSP).tempo, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
+        indraz(ind, raz, (*simulationContext).solverTime, CC.ccDir[kcc].nserie, CC.ccDir[kcc].tempo);
         double inf = CC.ccDir[kcc].val[ind];
         double sup;
         double infSat = CC.ccDir[kcc].valSat[ind];
@@ -1533,7 +1534,7 @@ void elem2dPoroso::atualizaCC(int i) {
         }
     } else if (vn == 1) {
 
-        indraz(ind, raz, (*vg1dSP).tempo, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
+        indraz(ind, raz, (*simulationContext).solverTime, CC.ccVN[kcc].nserie, CC.ccVN[kcc].tempo);
         double inf = CC.ccVN[kcc].val[ind];
         double sup;
         double infSat = CC.ccVN[kcc].valSat[ind];
@@ -1549,7 +1550,7 @@ void elem2dPoroso::atualizaCC(int i) {
         }
     } else if (rich == 1) {
 
-        indraz(ind, raz, (*vg1dSP).tempo, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
+        indraz(ind, raz, (*simulationContext).solverTime, CC.ccRic[kcc].nserie, CC.ccRic[kcc].tempo);
         double inf = CC.ccRic[kcc].valAmb[ind];
         double sup;
         double infSat = CC.ccRic[kcc].valSat[ind];
@@ -1676,8 +1677,8 @@ void elem2dPoroso::calcGradGreen() {
             kmedF[i] = fkO(swF[i], 1 * alfF[i] * (1. - swF[i]));
             kmedAF[i] = interpolaTabela(kRelOACel.npont, swF[i], kRelOACel.satW, kRelOACel.permRelW);
             double kabsolHarm = 1.;
-            darcyOF[i] = kmedF[i] * kabsolHarm * 98066.22 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
-            darcyAF[i] = kmedAF[i] * kabsolHarm * 98066.22 / miaF[i];
+            darcyOF[i] = kmedF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
+            darcyAF[i] = kmedAF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / miaF[i];
 
             for (int j = 0; j < cel2D.dim; j++) {
                 gradMed[j] = cel2D.fatG[i] * cel2D.gradGreenPcAOI[j] + (1 - cel2D.fatG[i]) * (*vizinho[i]).gradGreenPcAOI[j];
@@ -1698,7 +1699,7 @@ void elem2dPoroso::calcGradGreen() {
             for (int j = 0; j < cel2D.dim; j++) {
                 gradMed[j] = gradMed[j] + (deri - termoCorda) * cel2D.vecE[i][j];
             }
-            Qoleo[i] -= 1 * (rhoF[i] * (9.82 / 98066.22)) * escalar(gradMed, cel2D.vecSDif[i], cel2D.dim);
+            Qoleo[i] -= 1 * (rhoF[i] * (9.82 / units::kPascalPerKgfPerCm2)) * escalar(gradMed, cel2D.vecSDif[i], cel2D.dim);
             for (int j = 0; j < cel2D.dim; j++)
                 rhoZF[i] += corDistorc * gradMed[j] * (cel2D.centroideFace[i][j] - cel2D.fInter[i][j]);
             rhoZF[i] += rhoZinter;
@@ -1711,7 +1712,7 @@ void elem2dPoroso::calcGradGreen() {
             for (int j = 0; j < cel2D.dim; j++) {
                 gradMed[j] = gradMed[j] + (deri - termoCorda) * cel2D.vecE[i][j];
             }
-            Qw[i] -= 1 * (rhoaF[i] * (9.82 / 98066.22)) * escalar(gradMed, cel2D.vecSDif[i], cel2D.dim);
+            Qw[i] -= 1 * (rhoaF[i] * (9.82 / units::kPascalPerKgfPerCm2)) * escalar(gradMed, cel2D.vecSDif[i], cel2D.dim);
             for (int j = 0; j < cel2D.dim; j++)
                 rhoaZF[i] += corDistorc * gradMed[j] * (cel2D.centroideFace[i][j] - cel2D.fInter[i][j]);
             rhoaZF[i] += rhoZinter;
@@ -1763,8 +1764,8 @@ void elem2dPoroso::calcGradGreen() {
                 kmedF[i] = fkO(swF[i], 1 * alfF[i] * (1. - swF[i]));
                 kmedAF[i] = interpolaTabela(kRelOACel.npont, swF[i], kRelOACel.satW, kRelOACel.permRelW);
                 double kabsolHarm = 1.;
-                darcyOF[i] = kmedF[i] * kabsolHarm * 98066.22 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
-                darcyAF[i] = kmedAF[i] * kabsolHarm * 98066.22 / miaF[i];
+                darcyOF[i] = kmedF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
+                darcyAF[i] = kmedAF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / miaF[i];
                 pcAOF[i] = interpolaTabela(pcOACel.npont, cel2D.sWC, pcOACel.satW, pcOACel.presCapOW);
 
                 rhoZF[i] = cel2D.zD;
@@ -1817,8 +1818,8 @@ void elem2dPoroso::calcGradGreen() {
                 kmedF[i] = fkO(swF[i], 1 * alfF[i] * (1. - swF[i]));
                 kmedAF[i] = interpolaTabela(kRelOACel.npont, swF[i], kRelOACel.satW, kRelOACel.permRelW);
                 double kabsolHarm = 1.;
-                darcyOF[i] = kmedF[i] * kabsolHarm * 98066.22 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
-                darcyAF[i] = kmedAF[i] * kabsolHarm * 98066.22 / miaF[i];
+                darcyOF[i] = kmedF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
+                darcyAF[i] = kmedAF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / miaF[i];
                 pcAOF[i] = interpolaTabela(pcOACel.npont, cel2D.sWC, pcOACel.satW, pcOACel.presCapOW);
 
                 rhoZF[i] = cel2D.zD;
@@ -1844,8 +1845,8 @@ void elem2dPoroso::calcGradGreen() {
                 double mia = flup.VisAgua(tRes) / 1000.;
                 double kO = fkO(cel2D.sWC, cel2D.alfC);
                 double kA = interpolaTabela(kRelOACel.npont, cel2D.sWC, kRelOACel.satW, kRelOACel.permRelW);
-                double darcyO = kO * 1 * 98066.22 / ((1. - cel2D.alfC) * mio + cel2D.alfC * mig);
-                double darcyA = kA * 1 * 98066.22 / mia;
+                double darcyO = kO * 1 * units::kPascalPerKgfPerCm2 / ((1. - cel2D.alfC) * mio + cel2D.alfC * mig);
+                double darcyA = kA * 1 * units::kPascalPerKgfPerCm2 / mia;
 
                 double cordaArea = escalar(cel2D.vecE[i], cel2D.sFace[i], cel2D.dim);
                 double denom = ((darcyO + darcyA) * cordaArea / cel2D.modE[i]) + ccHR[i] * cel2D.sFaceMod[i];
@@ -1890,8 +1891,8 @@ void elem2dPoroso::calcGradGreen() {
                 kmedF[i] = fkO(swF[i], 1 * alfF[i] * (1. - swF[i]));
                 kmedAF[i] = interpolaTabela(kRelOACel.npont, swF[i], kRelOACel.satW, kRelOACel.permRelW);
                 double kabsolHarm = cel2D.kabsol;
-                darcyOF[i] = kmedF[i] * kabsolHarm * 98066.22 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
-                darcyAF[i] = kmedAF[i] * kabsolHarm * 98066.22 / miaF[i];
+                darcyOF[i] = kmedF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / ((1. - alfF[i]) * mioF[i] + alfF[i] * migF[i]);
+                darcyAF[i] = kmedAF[i] * kabsolHarm * units::kPascalPerKgfPerCm2 / miaF[i];
                 pcAOF[i] = interpolaTabela(pcOACel.npont, cel2D.sWC, pcOACel.satW, pcOACel.presCapOW);
 
                 rhoZF[i] = cel2D.zD;
@@ -2041,14 +2042,14 @@ void elem2dPoroso::GeraLocal(double relax) {
             double zDatumC = cel2D.zD;
             double zDatumV = (*vizinho[i]).zD;
             termMat = (cordaArea / cel2D.modE[i]) * (zDatumV - zDatumC);
-            TL[0] -= 1 * rhoF[i] * darcyOF[i] * (rhoF[i] * (9.82 / 98066.22)) * ((escalGradArea - termoCorda * cordaArea) + termMat);
+            TL[0] -= 1 * rhoF[i] * darcyOF[i] * (rhoF[i] * (9.82 / units::kPascalPerKgfPerCm2)) * ((escalGradArea - termoCorda * cordaArea) + termMat);
 
             termoCorda = escalar(gradMedAZ, cel2D.vecE[i], cel2D.dim);
             escalGradArea = escalar(gradMedAZ, cel2D.vecSDif[i], cel2D.dim);
             double zDatumAC = cel2D.zD;
             double zDatumAV = (*vizinho[i]).zD;
             termMat = (cordaArea / cel2D.modE[i]) * (zDatumAV - zDatumAC);
-            TL[0] -= 1 * rhoaF[i] * darcyAF[i] * (rhoaF[i] * 9.82 / 98066.22) * ((escalGradArea - termoCorda * cordaArea) + termMat);
+            TL[0] -= 1 * rhoaF[i] * darcyAF[i] * (rhoaF[i] * 9.82 / units::kPascalPerKgfPerCm2) * ((escalGradArea - termoCorda * cordaArea) + termMat);
 
             termoCorda = escalar(gradMedPCAO, cel2D.vecE[i], cel2D.dim);
             escalGradArea = escalar(gradMedPCAO, cel2D.vecSDif[i], cel2D.dim);
@@ -2067,8 +2068,8 @@ void elem2dPoroso::GeraLocal(double relax) {
             double mia = flup.VisAgua(tRes) / 1000.;
             double kO = fkO(cel2D.sWC, cel2D.alfC);
             double kA = interpolaTabela(kRelOACel.npont, cel2D.sWC, kRelOACel.satW, kRelOACel.permRelW);
-            double darcyO = kO * 98066.22 / ((1. - cel2D.alfC) * mio + cel2D.alfC * mig);
-            double darcyA = kA * 98066.22 / mia;
+            double darcyO = kO * units::kPascalPerKgfPerCm2 / ((1. - cel2D.alfC) * mio + cel2D.alfC * mig);
+            double darcyA = kA * units::kPascalPerKgfPerCm2 / mia;
             double condHarm = (((1. - cel2D.alfC) * cel2D.rhoP + cel2D.alfC * cel2D.rhogP) * darcyO + cel2D.rhoaP * darcyA);
             if (diri == 1) {
 

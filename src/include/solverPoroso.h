@@ -21,7 +21,7 @@
 #include "dados1Poroso.h"
 #include "estruturaTabDin.h"
 #include "estruturasPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <ctime>
 #include <fstream>
 #include <iostream>
@@ -54,10 +54,10 @@ class solverPoro {
     double lAcopTot;
     double dt;
     double posicMarlim;
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
     int precn;
     solverPoro();
-    solverPoro(varGlob1D *Vvg1dSP, string nomeArquivoEntrada);
+    solverPoro(SimulationContext *context, string nomeArquivoEntrada);
     solverPoro(const solverPoro &);
     solverPoro &operator=(const solverPoro &);
     ~solverPoro() {

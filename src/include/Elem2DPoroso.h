@@ -16,7 +16,7 @@
 #include "celRad.h"
 #include "estruturaTabDin.h"
 #include "estruturasPoroso.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <complex>
 #include <fstream>
@@ -224,10 +224,10 @@ class elem2dPoroso {
     int nvizinho;             // Number of neighboring elements.
     elementoPoroso **vizinho; // Pointers to neighboring elements.
     int *kvizinho;            // Local face or neighbor-index mapping.
-    varGlob1D *vg1dSP;        // Pointer to shared one-dimensional global variables.
+    SimulationContext *simulationContext;        // Pointer to shared one-dimensional global variables.
 
     //! Construct and initialize a two-dimensional porous-medium element.
-    elem2dPoroso(varGlob1D *Vvg1dSP = 0, double **xcoor = 0, int **noEle = 0, int *tipo = 0, double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0,
+    elem2dPoroso(SimulationContext *context = 0, double **xcoor = 0, int **noEle = 0, int *tipo = 0, double *atributo = 0, int nVert = 0, int nele = 0, int nno = 0,
                  int vperm = 0, int vtrans = 1, int i = 0, ProFlu vflup = ProFlu(), tabelaPemRelOA vkRelOA = tabelaPemRelOA(), tabelaPemRelOG vkRelOG = tabelaPemRelOG(),
                  tabelaPresCapOA vpcOA = tabelaPresCapOA(), tabelaPresCapGO vpcGO = tabelaPresCapGO());
 

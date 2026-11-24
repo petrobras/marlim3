@@ -18,7 +18,7 @@ using namespace std;
 #include "Vetor.h"
 #include "Matriz.h"
 #include "Elem2DPoissonAxiSim.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 
 // obter string do prefixo dos arquivos de saida para POCO_INJETOR
 extern string pathPrefixoArqSaida;
@@ -30,7 +30,7 @@ public:
 	int acopDir;
 	Vcr<double> vecSolv;
 	vector<elem2dPoissonAxiSim> mlh2d;
-	malha2dAxiSim(varGlob1D* Vvg1dSP=0,double** xcoor=0, int** noEle=0,
+	malha2dAxiSim(SimulationContext* context=0,double** xcoor=0, int** noEle=0,
 			int* tipo=0,double* atributo=0,
 			int nVert=0, int neleV=0, int nno=0,
 			int vperm=1, int vtrans=0, int vacopD=0);

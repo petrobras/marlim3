@@ -9,19 +9,19 @@
 malha2dPoro::malha2dPoro():
 	vecSolv(0){
 	nele=0;
-	vg1dSP=0;
+	simulationContext=0;
 	mlh2d=vector<elem2dPoroso>(0);
 }
 
-malha2dPoro::malha2dPoro(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int neleV, int nno, int vperm,
+malha2dPoro::malha2dPoro(SimulationContext* context,double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int neleV, int nno, int vperm,
 		int vtrans,	ProFlu vflup,tabelaPemRelOA vkRelOA,tabelaPemRelOG vkRelOG,
 		tabelaPresCapOA vpcOA,tabelaPresCapGO vpcGO):
 	vecSolv(neleV){
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 	nele=neleV;
 	if(nele>0){
 	    for(int i=0; i<neleV;i++){
-	    	elem2dPoroso temp(vg1dSP,xcoor, noEle, tipo, atributo, nVert, nele, nno,vperm, vtrans, i,vflup,vkRelOA,vkRelOG,
+            elem2dPoroso temp(simulationContext,xcoor, noEle, tipo, atributo, nVert, nele, nno,vperm, vtrans, i,vflup,vkRelOA,vkRelOG,
 	    			vpcOA,vpcGO);
 	    	mlh2d.push_back(temp);
 	    }
@@ -68,7 +68,7 @@ malha2dPoro::malha2dPoro(varGlob1D* Vvg1dSP,double** xcoor, int** noEle,int* tip
 }
 
 malha2dPoro::malha2dPoro(const malha2dPoro& vmalha):vecSolv(vmalha.nele){
-	vg1dSP=vmalha.vg1dSP;
+	simulationContext=vmalha.simulationContext;
 	nele=vmalha.nele;
 	if(nele>0){
 		vecSolv=vmalha.vecSolv;
@@ -121,7 +121,7 @@ malha2dPoro::malha2dPoro(const malha2dPoro& vmalha):vecSolv(vmalha.nele){
 malha2dPoro& malha2dPoro::operator =(const malha2dPoro& vmalha) {
 	if (this != &vmalha) {
 		mlh2d.clear();
-		vg1dSP=vmalha.vg1dSP;
+		simulationContext=vmalha.simulationContext;
 		nele=vmalha.nele;
 		if(nele>0){
 			vecSolv=vmalha.vecSolv;

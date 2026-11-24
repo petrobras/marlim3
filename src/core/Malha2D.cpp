@@ -5,18 +5,19 @@
  *      Author: Eduardo
  */
 #include "Malha2D.h"
+#include "UnitConversions.h"
 
 
 malha2dVF::malha2dVF(double** xcoor, int** noEle,int* tipo,double* atributo,int nVert, int neleV, int nno,double vdt, int vperm, int vtrans,
-		varGlob1D* Vvg1dSP,ProFluColVF vflucVF,int vacopD):
+		SimulationContext* context,ProFluColVF vflucVF,int vacopD):
 	vecSolv(neleV){
 	nele=neleV;
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 	flucVF=vflucVF;
 	acopD=vacopD;
 	if(nele>0){
 	    for(int i=0; i<neleV;i++){
-	    	elem2d temp(vg1dSP,xcoor, noEle, tipo, atributo, nVert, nele, nno, i,vdt,vperm, vtrans,flucVF,acopD);
+	    	elem2d temp(simulationContext,xcoor, noEle, tipo, atributo, nVert, nele, nno, i,vdt,vperm, vtrans,flucVF,acopD);
 	    	mlh2d.push_back(temp);
 	    }
 	    for(int i=0; i<nele;i++){
@@ -63,7 +64,7 @@ malha2dVF::malha2dVF(double** xcoor, int** noEle,int* tipo,double* atributo,int 
 
 malha2dVF::malha2dVF(const malha2dVF& vmalha):vecSolv(vmalha.nele){
 	nele=vmalha.nele;
-	vg1dSP=vmalha.vg1dSP;
+	simulationContext=vmalha.simulationContext;
 	flucVF=vmalha.flucVF;
 	acopD=vmalha.acopD;
 	if(nele>0){
@@ -118,7 +119,7 @@ malha2dVF& malha2dVF::operator =(const malha2dVF& vmalha) {
 	if (this != &vmalha) {
 		mlh2d.clear();
 		nele=vmalha.nele;
-		vg1dSP=vmalha.vg1dSP;
+		simulationContext=vmalha.simulationContext;
 		flucVF=vmalha.flucVF;
 		acopD=vmalha.acopD;
 		if(nele>0){
@@ -224,15 +225,15 @@ void malha2dVF::imprimeV(double tempo){
 
 void malha2dVF::imprimeP(double tempo){
 	FullMtx<double> flut(nele,4);
-	double ymaxWall=mlh2d[(*vg1dSP).eleYmaxWall].cel2D.centroideElem[1];
+	double ymaxWall=mlh2d[(*simulationContext).maxYCellIndex].cel2D.centroideElem[1];
 
 	for(int i=0;i<nele;i++){
 		flut.mx[i][0]=tempo;
 		flut.mx[i][1]=mlh2d[i].cel2D.centroideElem[0];
 		flut.mx[i][2]=mlh2d[i].cel2D.centroideElem[1];
 		double dh=ymaxWall-mlh2d[i].cel2D.centroideElem[1];
-		double forcaCorpo=dh*(mlh2d[i].cel2D.rho)*(*vg1dSP).gravVF*sin((*vg1dSP).angY);
-		flut.mx[i][3]=(mlh2d[i].cel2D.presC+(1.-(*vg1dSP).mulFC)*forcaCorpo)/98066.52;
+		double forcaCorpo=dh*(mlh2d[i].cel2D.rho)*(*simulationContext).gravitationalAcceleration*sin((*simulationContext).gravityAngleY);
+		flut.mx[i][3]=(mlh2d[i].cel2D.presC+(1.-(*simulationContext).bodyForceDensityFactor)*forcaCorpo)/units::kPascalPerKgfPerCm2;
 	}
 
 	ostringstream saidaP;

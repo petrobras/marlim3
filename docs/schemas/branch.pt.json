@@ -471,20 +471,20 @@
             },
             "miniTabDinAtraso": {
               "type": "integer",
-              "default": 0,
-              "description": "A cada número de passos de tempo definido por este parâmetro, uma mini-tabela local é gerada para cada célula do sistema. Esta minitabela armazena dados de flashes de pressão (P) e temperatura (T), utilizando incrementos e decrementos de valor definidos pelos parâmetros miniTabDinDp e miniTabDinDt, respectivamente. Aplicável em simulações transientes com modelos de fluido composicionais."
+              "default": 5,
+              "description": "A cada número de passos de tempo definido por este parâmetro, uma mini-tabela local é gerada para cada célula do sistema. Esta minitabela armazena dados de flashes de pressão (P) e temperatura (T), utilizando incrementos e decrementos de valor definidos pelos parâmetros miniTabDinDp e miniTabDinDt, respectivamente. Aplicável em simulações transientes com modelos de fluido composicionais. O valor zero é tratado como um; sem a seção Avancado, o atraso é um."
             },
             "miniTabDinDp": {
               "type": "number",
               "unit": "kgf/cm2",
-              "default": 0,
-              "description": "Define incremento e decremento de pressão usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais."
+              "default": 5,
+              "description": "Define incremento e decremento de pressão usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais. Valores menores que cinco são tratados como cinco."
             },
             "miniTabDinDt": {
               "type": "number",
               "unit": "degC",
-              "default": 0,
-              "description": "Define incremento e decremento de temperatura usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais."
+              "default": 5,
+              "description": "Define incremento e decremento de temperatura usados para geração de minitabelas de flash a intervalos de tempo definidos pelo parâmetro miniTabDinAtraso. Aplicável em simulações transientes com modelos de fluido composicionais. Valores menores que cinco são tratados como cinco."
             },
             "Tsonico": {
               "type": "array",
@@ -2055,7 +2055,7 @@
           },
           "correlacaoMR2": {
             "type": "integer",
-            "description": "Correlação empírica de gradiente de pressão utilizada no duto, quando o modelo Drift-Flux 1D está desabilitado (configuracaoInicial: tipoModeloDrift = false). Válida para o regime permanente. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill com correção de Palmer; 13 = Dukler, Eaton e Flanigan;  14 = Dukler e Minami I; 15 = Dukler e Minami II; 16 = Gomez."
+            "description": "Correlação empírica de gradiente de pressão utilizada no duto, quando o modelo Drift-Flux 1D está desabilitado (configuracaoInicial: tipoModeloDrift = false). Válida para o regime permanente. 0 = Poettmann-Carpenter; 1 = Baxendell-Thomas; 2 = Fancher-Brown; 3 = Hagedorn-Brown; 4 = Duns-Ros; 5 = Orkiszewski; 6 = Beggs & Brill; 7 = Mukherjee-Brill; 8 = Aziz; 9 = Gray; 10 = Oliemans; 11 = Dukler; 12 = Beggs & Brill com correção de Palmer; 13 = Dukler, Eaton e Flanigan;  14 = Dukler e Minami I; 15 = Dukler e Minami II; 16 = Gomez; 51 = TUFFP Unified gas-liquido (biblioteca externa, carregada por MARLIM3_TUFFP_LIB ou junto ao executavel)."
           },
           "acoplamentoTermicoRedeParalela": {
             "type": "integer",

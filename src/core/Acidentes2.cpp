@@ -1,4 +1,5 @@
 #include "Acidentes2.h"
+#include "UnitConversions.h"
 
 double dpVarA(const double vazmas,const double pres, const double temp, const double areaM, const double areaJ,const double alf,
 		                   const double bet,
@@ -17,9 +18,9 @@ double dpVarA(const double vazmas,const double pres, const double temp, const do
 double dTVarA(const double vazmas,const double pres, const double temp, const double areaM, const double areaJ,const double alf,
 		                   const double bet,
 		                   const ProFlu fluido,const ProFluCol fluidocol){
-   double dp=dpVarA(vazmas,pres,temp,areaM,areaJ,alf,bet,fluido,fluidocol)/98066.5;
+   double dp=dpVarA(vazmas,pres,temp,areaM,areaJ,alf,bet,fluido,fluidocol)/units::kPascalPerKgfPerCm2;
    double k=fluido.ConstAdG(pres,temp);
-   double Tad=pow((pres+dp)/pres,(k-1)/k)*(temp+273)-273-temp;
+   double Tad=pow((pres+dp)/pres,(k-1)/k)*(temp+units::kZeroCelsiusInKelvin)-units::kZeroCelsiusInKelvin-temp;
    double rhog=fluido.MasEspGas(pres, temp);
    double rhol=(1-bet)*fluido.MasEspLiq(pres, temp)+bet*fluidocol.MasEspFlu(pres, temp);
    double x=rhog*alf/(rhol*(1-alf)+rhog*alf);
@@ -41,7 +42,7 @@ double VelSomH(const double pres, const double temp,const double alf, const doub
  double rhol=(1-bet)*fluido.MasEspLiq(pres, temp)+bet*fluidocol.MasEspFlu(pres, temp);
  double rhomis=alf*rhog+(1-alf)*rhol;
  double Rgas=fluido.retornaR();
- double vsh2=(rhomis/rhog)*alf/(k*Rgas*(temp+273.0))+(rhomis/rhol)*(1.-alf)/pow(1400.,2.);
+ double vsh2=(rhomis/rhog)*alf/(k*Rgas*(temp+units::kZeroCelsiusInKelvin))+(rhomis/rhol)*(1.-alf)/pow(1400.,2.);
  return 1/sqrt(vsh2);
 
 }
@@ -49,7 +50,7 @@ double VelSomH(const double pres, const double temp,const double alf, const doub
 double VelSomG(const double pres, const double temp,const ProFlu fluido){
  double k=fluido.ConstAdG(pres,temp);
  double Rgas=fluido.retornaR();
- double vsh2=1./(k*Rgas*(temp+273.1));
+ double vsh2=1./(k*Rgas*(temp+units::kZeroCelsiusInKelvin));
  return 1/sqrt(vsh2);
 
 }
@@ -65,9 +66,9 @@ double FunRPresCritH(const double eps, const double* const par){
  double Cpg=par[4];
  double alf=rhol*x/(rhog*(1-x)+rhol*x);
  double rhomis=alf*rhog*pow(eps,1/k)+(1-alf)*rhol;
- double val=x*Cpg*(T0+273.)*(pow(eps,(k-1)/k)-1.)+
-       (1-x)*p0*98066.5*(eps-1)/rhol+
-       0.5*k*eps*par[0]*98066.5/(alf*rhomis);
+ double val=x*Cpg*(T0+units::kZeroCelsiusInKelvin)*(pow(eps,(k-1)/k)-1.)+
+       (1-x)*p0*units::kPascalPerKgfPerCm2*(eps-1)/rhol+
+       0.5*k*eps*par[0]*units::kPascalPerKgfPerCm2/(alf*rhomis);
  return val;
 }
 
@@ -84,11 +85,11 @@ double RPresCritH(const double pres, const double temp, const double alf, const 
  double rhomis=alf*rhog+(1-alf)*rhol;
  double cpmis=(alf*rhog*Cpg+(1-alf)*rhol*Cpl)/(rhog*alf+(1-alf)*rhol);
  double cmis=VelSomH(pres,temp,alf,bet,fluido,fluidocol);
- double t1=temp+273.1;
+ double t1=temp+units::kZeroCelsiusInKelvin;
  double t2=(cpmis*t1-0.5*cmis*cmis)/cpmis;
  double aux1=x*rhol/((1-x)*rhog*pow(t2/t1,1/(k-1))+x*rhol);
  double rhomis2=(1-aux1)*rhol+aux1*rhog*pow(t2/t1,1/(k-1));
- double val=(pres*98066.5+cmis*cmis*(rhomis2-rhomis))/98066.5;
+ double val=(pres*units::kPascalPerKgfPerCm2+cmis*cmis*(rhomis2-rhomis))/units::kPascalPerKgfPerCm2;
  val/=pres;
  if(val<0.)val=0.;
 
@@ -112,8 +113,8 @@ double massica(double presEstag, double presGarg, const double temp, double alf,
  double rholE=(1-bet)*fluido.MasEspLiq(presEstag, temp)+bet*fluidocol.MasEspFlu(presEstag, temp);
  double Cpg=fluido.CalorGas(presEstag,temp);
  double razpres=presEstag/presGarg;
- double t1=(temp+273.1)*pow(razpres,(1-k)/k);
- t1-=273.1;
+ double t1=(temp+units::kZeroCelsiusInKelvin)*pow(razpres,(1-k)/k);
+ t1-=units::kZeroCelsiusInKelvin;
  if(t1<-50.)t1=-50.;
  double rholG=(1-bet)*fluido.MasEspLiq(presGarg, temp)+bet*fluidocol.MasEspFlu(presGarg, temp);
  double rhogG=fluido.MasEspGas(presGarg, t1);
@@ -122,7 +123,7 @@ double massica(double presEstag, double presGarg, const double temp, double alf,
  double rhomisG=(1-alfG)*rholG+alfG*rhogG;
  double val;
  double den=0.5*(1./(pow(areaG,2.)*rhomisG*rhomisG)-1./(pow(areaE,2.)*rhomisE*rhomisE));
- double num=x*Cpg*(temp+273.1)*(1-pow(razpres,(1-k)/k))+(1-x)*presGarg*98066.5*(razpres-1)/rholE;
+ double num=x*Cpg*(temp+units::kZeroCelsiusInKelvin)*(1-pow(razpres,(1-k)/k))+(1-x)*presGarg*units::kPascalPerKgfPerCm2*(razpres-1)/rholE;
  val=sqrt(fabs(num/den));
  return sinal*val;
 }
@@ -142,8 +143,8 @@ double MasMax(double presEstag, double presGarg, const double temp, double alf, 
  double k=fluido.ConstAdG(presEstag,temp);
  double rhol=(1-bet)*fluido.MasEspLiq(presEstag, temp)+bet*fluidocol.MasEspFlu(presEstag, temp);
  double razpres=presEstag/presGarg;
- double t1=(temp+273.1)*pow(razpres,(1-k)/k);
- t1-=273.1;
+ double t1=(temp+units::kZeroCelsiusInKelvin)*pow(razpres,(1-k)/k);
+ t1-=units::kZeroCelsiusInKelvin;
  if(t1<-50.)t1=-50.;
  double rhogG=fluido.MasEspGas(presGarg, t1);
  double alfG=rhol*x/(rhol*x+rhogG*(1-x));
@@ -151,7 +152,7 @@ double MasMax(double presEstag, double presGarg, const double temp, double alf, 
  rhol=(1-bet)*fluido.MasEspLiq(presGarg, temp)+bet*fluidocol.MasEspFlu(presGarg, temp);
  double rhomis=alfG*rhogG+(1-alfG)*rhol;
  double Rgas=fluido.retornaR();
- double vsh2=(rhomis/rhogG)*alfG/(k*Rgas*(t1+273.0))+(rhomis/rhol)*(1.-alfG)/pow(1400.,2.);
+ double vsh2=(rhomis/rhogG)*alfG/(k*Rgas*(t1+units::kZeroCelsiusInKelvin))+(rhomis/rhol)*(1.-alfG)/pow(1400.,2.);
  double vs=1/sqrt(vsh2);
  double maxmas=areaG*rhomis*vs;
 
@@ -169,7 +170,7 @@ double RPresH(const double pres, const double temp,const double alf,const double
     double masentrada=(rg1*Qg+rl1*Ql);
     double rmist=rl1*(1-alf)+rg1*alf;
     double delp=0.5*(1/rmist)*(1/pow(areaGarg,2.)-1/pow(areaTub,2.))*masentrada*masentrada;
-    double presEstag=presGarg+delp/98066.5;
+    double presEstag=presGarg+delp/units::kPascalPerKgfPerCm2;
 
 
 
@@ -187,7 +188,7 @@ double RPresHVap(const double pres, const double temp,const double alf,
     double masentrada=(rg1*Qg+rl1*Ql);
     double rmist=rl1*(1-alf)+rg1*alf;
     double delp=0.5*(1/rmist)*(1/pow(areaGarg,2.)-1/pow(areaTub,2.))*masentrada*masentrada;
-    double presEstag=presGarg+delp/98066.5;
+    double presEstag=presGarg+delp/units::kPascalPerKgfPerCm2;
 
       return presEstag/presGarg;
 }
@@ -201,7 +202,7 @@ double DPBocConH(const double pres, const double temp,const double alf,const dou
   double eps;
 
   eps=RP;
-  return pres*98066.5*(eps-1);
+  return pres*units::kPascalPerKgfPerCm2*(eps-1);
 }
 
 double DPBocConHVap(const double pres, const double temp,const double alf,
@@ -212,7 +213,7 @@ double DPBocConHVap(const double pres, const double temp,const double alf,
   double eps;
 
   eps=RP;
-  return pres*98066.5*(eps-1);
+  return pres*units::kPascalPerKgfPerCm2*(eps-1);
 }
 
 double DTBocConH(const double pres, const double temp,const double alf,const double bet,const double delp,
@@ -224,7 +225,7 @@ double DTBocConH(const double pres, const double temp,const double alf,const dou
  double eps=(pres+delp)/pres;
  double Cpg=fluido.CalorGas(pres,temp);
  double Cpl=fluido.CalorLiq(pres,temp);
- double dtg=(temp+273)*pow(eps,(k-1)/k)-(temp+273);
+ double dtg=(temp+units::kZeroCelsiusInKelvin)*pow(eps,(k-1)/k)-(temp+units::kZeroCelsiusInKelvin);
  return Cpg*x*dtg/(Cpg*x+Cpl*(1-x));
 }
 
@@ -358,7 +359,7 @@ double choke::vazmassSachd(double y, double presE, double tempE,double alf, doub
 	       double rm2=x*Vg2+(1-x)*Vl;
 	       rm2=1./rm2;
 
-	       G2= 2*presE*98066.5*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
+	       G2= 2*presE*units::kPascalPerKgfPerCm2*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
 	       G2=sqrt(G2);
 		}
 		else{
@@ -378,8 +379,8 @@ double choke::vazmassSachd(double y, double presE, double tempE,double alf, doub
 		       double rm2=xi*Vg2+(1-xi)*Vl;
 		       rm2=1./rm2;
 
-		       G2= 2*presE*98066.5*rm2*rm2*((1-xi)*(1-y)/rhol+xi*(k/(k-1.))*(Vg-y*Vg2));
-		       double GL= 2*presE*98066.5*rhol*rhol*((1-y)/rhol);
+		       G2= 2*presE*units::kPascalPerKgfPerCm2*rm2*rm2*((1-xi)*(1-y)/rhol+xi*(k/(k-1.))*(Vg-y*Vg2));
+		       double GL= 2*presE*units::kPascalPerKgfPerCm2*rhol*rhol*((1-y)/rhol);
 		       G2=(x/xi)*G2+((xmin-x)/xi)*GL;
 
 		       G2=sqrt(G2);
@@ -415,7 +416,7 @@ double choke::vazmaxSachd(double presE, double tempE,double alf, double bet,doub
     	 double rm2=x*Vg2+(1-x)*Vl;
     	 rm2=1./rm2;
 
-    	 G2= 2*presE*98066.5*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
+    	 G2= 2*presE*units::kPascalPerKgfPerCm2*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
 		 G2=sqrt(G2);
      }
      else{
@@ -438,8 +439,8 @@ double choke::vazmaxSachd(double presE, double tempE,double alf, double bet,doub
          double rm2=xi*Vg2+(1-xi)*Vl;
          rm2=1./rm2;
 
-         G2= 2*presE*98066.5*rm2*rm2*((1-xi)*(1-y)/rhol+xi*(k/(k-1.))*(Vg-y*Vg2));
-	     double GL= 2*presE*98066.5*rhol*rhol*((1-y)/rhol);
+         G2= 2*presE*units::kPascalPerKgfPerCm2*rm2*rm2*((1-xi)*(1-y)/rhol+xi*(k/(k-1.))*(Vg-y*Vg2));
+	     double GL= 2*presE*units::kPascalPerKgfPerCm2*rhol*rhol*((1-y)/rhol);
 	     G2=(x/xi)*G2+((xmin-x)/xi)*GL;
          G2=sqrt(G2);
      }
@@ -548,7 +549,7 @@ double choke::vazmassSachdVap(double y, double presE, double tempE,double alf,do
 	 double rm2=x*Vg2+(1-x)*Vl;
 	 rm2=1./rm2;
 
-	 G2= 2*presE*98600*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
+	 G2= 2*presE*units::kPascalPerKgfPerCm2*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
 	 G2=sqrt(G2);
 	 }
 	 else G2=0.;
@@ -575,7 +576,7 @@ double choke::vazmaxSachdVap(double presE, double tempE,double alf,double  x){
 	 double rm2=x*Vg2+(1-x)*Vl;
 	 rm2=1./rm2;
 
-	 double G2= 2*presE*98600*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
+	 double G2= 2*presE*units::kPascalPerKgfPerCm2*rm2*rm2*((1-x)*(1-y)/rhol+x*(k/(k-1.))*(Vg-y*Vg2));
 	 G2=sqrt(G2);
 	 return cdchk*G2*AreaGarg;
 }

@@ -55,8 +55,8 @@ When `tipoSimulacao == convecNatural`, `main()` in [`Num4Main.cpp`](https://gith
 ### Construction
 
 ```cpp
-varGlob1D vg1dConvec2D = varGlob1D();
-solv2D resolucao(nomeArquivoEntrada, nomeArquivoLog, &vg1dConvec2D);
+SimulationContext convectionContext = SimulationContext();
+solv2D resolucao(nomeArquivoEntrada, nomeArquivoLog, &convectionContext);
 ```
 
 The constructor:
@@ -78,7 +78,7 @@ The constructor:
 | `flucVF` | `ProFluColVF` | VOF/holdup fluid properties struct |
 | `corteVF` | `cortedutoVF` | Cross-section and layer definitions |
 | `matVF` | `materialVF*` | Array of material properties |
-| `vg1dSP` | `varGlob1D*` | Pointer to global variables (CFL, relaxation factors, gravity, angles) |
+| `simulationContext` | `SimulationContext*` | Pointer to global variables (CFL, relaxation factors, gravity, angles) |
 | `interface` | `detInterFace` | Interface tracking configuration |
 | `nPrime` | `int` | Number of PISO corrector steps |
 | `solverMat` | `int` | Linear solver selector (see Linear Solvers section) |
@@ -312,7 +312,7 @@ where $d_f = \overline{a_P^{-1}}$ is the average inverse momentum coefficient (`
 
 ### SIMPLE-based algorithm variants
 
-The solver implements a pressure-velocity coupling controlled by `metodoAcopPV` (stored in `varGlob1D`). Supported values are:
+The solver implements a pressure-velocity coupling controlled by `pressureVelocityCouplingMethod` (stored in `SimulationContext`). Supported values are:
 
 | `metodoAcopPV` | Variant | Description |
 |----------------|---------|----------|
@@ -410,7 +410,7 @@ When one-dimensional wall heat transfer is enabled, the 2D fluid domain is therm
 ### Activation
 
 Wall coupling is triggered when:
-- `vg1dSP->acop == 1` (activation flag in global parameters)
+- `simulationContext->thermalCouplingEnabled == 1` (activation flag in global parameters)
 - Boundary faces are labeled with the coupled thermal BC (matched against `CC.rotuloAcop`)
 
 ### Coupling mechanism

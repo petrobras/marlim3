@@ -6,16 +6,17 @@
  */
 
 #include "solver.h"
+#include "UnitConversions.h"
 
 void solv2D::parse_materiais(Value &material_json) {
     // obter o tamanho do elemento do Json
-    (*vg1dSP).nmaterialVF = material_json.Size();
+    (*simulationContext).finiteVolumeMaterialCount = material_json.Size();
     // caso o tamanho do elemento seja maior que zero
-    if ((*vg1dSP).nmaterialVF > 0) {
+    if ((*simulationContext).finiteVolumeMaterialCount > 0) {
         // vetor de materiais
-        matVF = new materialVF[(*vg1dSP).nmaterialVF];
+        matVF = new materialVF[(*simulationContext).finiteVolumeMaterialCount];
         // loop para carga do vetor do JSON
-        for (int i = 0; i < (*vg1dSP).nmaterialVF; i++) {
+        for (int i = 0; i < (*simulationContext).finiteVolumeMaterialCount; i++) {
 
             matVF[i].cond = 0;
             matVF[i].cp = 0;
@@ -174,7 +175,7 @@ void solv2D::parse_tempo(
     tempVF.tempoImp = 0;
     tempVF.parserieImp = 0;
     tempVF.confinado = 0;
-    tempVF.pRef = 1. * 98066.52;
+    tempVF.pRef = 1. * units::kPascalPerKgfPerCm2;
 
     tempVF.errP = 0.00001;
     tempVF.errV = 0.0001;
@@ -207,9 +208,9 @@ void solv2D::parse_tempo(
     if (tempo_json.HasMember("solverMat"))
         solverMat = tempo_json["solverMat"].GetInt();
 
-    (*vg1dSP).atrasaHR = 0;
+    (*simulationContext).deferredHighResolutionCorrection = 0;
     if (tempo_json.HasMember("implicitoHR"))
-        (*vg1dSP).atrasaHR = 1 - tempo_json["implicitoHR"].GetBool();
+        (*simulationContext).deferredHighResolutionCorrection = 1 - tempo_json["implicitoHR"].GetBool();
 
     acopD=0;
     if (tempo_json.HasMember("acopDirichlet"))
@@ -231,13 +232,13 @@ void solv2D::parse_tempo(
         tempVF.tendTemp = tempo_json["tendImpresTemp"].GetDouble();
 
     if (tempo_json.HasMember("acop"))
-        (*vg1dSP).acop = tempo_json["acop"].GetInt();
-    if ((*vg1dSP).acop == 1) {
-        (*vg1dSP).tAmb = tempo_json["tempAmbiente"].GetDouble();
-        (*vg1dSP).vAmb = tempo_json["velAmbiente"].GetDouble();
-        (*vg1dSP).amb = tempo_json["Ambiente"].GetInt();
-        (*vg1dSP).centroX = 0.; // tempo_json["centroX"].GetDouble();
-        (*vg1dSP).centroY = 0.; // tempo_json["centroY"].GetDouble();
+        (*simulationContext).thermalCouplingEnabled = tempo_json["acop"].GetInt();
+    if ((*simulationContext).thermalCouplingEnabled == 1) {
+        (*simulationContext).ambientTemperature = tempo_json["tempAmbiente"].GetDouble();
+        (*simulationContext).ambientVelocity = tempo_json["velAmbiente"].GetDouble();
+        (*simulationContext).ambientModel = tempo_json["Ambiente"].GetInt();
+        (*simulationContext).centerX = 0.; // tempo_json["centroX"].GetDouble();
+        (*simulationContext).centerY = 0.; // tempo_json["centroY"].GetDouble();
     }
 
     if (tempo_json.HasMember("errP"))
@@ -263,21 +264,21 @@ void solv2D::parse_tempo(
             tempo_json["maxIt"].GetInt();
 
     if (tempo_json.HasMember("acopPV"))
-        (*vg1dSP).metodoAcopPV =
+        (*simulationContext).pressureVelocityCouplingMethod =
             tempo_json["acopPV"].GetInt();
     if (tempo_json.HasMember("atrasaHR"))
-        (*vg1dSP).atrasaHR =
+        (*simulationContext).deferredHighResolutionCorrection =
             tempo_json["atrasaHR"].GetInt();
 
     if (tempo_json.HasMember("tmax"))
         tempVF.tmax =
             tempo_json["tmax"].GetDouble();
     if (tempo_json.HasMember("anguloY"))
-        (*vg1dSP).angY =
+        (*simulationContext).gravityAngleY =
             tempo_json["anguloY"].GetDouble();
     if (tempo_json.HasMember("confinado")) {
         tempVF.confinado = tempo_json["confinado"].GetInt();
-        tempVF.pRef = tempo_json["pressaoReferencia"].GetDouble() * 98066.52;
+        tempVF.pRef = tempo_json["pressaoReferencia"].GetDouble() * units::kPascalPerKgfPerCm2;
     }
     if (tempo_json.HasMember("perm"))
         tempVF.perm =
@@ -289,9 +290,9 @@ void solv2D::parse_tempo(
         tempVF.relax =
             tempo_json["relax"].GetDouble();
     if (tempo_json.HasMember("relaxExpli"))
-        (*vg1dSP).relaxVFExpli =
+        (*simulationContext).velocityCorrectionRelaxationFactor =
             tempo_json["relaxExpli"].GetDouble();
-    if ((*vg1dSP).metodoAcopPV == 2)
+    if ((*simulationContext).pressureVelocityCouplingMethod == 2)
         tempVF.relax = 1.;
     if (tempo_json.HasMember("relaxP"))
         tempVF.relaxP =
@@ -303,7 +304,7 @@ void solv2D::parse_tempo(
         tempVF.nvfHR =
             tempo_json["nvfHR"].GetInt();
     if (tempo_json.HasMember("nvfHRVOF"))
-        (*vg1dSP).nvfHRHol =
+        (*simulationContext).holdupAdvectionScheme =
             tempo_json["(*vg1dSP).nvfHRHol"].GetInt();
 
     if (tempo_json.HasMember("dtMax"))
@@ -336,28 +337,28 @@ void solv2D::parse_tempo(
     tempVF.tempoImp = new double[tempVF.parserieImp];
 
     if (tempo_json.HasMember("residuo"))
-        (*vg1dSP).tipoRes =
+        (*simulationContext).residualAggregationMode =
             tempo_json["residuo"].GetInt();
     for (int i = 0; i < tempVF.parserieImp; i++) {
         tempVF.tempoImp[i] = tempo_json["tempoImp"][i].GetDouble();
     }
 
     if (tempo_json.HasMember("CFL"))
-        (*vg1dSP).cflG =
+        (*simulationContext).targetCflNumber =
             tempo_json["CFL"].GetDouble();
 
     if (tempo_json.HasMember("corrigeDistorcao"))
-        (*vg1dSP).corrigeDistor = tempo_json["corrigeDistorcao"].GetDouble();
+        (*simulationContext).meshDistortionCorrectionFactor = tempo_json["corrigeDistorcao"].GetDouble();
 
     if (tempo_json.HasMember("forcaCorpoCompleta"))
-        (*vg1dSP).mulFC = tempo_json["forcaCorpoCompleta"].GetDouble();
+        (*simulationContext).bodyForceDensityFactor = tempo_json["forcaCorpoCompleta"].GetDouble();
 
     if (tempo_json.HasMember("VOF"))
-        (*vg1dSP).aplicaVOF = tempo_json["VOF"].GetInt();
+        (*simulationContext).volumeOfFluidEnabled = tempo_json["VOF"].GetInt();
     if (tempo_json.HasMember("corrForcCorp"))
-        (*vg1dSP).correcForcCorp = tempo_json["corrForcCorp"].GetInt();
+        (*simulationContext).bodyForceCorrectionMode = tempo_json["corrForcCorp"].GetInt();
     if (tempo_json.HasMember("nThread"))
-        (*vg1dSP).ntrd = tempo_json["nThread"].GetInt();
+        (*simulationContext).solverThreadCount = tempo_json["nThread"].GetInt();
 }
 
 void solv2D::parse_Prop(Value &prop_json) {
@@ -540,7 +541,7 @@ void solv2D::parse_CC(
             CC_json["VonNewman"].Size();
         CC.ccVN = new detVN[CC.nVN];
     }
-    if ((*vg1dSP).acop == 1) {
+    if ((*simulationContext).thermalCouplingEnabled == 1) {
         CC.rotuloAcop = CC_json["acoplamento"].GetInt();
     }
 
@@ -582,7 +583,7 @@ void solv2D::parse_CC(
         CC.ccPres[i].val = new double[CC.ccPres[i].nserie];
         for (int j = 0; j < CC.ccPres[i].nserie; j++) {
             CC.ccPres[i].tempo[j] = CC_json["Outlet"][i]["tempo"][j].GetDouble();
-            CC.ccPres[i].val[j] = CC_json["Outlet"][i]["pres"][j].GetDouble() * 98066.52;
+            CC.ccPres[i].val[j] = CC_json["Outlet"][i]["pres"][j].GetDouble() * units::kPascalPerKgfPerCm2;
         }
     }
 
@@ -1286,9 +1287,9 @@ void solv2D::iniciaProp(malha2dVF &malha) {
 void solv2D::indrazT(int &ind, double &raz) {
     for (int i = 0; i <= tempVF.parserie - 1; i++) {
         if (i < tempVF.parserie - 1) {
-            if ((*vg1dSP).tempo >= tempVF.tempoDT[i] && (*vg1dSP).tempo < tempVF.tempoDT[i + 1]) {
+            if ((*simulationContext).solverTime >= tempVF.tempoDT[i] && (*simulationContext).solverTime < tempVF.tempoDT[i + 1]) {
                 ind = i;
-                raz = 1 - ((*vg1dSP).tempo - tempVF.tempoDT[i]) / (tempVF.tempoDT[i + 1] - tempVF.tempoDT[i]);
+                raz = 1 - ((*simulationContext).solverTime - tempVF.tempoDT[i]) / (tempVF.tempoDT[i + 1] - tempVF.tempoDT[i]);
                 break;
             }
         } else if (i == tempVF.parserie - 1) {
@@ -1299,43 +1300,43 @@ void solv2D::indrazT(int &ind, double &raz) {
 }
 
 void solv2D::malhaRegular(double &dx, double &dy, malha2dVF &malha) {
-    (*vg1dSP).xmin = malha.mlh2d[0].cel2D.centroideElem[0];
-    (*vg1dSP).xmax = malha.mlh2d[0].cel2D.centroideElem[0];
-    (*vg1dSP).ymin = malha.mlh2d[0].cel2D.centroideElem[1];
-    (*vg1dSP).ymax = malha.mlh2d[0].cel2D.centroideElem[1];
+    (*simulationContext).xmin = malha.mlh2d[0].cel2D.centroideElem[0];
+    (*simulationContext).xmax = malha.mlh2d[0].cel2D.centroideElem[0];
+    (*simulationContext).ymin = malha.mlh2d[0].cel2D.centroideElem[1];
+    (*simulationContext).ymax = malha.mlh2d[0].cel2D.centroideElem[1];
     int nvert = 3;
     for (int i = 1; i < malha.nele; i++) {
         for (int k = 0; k < nvert; k++) {
-            if (malha.mlh2d[i].cel2D.coordVert[k][0] < (*vg1dSP).xmin)
-                (*vg1dSP).xmin = malha.mlh2d[i].cel2D.coordVert[k][0];
-            if (malha.mlh2d[i].cel2D.coordVert[k][0] > (*vg1dSP).xmax)
-                (*vg1dSP).xmax = malha.mlh2d[i].cel2D.coordVert[k][0];
-            if (malha.mlh2d[i].cel2D.coordVert[k][1] < (*vg1dSP).ymin)
-                (*vg1dSP).ymin = malha.mlh2d[i].cel2D.coordVert[k][1];
-            if (malha.mlh2d[i].cel2D.coordVert[k][1] > (*vg1dSP).ymax)
-                (*vg1dSP).ymax = malha.mlh2d[i].cel2D.coordVert[k][1];
+            if (malha.mlh2d[i].cel2D.coordVert[k][0] < (*simulationContext).xmin)
+                (*simulationContext).xmin = malha.mlh2d[i].cel2D.coordVert[k][0];
+            if (malha.mlh2d[i].cel2D.coordVert[k][0] > (*simulationContext).xmax)
+                (*simulationContext).xmax = malha.mlh2d[i].cel2D.coordVert[k][0];
+            if (malha.mlh2d[i].cel2D.coordVert[k][1] < (*simulationContext).ymin)
+                (*simulationContext).ymin = malha.mlh2d[i].cel2D.coordVert[k][1];
+            if (malha.mlh2d[i].cel2D.coordVert[k][1] > (*simulationContext).ymax)
+                (*simulationContext).ymax = malha.mlh2d[i].cel2D.coordVert[k][1];
         }
     }
-    (*vg1dSP).nxMH = floor(((*vg1dSP).xmax - (*vg1dSP).xmin) / dx);
-    (*vg1dSP).nyMH = floor(((*vg1dSP).ymax - (*vg1dSP).ymin) / dy);
-    malhaH = new detMalhaHom *[(*vg1dSP).nxMH];
-    for (int i = 0; i < (*vg1dSP).nxMH; i++)
-        malhaH[i] = new detMalhaHom[(*vg1dSP).nyMH];
-    for (int i = 0; i < (*vg1dSP).nxMH; i++)
-        for (int j = 0; j < (*vg1dSP).nyMH; j++)
+    (*simulationContext).regularGridCellCountX = floor(((*simulationContext).xmax - (*simulationContext).xmin) / dx);
+    (*simulationContext).regularGridCellCountY = floor(((*simulationContext).ymax - (*simulationContext).ymin) / dy);
+    malhaH = new detMalhaHom *[(*simulationContext).regularGridCellCountX];
+    for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++)
+        malhaH[i] = new detMalhaHom[(*simulationContext).regularGridCellCountY];
+    for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++)
+        for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++)
             malhaH[i][j].buraco = 1;
-    dx = ((*vg1dSP).xmax - (*vg1dSP).xmin) / (*vg1dSP).nxMH;
-    dy = ((*vg1dSP).ymax - (*vg1dSP).ymin) / (*vg1dSP).nyMH;
-    double xcoor = (*vg1dSP).xmin;
-    double ycoor = (*vg1dSP).ymin;
+    dx = ((*simulationContext).xmax - (*simulationContext).xmin) / (*simulationContext).regularGridCellCountX;
+    dy = ((*simulationContext).ymax - (*simulationContext).ymin) / (*simulationContext).regularGridCellCountY;
+    double xcoor = (*simulationContext).xmin;
+    double ycoor = (*simulationContext).ymin;
     int interior = -1;
     int iele = 0;
     double ylim[nvert];
     double xlim[nvert];
-    ////#pragma omp parallel for num_threads((*vg1dSP).ntrd)
-    for (int ix = 0; ix < (*vg1dSP).nxMH; ix++) {
-        ycoor = (*vg1dSP).ymin;
-        for (int iy = 0; iy < (*vg1dSP).nyMH; iy++) {
+    ////#pragma omp parallel for num_threads((*simulationContext).ntrd)
+    for (int ix = 0; ix < (*simulationContext).regularGridCellCountX; ix++) {
+        ycoor = (*simulationContext).ymin;
+        for (int iy = 0; iy < (*simulationContext).regularGridCellCountY; iy++) {
             iele = 0;
             interior = -1;
             while (interior == -1 && iele < malha.nele) {
@@ -1408,21 +1409,21 @@ void solv2D::malhaRegular(double &dx, double &dy, malha2dVF &malha) {
 }
 
 void solv2D::imprimeMalhaRegular(malha2dVF &malha, int var) {
-    FullMtx<double> flut((*vg1dSP).nxMH, (*vg1dSP).nyMH);
-    int numero = round((*vg1dSP).tempo);
-    double ymaxWall = malha.mlh2d[(*vg1dSP).eleYmaxWall].cel2D.centroideElem[1];
+    FullMtx<double> flut((*simulationContext).regularGridCellCountX, (*simulationContext).regularGridCellCountY);
+    int numero = round((*simulationContext).solverTime);
+    double ymaxWall = malha.mlh2d[(*simulationContext).maxYCellIndex].cel2D.centroideElem[1];
     if (var == 1) {
 #pragma omp parallel for num_threads(nthrdLocal)
-        for (int i = 0; i < (*vg1dSP).nxMH; i++) {
-            for (int j = 0; j < (*vg1dSP).nyMH; j++) {
+        for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++) {
+            for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++) {
                 if (malhaH[i][j].buraco == 0) {
                     double dh = ymaxWall - malhaH[i][j].ycoor;
-                    double forcaCorpo = dh * (malha.mlh2d[malhaH[i][j].indEle].cel2D.rho) * (*vg1dSP).gravVF * sin((*vg1dSP).angY);
+                    double forcaCorpo = dh * (malha.mlh2d[malhaH[i][j].indEle].cel2D.rho) * (*simulationContext).gravitationalAcceleration * sin((*simulationContext).gravityAngleY);
                     flut[i][j] = (malha.mlh2d[malhaH[i][j].indEle].cel2D.presC +
                                   0 * malhaH[i][j].delx * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenPres[0] +
                                   0 * malhaH[i][j].dely * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenPres[1] +
-                                  (1. - (*vg1dSP).mulFC) * forcaCorpo) /
-                                 98066.52;
+                                  (1. - (*simulationContext).bodyForceDensityFactor) * forcaCorpo) /
+                                 units::kPascalPerKgfPerCm2;
                 } else
                     flut[i][j] = 0.;
             }
@@ -1436,8 +1437,8 @@ void solv2D::imprimeMalhaRegular(malha2dVF &malha, int var) {
         escreveIni.close();
     } else if (var == 2) {
 #pragma omp parallel for num_threads(nthrdLocal)
-        for (int i = 0; i < (*vg1dSP).nxMH; i++) {
-            for (int j = 0; j < (*vg1dSP).nyMH; j++) {
+        for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++) {
+            for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++) {
                 if (malhaH[i][j].buraco == 0) {
                     flut[i][j] = malha.mlh2d[malhaH[i][j].indEle].cel2D.uC +
                                  0 * malhaH[i][j].delx * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenU[0] +
@@ -1455,8 +1456,8 @@ void solv2D::imprimeMalhaRegular(malha2dVF &malha, int var) {
         escreveIni.close();
     } else if (var == 3) {
 #pragma omp parallel for num_threads(nthrdLocal)
-        for (int i = 0; i < (*vg1dSP).nxMH; i++) {
-            for (int j = 0; j < (*vg1dSP).nyMH; j++) {
+        for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++) {
+            for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++) {
                 if (malhaH[i][j].buraco == 0) {
                     flut[i][j] = malha.mlh2d[malhaH[i][j].indEle].cel2D.vC +
                                  0 * malhaH[i][j].delx * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenV[0] +
@@ -1474,8 +1475,8 @@ void solv2D::imprimeMalhaRegular(malha2dVF &malha, int var) {
         escreveIni.close();
     } else if (var == 4) {
 #pragma omp parallel for num_threads(nthrdLocal)
-        for (int i = 0; i < (*vg1dSP).nxMH; i++) {
-            for (int j = 0; j < (*vg1dSP).nyMH; j++) {
+        for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++) {
+            for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++) {
                 if (malhaH[i][j].buraco == 0) {
                     flut[i][j] = malha.mlh2d[malhaH[i][j].indEle].cel2D.tempC +
                                  0 * malhaH[i][j].delx * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenTemp[0] +
@@ -1493,8 +1494,8 @@ void solv2D::imprimeMalhaRegular(malha2dVF &malha, int var) {
         escreveIni.close();
     } else if (var == 5) {
 #pragma omp parallel for num_threads(nthrdLocal)
-        for (int i = 0; i < (*vg1dSP).nxMH; i++) {
-            for (int j = 0; j < (*vg1dSP).nyMH; j++) {
+        for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++) {
+            for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++) {
                 if (malhaH[i][j].buraco == 0) {
                     double utemp = malha.mlh2d[malhaH[i][j].indEle].cel2D.uC +
                                    0 * malhaH[i][j].delx * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenU[0] +
@@ -1516,8 +1517,8 @@ void solv2D::imprimeMalhaRegular(malha2dVF &malha, int var) {
         escreveIni.close();
     } else if (var == 6) {
 #pragma omp parallel for num_threads(nthrdLocal)
-        for (int i = 0; i < (*vg1dSP).nxMH; i++) {
-            for (int j = 0; j < (*vg1dSP).nyMH; j++) {
+        for (int i = 0; i < (*simulationContext).regularGridCellCountX; i++) {
+            for (int j = 0; j < (*simulationContext).regularGridCellCountY; j++) {
                 if (malhaH[i][j].buraco == 0) {
                     flut[i][j] = malha.mlh2d[malhaH[i][j].indEle].cel2D.holC +
                                  0 * malhaH[i][j].delx * malha.mlh2d[malhaH[i][j].indEle].cel2D.gradGreenHol[0] +
@@ -1562,11 +1563,11 @@ double solv2D::tempMed(malha2dVF &malha) {
 #pragma omp parallel for reduction(+ : varTemp, varCapTerm) num_threads(nthrdLocal)
     for (int i = 1; i < malha.nele; i++) {
         double capLocal = malha.mlh2d[i].cel2D.rho * malha.mlh2d[i].cel2D.cp * malha.mlh2d[i].cel2D.vElem;
-        varTemp += capLocal * (malha.mlh2d[i].cel2D.tempC + 273.16);
+        varTemp += capLocal * (malha.mlh2d[i].cel2D.tempC + units::kZeroCelsiusInKelvin);
         varCapTerm += capLocal;
     }
 
-    return varTemp / varCapTerm - 273.16;
+    return varTemp / varCapTerm - units::kZeroCelsiusInKelvin;
 }
 double solv2D::viscMed(malha2dVF &malha) {
     double varTemp = 0.;
@@ -1688,6 +1689,9 @@ void solv2D::resolve() {
     string polyarq;
 
     FILE *fp = fopen(nomeArquivoEntrada.c_str(), "r");
+    if (!fp)
+        logger.log_write_logs_and_exit(LOGGER_FALHA, LOG_ERR_UNEXPECTED_EXCEPTION, "", "",
+                                       "Arquivo de entrada inexistente");
     char readBuffer[125536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));
     Document elementoRaiz;
@@ -1709,7 +1713,7 @@ void solv2D::resolve() {
     parse_CI(elementoRaiz["CI"]);
     if (elementoRaiz.HasMember("interface") && prop.parserie > 1) {
         parse_Interface(elementoRaiz["interface"]);
-        (*vg1dSP).temInterface = 1;
+        (*simulationContext).hasPhaseInterface = 1;
     } else {
         interface.nserie = 0;
         interface.xcoor = 0;
@@ -1723,32 +1727,32 @@ void solv2D::resolve() {
         mapprop.interno = 0;
         mapprop.inferior = 0;
     }
-    (*vg1dSP).iliq = 0;
-    (*vg1dSP).igas = 1;
-    if ((*vg1dSP).temInterface == 1 && prop.rho[0] < prop.rho[1]) {
-        (*vg1dSP).iliq = 1;
-        (*vg1dSP).igas = 0;
-    } else if ((*vg1dSP).temInterface == 0) {
-        (*vg1dSP).iliq = 0;
-        (*vg1dSP).igas = 0;
+    (*simulationContext).liquidPhaseIndex = 0;
+    (*simulationContext).gasPhaseIndex = 1;
+    if ((*simulationContext).hasPhaseInterface == 1 && prop.rho[0] < prop.rho[1]) {
+        (*simulationContext).liquidPhaseIndex = 1;
+        (*simulationContext).gasPhaseIndex = 0;
+    } else if ((*simulationContext).hasPhaseInterface == 0) {
+        (*simulationContext).liquidPhaseIndex = 0;
+        (*simulationContext).gasPhaseIndex = 0;
     }
     int viscVar = 0;
     if (elementoRaiz.HasMember("fluido")) {
         viscVar = 1;
         parse_fluido_complementar(elementoRaiz["fluido"]);
     }
-    flucVF.cond = prop.cond[(*vg1dSP).iliq];
-    flucVF.cp = prop.cp[(*vg1dSP).iliq];
-    flucVF.rholStd = prop.rho[(*vg1dSP).iliq];
-    flucVF.compresT = prop.beta[(*vg1dSP).iliq];
-    if ((*vg1dSP).temInterface == 1) {
-        flucVF.rhog = prop.rho[(*vg1dSP).igas];
+    flucVF.cond = prop.cond[(*simulationContext).liquidPhaseIndex];
+    flucVF.cp = prop.cp[(*simulationContext).liquidPhaseIndex];
+    flucVF.rholStd = prop.rho[(*simulationContext).liquidPhaseIndex];
+    flucVF.compresT = prop.beta[(*simulationContext).liquidPhaseIndex];
+    if ((*simulationContext).hasPhaseInterface == 1) {
+        flucVF.rhog = prop.rho[(*simulationContext).gasPhaseIndex];
     }
     double fluxcal = 0.;
     DadosGeo dutosMRT;
     TransCal transfer;
     TransCal transfer2;
-    if ((*vg1dSP).acop == 1) {
+    if ((*simulationContext).thermalCouplingEnabled == 1) {
         parse_materiais(elementoRaiz["material"]);
         parse_corte(elementoRaiz["secaoTransversal"]);
         int cam = corteVF.ncam;
@@ -1833,21 +1837,21 @@ void solv2D::resolve() {
                 visci = flucVF.VisFlu(pInt, tInt, taxaDef) / 1000.;
             }
         } else
-            visci = prop.visc[(*vg1dSP).iliq];
-        if ((*vg1dSP).temInterface == 1) {
+            visci = prop.visc[(*simulationContext).liquidPhaseIndex];
+        if ((*simulationContext).hasPhaseInterface == 1) {
             if (viscVar == 1) {
                 double visciG = flucVF.VisGas(pInt, tInt) / 1000.;
-                prop.visc[(*vg1dSP).igas] = visciG;
+                prop.visc[(*simulationContext).gasPhaseIndex] = visciG;
             }
         }
 
-        transfer = TransCal(vg1dSP, dutosMRT, perm, vncamada, vdrcamada, vTcamada,
-                            tInt, (*vg1dSP).tAmb, 0., velPreParada, (*vg1dSP).vAmb, 0, 1, ki, cpi, rhoi, visci, 0.,
-                            0., 0., 0., 0, (*vg1dSP).amb, 0,
+        transfer = TransCal(simulationContext, dutosMRT, perm, vncamada, vdrcamada, vTcamada,
+                            tInt, (*simulationContext).ambientTemperature, 0., velPreParada, (*simulationContext).ambientVelocity, 0, 1, ki, cpi, rhoi, visci, 0.,
+                            0., 0., 0., 0, (*simulationContext).ambientModel, 0,
                             0., 0., 0., 1.);
-        transfer2 = TransCal(vg1dSP, dutosMRT, perm, vncamada, vdrcamada, vTcamada,
-                             tInt, (*vg1dSP).tAmb, 0., velPreParada, (*vg1dSP).vAmb, 0, 1, ki, cpi, rhoi, visci, 0.,
-                             0., 0., 0., 0, (*vg1dSP).amb, 0,
+        transfer2 = TransCal(simulationContext, dutosMRT, perm, vncamada, vdrcamada, vTcamada,
+                             tInt, (*simulationContext).ambientTemperature, 0., velPreParada, (*simulationContext).ambientVelocity, 0, 1, ki, cpi, rhoi, visci, 0.,
+                             0., 0., 0., 0, (*simulationContext).ambientModel, 0,
                              0., 0., 0., 1.);
         transfer.condiTparede = 0;
         transfer2.condiTparede = 0;
@@ -2175,19 +2179,19 @@ void solv2D::resolve() {
         lendoUNV.close();
     }
 
-    (*vg1dSP).tempo = 0.;
+    (*simulationContext).solverTime = 0.;
     double holdupGlob = 0.;
     double areaTotal = 0.;
-    malha2dVF malha(xcoor, noEle, tipo, atributo, nvert, nele, nno, tempVF.dtmax[0], tempVF.perm, tempVF.trans, vg1dSP, flucVF,acopD);
+    malha2dVF malha(xcoor, noEle, tipo, atributo, nvert, nele, nno, tempVF.dtmax[0], tempVF.perm, tempVF.trans, simulationContext, flucVF,acopD);
     int confinado = tempVF.confinado;
     double yMaxWall = -10000000.;
     for (int i = 0; i < malha.nele; i++) {
         if (malha.mlh2d[i].cel2D.centroideElem[1] >= yMaxWall) {
             yMaxWall = malha.mlh2d[i].cel2D.centroideElem[1];
-            (*vg1dSP).eleYmaxWall = i;
+            (*simulationContext).maxYCellIndex = i;
         }
     }
-    if ((*vg1dSP).temInterface == 1) {
+    if ((*simulationContext).hasPhaseInterface == 1) {
         iniciaProp(malha);
         for (int i = 0; i < malha.nele; i++) {
             holdupGlob += malha.mlh2d[i].cel2D.holC * malha.mlh2d[i].cel2D.vElem;
@@ -2195,11 +2199,11 @@ void solv2D::resolve() {
         }
         holdupGlob /= areaTotal;
 
-        transfer2.kint = transfer.kint = holdupGlob * prop.cond[(*vg1dSP).iliq] + (1. - holdupGlob) * prop.cond[(*vg1dSP).igas];
-        transfer2.cpint = transfer.cpint = holdupGlob * prop.cp[(*vg1dSP).iliq] + (1. - holdupGlob) * prop.cp[(*vg1dSP).igas];
-        transfer2.rhoint = transfer.rhoint = holdupGlob * prop.rho[(*vg1dSP).iliq] + (1. - holdupGlob) * prop.rho[(*vg1dSP).igas];
-        transfer2.viscint = transfer.viscint = holdupGlob * prop.visc[(*vg1dSP).iliq] + (1. - holdupGlob) * prop.visc[(*vg1dSP).igas];
-        transfer2.betint = transfer.betint = holdupGlob * prop.beta[(*vg1dSP).iliq] + (1. - holdupGlob) * prop.beta[(*vg1dSP).igas];
+        transfer2.kint = transfer.kint = holdupGlob * prop.cond[(*simulationContext).liquidPhaseIndex] + (1. - holdupGlob) * prop.cond[(*simulationContext).gasPhaseIndex];
+        transfer2.cpint = transfer.cpint = holdupGlob * prop.cp[(*simulationContext).liquidPhaseIndex] + (1. - holdupGlob) * prop.cp[(*simulationContext).gasPhaseIndex];
+        transfer2.rhoint = transfer.rhoint = holdupGlob * prop.rho[(*simulationContext).liquidPhaseIndex] + (1. - holdupGlob) * prop.rho[(*simulationContext).gasPhaseIndex];
+        transfer2.viscint = transfer.viscint = holdupGlob * prop.visc[(*simulationContext).liquidPhaseIndex] + (1. - holdupGlob) * prop.visc[(*simulationContext).gasPhaseIndex];
+        transfer2.betint = transfer.betint = holdupGlob * prop.beta[(*simulationContext).liquidPhaseIndex] + (1. - holdupGlob) * prop.beta[(*simulationContext).gasPhaseIndex];
 
     } else {
         for (int iEle = 0; iEle < malha.nele; iEle++) {
@@ -2217,7 +2221,7 @@ void solv2D::resolve() {
             double xc = malha.mlh2d[i].cel2D.centroideElem[0];
             double yc = malha.mlh2d[i].cel2D.centroideElem[1];
             if ((xc <= CI.xmax[j] && xc >= CI.xmin[j]) && (yc <= CI.ymax[j] && yc >= CI.ymin[j])) {
-                if ((*vg1dSP).acop == 0) {
+                if ((*simulationContext).thermalCouplingEnabled == 0) {
                     malha.mlh2d[i].cel2D.tempC = CI.temp[j];
                     malha.mlh2d[i].cel2D.tempCI = CI.temp[j];
                     malha.mlh2d[i].cel2D.tempC0 = CI.temp[j];
@@ -2233,9 +2237,9 @@ void solv2D::resolve() {
                 malha.mlh2d[i].cel2D.vCI = CI.valV[j];
                 malha.mlh2d[i].cel2D.vC0 = CI.valV[j];
                 double dh = yMaxWall - malha.mlh2d[i].cel2D.centroideElem[1];
-                double forcaCorpo = dh * (*vg1dSP).gravVF * sin((*vg1dSP).angY) *
-                                    malha.mlh2d[i].cel2D.rho * ((*vg1dSP).mulFC - 1. * malha.mlh2d[i].cel2D.beta * (malha.mlh2d[i].cel2D.tempC - malha.mlh2d[i].cel2D.tempRef));
-                malha.mlh2d[i].cel2D.presC = CI.pres[j] * 98066.52 + forcaCorpo;
+                double forcaCorpo = dh * (*simulationContext).gravitationalAcceleration * sin((*simulationContext).gravityAngleY) *
+                                    malha.mlh2d[i].cel2D.rho * ((*simulationContext).bodyForceDensityFactor - 1. * malha.mlh2d[i].cel2D.beta * (malha.mlh2d[i].cel2D.tempC - malha.mlh2d[i].cel2D.tempRef));
+                malha.mlh2d[i].cel2D.presC = CI.pres[j] * units::kPascalPerKgfPerCm2 + forcaCorpo;
                 malha.mlh2d[i].cel2D.presCI = malha.mlh2d[i].cel2D.presC;
                 malha.mlh2d[i].cel2D.presC0 = malha.mlh2d[i].cel2D.presC;
                 break;
@@ -2247,7 +2251,7 @@ void solv2D::resolve() {
                 malha.mlh2d[i].atualizaCCTemp(j);
             }
         }
-        if ((*vg1dSP).acop == 1) {
+        if ((*simulationContext).thermalCouplingEnabled == 1) {
             for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
                 if (malha.mlh2d[i].kvizinho[j] < 0) {
                     int kcc = 0;
@@ -2370,9 +2374,9 @@ void solv2D::resolve() {
     int iterV;
     int iterU;
     int retorna;
-    (*vg1dSP).relaxVF = tempVF.relax;
-    (*vg1dSP).relaxVFPcor = tempVF.relaxP;
-    (*vg1dSP).nvfHR = tempVF.nvfHR;
+    (*simulationContext).finiteVolumeRelaxationFactor = tempVF.relax;
+    (*simulationContext).pressureCorrectionRelaxationFactor = tempVF.relaxP;
+    (*simulationContext).highResolutionScheme = tempVF.nvfHR;
 
     for (int i = 0; i < malha.nele; i++) {
         for (int face = 0; face < malha.mlh2d[i].cel2D.nvert; face++) {
@@ -2385,7 +2389,7 @@ void solv2D::resolve() {
                 malha.mlh2d[i].vRC0[face] = malha.mlh2d[i].vRC[face];
                 malha.mlh2d[i].tempF[face] = malha.mlh2d[i].cel2D.fatG[face] * malha.mlh2d[i].cel2D.tempC +
                                              (1 - malha.mlh2d[i].cel2D.fatG[face]) * (*malha.mlh2d[i].vizinho[face]).tempC;
-                if ((*vg1dSP).temInterface == 1) {
+                if ((*simulationContext).hasPhaseInterface == 1) {
                     if (malha.mlh2d[i].cel2D.holC == (*malha.mlh2d[i].vizinho[face]).holC)
                         malha.mlh2d[i].holF[face] = malha.mlh2d[i].cel2D.holC;
                     else if ((*malha.mlh2d[i].vizinho[face]).holC > 1. - 1e-15 || (*malha.mlh2d[i].vizinho[face]).holC < 1e-15) {
@@ -2417,7 +2421,7 @@ void solv2D::resolve() {
         malha.mlh2d[i].calcGradGreenTemp(1);
         malha.mlh2d[i].calcGradGreenHol(1);
         malha.mlh2d[i].calcForcCorp();
-        malha.mlh2d[i].vazMass((*vg1dSP).relaxVF);
+        malha.mlh2d[i].vazMass((*simulationContext).finiteVolumeRelaxationFactor);
         malha.mlh2d[i].calcGradGreenPresCor();
     }
 
@@ -2437,7 +2441,7 @@ void solv2D::resolve() {
     saidaTempMed << pathPrefixoArqSaida << "tempMed2D" << ".dat";
     string tmp = saidaTempMed.str();
     double resetTrend = 0.;
-    if ((*vg1dSP).acop == 1) {
+    if ((*simulationContext).thermalCouplingEnabled == 1) {
         tempMedPar = transfer.Tint;
         ofstream escreveIni(tmp.c_str(), ios_base::out);
         escreveIni << "tempo (s)  ;  " << "temperatura media (C)  ;  " << " temperatura media parede  " << "temperatura media (C)1D  ;  " << " temperatura media parede 1D  ; " << "fluxo de calor medio (J/(s.m2)  ;  " << "viscodiadade media (Pa.s)  ;  " << "taxa de deformação media (1/s)  ;  " << "velocidade media (C)  ;  " << endl;
@@ -2451,7 +2455,7 @@ void solv2D::resolve() {
     TransCal *vecTransfer = nullptr;
     TransCal *vecTransferBuffer = nullptr;
     double *vecFluxcal = nullptr;
-    if ((*vg1dSP).acop == 1) {
+    if ((*simulationContext).thermalCouplingEnabled == 1) {
         paredeContorno(malha, indPar, indPar2, nPar);
         vecTransfer = new TransCal[nPar];
         vecTransferBuffer = new TransCal[nPar];
@@ -2470,7 +2474,7 @@ void solv2D::resolve() {
     double deltCFL;
     double fluxCalMed = 0.;
     double tInicial=transfer.Tint;
-    while ((*vg1dSP).tempo <= tempVF.tmax) {
+    while ((*simulationContext).solverTime <= tempVF.tmax) {
         int multEps = 1.0;
         chrono::steady_clock::time_point begin, end;
         begin = chrono::steady_clock::now();
@@ -2484,7 +2488,7 @@ void solv2D::resolve() {
             contaCicloSeg = -1;
         }
         velmax = 0.;
-        (*vg1dSP).reiniciaVF = 0;
+        (*simulationContext).finiteVolumeRestartRequested = 0;
         indrazT(ind, raz);
         double inf = tempVF.dtmax[ind];
         double sup;
@@ -2497,7 +2501,7 @@ void solv2D::resolve() {
             delt /= (dtSegur);
         deltCFL = 100000.;
         for (int i = 0; i < malha.nele; i++) {
-            if ((*vg1dSP).temInterface == 1 && (*vg1dSP).aplicaVOF == 1) {
+            if ((*simulationContext).hasPhaseInterface == 1 && (*simulationContext).volumeOfFluidEnabled == 1) {
                 double vazespecif = 0.;
                 for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
                     double vXS = malha.mlh2d[i].massF[j];
@@ -2518,11 +2522,11 @@ void solv2D::resolve() {
                             mono = 0;
                     }
                 }
-                if (mono == 0 && testeCFL > (*vg1dSP).cflG && fabs(vazespecif) > 1e-15)
-                    delt = (*vg1dSP).cflG / vazespecif;
+                if (mono == 0 && testeCFL > (*simulationContext).targetCflNumber && fabs(vazespecif) > 1e-15)
+                    delt = (*simulationContext).targetCflNumber / vazespecif;
             } else {
                 malha.mlh2d[i].dt = delt;
-                malha.mlh2d[i].CFLC = (*vg1dSP).cflG;
+                malha.mlh2d[i].CFLC = (*simulationContext).targetCflNumber;
 
                 double vazespecif = 0.;
                 for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
@@ -2532,15 +2536,15 @@ void solv2D::resolve() {
                     vazespecif += vXS;
                 }
                 vazespecif /= (malha.mlh2d[i].cel2D.vElem * malha.mlh2d[i].cel2D.rho);
-                if ((*vg1dSP).cflG / vazespecif < deltCFL)
-                    deltCFL = (*vg1dSP).cflG / vazespecif;
+                if ((*simulationContext).targetCflNumber / vazespecif < deltCFL)
+                    deltCFL = (*simulationContext).targetCflNumber / vazespecif;
                 for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
                     malha.mlh2d[i].dtCFL[j] = malha.mlh2d[i].dt;
-                    malha.mlh2d[i].CFL[j] = (*vg1dSP).cflG;
+                    malha.mlh2d[i].CFL[j] = (*simulationContext).targetCflNumber;
                 }
             }
         }
-        if ((*vg1dSP).temInterface == 0 && (*vg1dSP).aplicaVOF == 0) {
+        if ((*simulationContext).hasPhaseInterface == 0 && (*simulationContext).volumeOfFluidEnabled == 0) {
             if (delt > deltCFL)
                 delt = deltCFL;
             for (int i = 0; i < malha.nele; i++) {
@@ -2550,7 +2554,7 @@ void solv2D::resolve() {
                 }
             }
         }
-        if ((*vg1dSP).temInterface == 1 && (*vg1dSP).aplicaVOF == 1) {
+        if ((*simulationContext).hasPhaseInterface == 1 && (*simulationContext).volumeOfFluidEnabled == 1) {
             for (int i = 0; i < malha.nele; i++) {
                 malha.mlh2d[i].dt = delt;
                 double vazespecif = 0.;
@@ -2567,7 +2571,7 @@ void solv2D::resolve() {
             }
             for (int i = 0; i < malha.nele; i++)
                 malha.mlh2d[i].explicitHol();
-            if ((*vg1dSP).reiniciaVF == 1) {
+            if ((*simulationContext).finiteVolumeRestartRequested == 1) {
                 int menori = 0;
                 double menorDt = malha.mlh2d[menori].dt;
                 for (int i = 0; i < malha.nele; i++) {
@@ -2594,29 +2598,29 @@ void solv2D::resolve() {
                 for (int i = 0; i < malha.nele; i++)
                     malha.mlh2d[i].explicitHol();
             }
-            if ((*vg1dSP).temInterface == 1) {
+            if ((*simulationContext).hasPhaseInterface == 1) {
                 for (int i = 0; i < malha.nele; i++) {
                     if (fabs(malha.mlh2d[i].cel2D.holC0 - malha.mlh2d[i].cel2D.holC) > 1e-15) {
-                        malha.mlh2d[i].cel2D.rho = malha.mlh2d[i].cel2D.holC * prop.rho[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.rho[(*vg1dSP).igas];
-                        if ((*vg1dSP).acop == 0 || viscVar == 0)
-                            malha.mlh2d[i].cel2D.visc = malha.mlh2d[i].cel2D.holC * prop.visc[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.visc[(*vg1dSP).igas];
-                        malha.mlh2d[i].cel2D.beta = malha.mlh2d[i].cel2D.holC * prop.beta[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.beta[(*vg1dSP).igas];
-                        malha.mlh2d[i].cel2D.cond = malha.mlh2d[i].cel2D.holC * prop.cond[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.cond[(*vg1dSP).igas];
-                        malha.mlh2d[i].cel2D.cp = malha.mlh2d[i].cel2D.holC * prop.cp[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.cp[(*vg1dSP).igas];
-                        malha.mlh2d[i].cel2D.tempRef = malha.mlh2d[i].cel2D.holC * prop.tRef[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.tRef[(*vg1dSP).igas];
+                        malha.mlh2d[i].cel2D.rho = malha.mlh2d[i].cel2D.holC * prop.rho[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.rho[(*simulationContext).gasPhaseIndex];
+                        if ((*simulationContext).thermalCouplingEnabled == 0 || viscVar == 0)
+                            malha.mlh2d[i].cel2D.visc = malha.mlh2d[i].cel2D.holC * prop.visc[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.visc[(*simulationContext).gasPhaseIndex];
+                        malha.mlh2d[i].cel2D.beta = malha.mlh2d[i].cel2D.holC * prop.beta[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.beta[(*simulationContext).gasPhaseIndex];
+                        malha.mlh2d[i].cel2D.cond = malha.mlh2d[i].cel2D.holC * prop.cond[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.cond[(*simulationContext).gasPhaseIndex];
+                        malha.mlh2d[i].cel2D.cp = malha.mlh2d[i].cel2D.holC * prop.cp[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.cp[(*simulationContext).gasPhaseIndex];
+                        malha.mlh2d[i].cel2D.tempRef = malha.mlh2d[i].cel2D.holC * prop.tRef[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.tRef[(*simulationContext).gasPhaseIndex];
                     }
                 }
             }
         }
         // acoplamento fluxo de calor
-        if ((*vg1dSP).acop == 1) {
+        if ((*simulationContext).thermalCouplingEnabled == 1) {
             for (int i = 0; i < nPar; i++){
                 vecTransfer[i].novoHi = 0.;
             	vecTransferBuffer[i].novoHi = 0.;
             }
         }
         // acoplamento fluxo de calor
-        if ((*vg1dSP).acop == 1) {
+        if ((*simulationContext).thermalCouplingEnabled == 1) {
         	transfer.dt=delt;
             for (int i = 0; i < nPar; i++) {
                 vecTransfer[i].dt = delt;
@@ -2658,18 +2662,18 @@ void solv2D::resolve() {
         	totalFlux=0.;
 
             // acoplamento fluxo de calor
-            if ((*vg1dSP).acop == 1) {
+            if ((*simulationContext).thermalCouplingEnabled == 1) {
                 for (int i = 0; i < malha.nele; i++) {
                     if (viscVar == 1) {
                         double pres = malha.mlh2d[i].cel2D.presC;
                         double temp = malha.mlh2d[i].cel2D.tempC;
-                        if ((*vg1dSP).temInterface == 1) {
+                        if ((*simulationContext).hasPhaseInterface == 1) {
                             malha.mlh2d[i].cel2D.visc = malha.mlh2d[i].cel2D.holC * flucVF.VisFlu(pres, temp, malha.mlh2d[i].cel2D.taxaDeform) / 1000. +
                                                         (1. - malha.mlh2d[i].cel2D.holC) * flucVF.VisGas(pres, temp) / 1000.;
                         } else
                             malha.mlh2d[i].cel2D.visc = flucVF.VisFlu(pres, temp, malha.mlh2d[i].cel2D.taxaDeform) / 1000.;
                     } else {
-                        malha.mlh2d[i].cel2D.visc = malha.mlh2d[i].cel2D.holC * prop.visc[(*vg1dSP).iliq] + (1. - malha.mlh2d[i].cel2D.holC) * prop.visc[(*vg1dSP).igas];
+                        malha.mlh2d[i].cel2D.visc = malha.mlh2d[i].cel2D.holC * prop.visc[(*simulationContext).liquidPhaseIndex] + (1. - malha.mlh2d[i].cel2D.holC) * prop.visc[(*simulationContext).gasPhaseIndex];
                     }
                     for (int j = 0; j < malha.mlh2d[i].cel2D.nvert; j++) {
                         if (malha.mlh2d[i].kvizinho[j] < 0) {
@@ -2726,18 +2730,18 @@ void solv2D::resolve() {
 #pragma omp parallel for num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
 
-                if ((*vg1dSP).metodoAcopPV == -1) {
+                if ((*simulationContext).pressureVelocityCouplingMethod == -1) {
                     malha.mlh2d[i].cel2D.uCI = 1.0 * (malha.mlh2d[i].cel2D.uC);
                     malha.mlh2d[i].cel2D.vCI = 1.0 * (malha.mlh2d[i].cel2D.vC);
                 }
             }
 #pragma omp parallel for num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++)
-                malha.mlh2d[i].GeraLocalUV((*vg1dSP).relaxVF);
+                malha.mlh2d[i].GeraLocalUV((*simulationContext).finiteVolumeRelaxationFactor);
 #pragma omp parallel for num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
                 malha.mlh2d[i].calSupDifu();
-                if ((*vg1dSP).metodoAcopPV != -1) {
+                if ((*simulationContext).pressureVelocityCouplingMethod != -1) {
                     malha.mlh2d[i].cel2D.uCI = malha.mlh2d[i].cel2D.uC;
                     malha.mlh2d[i].cel2D.vCI = malha.mlh2d[i].cel2D.vC;
                 }
@@ -2767,7 +2771,7 @@ void solv2D::resolve() {
             }
             maxresi = totalRes / malha.nele;
 
-            if ((*vg1dSP).metodoAcopPV != 2) {
+            if ((*simulationContext).pressureVelocityCouplingMethod != 2) {
                 indsra = 0;
                 for (int i = 0; i < malha.nele; i++) {
                     dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
@@ -2797,17 +2801,17 @@ void solv2D::resolve() {
             norma1 = 0.;
             double velmed = 0.;
             for (int i = 0; i < malha.nele; i++) {
-                if ((*vg1dSP).metodoAcopPV != 2)
+                if ((*simulationContext).pressureVelocityCouplingMethod != 2)
                     malha.mlh2d[i].cel2D.uC = malha.vecSolv[i];
                 else
-                    malha.mlh2d[i].cel2D.uC = (*vg1dSP).relaxVF * malha.mlh2d[i].cel2D.uCEx + (1 - (*vg1dSP).relaxVF) * malha.mlh2d[i].cel2D.uCI;
+                    malha.mlh2d[i].cel2D.uC = (*simulationContext).finiteVolumeRelaxationFactor * malha.mlh2d[i].cel2D.uCEx + (1 - (*simulationContext).finiteVolumeRelaxationFactor) * malha.mlh2d[i].cel2D.uCI;
                 norma1 += fabs(malha.mlh2d[i].cel2D.uC - malha.mlh2d[i].cel2D.uCI);
                 velmed += fabs(malha.mlh2d[i].cel2D.uC);
                 if (fabs(malha.mlh2d[i].cel2D.uC) > velmax)
                     velmax = fabs(malha.mlh2d[i].cel2D.uC);
             }
 
-            if ((*vg1dSP).metodoAcopPV != 2) {
+            if ((*simulationContext).pressureVelocityCouplingMethod != 2) {
                 indsra = 0;
                 for (int i = 0; i < malha.nele; i++) {
                     dimNoZero = malha.mlh2d[i].cel2D.indVizCres.size();
@@ -2835,10 +2839,10 @@ void solv2D::resolve() {
             }
 #pragma omp parallel for reduction(+ : norma1, velmed) num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
-                if ((*vg1dSP).metodoAcopPV != 2)
+                if ((*simulationContext).pressureVelocityCouplingMethod != 2)
                     malha.mlh2d[i].cel2D.vC = malha.vecSolv[i];
                 else
-                    malha.mlh2d[i].cel2D.vC = (*vg1dSP).relaxVF * malha.mlh2d[i].cel2D.vCEx + (1 - (*vg1dSP).relaxVF) * malha.mlh2d[i].cel2D.vCI;
+                    malha.mlh2d[i].cel2D.vC = (*simulationContext).finiteVolumeRelaxationFactor * malha.mlh2d[i].cel2D.vCEx + (1 - (*simulationContext).finiteVolumeRelaxationFactor) * malha.mlh2d[i].cel2D.vCI;
                 norma1 += fabs(malha.mlh2d[i].cel2D.vC - malha.mlh2d[i].cel2D.vCI);
                 velmed += fabs(malha.mlh2d[i].cel2D.vC);
             }
@@ -2852,7 +2856,7 @@ void solv2D::resolve() {
             iterUV++;
 #pragma omp parallel for num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
-                malha.mlh2d[i].vazMass((*vg1dSP).relaxVF);
+                malha.mlh2d[i].vazMass((*simulationContext).finiteVolumeRelaxationFactor);
             }
 #pragma omp parallel for num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++)
@@ -2876,7 +2880,7 @@ void solv2D::resolve() {
             iter = 100;
             if (iter < malha.nele)
                 iter = malha.nele;
-            if ((*vg1dSP).tempo > 1e-15) {
+            if ((*simulationContext).solverTime > 1e-15) {
 #pragma omp parallel for num_threads(nthrdLocal)
                 for (int i = 0; i < malha.nele; i++)
                     malha.vecSolv[i] = malha.mlh2d[i].cel2D.presCcor * 10000.;
@@ -2922,10 +2926,10 @@ void solv2D::resolve() {
                 malha.mlh2d[i].atualizaCor();
 
             // Correction step - FLOOR
-            double relaxPiso = (*vg1dSP).relaxVFExpli;
-            if ((*vg1dSP).metodoAcopPV == 4)
-                relaxPiso = (*vg1dSP).relaxVFExpli;
-            if (((*vg1dSP).metodoAcopPV == 3 || (*vg1dSP).metodoAcopPV == 4) && (norma1Antiga > norma1 && (norma0 > erroPres || norma1 > erroV))) {
+            double relaxPiso = (*simulationContext).velocityCorrectionRelaxationFactor;
+            if ((*simulationContext).pressureVelocityCouplingMethod == 4)
+                relaxPiso = (*simulationContext).velocityCorrectionRelaxationFactor;
+            if (((*simulationContext).pressureVelocityCouplingMethod == 3 || (*simulationContext).pressureVelocityCouplingMethod == 4) && (norma1Antiga > norma1 && (norma0 > erroPres || norma1 > erroV))) {
                 for (int kontaPiso = 0; kontaPiso <= nPrime; kontaPiso++) {
                     norma1Piso = 0;
                     velmedPiso = 0.;
@@ -3000,7 +3004,7 @@ void solv2D::resolve() {
                         iter = 100;
                         if (iter < malha.nele)
                             iter = malha.nele;
-                        if ((*vg1dSP).tempo > 1e-15) {
+                        if ((*simulationContext).solverTime > 1e-15) {
 #pragma omp parallel for num_threads(nthrdLocal)
                             for (int i = 0; i < malha.nele; i++)
                                 malha.vecSolv[i] = malha.mlh2d[i].cel2D.presCcor * 10000.;
@@ -3040,7 +3044,7 @@ void solv2D::resolve() {
 
             // Heat flow coupling
             if (impliAcopTerm == 0) {
-                if ((*vg1dSP).acop == 1) {
+                if ((*simulationContext).thermalCouplingEnabled == 1) {
                 	if(acopD==0){
                 		tempMedPar = tempMedParede(malha);
                 		double dtp = 0.0;
@@ -3166,7 +3170,7 @@ void solv2D::resolve() {
                     malha.mlh2d[i].calcGradGreenTemp();
 #pragma omp parallel for num_threads(nthrdLocal)
                 for (int i = 0; i < malha.nele; i++)
-                    malha.mlh2d[i].GeraLocalT(tempVF.relaxT + 0 * (*vg1dSP).relaxVF);
+                    malha.mlh2d[i].GeraLocalT(tempVF.relaxT + 0 * (*simulationContext).finiteVolumeRelaxationFactor);
 
                 maxresiT = -1.;
                 maxdenoT = -1.;
@@ -3184,7 +3188,7 @@ void solv2D::resolve() {
                     if (fabs(malha.mlh2d[i].denoResT) > 1e-15)
                         totalResT += fabs(malha.mlh2d[i].residuoT) / fabs(malha.mlh2d[i].denoResT);
                 }
-                if ((*vg1dSP).tipoRes == 1)
+                if ((*simulationContext).residualAggregationMode == 1)
                     maxresiT = totalResT / malha.nele;
 
                 indsra = 0;
@@ -3223,7 +3227,7 @@ void solv2D::resolve() {
                 iterTemp++;
                 // Heat flow coupling
                 if (impliAcopTerm == 1) {
-                    if ((*vg1dSP).acop == 1) {
+                    if ((*simulationContext).thermalCouplingEnabled == 1) {
                     	if(acopD==0){
                     		tempMedPar = tempMedParede(malha);
                     		for (int i = 0; i < nPar; i++) {
@@ -3237,7 +3241,7 @@ void solv2D::resolve() {
                     						kcc++;
                     					if (kcc < 1 && malha.mlh2d[iFlux2].cel2D.ccFace[j] == CC.rotuloAcop) {
                     						double contTemp = 0.;
-                    						if((*vg1dSP).tempo<5)contTemp=0.;
+                    						if((*simulationContext).solverTime<5)contTemp=0.;
                     						vecTransfer[i].Tint = contTemp * malha.mlh2d[iFlux2].cel2D.tempC + (1 - contTemp) * malha.mlh2d[iFlux2].tempF[j];
                     						/* if(vecTransfer[i].Tint>tInicial){
                                         		if(contTemp==0)malha.mlh2d[iFlux2].tempF[j]=tInicial;
@@ -3323,7 +3327,7 @@ void solv2D::resolve() {
             }
         }
         if (confinado == 1) {
-            double pres0 = malha.mlh2d[(*vg1dSP).eleYmaxWall].cel2D.presC;
+            double pres0 = malha.mlh2d[(*simulationContext).maxYCellIndex].cel2D.presC;
             double delp = 1. * (tempVF.pRef - pres0);
 #pragma omp parallel for num_threads(nthrdLocal)
             for (int i = 0; i < malha.nele; i++) {
@@ -3348,7 +3352,7 @@ void solv2D::resolve() {
         double velfluidmed;
 
         resetTrend += delt;
-        if ((*vg1dSP).acop == 1) {
+        if ((*simulationContext).thermalCouplingEnabled == 1) {
             fluxCalMed = fluxMed(malha);
             tempMedPar = tempMedParede(malha);
             tempfluidmed = tempMed(malha);
@@ -3382,7 +3386,7 @@ void solv2D::resolve() {
 
             if (resetTrend > tempVF.tendTemp) {
                 ofstream escreveIni(tmp.c_str(), ios_base::app);
-                escreveIni << (*vg1dSP).tempo << "   ;   " << tempfluidmed << "  ;   " << tempMedPar << "   ;   " << transfer2.Tint << "  ;   " << transfer2.Tcamada[0][0] << "  ;   " << totalFlux << "  ;   " << viscfluidmed << "  ;   " << taxafluidmed << "  ;   " << velfluidmed << endl;
+                escreveIni << (*simulationContext).solverTime << "   ;   " << tempfluidmed << "  ;   " << tempMedPar << "   ;   " << transfer2.Tint << "  ;   " << transfer2.Tcamada[0][0] << "  ;   " << totalFlux << "  ;   " << viscfluidmed << "  ;   " << taxafluidmed << "  ;   " << velfluidmed << endl;
                 escreveIni.close();
             }
         }
@@ -3401,7 +3405,7 @@ void solv2D::resolve() {
 
         totalIter = iterTempo;
         end = chrono::steady_clock::now();
-        cout << "Tempo= " << (*vg1dSP).tempo;
+        cout << "Tempo= " << (*simulationContext).solverTime;
         cout << endl;
         cout << "Residuo= " << maxresi << "; norma0= " << norma0 << "; norma1= " << norma1 << "; normaTemp= " << normaTemp;
         cout << endl;
@@ -3415,21 +3419,21 @@ void solv2D::resolve() {
         cout << endl;
 
         if (tempVF.parserieImp > 0) {
-            if (((*vg1dSP).tempo > 1e-15 && (*vg1dSP).tempo <= tempVF.tempoImp[kontaTempoProf] &&
-                 (*vg1dSP).tempo + delt >= tempVF.tempoImp[kontaTempoProf])) {
+            if (((*simulationContext).solverTime > 1e-15 && (*simulationContext).solverTime <= tempVF.tempoImp[kontaTempoProf] &&
+                 (*simulationContext).solverTime + delt >= tempVF.tempoImp[kontaTempoProf])) {
 
-                malha.imprimeP((*vg1dSP).tempo);
-                malha.imprimeU((*vg1dSP).tempo);
-                malha.imprimeV((*vg1dSP).tempo);
-                malha.imprimeT((*vg1dSP).tempo);
-                malha.imprimePCor((*vg1dSP).tempo);
-                if ((*vg1dSP).temInterface == 1)
-                    malha.imprimeHol((*vg1dSP).tempo);
-                malha.imprimeTaxaDeform((*vg1dSP).tempo);
-                malha.imprimeVisc((*vg1dSP).tempo);
-                malha.imprimeQcont((*vg1dSP).tempo, nPar);
-                malha.imprimeTcont((*vg1dSP).tempo, nPar);
-                tempVF.tempoImp[kontaTempoProf] = (*vg1dSP).tempo;
+                malha.imprimeP((*simulationContext).solverTime);
+                malha.imprimeU((*simulationContext).solverTime);
+                malha.imprimeV((*simulationContext).solverTime);
+                malha.imprimeT((*simulationContext).solverTime);
+                malha.imprimePCor((*simulationContext).solverTime);
+                if ((*simulationContext).hasPhaseInterface == 1)
+                    malha.imprimeHol((*simulationContext).solverTime);
+                malha.imprimeTaxaDeform((*simulationContext).solverTime);
+                malha.imprimeVisc((*simulationContext).solverTime);
+                malha.imprimeQcont((*simulationContext).solverTime, nPar);
+                malha.imprimeTcont((*simulationContext).solverTime, nPar);
+                tempVF.tempoImp[kontaTempoProf] = (*simulationContext).solverTime;
                 kontaTempoProf++;
                 if (kontaTempoProf >= tempVF.parserieImp)
                     kontaTempoProf--;
@@ -3449,7 +3453,7 @@ void solv2D::resolve() {
             }
             malha.mlh2d[i].calcForcCorp();
         }
-        (*vg1dSP).tempo += delt;
+        (*simulationContext).solverTime += delt;
     }
 
     if (nele > 0) {

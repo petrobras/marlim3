@@ -1,4 +1,10 @@
 #include "Bcsm2.h"
+#include "UnitConversions.h"
+#include <cmath>
+
+namespace {
+constexpr double kUnboundedPumpFlow = 1.e10;
+}
 
 BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhead,
                                 const double* const Vpower,const double* const Vefic, double Vfreq, int Vnestag, double VeficM,
@@ -76,10 +82,16 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         double maxef=efic[0];
         int k=1;
         while(maxef<efic[k]&&k<lenth-1){maxef=efic[k];k++;}
-        Qzero=vaz[lenth-1]-head[lenth-1]*((vaz[lenth-1]-vaz[lenth-2])/(head[lenth-1]-head[lenth-2]));
+        const double tailHeadChange = head[lenth-1] - head[lenth-2];
+        const double estimatedZeroFlow = tailHeadChange != 0.
+            ? vaz[lenth-1] - head[lenth-1] * (vaz[lenth-1] - vaz[lenth-2]) / tailHeadChange
+            : vaz[lenth-1];
+        const double upperFlowGuess = std::isfinite(estimatedZeroFlow) && estimatedZeroFlow > vaz[lenth-1]
+            ? estimatedZeroFlow : vaz[lenth-1];
         BEP=FalsaCorda(1,vaz[k-2],vaz[k]);
         if(BEP<0)BEP=vaz[k-1];
-        Qzero=FalsaCorda(0,vaz[lenth-2],vaz[lenth-1]);
+        Qzero=HUGE_VAL;
+        Qzero=FalsaCorda(0,vaz[lenth-2],upperFlowGuess);
 
         Hvis=0.;
         Pvis=0.;
@@ -99,7 +111,7 @@ BomCentSub::BomCentSub(int nC,const double* const Vvaz, const double* const Vhea
         d2power=0;
         d2efic=0;
         BEP=0;
-        Qzero=1.e10;
+        Qzero=kUnboundedPumpFlow;
         freq=0;
         Hvis=0.;
         Pvis=0.;
@@ -214,7 +226,7 @@ BomCentSub& BomCentSub::operator =(const BomCentSub& bombaantiga){
                 d2power=0;
                 d2efic=0;
                 BEP=0;
-                Qzero=1.e10;
+                Qzero=kUnboundedPumpFlow;
                 freq=0;
                 Hvis=0.;
                 Pvis=0.;
@@ -230,6 +242,7 @@ BomCentSub& BomCentSub::operator =(const BomCentSub& bombaantiga){
 
 
 double BomCentSub::Fhead(double xvaz) const{
+ if (lenth == 0) return 0.;
  int klo=0;
  int khi;
  int mult=1.;
@@ -261,6 +274,7 @@ double BomCentSub::Fhead(double xvaz) const{
 }
 
 double BomCentSub::Fpower(double xvaz) const{
+ if (lenth == 0) return 0.;
  int klo=0;
  int khi;
  int mult=1.;
@@ -291,6 +305,7 @@ double BomCentSub::Fpower(double xvaz) const{
 }
 
 double BomCentSub::Fefic(double xvaz) const{
+ if (lenth == 0) return 0.;
  int klo=0;
  int khi;
  int mult=1.;
@@ -321,6 +336,7 @@ double BomCentSub::Fefic(double xvaz) const{
 }
 
 double BomCentSub::Defic(double xvaz) const{
+ if (lenth == 0) return 0.;
  int klo=0;
  int khi;
  while(xvaz>vaz[klo]&&klo<lenth-1)klo++;
@@ -434,7 +450,7 @@ void BomCentSub::NovaVis(double vis, double MasEsp, double Qvis){
 	    		Ce=pow(Bhi,expoente);
 	    		Evis=Ce*Fefic(Qw);
 	    		if(Evis>1e-5){
-	    			Pvis=(Qw*(0.158987/86400.)*Hvis*(0.3048)*(MasEsp*9.8)/745.7)*(100./Evis);
+	    			Pvis=(Qw*(units::kCubicMetrePerBarrel/86400.)*Hvis*(0.3048)*(MasEsp*9.8)/745.7)*(100./Evis);
 	    		}
 	    		else Pvis=0.;
 	    	}

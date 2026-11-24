@@ -29,7 +29,7 @@
 #include "rapidjson/schema.h"
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <fstream>
 #include <iostream>
@@ -435,7 +435,7 @@ class LerVap {
     int escorregaTran;
     int tabRSPB;
 
-    varGlob1D *vg1dSP;
+    SimulationContext *simulationContext;
 
     /*
      * Default constructor
@@ -445,7 +445,7 @@ class LerVap {
     /*
      * Parameterized constructor
      */
-    LerVap(const string IMPFILE, varGlob1D *Vvg1dSP);
+    LerVap(const string IMPFILE, SimulationContext *context);
 
     /*
      * Copy constructor

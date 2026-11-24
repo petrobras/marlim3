@@ -429,6 +429,8 @@ module BlackOilModels
 
         ! ------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! Conversão de unidades:
         ipres = pres * 14.2233426               ! Conversão de kgf/cm2 para psia.
         itemp = temp * 1.8 + 491.67             ! Conversão de °C para Rankine.
@@ -887,6 +889,8 @@ module BlackOilModels
 
         !------------------ CÁLCULOS:
 
+        iIER = ERROR_EverythingOK
+
         ! 1. Garantir ordem decrescente das pressões (e Rs correspondente)
         oExpPressures = oExpPressures_Arg
         oExpRs = oExpRs_Arg
@@ -1107,6 +1111,7 @@ module BlackOilModels
         ! ------------------ CÁLCULOS:
 
         ! INICIALIZAÇÕES:
+        iIER = ERROR_EverythingOK
         dGivenPSat = -10.0d0        ! Inicializando variável "dummy" (por enquanto) propositalmente com valor negativo.
         
         iPb = -1                    ! Inicializando índice com valor negativo (ainda não possui um valor válido).

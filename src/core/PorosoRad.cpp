@@ -13,6 +13,7 @@
 #include "Vetor.h"
 #include "Matriz.h"
 #include "PorosoRad.h"
+#include "UnitConversions.h"
 
 using namespace std;
 
@@ -20,7 +21,7 @@ PorosRad::PorosRad(){
 		iniciaVariaveis();
 }
 
-PorosRad::PorosRad(const DadosGeoPoro vgeom,varGlob1D* Vvg1dSP,const int vpermanente, const int* const vncamada,
+PorosRad::PorosRad(const DadosGeoPoro vgeom,SimulationContext* context,const int vpermanente, const int* const vncamada,
 		                                const double* const vdrcamada,double** const vPcamada,const double vPint,
 		                                const double vpresRes,const double vtRes, const double vdt,
 		                                const double pres, const double vzD0, const double vzD1, const double vdh,
@@ -32,7 +33,7 @@ PorosRad::PorosRad(const DadosGeoPoro vgeom,varGlob1D* Vvg1dSP,const int vperman
 
 	iniciaVariaveis();
 
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 	geom=vgeom;
 	permanente=vpermanente;
 	lenth=geom.ncamadas;
@@ -117,7 +118,7 @@ PorosRad::PorosRad(const DadosGeoPoro vgeom,varGlob1D* Vvg1dSP,const int vperman
 PorosRad::PorosRad(const PorosRad& vPorosRad){
 
 	iniciaVariaveis();
-	vg1dSP=vPorosRad.vg1dSP;
+	simulationContext=vPorosRad.simulationContext;
 	ncel=vPorosRad.ncel;
 	geom=vPorosRad.geom;
 	permanente=vPorosRad.permanente;
@@ -221,7 +222,7 @@ PorosRad& PorosRad::operator =(const PorosRad& vPorosRad){
 
 	if(lenth>0){
 	  if(this!=&vPorosRad){
-		 vg1dSP=vPorosRad.vg1dSP;
+		 simulationContext=vPorosRad.simulationContext;
 		 ncel=vPorosRad.ncel;
 	     geom=vPorosRad.geom;
 	     permanente=vPorosRad.permanente;
@@ -288,7 +289,7 @@ PorosRad& PorosRad::operator =(const PorosRad& vPorosRad){
 	}
 	else if(lenth==0){
 		if(this!=&vPorosRad){
-		  vg1dSP=vPorosRad.vg1dSP;
+		  simulationContext=vPorosRad.simulationContext;
 		  ncel=vPorosRad.ncel;
 		  geom=vPorosRad.geom;
 		  permanente=vPorosRad.permanente;
@@ -448,7 +449,7 @@ void PorosRad::iniciaVariaveis(){
 	compOleo=1e-5;
 	rhoRef=900;
 
-	vg1dSP=0;
+	simulationContext=0;
 
 }
 
@@ -543,7 +544,7 @@ void PorosRad::geraCel(double** const vPcamada,double** const vsL,double** const
 			presRes,ql, qr, tRes, dt,zdKm, zdK,zdK2,
 			dh,sL,sW,sLRes,sWRes,sWPoc,
 			satConata,ip,vkRelOA,vkRelOG,vpcOA,vpcGO,
-			fluc, flup,vcelL, vcelR,vg1dSP);
+			fluc, flup,vcelL, vcelR,simulationContext);
     konta++;
 	for(int icam=0;icam<geom.ncamadas;icam++){
 		 for(int idisc=1;idisc<=ncamada[icam];idisc++){
@@ -595,7 +596,7 @@ void PorosRad::geraCel(double** const vPcamada,double** const vsL,double** const
 						presRes,ql, qr, tRes, dt,zdKm, zdK,zdK2,
 						dh,sL,sW,sLRes,sWRes,sWPoc,
 						satConata,ip,vkRelOA,vkRelOG,vpcOA,vpcGO,
-						fluc, flup,vcelL, vcelR,vg1dSP);
+						fluc, flup,vcelL, vcelR,simulationContext);
 			    konta++;
 
 			  }
@@ -623,7 +624,7 @@ double PorosRad::transperm(double mastot){
 	if(mastot<0){
 	  double keq=celula[0].kabsol1;
 	  double visc=flup.ViscOleo(1., tRes)/1000.;
-	  double ip=98066.52*(keq/(visc))/
+	  double ip=units::kPascalPerKgfPerCm2*(keq/(visc))/
 			         (log(celula[ncel-1].rm/celula[0].rm)+0.);
 	  mastot=ip*(celula[0].presRes-celula[0].Pint)*1000.;
 	}
@@ -677,7 +678,7 @@ void PorosRad::renovaPres(int i, double mTot){
 		double dO;
 		double dG;
 		double dA;
-		double grav=9.82/98066.22;
+		double grav=9.82/units::kPascalPerKgfPerCm2;
 
 		celula[i+1].pcOGm=celula[i+1].interpolaTabela(celula[i+1].pcGOCel.npont, 1.-celula[i+1].sL, celula[i+1].pcGOCel.satG,
 				celula[i+1].pcGOCel.presCapGO);
@@ -702,9 +703,9 @@ void PorosRad::renovaPres(int i, double mTot){
 		celula[i].sW=celula[i+1].sW;
 
 		while(erro>1e-5){
-			dO=celula[i+1].darcyO0=celula[i+1].kmed0*celula[i+1].kabsol0*98066.22/miomed;
-			dG=celula[i+1].darcyG0=celula[i+1].kmedG0*celula[i+1].kabsol0*98066.22/migmed;
-			dA=celula[i+1].darcyA0=celula[i+1].kmedA0*celula[i+1].kabsol0*98066.22/miamed;
+			dO=celula[i+1].darcyO0=celula[i+1].kmed0*celula[i+1].kabsol0*units::kPascalPerKgfPerCm2/miomed;
+			dG=celula[i+1].darcyG0=celula[i+1].kmedG0*celula[i+1].kabsol0*units::kPascalPerKgfPerCm2/migmed;
+			dA=celula[i+1].darcyA0=celula[i+1].kmedA0*celula[i+1].kabsol0*units::kPascalPerKgfPerCm2/miamed;
 
 			double mTotGeom=mTot*celula[i].drP1/celula[i].rQcamadaR;
 			double termoPR=rhomed*dO+rhogmed*dG+rhoamed*dA;
@@ -735,8 +736,8 @@ void PorosRad::renovaPres(int i, double mTot){
 					1*rhogmed*(celula[i+1].zD*grav-celula[i+1].zD0*grav-celula[i+1].pcOGm+celula[i].pcOGm));
 			double vazagua=dA*(celula[i].rQcamadaR/celula[i].drP1)*(celula[i+1].Pcamada-celula[i].Pcamada-
 					1*rhoamed*(celula[i+1].zD*grav-celula[i+1].zD0*grav+celula[i+1].pcAOm-celula[i].pcAOm));
-			double rs1=celula[i].flup.RS(celula[i].pmed1, tRes) * 6.29 / 35.31467;
-			double rs0=celula[i].flup.RS(celula[i].Pcamada, tRes) * 6.29 / 35.31467;
+			double rs1=celula[i].flup.RS(celula[i].pmed1, tRes) * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
+			double rs0=celula[i].flup.RS(celula[i].Pcamada, tRes) * units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
 			double maslib=vazoleoSTD*(rs1-rs0)*celula[i+1].rhogstd;
 			vazoleo=(vazoleo*rhomed-maslib)/celula[i].rhoP;
 			vazgas=(vazgas*rhomed+maslib)/celula[i].rhogP;

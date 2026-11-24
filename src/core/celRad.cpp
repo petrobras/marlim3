@@ -5,10 +5,11 @@
  *      Author: Eduardo
  */
 #include "celRad.h"
+#include "UnitConversions.h"
 
 celrad::celrad():
 		localvet(4),localmat(4,11){
-	vg1dSP=0;
+	simulationContext=0;
 	fluc=ProFluCol();
 	flup=ProFlu();
 	drcamada=0;
@@ -179,10 +180,10 @@ celrad::celrad(int vncel,int vicel,double vr0, double vr1, double vrm,double vkX
 		double vpresRes,double vQL, double vQR, double vtRes, double vdt, double vzD0, double vzD,
 		double vzD1,double vdh,double vsL,double vsW,double vsLRes,double vsWRes,double vsWPoc,
 		double vsatConata,const double vip,tabelaPemRelOA vkRelOA,tabelaPemRelOG vkRelOG,tabelaPresCapOA vpcOA,tabelaPresCapGO vpcGO,
-		ProFluCol vfluc, ProFlu vflup,celrad* vcelL, celrad* vcelR,varGlob1D* Vvg1dSP):
+		ProFluCol vfluc, ProFlu vflup,celrad* vcelL, celrad* vcelR,SimulationContext* context):
 		localvet(4),localmat(4,11){
 
-	vg1dSP=Vvg1dSP;
+	simulationContext=context;
 
 	ncel=vncel;
 	icel=vicel;
@@ -283,7 +284,7 @@ celrad::celrad(int vncel,int vicel,double vr0, double vr1, double vrm,double vkX
 	vbo=flup.BOFunc(Pcamada, tRes);
 	vboIni=vbo;
 	rhostd=1000.*141.5/(131.5+flup.API);
-	rhogstd=flup.MasEspGas(1.033, 20.);
+	rhogstd=flup.MasEspGas(units::kAtmosphereInKgfPerCm2, 20.);
 	rhoa=flup.MasEspAgua(Pcamada, tRes);
 
 	rhoP1=flup.MasEspoleo(PcamadaR, tRes);
@@ -360,12 +361,12 @@ celrad::celrad(int vncel,int vicel,double vr0, double vr1, double vrm,double vkX
 	kabsol1=sqrt(kXR*kYR);
 	kabsol0=sqrt(kXL*kYL);
 
-	darcyO1=kmed1*kabsol1*98066.22/((1.-alfmed1)*mio1+alfmed1*mig1);
-	darcyO0=kmed0*kabsol0*98066.22/((1.-alfmed0)*mio0+alfmed0*mig0);
-	darcyG1=kmedG1*kabsol1*98066.22/mig1;
-	darcyG0=kmedG0*kabsol0*98066.22/mig0;
-	darcyA1=kmedA1*kabsol1*98066.22/mia1;
-	darcyA0=kmedA0*kabsol0*98066.22/mia0;
+	darcyO1=kmed1*kabsol1*units::kPascalPerKgfPerCm2/((1.-alfmed1)*mio1+alfmed1*mig1);
+	darcyO0=kmed0*kabsol0*units::kPascalPerKgfPerCm2/((1.-alfmed0)*mio0+alfmed0*mig0);
+	darcyG1=kmedG1*kabsol1*units::kPascalPerKgfPerCm2/mig1;
+	darcyG0=kmedG0*kabsol0*units::kPascalPerKgfPerCm2/mig0;
+	darcyA1=kmedA1*kabsol1*units::kPascalPerKgfPerCm2/mia1;
+	darcyA0=kmedA0*kabsol0*units::kPascalPerKgfPerCm2/mia0;
 
 	reiniciaSL=0;
 	reiniciaSW=0;
@@ -381,7 +382,7 @@ celrad::celrad(int vncel,int vicel,double vr0, double vr1, double vrm,double vkX
 celrad::celrad(const celrad& vcel):
 		localvet(4),localmat(4,11){
 
-	vg1dSP=vcel.vg1dSP;
+	simulationContext=vcel.simulationContext;
 	ncel=vcel.ncel;
 	icel=vcel.icel;
 
@@ -555,7 +556,7 @@ celrad::celrad(const celrad& vcel):
 celrad& celrad::operator =(const celrad& vcel){
 	if (this != &vcel){
 
-		vg1dSP=vcel.vg1dSP;
+		simulationContext=vcel.simulationContext;
 		ncel=vcel.ncel;
 		icel=vcel.icel;
 
@@ -899,12 +900,12 @@ void celrad::calcVazOWG(){
 	pcAOm=interpolaTabela(pcOACel.npont, sW, pcOACel.satW, pcOACel.presCapOW);
 	pcAO0=interpolaTabela(pcOACel.npont, sWL, pcOACel.satW, pcOACel.presCapOW);
 
-	darcyO1=kmed1*kabsol1*98066.22/((1.-alfmed1)*mio1+alfmed1*mig1);
-	darcyO0=kmed0*kabsol0*98066.22/((1.-alfmed0)*mio0+alfmed0*mig0);
+	darcyO1=kmed1*kabsol1*units::kPascalPerKgfPerCm2/((1.-alfmed1)*mio1+alfmed1*mig1);
+	darcyO0=kmed0*kabsol0*units::kPascalPerKgfPerCm2/((1.-alfmed0)*mio0+alfmed0*mig0);
 	darcyG1=0;
 	darcyG0=0;
-	darcyA1=kmedA1*kabsol1*98066.22/mia1;
-	darcyA0=kmedA0*kabsol0*98066.22/mia0;
+	darcyA1=kmedA1*kabsol1*units::kPascalPerKgfPerCm2/mia1;
+	darcyA0=kmedA0*kabsol0*units::kPascalPerKgfPerCm2/mia0;
 }
 
 double celrad::cflO(){
@@ -933,8 +934,8 @@ void celrad::evoluiSL(int& reinicia,int ciclo,double dpdt){
 	double multTO=poro0*rhostd*area/vbo;
 	double multTA=poro0*area*rhoa;
 
-	double rs1=flup.RS(pmed1, tRes)* 6.29 / 35.31467;
-	double rs0=flup.RS(pmed0, tRes)* 6.29 / 35.31467;
+	double rs1=flup.RS(pmed1, tRes)* units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
+	double rs0=flup.RS(pmed0, tRes)* units::kBarrelPerCubicMetre / units::kCubicFootPerCubicMetre;
 
 	double dPoroRhosBO=0;
 	double dPoroRhow=0;
@@ -1077,7 +1078,7 @@ void celrad::transcel(int idisc){
   double h1;
   double vr1;
   double vr2;
-  double grav=9.82/98066.22;
+  double grav=9.82/units::kPascalPerKgfPerCm2;
 
   calcVazOWG();
 
@@ -1169,7 +1170,7 @@ void celrad::transcel(int idisc){
   vr2=r1;
 
   if(idisc==0 || idisc==ncel-1){
-	  cond=kabsol1*fluc.rholStd*98066.22/fluc.VisFlu(1., tRes);
+	  cond=kabsol1*fluc.rholStd*units::kPascalPerKgfPerCm2/fluc.VisFlu(1., tRes);
   }
 
   if(idisc>0){
@@ -1194,7 +1195,7 @@ void celrad::transcel(int idisc){
 	  	  localvet[0]=presRes2;
 	  }
 	  if(idisc<ncel-1){
-		  double grav=9.82/98066.22;
+		  double grav=9.82/units::kPascalPerKgfPerCm2;
 		  double ciL;
 		  ciL=darcyO1*rQcamadaR/drP1;
 		  localmat[1][3]=ciL;

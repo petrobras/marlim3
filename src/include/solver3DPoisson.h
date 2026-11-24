@@ -16,7 +16,7 @@
 #include "Vetor.h"
 #include "dados3DPoisson.h"
 #include "estruturasPoisson3D.h"
-#include "variaveisGlobais1D.h"
+#include "SimulationContext.h"
 #include <algorithm>
 #include <ctime>
 #include <fstream>
@@ -49,12 +49,12 @@ class solverP3D {
     int kontaTempo;
     int itera;
     int penalizaDt;
-    varGlob1D *DGP3D;
+    SimulationContext *simulationContext;
     int rank;
     int precn;
     SparseMtx<double> matglob;
     Vcr<double> termolivre;
-    solverP3D(string nomeArquivoEntrada, varGlob1D *DGP3DV, int nacopV, vector<DadosGeo> &dutoAux,
+    solverP3D(string nomeArquivoEntrada, SimulationContext *DGP3DV, int nacopV, vector<DadosGeo> &dutoAux,
               double hi, double he, double ti);
     solverP3D();
     solverP3D(const solverP3D &);
