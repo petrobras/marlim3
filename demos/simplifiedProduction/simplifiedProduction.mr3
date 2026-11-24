@@ -70,25 +70,25 @@
         {
           "label": "Inner steel layer",
           "materialId": 0,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.00635
         },
         {
           "label": "Completion fluid layer",
           "materialId": 1,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.07619999999999999
         },
         {
           "label": "Casing steel layer",
           "materialId": 0,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.0127
         },
         {
           "label": "Cement layer",
           "materialId": 2,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.07619999999999999
         }
       ]
@@ -102,13 +102,13 @@
         {
           "label": "Inner steel layer",
           "materialId": 0,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.00635
         },
         {
           "label": "Insulation layer",
           "materialId": 3,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.0508
         }
       ]
@@ -122,7 +122,7 @@
         {
           "label": "Inner steel layer",
           "materialId": 0,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.00635
         }
       ]
@@ -136,13 +136,13 @@
         {
           "label": "Inner steel layer",
           "materialId": 0,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.00635
         },
         {
           "label": "Insulation layer",
           "materialId": 3,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.0508
         }
       ]
@@ -158,13 +158,13 @@
         {
           "label": "Casing steel layer",
           "materialId": 0,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.0127
         },
         {
           "label": "Cement layer",
           "materialId": 2,
-          "layerMeasurementType": "thickness",
+          "layerMeasurementType": "THICKNESS",
           "thickness": 0.07619999999999999
         }
       ]

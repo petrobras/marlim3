@@ -357,6 +357,19 @@ def workspace(root: Path):
             path = root / name
             if path.exists():
                 (temporary / name).write_bytes(regular_file(path))
+        # setuptools rejects a missing package-discovery root while building
+        # the project metadata that uv lock needs.
+        manifest = temporary / "pyproject.toml"
+        if manifest.exists():
+            find = (
+                read_toml(manifest.read_bytes(), "pyproject.toml")
+                .get("tool", {})
+                .get("setuptools", {})
+                .get("packages", {})
+                .get("find", {})
+            )
+            for where in find.get("where", []):
+                (temporary / where).mkdir(parents=True, exist_ok=True)
         yield temporary
 
 

@@ -78,6 +78,7 @@ docs = [
     "mkdocs-jupyter>=0.24",
     "mkdocs-markmap>=1.5",
     "jsonschema-markdown",
+    "mkdocs-include-markdown-plugin>=7",
 ]
 regression_tool = [
     "pytest>=8",
