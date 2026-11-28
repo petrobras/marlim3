@@ -13262,6 +13262,13 @@ void Ler::lerArq() {
 			flup[0] = ProFlu(vg1dSP, 20, 100., 0.7, 0., 1., 20, 10, 40,
 					2, 0, 0.8, tabp, 0, 0);
 			flup[0].npontos = npontos;
+			// the default fluid has id 0 and no viscosity table, like the first fluid of a parsed list
+			indFlup = new int [nfluP];
+			indFlup[0] = 0;
+			tabVisc = new detTabVisc[nfluP];
+			tabVisc[0].parserie = 0;
+			tabVisc[0].temp = 0;
+			tabVisc[0].visc = 0;
 		}
 
 		for (int i = 0; i < nfluP; i++) {

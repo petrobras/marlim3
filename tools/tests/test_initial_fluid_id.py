@@ -1,4 +1,5 @@
-"""The initial fluid (`iniFluidoP`) is a fluid id, also when the steady state is computed."""
+"""The initial fluid (`iniFluidoP`) is a fluid id, also when the steady state is computed, and an injector that
+does not read production fluids gets the default one."""
 
 import json
 import os
@@ -12,6 +13,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 DEMO = ROOT / "demos" / "2zones-2GLVs-2-Check-PA"
+SMOOTH = ROOT / "demos" / "smoothPipeFriction"
 MODEL = "2zonas-2VGLs-2-Check-AP.mr3"
 pytestmark = pytest.mark.simulacao
 
@@ -54,3 +56,28 @@ def test_initial_fluid_id_does_not_need_to_match_its_position(engine, tmp_path):
     reference = run_steady_state(engine, tmp_path / "ids_from_zero", 0)
     shifted = run_steady_state(engine, tmp_path / "ids_from_five", 5)
     assert shifted == reference
+
+
+def injector_model():
+    """smoothPipeFriction as a well that injects the user liquid, which leaves production fluids unread."""
+    model = json.loads((SMOOTH / "smoothPipeFriction.mr3").read_text(encoding="utf-8"))
+    model["system"] = "INJ"
+    model["injectionWellBC"] = {"active": True, "fluidType": 0, "boundaryCondition": 0, "salinity": 20.0,
+                                "injectionTemp": 20.0, "stdLiquidFlowRate": 1000.0, "injectionPressure": 100.0,
+                                "bottomholePressure": 150.0}
+    model["ipr"] = [dict(model["ipr"][0], active=True, measuredLength=4950.0, staticPressure=[100.0])]
+    model["liquidSource"][0]["active"] = False
+    return model
+
+
+def test_injector_with_the_default_production_fluid_runs(engine, tmp_path):
+    directory = tmp_path / "injector"
+    directory.mkdir()
+    (directory / "model.mr3").write_text(json.dumps(injector_model()), encoding="utf-8")
+    process = subprocess.run(
+        [str(engine), "-s", "INJETOR", "--input", "model.mr3", "--dir", str(directory)], cwd=directory,
+        capture_output=True, text=True, errors="replace", timeout=300,
+    )
+    assert process.returncode == 0, process.stdout[-3000:] + process.stderr[-3000:]
+    result = json.loads((directory / "simulacao.log").read_text(encoding="utf-8"))["resultadoSimulacao"]
+    assert result["status"] == "sucesso", result["logs"][-1]
